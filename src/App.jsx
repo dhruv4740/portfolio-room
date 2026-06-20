@@ -14,6 +14,9 @@ import HUD from './components/ui/HUD.jsx'
 import useStore from './store/useStore.js'
 
 const Perf = import.meta.env.DEV ? lazy(() => import('r3f-perf').then(m => ({ default: m.Perf }))) : null
+const CarGameStandalone = import.meta.env.DEV
+  ? lazy(() => import('./game/CarGameStandalone.jsx'))
+  : null
 
 function SceneContents() {
   const phase = useStore((s) => s.phase)
@@ -35,6 +38,15 @@ function SceneContents() {
 }
 
 export default function App() {
+  // DEV-ONLY: ?game query param renders the car game standalone for testing
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('game')) {
+    return (
+      <Suspense fallback={null}>
+        <CarGameStandalone />
+      </Suspense>
+    )
+  }
+
   return (
     <>
       <Canvas
