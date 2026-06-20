@@ -11,4 +11,5 @@ export const SOUNDS = {
   paper_scatter:  { src: '/sounds/paper.mp3',       loop: false, volume: 0.50 },
   mug_fall:       { src: '/sounds/mug_fall.mp3',    loop: false, volume: 0.70 },
   glitch_zap:     { src: '/sounds/glitch.mp3',      loop: false, volume: 0.80 },
+  duck:           { src: '/sounds/duck.mp3',         loop: false, volume: 0.80 },
 }

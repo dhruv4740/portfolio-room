@@ -20,6 +20,8 @@ import PlayerController from './components/player/PlayerController.jsx'
 import HUD from './components/ui/HUD.jsx'
 import CustomCursor from './components/ui/CustomCursor.jsx'
 import SoundToggle from './components/ui/SoundToggle.jsx'
+import KonamiOverlay from './components/ui/KonamiOverlay.jsx'
+import DuckBadge from './components/ui/DuckBadge.jsx'
 import ProjectCard from './game/ProjectCard.jsx'
 import useStore from './store/useStore.js'
 import useLocalTime from './hooks/useLocalTime.js'
@@ -156,6 +158,8 @@ function AppShell() {
       <SoundToggle />
       <CustomCursor />
       <FocusVignette />
+      <KonamiOverlay />
+      <DuckBadge />
       {/* ProjectCard sits outside Canvas, reads activeProject from store */}
       {activeProject && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 20 }}>

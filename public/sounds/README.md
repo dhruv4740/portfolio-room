@@ -16,6 +16,7 @@ console warning and the app continues silently. No crashes, no broken scene.
 | `paper.mp3`       | Paper stack knocked off desk              | no    | 0.50   |
 | `mug_fall.mp3`    | Mug knocked off desk                      | no    | 0.70   |
 | `glitch.mp3`      | Boot-sequence glitch reveal moment        | no    | 0.80   |
+| `duck.mp3`        | Hidden rubber duck quack (easter egg)     | no    | 0.80   |
 
 ## Recommended sources
 
