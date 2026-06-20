@@ -5,6 +5,10 @@ const useStore = create((set) => ({
   setPhase: (phase) => set({ phase }),
   glitchIntensity: 0,
   setGlitchIntensity: (v) => set({ glitchIntensity: v }),
+  activeProject: null,
+  setActiveProject: (p) => set({ activeProject: p }),
+  laptopPrompt: false,
+  setLaptopPrompt: (v) => set({ laptopPrompt: v }),
 }))
 
 export default useStore

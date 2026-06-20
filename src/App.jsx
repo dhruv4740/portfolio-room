@@ -1,16 +1,18 @@
-import { Suspense, lazy } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { EffectComposer } from '@react-three/postprocessing'
 import Room from './components/scene/Room.jsx'
 import Desk from './components/scene/Desk.jsx'
 import Whiteboard from './components/scene/Whiteboard.jsx'
 import Bookshelf from './components/scene/Bookshelf.jsx'
+import Laptop from './components/scene/Laptop.jsx'
 import AmbientLighting from './components/environment/AmbientLighting.jsx'
 import GlitchEffect from './components/terminal/GlitchEffect.jsx'
 import TerminalBoot from './components/terminal/TerminalBoot.jsx'
 import CameraRig from './components/player/CameraRig.jsx'
 import PlayerController from './components/player/PlayerController.jsx'
 import HUD from './components/ui/HUD.jsx'
+import ProjectCard from './game/ProjectCard.jsx'
 import useStore from './store/useStore.js'
 
 const Perf = import.meta.env.DEV ? lazy(() => import('r3f-perf').then(m => ({ default: m.Perf }))) : null
@@ -27,6 +29,7 @@ function SceneContents() {
       <Desk />
       <Whiteboard />
       <Bookshelf />
+      <Laptop />
       <CameraRig />
       {phase === 'WALKING' && <PlayerController />}
       {Perf && <Perf position="top-left" />}
@@ -34,6 +37,23 @@ function SceneContents() {
         <GlitchEffect />
       </EffectComposer>
     </>
+  )
+}
+
+// Vignette overlay — visible only during FOCUSED to frame the laptop screen
+function FocusVignette() {
+  const phase = useStore((s) => s.phase)
+  if (phase !== 'FOCUSED') return null
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 8,
+        background: 'radial-gradient(ellipse at center, transparent 38%, rgba(0,0,0,0.72) 100%)',
+      }}
+    />
   )
 }
 
@@ -46,6 +66,26 @@ export default function App() {
       </Suspense>
     )
   }
+
+  return <AppShell />
+}
+
+function AppShell() {
+  const phase        = useStore((s) => s.phase)
+  const setPhase     = useStore((s) => s.setPhase)
+  const activeProject = useStore((s) => s.activeProject)
+  const setActiveProject = useStore((s) => s.setActiveProject)
+
+  // DEV-ONLY: ?focus query param — jump straight to FOCUSED for screenshot verification
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    if (!new URLSearchParams(location.search).has('focus')) return
+    if (phase === 'BOOT') {
+      // Give TerminalBoot a tick to mount, then skip to FOCUSED
+      const id = setTimeout(() => setPhase('FOCUSED'), 100)
+      return () => clearTimeout(id)
+    }
+  }, [])  // run once on mount
 
   return (
     <>
@@ -60,6 +100,16 @@ export default function App() {
       </Canvas>
       <TerminalBoot />
       <HUD />
+      <FocusVignette />
+      {/* ProjectCard sits outside Canvas, reads activeProject from store */}
+      {activeProject && (
+        <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 20 }}>
+          <ProjectCard
+            project={activeProject}
+            onClose={() => setActiveProject(null)}
+          />
+        </div>
+      )}
     </>
   )
 }

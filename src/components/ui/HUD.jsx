@@ -32,8 +32,24 @@ const crosshair = {
   boxShadow: '0 0 4px rgba(255,255,255,0.4)',
 }
 
+const promptStyle = {
+  position: 'absolute',
+  bottom: '60px',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  background: 'rgba(0,0,0,0.55)',
+  border: '1px solid rgba(0,207,255,0.4)',
+  borderRadius: '6px',
+  padding: '4px 12px',
+  color: 'rgba(0,207,255,0.9)',
+  letterSpacing: '0.06em',
+  whiteSpace: 'nowrap',
+  fontSize: '11px',
+}
+
 export default function HUD() {
-  const phase = useStore((s) => s.phase)
+  const phase        = useStore((s) => s.phase)
+  const laptopPrompt = useStore((s) => s.laptopPrompt)
 
   if (phase === 'CINEMATIC') {
     return (
@@ -47,7 +63,18 @@ export default function HUD() {
     return (
       <div style={baseStyle}>
         <div style={crosshair} />
+        {laptopPrompt && (
+          <div style={promptStyle}>press E to use laptop</div>
+        )}
         <div style={bottomHint}>WASD move · shift sprint · esc to exit</div>
+      </div>
+    )
+  }
+
+  if (phase === 'FOCUSED') {
+    return (
+      <div style={baseStyle}>
+        <div style={bottomHint}>drive: arrows / WASD · esc to step back</div>
       </div>
     )
   }

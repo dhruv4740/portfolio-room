@@ -4,13 +4,19 @@ import { OrbitControls } from '@react-three/drei'
 import gsap from 'gsap'
 import useStore from '../../store/useStore'
 import { setLockTarget, requestLock } from '../../lib/pointerLock'
+import { LAPTOP_FOCUSED_CAM, LAPTOP_FOCUSED_TARGET } from '../scene/Laptop.jsx'
 
 const WALK_POS  = [0, 1.7, 2]
 const LOOK_AT_Y = 1.6  // slightly below eye level — natural forward gaze
 
+// Cinematic overview position (where camera is before player clicks in)
+const CINEMATIC_POS    = [0, 1.7, 3]
+const CINEMATIC_TARGET = [0, 1.0, 0]
+
 export default function CameraRig() {
   const phase    = useStore((s) => s.phase)
   const setPhase = useStore((s) => s.setPhase)
+  const setActiveProject = useStore((s) => s.setActiveProject)
   const { camera, gl } = useThree()
   const tweenRef = useRef(null)
 
@@ -39,7 +45,6 @@ export default function CameraRig() {
   useEffect(() => {
     if (phase !== 'TRANSITION') return
 
-    // Kill any running tween
     tweenRef.current?.kill()
 
     const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }
@@ -52,7 +57,6 @@ export default function CameraRig() {
       ease: 'power2.inOut',
       onUpdate() {
         camera.position.set(pos.x, pos.y, pos.z)
-        // Keep camera pointing forward-ish during tween
         camera.lookAt(pos.x, LOOK_AT_Y, pos.z - 3)
       },
       onComplete() {
@@ -62,6 +66,65 @@ export default function CameraRig() {
 
     return () => tweenRef.current?.kill()
   }, [phase, camera, setPhase])
+
+  // GSAP tween to FOCUSED: dolly camera to face the laptop screen
+  useEffect(() => {
+    if (phase !== 'FOCUSED') return
+
+    tweenRef.current?.kill()
+
+    const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }
+    const [tx, ty, tz] = LAPTOP_FOCUSED_CAM
+    const [lx, ly, lz] = LAPTOP_FOCUSED_TARGET
+
+    tweenRef.current = gsap.to(pos, {
+      x: tx,
+      y: ty,
+      z: tz,
+      duration: 1.0,
+      ease: 'power2.inOut',
+      onUpdate() {
+        camera.position.set(pos.x, pos.y, pos.z)
+        camera.lookAt(lx, ly, lz)
+      },
+    })
+
+    return () => tweenRef.current?.kill()
+  }, [phase, camera])
+
+  // Escape while FOCUSED: tween back to cinematic overview, clear project card
+  useEffect(() => {
+    if (phase !== 'FOCUSED') return
+
+    function onKeyDown(e) {
+      if (e.code !== 'Escape') return
+
+      tweenRef.current?.kill()
+
+      const pos = { x: camera.position.x, y: camera.position.y, z: camera.position.z }
+      const [cx, cy, cz] = CINEMATIC_POS
+      const [ltx, lty, ltz] = CINEMATIC_TARGET
+
+      tweenRef.current = gsap.to(pos, {
+        x: cx,
+        y: cy,
+        z: cz,
+        duration: 1.0,
+        ease: 'power2.inOut',
+        onUpdate() {
+          camera.position.set(pos.x, pos.y, pos.z)
+          camera.lookAt(ltx, lty, ltz)
+        },
+        onComplete() {
+          setActiveProject(null)
+          setPhase('CINEMATIC')
+        },
+      })
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [phase, camera, setPhase, setActiveProject])
 
   // Only render OrbitControls in CINEMATIC
   if (phase !== 'CINEMATIC') return null
