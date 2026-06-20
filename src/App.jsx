@@ -2,8 +2,9 @@ import { Suspense, lazy, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
-import { EffectComposer } from '@react-three/postprocessing'
-import { Environment, ContactShadows } from '@react-three/drei'
+import { EffectComposer, Bloom, SSAO, Vignette, SMAA, ToneMapping } from '@react-three/postprocessing'
+import { ToneMappingMode } from 'postprocessing'
+import { Environment, Lightformer, ContactShadows } from '@react-three/drei'
 import Room from './components/scene/Room.jsx'
 import Desk from './components/scene/Desk.jsx'
 import Whiteboard from './components/scene/Whiteboard.jsx'
@@ -68,18 +69,48 @@ function SceneContents() {
 
   return (
     <>
-      {/* ── Image-based lighting (IBL) ────────────────────────────────────
-          'apartment' preset gives a warm interior fill; background=false keeps
-          our custom sky/window untouched. Wrapped in Suspense so a CDN hiccup
-          can't crash the scene. environmentIntensity kept low so it's a subtle
-          fill + reflection source, not a washout over AmbientLighting. */}
-      <Suspense fallback={null}>
-        <Environment
-          preset="apartment"
-          background={false}
-          environmentIntensity={0.28}
+      {/* ── Self-contained IBL via Lightformers (no CDN, no file fetch) ────
+          Three Lightformers bake into a 256px env-map at mount time.
+          • Cool blue-white rectangle simulates the window wall (−Z, elevated)
+          • Warm orange fill from above-right mimics the pendant lamp area
+          • Soft neutral top-fill for gentle ambient bounce on metals/ceramics
+          background=false so our custom sky plane remains the backdrop.
+          environmentIntensity is intentionally low — just enough for IBL
+          reflections on the laptop, desk metal, and hologram without washing
+          out the time-of-day lighting from AmbientLighting. */}
+      <Environment
+        background={false}
+        resolution={256}
+        environmentIntensity={0.22}
+      >
+        {/* Window wall: cool blue-white, large area, coming from -Z direction */}
+        <Lightformer
+          form="rect"
+          intensity={1.2}
+          color="#aac8ff"
+          position={[0, 1.0, -6]}
+          scale={[6, 3, 1]}
+          target={[0, 0, 0]}
         />
-      </Suspense>
+        {/* Pendant / warm ceiling fill: amber from above */}
+        <Lightformer
+          form="circle"
+          intensity={0.9}
+          color="#ffcf80"
+          position={[1.5, 3.5, 1.5]}
+          scale={[1.5, 1.5, 1]}
+          target={[2, -1, 2]}
+        />
+        {/* Soft neutral side/top for general ambient on surfaces */}
+        <Lightformer
+          form="rect"
+          intensity={0.45}
+          color="#e8e8f0"
+          position={[-3, 2.5, 0]}
+          scale={[2, 4, 1]}
+          target={[0, 0, 0]}
+        />
+      </Environment>
 
       <AmbientLighting />
       <TimeBasedSky />
@@ -116,8 +147,44 @@ function SceneContents() {
       {/* PlayerController uses pointer-lock — desktop only */}
       {!isMobile && phase === 'WALKING' && <PlayerController />}
       {Perf && <Perf position="top-left" />}
-      <EffectComposer>
+      {/* ── Cinematic post-processing stack ─────────────────────────────────
+          Order (within each EffectPass, effects run top→bottom):
+            1. ToneMapping  — ACES Filmic grade; must be first so downstream
+               effects operate on tonemapped colours. The EffectComposer sets
+               gl.toneMapping=NoToneMapping, so this is the ONLY tone map.
+            2. Bloom        — threshold-based; only pixels above luminance 0.82
+               bloom (hologram cyan, laptop/game screen, night stars, pendant).
+               Room at standard brightness stays unaffected.
+            3. SSAO         — subtle contact darkening in corners / under props.
+               enableNormalPass is set on the composer so the normal texture
+               is available. Samples kept low (16) for perf; intensity 0.6.
+            4. Vignette     — subtle edge darkening, darkness 0.5.
+            5. GlitchEffect — custom boot-reveal + idle shimmer; sits after the
+               grade effects so its colour shifts interact with toned output.
+            6. SMAA         — SMAA is a convolution effect → the composer wraps
+               it in its own EffectPass automatically, always last.
+          Sky (toneMapped=false) and particles (ShaderMaterial) bypass the
+          renderer toneMapping anyway and are unaffected by this stack. */}
+      <EffectComposer enableNormalPass multisampling={4}>
+        <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
+        <Bloom
+          luminanceThreshold={0.82}
+          luminanceSmoothing={0.08}
+          intensity={0.55}
+          radius={0.55}
+          mipmapBlur
+        />
+        <SSAO
+          samples={16}
+          rings={3}
+          radius={8}
+          intensity={0.6}
+          luminanceInfluence={0.7}
+          bias={0.04}
+        />
+        <Vignette darkness={0.5} offset={0.25} />
         <GlitchEffect />
+        <SMAA />
       </EffectComposer>
     </>
   )
