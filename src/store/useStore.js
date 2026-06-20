@@ -9,6 +9,8 @@ const useStore = create((set) => ({
   setActiveProject: (p) => set({ activeProject: p }),
   laptopPrompt: false,
   setLaptopPrompt: (v) => set({ laptopPrompt: v }),
+  localHour: 12,
+  setLocalHour: (v) => set({ localHour: v }),
 }))
 
 export default useStore

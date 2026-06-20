@@ -7,6 +7,8 @@ import Whiteboard from './components/scene/Whiteboard.jsx'
 import Bookshelf from './components/scene/Bookshelf.jsx'
 import Laptop from './components/scene/Laptop.jsx'
 import AmbientLighting from './components/environment/AmbientLighting.jsx'
+import TimeBasedSky from './components/environment/TimeBasedSky.jsx'
+import ParticleField from './components/environment/ParticleField.jsx'
 import GlitchEffect from './components/terminal/GlitchEffect.jsx'
 import TerminalBoot from './components/terminal/TerminalBoot.jsx'
 import CameraRig from './components/player/CameraRig.jsx'
@@ -14,6 +16,7 @@ import PlayerController from './components/player/PlayerController.jsx'
 import HUD from './components/ui/HUD.jsx'
 import ProjectCard from './game/ProjectCard.jsx'
 import useStore from './store/useStore.js'
+import useLocalTime from './hooks/useLocalTime.js'
 
 const Perf = import.meta.env.DEV ? lazy(() => import('r3f-perf').then(m => ({ default: m.Perf }))) : null
 const CarGameStandalone = import.meta.env.DEV
@@ -22,9 +25,13 @@ const CarGameStandalone = import.meta.env.DEV
 
 function SceneContents() {
   const phase = useStore((s) => s.phase)
+  // Keep store.localHour in sync with real time (or ?hour= override in DEV)
+  useLocalTime()
   return (
     <>
       <AmbientLighting />
+      <TimeBasedSky />
+      <ParticleField />
       <Room />
       <Desk />
       <Whiteboard />

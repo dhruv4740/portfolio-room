@@ -1,6 +1,6 @@
-// Bookshelf against the BACK wall (z ≈ -3.7, facing +z into the room).
-// No collision with the desk (which is at z≈+2.5 front-right).
-// 3 shelves, each populated with a row of upright book meshes.
+// Bookshelf against the RIGHT wall (x ≈ +4.7, facing -x into the room).
+// Rotated -90° around Y so books face into the room toward the camera.
+// Placed at z=-0.5 — well clear of the desk (x≈+2.8, z≈+2.5).
 
 const SHELF_COLOR  = '#7a5c3a'
 const FRAME_COLOR  = '#5c4020'
@@ -60,8 +60,8 @@ function BookRow({ books, shelfTopY, xStart }) {
 }
 
 export default function Bookshelf() {
-  const bsX    = 0        // centered along back wall
-  const bsZ    = -3.65    // just in front of back wall (wall at z=-4)
+  const bsX    = 4.7      // right wall at x=+5; front face of shelf ≈ x=4.4
+  const bsZ    = -0.5     // mid-room on z axis, well clear of desk at z=+2.5
   const bsY    = -2       // base sits on the floor
 
   const frameW  = 2.4
@@ -73,7 +73,8 @@ export default function Bookshelf() {
   const shelfYs = [0.5, 1.1, 1.7]   // y above bsY
 
   return (
-    <group position={[bsX, bsY, bsZ]}>
+    // rotation Y -90° → local +z (front of shelf) becomes world -x (facing into room)
+    <group position={[bsX, bsY, bsZ]} rotation={[0, -Math.PI / 2, 0]}>
       {/* Back panel */}
       <mesh position={[0, frameH / 2, -frameD / 2 + plankT / 2]} receiveShadow>
         <boxGeometry args={[frameW, frameH, plankT]} />
