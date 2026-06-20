@@ -25,6 +25,7 @@ import * as THREE from 'three'
 import { CarGame, DESIGN_W, DESIGN_H } from '../../game/carGame.js'
 import { PROJECTS } from '../../data/projects.js'
 import useStore from '../../store/useStore.js'
+import { audioPlay } from '../../hooks/useAudio.js'
 
 // ---------------------------------------------------------------------------
 // Exported geometry constants (used by CameraRig)
@@ -86,7 +87,10 @@ export default function Laptop() {
     offscreen.height = DESIGN_H
 
     const eng = new CarGame({
-      onCheckpoint: (project) => useStore.getState().setActiveProject(project),
+      onCheckpoint: (project) => {
+        if (useStore.getState().soundEnabled) audioPlay('checkpoint')
+        useStore.getState().setActiveProject(project)
+      },
       projects: PROJECTS,
     })
     eng.mount(offscreen)

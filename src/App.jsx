@@ -19,9 +19,11 @@ import CameraRig from './components/player/CameraRig.jsx'
 import PlayerController from './components/player/PlayerController.jsx'
 import HUD from './components/ui/HUD.jsx'
 import CustomCursor from './components/ui/CustomCursor.jsx'
+import SoundToggle from './components/ui/SoundToggle.jsx'
 import ProjectCard from './game/ProjectCard.jsx'
 import useStore from './store/useStore.js'
 import useLocalTime from './hooks/useLocalTime.js'
+import useAudio from './hooks/useAudio.js'
 
 const Perf = import.meta.env.DEV ? lazy(() => import('r3f-perf').then(m => ({ default: m.Perf }))) : null
 const CarGameStandalone = import.meta.env.DEV
@@ -114,6 +116,9 @@ function AppShell() {
   const activeProject = useStore((s) => s.activeProject)
   const setActiveProject = useStore((s) => s.setActiveProject)
 
+  // Phase 13: audio system lifecycle (mounts Howl instances on first enable)
+  useAudio()
+
   // DEV-ONLY: ?focus query param — jump straight to FOCUSED for screenshot verification
   useEffect(() => {
     if (!import.meta.env.DEV) return
@@ -148,6 +153,7 @@ function AppShell() {
       </Canvas>
       <TerminalBoot />
       <HUD />
+      <SoundToggle />
       <CustomCursor />
       <FocusVignette />
       {/* ProjectCard sits outside Canvas, reads activeProject from store */}

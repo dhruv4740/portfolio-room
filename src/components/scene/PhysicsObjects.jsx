@@ -13,6 +13,7 @@
 import { useRef } from 'react'
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier'
 import useStore from '../../store/useStore.js'
+import { audioPlay } from '../../hooks/useAudio.js'
 
 // Desk geometry constants (must match Desk.jsx)
 const DESK_X     = 2.8
@@ -61,6 +62,7 @@ export default function PhysicsObjects() {
     if (!mugRef.current) return
     // Upward + outward impulse (away from monitor, slightly up)
     mugRef.current.applyImpulse({ x: -0.08, y: 0.12, z: 0.06 }, true)
+    if (useStore.getState().soundEnabled) audioPlay('mug_fall')
   }
 
   function knockPapers(e) {
@@ -68,6 +70,7 @@ export default function PhysicsObjects() {
     if (!papRef.current) return
     // Impulse that sends papers sliding off the side + a small upward kick
     papRef.current.applyImpulse({ x: 0.06, y: 0.08, z: 0.05 }, true)
+    if (useStore.getState().soundEnabled) audioPlay('paper_scatter')
   }
 
   return (

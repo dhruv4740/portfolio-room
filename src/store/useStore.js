@@ -14,6 +14,9 @@ const useStore = create((set) => ({
   cursorState: 'default',
   hoveredObject: null,
   setCursor: (cursorState, hoveredObject = null) => set({ cursorState, hoveredObject }),
+  soundEnabled: false,
+  setSoundEnabled: (v) => set({ soundEnabled: v }),
+  toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
 }))
 
 export default useStore

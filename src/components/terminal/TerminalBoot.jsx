@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import useStore from '../../store/useStore'
+import { audioPlay } from '../../hooks/useAudio.js'
 
 const LINES = [
   'initializing dhruv.exe',
@@ -53,6 +54,8 @@ export default function TerminalBoot() {
           setGlitchIntensity(proxy.value)
         },
         onComplete() {
+          // Phase 13: glitch reveal sound
+          if (useStore.getState().soundEnabled) audioPlay('glitch_zap')
           // 2. Fade overlay out
           if (overlayRef.current) {
             gsap.to(overlayRef.current, {
