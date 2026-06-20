@@ -126,8 +126,10 @@ export default function CameraRig() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [phase, camera, setPhase, setActiveProject])
 
-  // Only render OrbitControls in CINEMATIC
-  if (phase !== 'CINEMATIC') return null
+  // Only render OrbitControls in CINEMATIC, and never in ?survey dev mode
+  const isSurvey = import.meta.env.DEV &&
+    new URLSearchParams(location.search).has('survey')
+  if (phase !== 'CINEMATIC' || isSurvey) return null
 
   return (
     <OrbitControls
