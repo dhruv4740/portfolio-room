@@ -8,6 +8,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { audioPlay } from '../../hooks/useAudio.js'
 import { incrementDuckCount } from '../ui/DuckBadge.jsx'
+import { deskWoodTexture } from '../../lib/textures.js'
 
 // ---------------------------------------------------------------------------
 // Terminal lines for the scrolling monitor screen
@@ -202,20 +203,27 @@ export default function Desk() {
   // Monitor screen face: bezel front face at z = -0.35 + 0.02 = -0.33
   const screenZ = -0.33 - 0.001   // just in front of bezel face
 
+  // Desk wood texture — warm, honey-toned
+  const deskMap = useMemo(() => {
+    const t = deskWoodTexture()
+    t.repeat.set(2.2, 1.0)  // scale to match tabletop dimensions
+    return t
+  }, [])
+
   return (
     <group position={[deskX, 0, deskZ]}>
 
-      {/* Tabletop */}
+      {/* Tabletop — procedural wood */}
       <mesh position={[0, deskY, 0]} castShadow receiveShadow>
         <boxGeometry args={[2.2, topThick, 1.0]} />
-        <meshStandardMaterial color="#c8a96e" roughness={0.6} metalness={0.0} />
+        <meshStandardMaterial map={deskMap} roughness={0.55} metalness={0.02} envMapIntensity={0.6} />
       </mesh>
 
-      {/* Four legs */}
+      {/* Four legs — matte dark wood */}
       {[[-0.95, -0.4], [0.95, -0.4], [-0.95, 0.4], [0.95, 0.4]].map(([lx, lz], i) => (
         <mesh key={i} position={[lx, legY, lz]} castShadow>
           <boxGeometry args={[0.07, legH, 0.07]} />
-          <meshStandardMaterial color="#a07840" roughness={0.7} metalness={0.0} />
+          <meshStandardMaterial color="#7a5830" roughness={0.75} metalness={0.0} />
         </mesh>
       ))}
 

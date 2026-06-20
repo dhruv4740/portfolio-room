@@ -3,6 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { EffectComposer } from '@react-three/postprocessing'
+import { Environment, ContactShadows } from '@react-three/drei'
 import Room from './components/scene/Room.jsx'
 import Desk from './components/scene/Desk.jsx'
 import Whiteboard from './components/scene/Whiteboard.jsx'
@@ -67,6 +68,19 @@ function SceneContents() {
 
   return (
     <>
+      {/* ── Image-based lighting (IBL) ────────────────────────────────────
+          'apartment' preset gives a warm interior fill; background=false keeps
+          our custom sky/window untouched. Wrapped in Suspense so a CDN hiccup
+          can't crash the scene. environmentIntensity kept low so it's a subtle
+          fill + reflection source, not a washout over AmbientLighting. */}
+      <Suspense fallback={null}>
+        <Environment
+          preset="apartment"
+          background={false}
+          environmentIntensity={0.28}
+        />
+      </Suspense>
+
       <AmbientLighting />
       <TimeBasedSky />
       <ParticleField />
@@ -76,6 +90,21 @@ function SceneContents() {
       <Bookshelf />
       <Laptop />
       <HologramChart />
+
+      {/* ── Contact shadows under desk area ──────────────────────────────
+          Grounding blob shadow so props don't float above the desk surface.
+          Positioned at floor level (y=-2). Narrow opacity so it's a hint,
+          not a hard dark patch. blur kept high for soft spread. */}
+      <ContactShadows
+        position={[2.8, -1.99, 2.5]}
+        width={2.6}
+        height={1.2}
+        far={1.2}
+        blur={2.8}
+        opacity={0.38}
+        color="#1a0e06"
+      />
+
       {/* PhysicsObjects: lazy-loaded (separate rapier WASM chunk), skipped on mobile */}
       {!isMobile && (
         <Suspense fallback={null}>

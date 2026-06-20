@@ -2,7 +2,9 @@
 // Rotated -90° around Y so books face into the room toward the camera.
 // Placed at z=-0.5 — well clear of the desk (x≈+2.8, z≈+2.5).
 
+import { useMemo } from 'react'
 import useStore from '../../store/useStore'
+import { shelfWoodTexture } from '../../lib/textures.js'
 
 const SHELF_COLOR  = '#7a5c3a'
 const FRAME_COLOR  = '#5c4020'
@@ -75,6 +77,9 @@ export default function Bookshelf() {
   // Shelf heights from bottom of frame
   const shelfYs = [0.5, 1.1, 1.7]   // y above bsY
 
+  // Procedural walnut-ish shelf wood
+  const shelfMap = useMemo(() => shelfWoodTexture(), [])
+
   return (
     // rotation Y -90° → local +z (front of shelf) becomes world -x (facing into room)
     <group
@@ -83,7 +88,7 @@ export default function Bookshelf() {
       onPointerOver={(e) => { e.stopPropagation(); setCursor('hover-object', 'skills') }}
       onPointerOut={() => setCursor('default', null)}
     >
-      {/* Back panel */}
+      {/* Back panel — darker frame, no map needed (mostly hidden) */}
       <mesh position={[0, frameH / 2, -frameD / 2 + plankT / 2]} receiveShadow>
         <boxGeometry args={[frameW, frameH, plankT]} />
         <meshStandardMaterial color={FRAME_COLOR} roughness={0.8} metalness={0.0} />
@@ -92,25 +97,25 @@ export default function Bookshelf() {
       {/* Left side */}
       <mesh position={[-frameW / 2 + plankT / 2, frameH / 2, 0]} castShadow>
         <boxGeometry args={[plankT, frameH, frameD]} />
-        <meshStandardMaterial color={FRAME_COLOR} roughness={0.8} metalness={0.0} />
+        <meshStandardMaterial map={shelfMap} roughness={0.72} metalness={0.0} />
       </mesh>
 
       {/* Right side */}
       <mesh position={[frameW / 2 - plankT / 2, frameH / 2, 0]} castShadow>
         <boxGeometry args={[plankT, frameH, frameD]} />
-        <meshStandardMaterial color={FRAME_COLOR} roughness={0.8} metalness={0.0} />
+        <meshStandardMaterial map={shelfMap} roughness={0.72} metalness={0.0} />
       </mesh>
 
       {/* Bottom plank */}
       <mesh position={[0, plankT / 2, 0]} castShadow receiveShadow>
         <boxGeometry args={[frameW, plankT, frameD]} />
-        <meshStandardMaterial color={SHELF_COLOR} roughness={0.7} metalness={0.0} />
+        <meshStandardMaterial map={shelfMap} roughness={0.72} metalness={0.0} />
       </mesh>
 
       {/* Top plank */}
       <mesh position={[0, frameH - plankT / 2, 0]} castShadow>
         <boxGeometry args={[frameW, plankT, frameD]} />
-        <meshStandardMaterial color={SHELF_COLOR} roughness={0.7} metalness={0.0} />
+        <meshStandardMaterial map={shelfMap} roughness={0.72} metalness={0.0} />
       </mesh>
 
       {/* Horizontal shelves + books */}
@@ -119,7 +124,7 @@ export default function Bookshelf() {
           {/* Shelf plank */}
           <mesh position={[0, sy, 0]} castShadow receiveShadow>
             <boxGeometry args={[frameW - plankT * 2, plankT, frameD]} />
-            <meshStandardMaterial color={SHELF_COLOR} roughness={0.7} metalness={0.0} />
+            <meshStandardMaterial map={shelfMap} roughness={0.72} metalness={0.0} />
           </mesh>
           {/* Books sitting on top of this shelf */}
           <BookRow

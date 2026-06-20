@@ -102,7 +102,7 @@ export default function PhysicsObjects() {
         mass={0.3}
       >
         <CuboidCollider args={[MUG_HX, MUG_HY, MUG_HZ]} />
-        {/* Visual mesh */}
+        {/* Visual mesh — glazed ceramic: low roughness, slight reflectivity */}
         <mesh
           castShadow
           onClick={knockMug}
@@ -110,7 +110,12 @@ export default function PhysicsObjects() {
           onPointerOut={() => setCursor('default', null)}
         >
           <cylinderGeometry args={[0.055, 0.05, 0.1, 16]} />
-          <meshStandardMaterial color="#e8cfa0" roughness={0.5} metalness={0.0} />
+          <meshStandardMaterial
+            color="#e8d4a8"
+            roughness={0.15}
+            metalness={0.0}
+            envMapIntensity={1.2}
+          />
         </mesh>
       </RigidBody>
 
