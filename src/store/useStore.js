@@ -1,8 +1,15 @@
 import { create } from 'zustand'
 
+// Detect touch/mobile once at module load time so it never changes mid-session.
+// Coarse pointer (touchscreen) + small viewport = mobile.
+const _isMobile =
+  window.matchMedia('(pointer: coarse)').matches &&
+  (window.innerWidth < 768 || 'ontouchstart' in window)
+
 const useStore = create((set) => ({
   phase: 'BOOT',
   setPhase: (phase) => set({ phase }),
+  isMobile: _isMobile,
   glitchIntensity: 0,
   setGlitchIntensity: (v) => set({ glitchIntensity: v }),
   activeProject: null,

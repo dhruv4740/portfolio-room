@@ -9,7 +9,6 @@ import Whiteboard from './components/scene/Whiteboard.jsx'
 import Bookshelf from './components/scene/Bookshelf.jsx'
 import Laptop from './components/scene/Laptop.jsx'
 import HologramChart from './components/scene/HologramChart.jsx'
-import PhysicsObjects from './components/scene/PhysicsObjects.jsx'
 import AmbientLighting from './components/environment/AmbientLighting.jsx'
 import TimeBasedSky from './components/environment/TimeBasedSky.jsx'
 import ParticleField from './components/environment/ParticleField.jsx'
@@ -22,10 +21,16 @@ import CustomCursor from './components/ui/CustomCursor.jsx'
 import SoundToggle from './components/ui/SoundToggle.jsx'
 import KonamiOverlay from './components/ui/KonamiOverlay.jsx'
 import DuckBadge from './components/ui/DuckBadge.jsx'
+import LoadingScreen from './components/ui/LoadingScreen.jsx'
+import MobileBanner from './components/ui/MobileBanner.jsx'
 import ProjectCard from './game/ProjectCard.jsx'
 import useStore from './store/useStore.js'
 import useLocalTime from './hooks/useLocalTime.js'
 import useAudio from './hooks/useAudio.js'
+
+// Lazy-load Rapier physics — keeps the WASM in a separate async chunk
+// so it doesn't block the initial bundle parse. Skipped entirely on mobile.
+const PhysicsObjects = lazy(() => import('./components/scene/PhysicsObjects.jsx'))
 
 const Perf = import.meta.env.DEV ? lazy(() => import('r3f-perf').then(m => ({ default: m.Perf }))) : null
 const CarGameStandalone = import.meta.env.DEV
@@ -52,7 +57,8 @@ function SurveyCamera() {
 }
 
 function SceneContents() {
-  const phase = useStore((s) => s.phase)
+  const phase    = useStore((s) => s.phase)
+  const isMobile = useStore((s) => s.isMobile)
   // Keep store.localHour in sync with real time (or ?hour= override in DEV)
   useLocalTime()
 
@@ -70,10 +76,16 @@ function SceneContents() {
       <Bookshelf />
       <Laptop />
       <HologramChart />
-      <PhysicsObjects />
+      {/* PhysicsObjects: lazy-loaded (separate rapier WASM chunk), skipped on mobile */}
+      {!isMobile && (
+        <Suspense fallback={null}>
+          <PhysicsObjects />
+        </Suspense>
+      )}
       {isSurvey && <SurveyCamera />}
       <CameraRig />
-      {phase === 'WALKING' && <PlayerController />}
+      {/* PlayerController uses pointer-lock — desktop only */}
+      {!isMobile && phase === 'WALKING' && <PlayerController />}
       {Perf && <Perf position="top-left" />}
       <EffectComposer>
         <GlitchEffect />
@@ -117,6 +129,7 @@ function AppShell() {
   const setPhase     = useStore((s) => s.setPhase)
   const activeProject = useStore((s) => s.activeProject)
   const setActiveProject = useStore((s) => s.setActiveProject)
+  const isMobile     = useStore((s) => s.isMobile)
 
   // Phase 13: audio system lifecycle (mounts Howl instances on first enable)
   useAudio()
@@ -144,6 +157,8 @@ function AppShell() {
 
   return (
     <>
+      {/* Loading screen: sits above Canvas, fades when sceneLoaded → true */}
+      <LoadingScreen />
       <Canvas
         shadows
         camera={{ position: [0, 1.7, 3], fov: 60, near: 0.1, far: 100 }}
@@ -156,10 +171,13 @@ function AppShell() {
       <TerminalBoot />
       <HUD />
       <SoundToggle />
-      <CustomCursor />
+      {/* Custom cursor is pointer-based — don't show on touch devices */}
+      {!isMobile && <CustomCursor />}
       <FocusVignette />
       <KonamiOverlay />
       <DuckBadge />
+      {/* Mobile notice */}
+      {isMobile && <MobileBanner />}
       {/* ProjectCard sits outside Canvas, reads activeProject from store */}
       {activeProject && (
         <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 20 }}>

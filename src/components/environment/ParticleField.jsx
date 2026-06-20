@@ -3,6 +3,11 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import useStore from '../../store/useStore.js'
 
+// Mobile-aware particle budget
+const MOBILE_COUNT  = 500
+const DESKTOP_COUNT_LOW  = 1500  // low core
+const DESKTOP_COUNT_HIGH = 3000  // normal
+
 // Read hour from URL so initial values are correct on the first frame.
 function getInitialHour() {
   if (typeof window !== 'undefined') {
@@ -67,10 +72,11 @@ const fragmentShader = /* glsl */`
 export default function ParticleField() {
   const meshRef = useRef()
 
-  // Cap particle count on low-core devices
+  // Cap particle count: mobile gets 500, low-core desktop 1500, normal 3000
   const count = useMemo(() => {
+    if (useStore.getState().isMobile) return MOBILE_COUNT
     const cores = navigator.hardwareConcurrency ?? 4
-    return cores < 4 ? 1500 : 3000
+    return cores < 4 ? DESKTOP_COUNT_LOW : DESKTOP_COUNT_HIGH
   }, [])
 
   const { positions, phases, sizes } = useMemo(() => {

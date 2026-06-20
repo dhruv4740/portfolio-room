@@ -15,6 +15,9 @@ dist-ssr
 # Playwright verification screenshots (throwaway)
 scripts/shots/
 
+# Stray Windows NUL-device artifact (recreated by OneDrive; cannot be indexed)
+/nul
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

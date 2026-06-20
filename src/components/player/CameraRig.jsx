@@ -6,6 +6,9 @@ import useStore from '../../store/useStore'
 import { setLockTarget, requestLock } from '../../lib/pointerLock'
 import { LAPTOP_FOCUSED_CAM, LAPTOP_FOCUSED_TARGET } from '../scene/Laptop.jsx'
 
+// Mobile: skip pointer-lock, never enter WALKING, keep OrbitControls always on
+// after BOOT so the user can orbit and tap. TRANSITION and WALKING are desktop-only.
+
 const WALK_POS  = [0, 1.7, 2]
 const LOOK_AT_Y = 1.6  // slightly below eye level — natural forward gaze
 
@@ -17,19 +20,23 @@ export default function CameraRig() {
   const phase    = useStore((s) => s.phase)
   const setPhase = useStore((s) => s.setPhase)
   const setActiveProject = useStore((s) => s.setActiveProject)
+  const isMobile = useStore((s) => s.isMobile)
   const { camera, gl } = useThree()
   const tweenRef = useRef(null)
 
   // Register the canvas as the pointer-lock target so PlayerController and
   // CameraRig both reference the same element via the shared pointerLock module.
   useEffect(() => {
+    if (isMobile) return
     setLockTarget(gl.domElement)
-  }, [gl.domElement])
+  }, [gl.domElement, isMobile])
 
   // One-shot click handler while in CINEMATIC: lock + transition.
   // The lock request must be called synchronously inside the user gesture,
   // so we call requestLock() here before dispatching the state change.
+  // Skipped on mobile — OrbitControls handles interaction there.
   useEffect(() => {
+    if (isMobile) return
     if (phase !== 'CINEMATIC') return
 
     function onClick() {
@@ -39,7 +46,7 @@ export default function CameraRig() {
 
     gl.domElement.addEventListener('click', onClick, { once: true })
     return () => gl.domElement.removeEventListener('click', onClick)
-  }, [phase, gl.domElement, setPhase])
+  }, [phase, gl.domElement, setPhase, isMobile])
 
   // GSAP tween camera to walking start when entering TRANSITION
   useEffect(() => {
@@ -126,10 +133,29 @@ export default function CameraRig() {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [phase, camera, setPhase, setActiveProject])
 
-  // Only render OrbitControls in CINEMATIC, and never in ?survey dev mode
+  // Mobile: always show OrbitControls once out of BOOT.
+  // Desktop: only show in CINEMATIC (tap-to-walk replaces it in WALKING).
+  // ?survey mode suppresses controls for clean screenshots.
   const isSurvey = import.meta.env.DEV &&
     new URLSearchParams(location.search).has('survey')
-  if (phase !== 'CINEMATIC' || isSurvey) return null
+  if (isSurvey) return null
+
+  if (isMobile) {
+    // Don't render controls during BOOT (terminal overlay is above, scene isn't ready)
+    if (phase === 'BOOT') return null
+    return (
+      <OrbitControls
+        target={[0, 1.0, 0]}
+        minDistance={0.5}
+        maxDistance={9}
+        enablePan={false}
+        rotateSpeed={0.6}
+        zoomSpeed={0.8}
+      />
+    )
+  }
+
+  if (phase !== 'CINEMATIC') return null
 
   return (
     <OrbitControls
