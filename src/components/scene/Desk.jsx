@@ -52,11 +52,7 @@ export default function Desk() {
         <meshStandardMaterial color="#2a2a2a" roughness={0.6} metalness={0.2} />
       </mesh>
 
-      {/* Ceramic mug */}
-      <mesh position={[-0.75, deskY + 0.08, -0.2]} castShadow>
-        <cylinderGeometry args={[0.055, 0.05, 0.1, 16]} />
-        <meshStandardMaterial color="#e8cfa0" roughness={0.5} metalness={0.0} />
-      </mesh>
+      {/* Ceramic mug — removed; physics version lives in PhysicsObjects.jsx */}
 
       {/* Potted plant — pot */}
       <mesh position={[0.8, deskY + 0.07, -0.3]} castShadow>

@@ -9,6 +9,7 @@ import Whiteboard from './components/scene/Whiteboard.jsx'
 import Bookshelf from './components/scene/Bookshelf.jsx'
 import Laptop from './components/scene/Laptop.jsx'
 import HologramChart from './components/scene/HologramChart.jsx'
+import PhysicsObjects from './components/scene/PhysicsObjects.jsx'
 import AmbientLighting from './components/environment/AmbientLighting.jsx'
 import TimeBasedSky from './components/environment/TimeBasedSky.jsx'
 import ParticleField from './components/environment/ParticleField.jsx'
@@ -64,6 +65,7 @@ function SceneContents() {
       <Bookshelf />
       <Laptop />
       <HologramChart />
+      <PhysicsObjects />
       {isSurvey && <SurveyCamera />}
       <CameraRig />
       {phase === 'WALKING' && <PlayerController />}
