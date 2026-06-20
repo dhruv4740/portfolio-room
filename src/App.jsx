@@ -18,6 +18,7 @@ import TerminalBoot from './components/terminal/TerminalBoot.jsx'
 import CameraRig from './components/player/CameraRig.jsx'
 import PlayerController from './components/player/PlayerController.jsx'
 import HUD from './components/ui/HUD.jsx'
+import CustomCursor from './components/ui/CustomCursor.jsx'
 import ProjectCard from './game/ProjectCard.jsx'
 import useStore from './store/useStore.js'
 import useLocalTime from './hooks/useLocalTime.js'
@@ -147,6 +148,7 @@ function AppShell() {
       </Canvas>
       <TerminalBoot />
       <HUD />
+      <CustomCursor />
       <FocusVignette />
       {/* ProjectCard sits outside Canvas, reads activeProject from store */}
       {activeProject && (

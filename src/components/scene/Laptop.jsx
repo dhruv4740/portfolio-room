@@ -74,6 +74,7 @@ export default function Laptop() {
   const phase          = useStore((s) => s.phase)
   const setActiveProject = useStore((s) => s.setActiveProject)
   const setLaptopPrompt  = useStore((s) => s.setLaptopPrompt)
+  const setCursor        = useStore((s) => s.setCursor)
   const { camera }     = useThree()
 
   // ---------------------------------------------------------------------------
@@ -222,7 +223,11 @@ export default function Laptop() {
 
           {/* Screen — on the inner face (+z face of lid, faces room interior) */}
           {/* Inner face z = +LID_D/2, screen sits flush on it */}
-          <mesh position={[0, LID_HALF, LID_D / 2 + 0.0005]}>
+          <mesh
+            position={[0, LID_HALF, LID_D / 2 + 0.0005]}
+            onPointerOver={(e) => { e.stopPropagation(); setCursor('hover-object', 'laptop') }}
+            onPointerOut={() => setCursor('default', null)}
+          >
             <planeGeometry args={[SCR_W, SCR_H]} />
             <meshBasicMaterial map={texture} toneMapped={false} />
           </mesh>

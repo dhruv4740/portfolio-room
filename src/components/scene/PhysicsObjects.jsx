@@ -12,6 +12,7 @@
 
 import { useRef } from 'react'
 import { Physics, RigidBody, CuboidCollider } from '@react-three/rapier'
+import useStore from '../../store/useStore.js'
 
 // Desk geometry constants (must match Desk.jsx)
 const DESK_X     = 2.8
@@ -51,8 +52,9 @@ const PAP_H  = 0.03              // height (thin stack)
 const PAP_D  = 0.16              // depth
 
 export default function PhysicsObjects() {
-  const mugRef = useRef()
-  const papRef = useRef()
+  const mugRef    = useRef()
+  const papRef    = useRef()
+  const setCursor = useStore((s) => s.setCursor)
 
   function knockMug(e) {
     e.stopPropagation()
@@ -98,7 +100,12 @@ export default function PhysicsObjects() {
       >
         <CuboidCollider args={[MUG_HX, MUG_HY, MUG_HZ]} />
         {/* Visual mesh */}
-        <mesh castShadow onClick={knockMug}>
+        <mesh
+          castShadow
+          onClick={knockMug}
+          onPointerOver={(e) => { e.stopPropagation(); setCursor('grab', 'grab') }}
+          onPointerOut={() => setCursor('default', null)}
+        >
           <cylinderGeometry args={[0.055, 0.05, 0.1, 16]} />
           <meshStandardMaterial color="#e8cfa0" roughness={0.5} metalness={0.0} />
         </mesh>
@@ -115,7 +122,12 @@ export default function PhysicsObjects() {
       >
         <CuboidCollider args={[PAP_W / 2, PAP_H / 2, PAP_D / 2]} />
         {/* Visual mesh — slightly creamy white */}
-        <mesh castShadow onClick={knockPapers}>
+        <mesh
+          castShadow
+          onClick={knockPapers}
+          onPointerOver={(e) => { e.stopPropagation(); setCursor('grab', 'grab') }}
+          onPointerOut={() => setCursor('default', null)}
+        >
           <boxGeometry args={[PAP_W, PAP_H, PAP_D]} />
           <meshStandardMaterial color="#f5f0e8" roughness={0.9} metalness={0.0} />
         </mesh>

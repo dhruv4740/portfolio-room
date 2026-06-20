@@ -12,6 +12,7 @@ import { useFrame } from '@react-three/fiber'
 import { Text } from '@react-three/drei'
 import * as THREE from 'three'
 import { SKILLS } from '../../data/skills.js'
+import useStore from '../../store/useStore.js'
 
 // ---------------------------------------------------------------------------
 // Desk constants (mirror Desk.jsx so changes there can be updated here too)
@@ -106,8 +107,9 @@ const LABEL_Y   = -0.07  // label sits just below Y=0 (hover plane)
 const LABEL_SIZE = 0.032
 
 export default function HologramChart() {
-  const groupRef = useRef()
-  const mat      = useHoloMaterial()
+  const groupRef  = useRef()
+  const mat       = useHoloMaterial()
+  const setCursor = useStore((s) => s.setCursor)
 
   // Freeze rotation in ?survey dev mode so the bars face the camera at capture time
   const isSurvey = import.meta.env.DEV &&
@@ -128,7 +130,13 @@ export default function HologramChart() {
   return (
     // World position: desk centre (x,z) + hover height
     // Initial rotation.y=0 means bar row faces ±Z (toward room interior / camera).
-    <group ref={groupRef} position={[DESK_X, DESK_Y + HOVER, DESK_Z]} rotation={[0, 0, 0]}>
+    <group
+      ref={groupRef}
+      position={[DESK_X, DESK_Y + HOVER, DESK_Z]}
+      rotation={[0, 0, 0]}
+      onPointerOver={(e) => { e.stopPropagation(); setCursor('hover-object', 'skills') }}
+      onPointerOut={() => setCursor('default', null)}
+    >
 
       {SKILLS.map((skill, i) => {
         const barH = (skill.level / 100) * BAR_MAX_H

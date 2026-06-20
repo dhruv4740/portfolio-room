@@ -2,6 +2,8 @@
 // Rotated -90° around Y so books face into the room toward the camera.
 // Placed at z=-0.5 — well clear of the desk (x≈+2.8, z≈+2.5).
 
+import useStore from '../../store/useStore'
+
 const SHELF_COLOR  = '#7a5c3a'
 const FRAME_COLOR  = '#5c4020'
 
@@ -60,6 +62,7 @@ function BookRow({ books, shelfTopY, xStart }) {
 }
 
 export default function Bookshelf() {
+  const setCursor = useStore((s) => s.setCursor)
   const bsX    = 4.7      // right wall at x=+5; front face of shelf ≈ x=4.4
   const bsZ    = -0.5     // mid-room on z axis, well clear of desk at z=+2.5
   const bsY    = -2       // base sits on the floor
@@ -74,7 +77,12 @@ export default function Bookshelf() {
 
   return (
     // rotation Y -90° → local +z (front of shelf) becomes world -x (facing into room)
-    <group position={[bsX, bsY, bsZ]} rotation={[0, -Math.PI / 2, 0]}>
+    <group
+      position={[bsX, bsY, bsZ]}
+      rotation={[0, -Math.PI / 2, 0]}
+      onPointerOver={(e) => { e.stopPropagation(); setCursor('hover-object', 'skills') }}
+      onPointerOut={() => setCursor('default', null)}
+    >
       {/* Back panel */}
       <mesh position={[0, frameH / 2, -frameD / 2 + plankT / 2]} receiveShadow>
         <boxGeometry args={[frameW, frameH, plankT]} />

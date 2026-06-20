@@ -11,6 +11,9 @@ const useStore = create((set) => ({
   setLaptopPrompt: (v) => set({ laptopPrompt: v }),
   localHour: 12,
   setLocalHour: (v) => set({ localHour: v }),
+  cursorState: 'default',
+  hoveredObject: null,
+  setCursor: (cursorState, hoveredObject = null) => set({ cursorState, hoveredObject }),
 }))
 
 export default useStore

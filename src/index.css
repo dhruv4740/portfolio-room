@@ -16,4 +16,5 @@ body,
   height: 100%;
   overflow: hidden;
   background: #0a0a0a;
+  cursor: none;
 }

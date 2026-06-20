@@ -1,11 +1,13 @@
 import { Text } from '@react-three/drei'
 import { ABOUT } from '../../data/about.js'
+import useStore from '../../store/useStore.js'
 
 // Whiteboard on the LEFT wall (x = -5, facing +x into the room).
 // Board center at x=-4.9, z=0, y≈0 (vertically centered in room).
 // Text is positioned just in front of the board surface at x=-4.82.
 
 export default function Whiteboard() {
+  const setCursor = useStore((s) => s.setCursor)
   const wallX   = -4.9
   const boardW  = 3.0
   const boardH  = 1.6
@@ -15,7 +17,10 @@ export default function Whiteboard() {
   const textX    = wallX + 0.06   // text in front of surface to avoid z-fight
 
   return (
-    <group>
+    <group
+      onPointerOver={(e) => { e.stopPropagation(); setCursor('hover-object', 'about') }}
+      onPointerOut={() => setCursor('default', null)}
+    >
       {/* White surface */}
       <mesh
         position={[surfaceX, boardY, 0]}
