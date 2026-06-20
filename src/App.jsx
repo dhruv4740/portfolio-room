@@ -2,6 +2,9 @@ import { Suspense, lazy } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { EffectComposer } from '@react-three/postprocessing'
 import Room from './components/scene/Room.jsx'
+import Desk from './components/scene/Desk.jsx'
+import Whiteboard from './components/scene/Whiteboard.jsx'
+import Bookshelf from './components/scene/Bookshelf.jsx'
 import AmbientLighting from './components/environment/AmbientLighting.jsx'
 import GlitchEffect from './components/terminal/GlitchEffect.jsx'
 import TerminalBoot from './components/terminal/TerminalBoot.jsx'
@@ -18,6 +21,9 @@ function SceneContents() {
     <>
       <AmbientLighting />
       <Room />
+      <Desk />
+      <Whiteboard />
+      <Bookshelf />
       <CameraRig />
       {phase === 'WALKING' && <PlayerController />}
       {Perf && <Perf position="top-left" />}
