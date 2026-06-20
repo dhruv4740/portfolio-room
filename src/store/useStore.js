@@ -24,6 +24,8 @@ const useStore = create((set) => ({
   soundEnabled: false,
   setSoundEnabled: (v) => set({ soundEnabled: v }),
   toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
+  openPanel: null,
+  setOpenPanel: (panel) => set({ openPanel: panel }),
 }))
 
 export default useStore

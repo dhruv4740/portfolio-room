@@ -26,6 +26,10 @@ import DuckBadge from './components/ui/DuckBadge.jsx'
 import LoadingScreen from './components/ui/LoadingScreen.jsx'
 import MobileBanner from './components/ui/MobileBanner.jsx'
 import ProjectCard from './game/ProjectCard.jsx'
+import NavBar from './components/ui/NavBar.jsx'
+import ContactPanel from './components/overlays/ContactPanel.jsx'
+import AboutPanel from './components/overlays/AboutPanel.jsx'
+import HelpPanel from './components/overlays/HelpPanel.jsx'
 import useStore from './store/useStore.js'
 import useLocalTime from './hooks/useLocalTime.js'
 import useAudio from './hooks/useAudio.js'
@@ -226,6 +230,7 @@ function AppShell() {
   const activeProject = useStore((s) => s.activeProject)
   const setActiveProject = useStore((s) => s.setActiveProject)
   const isMobile     = useStore((s) => s.isMobile)
+  const setOpenPanel = useStore((s) => s.setOpenPanel)
 
   // Phase 13: audio system lifecycle (mounts Howl instances on first enable)
   useAudio()
@@ -251,6 +256,20 @@ function AppShell() {
     }
   }, [])  // run once on mount
 
+  // DEV-ONLY: ?panel=contact|about|help — open that panel immediately in CINEMATIC
+  useEffect(() => {
+    if (!import.meta.env.DEV) return
+    const p = new URLSearchParams(location.search).get('panel')
+    if (!p || !['contact', 'about', 'help'].includes(p)) return
+    if (phase === 'BOOT') {
+      const id = setTimeout(() => {
+        setPhase('CINEMATIC')
+        setOpenPanel(p)
+      }, 100)
+      return () => clearTimeout(id)
+    }
+  }, [])  // run once on mount
+
   return (
     <>
       {/* Loading screen: sits above Canvas, fades when sceneLoaded → true */}
@@ -272,6 +291,15 @@ function AppShell() {
       <FocusVignette />
       <KonamiOverlay />
       <DuckBadge />
+      {/* Nav + panels — desktop only (mobile gets the banner instead) */}
+      {!isMobile && (
+        <>
+          <NavBar />
+          <ContactPanel />
+          <AboutPanel />
+          <HelpPanel />
+        </>
+      )}
       {/* Mobile notice */}
       {isMobile && <MobileBanner />}
       {/* ProjectCard sits outside Canvas, reads activeProject from store */}
