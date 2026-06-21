@@ -107,7 +107,7 @@ html, body {
   background: #000;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  z-index: 200;
+  z-index: 520;
   cursor: pointer;
   opacity: 0; pointer-events: none;
 }
@@ -129,6 +129,7 @@ html, body {
 #desktop {
   position: fixed; inset: 0;
   display: flex; flex-direction: column;
+  z-index: 510;
   opacity: 0; pointer-events: none;
   background: radial-gradient(ellipse at 30% 60%, #0a1f14 0%, #040c09 60%, #020604 100%);
 }
