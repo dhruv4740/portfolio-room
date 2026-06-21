@@ -19,5 +19,8 @@ await load('../apps/about.js');
 await load('../apps/terminal.js');
 await load('../apps/projects.js');
 await load('../apps/cosmos.js');
+await load('../apps/wormhole.js');
+await load('../apps/gallery.js');
+await load('../apps/wallpaper.js');
 
 export default apps;

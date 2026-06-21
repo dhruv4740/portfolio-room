@@ -34,14 +34,21 @@ page.on('pageerror', (e) => msgs.push(`pageerror: ${e.message}`));
 page.on('requestfailed', (r) => { if (!r.url().endsWith('favicon.ico')) msgs.push(`reqfail: ${r.url().split('/').slice(-2).join('/')}`); });
 
 try { await race(page.goto('http://localhost:4182/index.html', { waitUntil: 'domcontentloaded', timeout: 12000 }), 13000); } catch (e) { msgs.push('nav: ' + e.message); }
-await sleep(1500);
+
+// Wait for intro to be ready (listener attached after registry finishes loading)
+try { await page.waitForSelector('#intro-skip:visible', { timeout: 8000 }); } catch {}
+await sleep(400);
 await page.screenshot({ path: join(SHOTS, 'os-01-intro.png') });
 
 // skip intro → boot → desktop
-try { await page.click('#intro-skip', { timeout: 2000 }); } catch {}
-await sleep(700);
+try { await page.click('#intro-skip', { timeout: 3000 }); } catch {}
+// wait for boot screen to become active (GSAP fade takes ~650ms)
+try { await page.waitForSelector('#boot.active', { timeout: 4000 }); } catch { await sleep(900); }
+await sleep(200);
 try { await page.click('#boot', { timeout: 2000 }); } catch {}
-await sleep(1400);
+// wait for at least one desk-icon to appear
+try { await page.waitForSelector('.desk-icon', { timeout: 5000 }); } catch { await sleep(1800); }
+await sleep(400);
 await page.screenshot({ path: join(SHOTS, 'os-02-desktop.png') });
 
 const iconCount = await page.evaluate(() => document.querySelectorAll('.desk-icon').length);
