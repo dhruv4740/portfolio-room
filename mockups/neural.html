@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NEURAL — Dhruv Kothari</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #060810; }
+  body { font-family: 'Courier New', monospace; }
+  canvas { display: block; position: fixed; inset: 0; }
+  #back { position: fixed; top: 14px; left: 16px; z-index: 10;
+    color: #4a5568; text-decoration: none; font-size: 11px; letter-spacing: 0.05em; }
+  #back:hover { color: #718096; }
+  #label { position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 10; text-align: center; }
+  #label h1 { font-size: 11px; letter-spacing: 0.25em; color: #a0aec0; }
+  #label p { font-size: 10px; color: #4a5568; letter-spacing: 0.1em; margin-top: 2px; }
+  #panel { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%);
+    z-index: 10; background: rgba(6,8,16,0.88); border: 1px solid #1a2a4a;
+    border-radius: 6px; padding: 12px 20px; min-width: 220px; max-width: 340px;
+    text-align: center; pointer-events: none; opacity: 0;
+    transition: opacity 0.25s; backdrop-filter: blur(8px); }
+  #panel.visible { opacity: 1; }
+  #panel-name { font-size: 13px; letter-spacing: 0.12em; color: #81e6d9; margin-bottom: 4px; }
+  #panel-desc { font-size: 11px; color: #718096; line-height: 1.5; }
+</style>
+</head>
+<body>
+<a id="back" href="index.html">← concepts</a>
+<div id="label">
+  <h1>NEURAL</h1>
+  <p>hover a node to fire it</p>
+</div>
+<canvas id="c"></canvas>
+<div id="panel">
+  <div id="panel-name"></div>
+  <div id="panel-desc"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script>
+(function () {
+  'use strict';
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const panel = document.getElementById('panel');
+  const panelName = document.getElementById('panel-name');
+  const panelDesc = document.getElementById('panel-desc');
+
+  // ─── DATA ──────────────────────────────────────────────────────────────────
+  const NODE_DEFS = [
+    { id: 'dhruv',   label: 'DHRUV KOTHARI',        type: 'identity', desc: 'Developer & builder from India' },
+    { id: 'india',   label: 'India',                 type: 'fact',     desc: 'Based in Mumbai, building for the web' },
+    { id: 'dev',     label: 'Developer',             type: 'fact',     desc: 'Full-stack, graphics, and creative tech' },
+    { id: 'builder', label: 'Builder',               type: 'fact',     desc: 'Prototypes ideas fast, ships often' },
+    { id: 'react',   label: 'React',                 type: 'skill',    desc: 'Component-driven UI architecture' },
+    { id: 'threejs', label: 'Three.js',              type: 'skill',    desc: '3D scenes and WebGL rendering' },
+    { id: 'webgl',   label: 'WebGL',                 type: 'skill',    desc: 'Low-level GPU programming for the browser' },
+    { id: 'gsap',    label: 'GSAP',                  type: 'skill',    desc: 'Animation timelines and motion design' },
+    { id: 'ts',      label: 'TypeScript',            type: 'skill',    desc: 'Type-safe JavaScript at scale' },
+    { id: 'node',    label: 'Node.js',               type: 'skill',    desc: 'Server-side JS, APIs, and tooling' },
+    { id: 'shaders', label: 'Shaders',               type: 'skill',    desc: 'GLSL vertex and fragment programs' },
+    { id: 'design',  label: 'Design',                type: 'skill',    desc: 'Visual systems, typography, motion' },
+    { id: 'reddit',  label: 'Reddit Growth Copilot', type: 'project',  desc: 'AI finds relevant threads and drafts on-brand replies for growth teams' },
+    { id: 'proj2',   label: 'GeoSVG Maps',           type: 'project',  desc: 'Interactive SVG map generator with live coordinates' },
+    { id: 'proj3',   label: '3D Portfolio',          type: 'project',  desc: 'R3F-driven immersive portfolio built with React Three Fiber' },
+  ];
+
+  const EDGES = [
+    ['dhruv','india',0.6], ['dhruv','dev',0.9], ['dhruv','builder',0.7],
+    ['dhruv','react',0.8], ['dhruv','threejs',0.8], ['dhruv','design',0.7],
+    ['dhruv','reddit',0.9], ['dhruv','proj2',0.8], ['dhruv','proj3',0.8],
+    ['dev','react',0.7], ['dev','node',0.7], ['dev','ts',0.6],
+    ['builder','india',0.4], ['builder','design',0.5],
+    ['react','ts',0.8], ['react','reddit',0.6], ['react','proj3',0.7],
+    ['threejs','webgl',0.9], ['threejs','shaders',0.85], ['threejs','proj3',0.9],
+    ['webgl','shaders',0.9], ['webgl','gsap',0.3],
+    ['gsap','design',0.7], ['gsap','proj3',0.5],
+    ['ts','node',0.7], ['ts','reddit',0.5],
+    ['node','reddit',0.7],
+    ['design','proj2',0.5], ['design','proj3',0.4],
+    ['reddit','proj2',0.3],
+    ['shaders','design',0.4],
+  ];
+
+  // ─── COLORS ────────────────────────────────────────────────────────────────
+  const COLORS = {
+    identity: { base: '#e9d8fd', glow: '#9f7aea' },
+    fact:     { base: '#76e4f7', glow: '#0bc5ea' },
+    skill:    { base: '#81e6d9', glow: '#38b2ac' },
+    project:  { base: '#fbd38d', glow: '#ed8936' },
+  };
+
+  // ─── STATE ─────────────────────────────────────────────────────────────────
+  let W, H, cx, cy, dpr;
+  let nodes = [];
+  let edges = [];
+  let pulses = [];
+  let hoveredId = null;
+  let pan = { x: 0, y: 0 };
+  let isDragging = false;
+  let dragStart = { x: 0, y: 0 };
+  let panStart = { x: 0, y: 0 };
+  let lastIdle = 0;
+  let fired = new Set();
+
+  // ─── INIT ──────────────────────────────────────────────────────────────────
+  function resize() {
+    dpr = window.devicePixelRatio || 1;
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(dpr, dpr);
+    cx = W / 2;
+    cy = H / 2;
+  }
+
+  function buildGraph() {
+    const n = NODE_DEFS.length;
+    nodes = NODE_DEFS.map((def, i) => {
+      const angle = (i / n) * Math.PI * 2;
+      const r = def.id === 'dhruv' ? 0 : 180 + Math.random() * 120;
+      return {
+        ...def,
+        x: cx + Math.cos(angle) * r,
+        y: cy + Math.sin(angle) * r,
+        vx: 0, vy: 0,
+        radius: def.id === 'dhruv' ? 42 : def.type === 'project' ? 28 : 22,
+        glow: 0,        // 0–1 base glow
+        flash: 0,       // 0–1 firing flash
+        drift: { a: Math.random() * Math.PI * 2, s: 0.15 + Math.random() * 0.1 },
+      };
+    });
+
+    edges = EDGES.map(([a, b, w]) => ({
+      a: nodes.find(n => n.id === a),
+      b: nodes.find(n => n.id === b),
+      w,
+    })).filter(e => e.a && e.b);
+  }
+
+  // ─── PHYSICS ───────────────────────────────────────────────────────────────
+  const REPULSION  = 4800;
+  const SPRING_K   = 0.035;
+  const REST_LEN   = 160;
+  const DAMPING    = 0.82;
+  const CENTER_K   = 0.004;
+
+  function stepPhysics(dt) {
+    const t = performance.now() / 1000;
+    // Repulsion
+    for (let i = 0; i < nodes.length; i++) {
+      for (let j = i + 1; j < nodes.length; j++) {
+        const a = nodes[i], b = nodes[j];
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const dist2 = dx * dx + dy * dy + 1;
+        const dist = Math.sqrt(dist2);
+        const f = REPULSION / dist2;
+        const nx = dx / dist, ny = dy / dist;
+        a.vx -= nx * f * dt;
+        a.vy -= ny * f * dt;
+        b.vx += nx * f * dt;
+        b.vy += ny * f * dt;
+      }
+    }
+    // Spring along edges
+    for (const e of edges) {
+      const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y;
+      const dist = Math.sqrt(dx * dx + dy * dy) + 0.001;
+      const stretch = dist - REST_LEN;
+      const f = SPRING_K * stretch;
+      const nx = dx / dist, ny = dy / dist;
+      e.a.vx += nx * f * dt;
+      e.a.vy += ny * f * dt;
+      e.b.vx -= nx * f * dt;
+      e.b.vy -= ny * f * dt;
+    }
+    // Center attraction + drift
+    for (const n of nodes) {
+      if (n.id === 'dhruv') { n.x = cx + pan.x; n.y = cy + pan.y; n.vx = 0; n.vy = 0; continue; }
+      const pcx = cx + pan.x, pcy = cy + pan.y;
+      n.vx += (pcx - n.x) * CENTER_K * dt * 60;
+      n.vy += (pcy - n.y) * CENTER_K * dt * 60;
+      // gentle living drift
+      n.drift.a += 0.4 * dt;
+      n.vx += Math.cos(n.drift.a) * n.drift.s * dt;
+      n.vy += Math.sin(n.drift.a) * n.drift.s * dt;
+      n.vx *= Math.pow(DAMPING, dt * 60);
+      n.vy *= Math.pow(DAMPING, dt * 60);
+      n.x += n.vx * dt * 60;
+      n.y += n.vy * dt * 60;
+    }
+  }
+
+  // ─── FIRE / PROPAGATION ────────────────────────────────────────────────────
+  function fireNode(node, depth, delay) {
+    if (depth > 2) return;
+    setTimeout(() => {
+      node.flash = 1;
+      // animate flash down
+      gsap.to(node, { flash: 0, duration: 0.9, ease: 'power2.out' });
+      node.glow = Math.min(1, node.glow + 0.6);
+      gsap.to(node, { glow: 0, duration: 2.5, ease: 'power2.out', overwrite: false });
+      // propagate pulse along edges
+      for (const e of edges) {
+        let other = null;
+        if (e.a === node) other = e.b;
+        else if (e.b === node) other = e.a;
+        if (!other) continue;
+        // send a pulse traveling along the edge
+        const pulseDelay = delay + 300 + Math.random() * 150;
+        setTimeout(() => {
+          pulses.push({ from: node, to: other, t: 0, w: e.w, depth });
+        }, pulseDelay - delay);
+        // then fire the connected node after pulse travels (~600ms)
+        fireNode(other, depth + 1, pulseDelay + 550);
+      }
+    }, delay);
+  }
+
+  // ─── PULSES ────────────────────────────────────────────────────────────────
+  function updatePulses(dt) {
+    const speed = 1.4;
+    for (let i = pulses.length - 1; i >= 0; i--) {
+      pulses[i].t += dt * speed;
+      if (pulses[i].t >= 1) pulses.splice(i, 1);
+    }
+  }
+
+  // ─── DRAW ──────────────────────────────────────────────────────────────────
+  function drawEdges() {
+    for (const e of edges) {
+      ctx.beginPath();
+      ctx.moveTo(e.a.x, e.a.y);
+      ctx.lineTo(e.b.x, e.b.y);
+      const glow = Math.max(e.a.glow, e.b.glow) * 0.5;
+      ctx.strokeStyle = `rgba(56,178,172,${0.05 + e.w * 0.08 + glow * 0.25})`;
+      ctx.lineWidth = 0.8 + e.w * 0.6;
+      ctx.stroke();
+    }
+  }
+
+  function drawPulses() {
+    for (const p of pulses) {
+      const x = p.from.x + (p.to.x - p.from.x) * p.t;
+      const y = p.from.y + (p.to.y - p.from.y) * p.t;
+      const alpha = Math.sin(p.t * Math.PI) * p.w;
+      // trail
+      ctx.beginPath();
+      const tx = p.from.x + (p.to.x - p.from.x) * Math.max(0, p.t - 0.18);
+      const ty = p.from.y + (p.to.y - p.from.y) * Math.max(0, p.t - 0.18);
+      ctx.moveTo(tx, ty);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = `rgba(129,230,217,${alpha * 0.7})`;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // bead
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, 5);
+      grad.addColorStop(0, `rgba(225,255,255,${alpha})`);
+      grad.addColorStop(1, `rgba(56,178,172,0)`);
+      ctx.beginPath();
+      ctx.arc(x, y, 5, 0, Math.PI * 2);
+      ctx.fillStyle = grad;
+      ctx.fill();
+    }
+  }
+
+  function drawNodes() {
+    for (const n of nodes) {
+      const col = COLORS[n.type];
+      const r = n.radius;
+      const glowR = r + 18 + n.flash * 28 + n.glow * 12;
+      const isHov = n.id === hoveredId;
+
+      // outer halo
+      const halo = ctx.createRadialGradient(n.x, n.y, r * 0.4, n.x, n.y, glowR);
+      const glowAlpha = 0.08 + n.glow * 0.35 + n.flash * 0.55 + (isHov ? 0.2 : 0);
+      halo.addColorStop(0, col.glow + 'cc');
+      halo.addColorStop(1, col.glow + '00');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+      ctx.fillStyle = halo;
+      ctx.globalAlpha = glowAlpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      // circle body
+      const body = ctx.createRadialGradient(n.x - r * 0.3, n.y - r * 0.3, 0, n.x, n.y, r);
+      body.addColorStop(0, col.glow + 'ff');
+      body.addColorStop(1, '#060810');
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = body;
+      ctx.fill();
+
+      // border
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      const borderAlpha = 0.4 + n.glow * 0.5 + n.flash * 0.6 + (isHov ? 0.3 : 0);
+      ctx.strokeStyle = col.base;
+      ctx.lineWidth = 1 + n.flash * 1.5;
+      ctx.globalAlpha = borderAlpha;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // flash ring
+      if (n.flash > 0.01) {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r + 10 + (1 - n.flash) * 30, 0, Math.PI * 2);
+        ctx.strokeStyle = col.glow;
+        ctx.lineWidth = 1.5;
+        ctx.globalAlpha = n.flash * 0.7;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
+
+      // label
+      const fontSize = n.id === 'dhruv' ? 11 : 9;
+      ctx.font = `bold ${fontSize}px 'Courier New', monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = col.base;
+      ctx.globalAlpha = 0.9 + n.glow * 0.1;
+      // wrap label if identity node
+      if (n.id === 'dhruv') {
+        ctx.fillText('DHRUV', n.x, n.y - 6);
+        ctx.fillText('KOTHARI', n.x, n.y + 7);
+      } else {
+        ctx.fillText(n.label, n.x, n.y);
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  // ─── POINTER ───────────────────────────────────────────────────────────────
+  function getNodeAt(mx, my) {
+    for (const n of nodes) {
+      const dx = n.x - mx, dy = n.y - my;
+      if (dx * dx + dy * dy < (n.radius + 6) * (n.radius + 6)) return n;
+    }
+    return null;
+  }
+
+  function nudgeNear(mx, my) {
+    for (const n of nodes) {
+      if (n.id === 'dhruv') continue;
+      const dx = mx - n.x, dy = my - n.y;
+      const dist2 = dx * dx + dy * dy;
+      if (dist2 < 120 * 120) {
+        const dist = Math.sqrt(dist2);
+        const f = 0.18 * (1 - dist / 120);
+        n.vx += (dx / dist) * f;
+        n.vy += (dy / dist) * f;
+      }
+    }
+  }
+
+  canvas.addEventListener('mousemove', (e) => {
+    const mx = e.clientX, my = e.clientY;
+    if (isDragging) {
+      pan.x = panStart.x + (mx - dragStart.x);
+      pan.y = panStart.y + (my - dragStart.y);
+      return;
+    }
+    nudgeNear(mx, my);
+    const hit = getNodeAt(mx, my);
+    if (hit && hit.id !== hoveredId) {
+      hoveredId = hit.id;
+      fireNode(hit, 0, 0);
+      lastIdle = performance.now();
+    } else if (!hit) {
+      hoveredId = null;
+    }
+  });
+
+  canvas.addEventListener('mousedown', (e) => {
+    const hit = getNodeAt(e.clientX, e.clientY);
+    if (!hit) {
+      isDragging = true;
+      dragStart = { x: e.clientX, y: e.clientY };
+      panStart = { x: pan.x, y: pan.y };
+    }
+  });
+
+  canvas.addEventListener('mouseup', () => { isDragging = false; });
+  canvas.addEventListener('mouseleave', () => { isDragging = false; hoveredId = null; });
+
+  canvas.addEventListener('click', (e) => {
+    const hit = getNodeAt(e.clientX, e.clientY);
+    if (hit) {
+      panelName.textContent = hit.label;
+      panelDesc.textContent = hit.desc;
+      panel.classList.add('visible');
+      clearTimeout(panel._hide);
+      panel._hide = setTimeout(() => panel.classList.remove('visible'), 3500);
+    }
+  });
+
+  // touch pan
+  let lastTouch = null;
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) lastTouch = { x: e.touches[0].clientX, y: e.touches[0].clientY, px: pan.x, py: pan.y };
+  }, { passive: true });
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 1 && lastTouch) {
+      pan.x = lastTouch.px + (e.touches[0].clientX - lastTouch.x);
+      pan.y = lastTouch.py + (e.touches[0].clientY - lastTouch.y);
+    }
+  }, { passive: true });
+
+  // ─── IDLE RANDOM FIRE ──────────────────────────────────────────────────────
+  function maybeIdleFire(now) {
+    if (now - lastIdle > 2200) {
+      const candidates = nodes.filter(n => n.id !== 'dhruv');
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      fireNode(pick, 0, 0);
+      lastIdle = now;
+    }
+  }
+
+  // ─── LOOP ──────────────────────────────────────────────────────────────────
+  let last = 0;
+  function loop(now) {
+    const dt = Math.min((now - last) / 1000, 0.05);
+    last = now;
+
+    ctx.clearRect(0, 0, W, H);
+
+    stepPhysics(dt);
+    updatePulses(dt);
+    maybeIdleFire(now);
+
+    drawEdges();
+    drawPulses();
+    drawNodes();
+
+    requestAnimationFrame(loop);
+  }
+
+  // ─── BOOT ──────────────────────────────────────────────────────────────────
+  resize();
+  buildGraph();
+  window.addEventListener('resize', () => {
+    resize();
+    // re-center dhruv
+    const dhruv = nodes.find(n => n.id === 'dhruv');
+    if (dhruv) { dhruv.x = cx + pan.x; dhruv.y = cy + pan.y; }
+  });
+
+  // initial spark on dhruv after settle
+  setTimeout(() => {
+    const dhruv = nodes.find(n => n.id === 'dhruv');
+    if (dhruv) fireNode(dhruv, 0, 0);
+    lastIdle = performance.now();
+  }, 800);
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

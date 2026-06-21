@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Singularity — Dhruv Kothari</title>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.169.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.169.0/examples/jsm/"}}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;background:#000;overflow-x:hidden}
+body{height:500vh}
+#c{position:fixed;top:0;left:0;width:100%;height:100%;display:block}
+#back{position:fixed;top:16px;left:18px;z-index:10;font:11px/1 monospace;color:#555;text-decoration:none;letter-spacing:.04em;transition:color .2s}
+#back:hover{color:#aaa}
+#label{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:10;font:10px/1 monospace;letter-spacing:.25em;color:#333;text-transform:uppercase;pointer-events:none}
+#hint{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:10;font:10px/1 monospace;letter-spacing:.15em;color:#2a2a2a;pointer-events:none}
+#no-webgl{display:none;position:fixed;inset:0;background:#000;color:#555;font:14px/2 monospace;display:flex;align-items:center;justify-content:center;text-align:center;z-index:99}
+</style>
+</head>
+<body>
+<a id="back" href="index.html">← concepts</a>
+<div id="label">SINGULARITY</div>
+<div id="hint">scroll — it's all one shader</div>
+<canvas id="c"></canvas>
+<div id="no-webgl" style="display:none">WebGL not available.<br/>Try a modern browser.</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+// WebGL guard
+const testCanvas = document.createElement('canvas');
+const testCtx = testCanvas.getContext('webgl2') || testCanvas.getContext('webgl') || testCanvas.getContext('experimental-webgl');
+if (!testCtx) {
+  document.getElementById('c').style.display = 'none';
+  document.getElementById('no-webgl').style.display = 'flex';
+  throw new Error('no-webgl');
+}
+
+// Bake text to canvas textures
+function bakeText(lines, w, h, fontSize, color='#fff') {
+  const cvs = document.createElement('canvas');
+  cvs.width = w; cvs.height = h;
+  const ctx = cvs.getContext('2d');
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const lineH = fontSize * 1.45;
+  const startY = h/2 - ((lines.length-1)*lineH)/2;
+  lines.forEach((line, i) => {
+    const parts = line.split('|');
+    if (parts.length === 2) {
+      ctx.font = `${Math.round(fontSize*0.52)}px 'Courier New', monospace`;
+      ctx.fillStyle = '#888';
+      ctx.fillText(parts[0], w/2, startY + i*lineH);
+      ctx.fillStyle = color;
+      ctx.font = `700 ${fontSize}px 'Courier New', monospace`;
+      ctx.fillText(parts[1], w/2, startY + (i+0.7)*lineH + fontSize*0.3);
+    } else {
+      ctx.font = `700 ${fontSize}px 'Courier New', monospace`;
+      ctx.fillStyle = color;
+      ctx.fillText(line, w/2, startY + i*lineH);
+    }
+  });
+  return new THREE.CanvasTexture(cvs);
+}
+
+const W = 1024, H = 256;
+const tex0 = bakeText(['DHRUV KOTHARI'], W, H, 64);
+const tex1 = bakeText(['SELECTED WORK'], W, H, 64);
+const tex2 = bakeText(['REDDIT GROWTH COPILOT'], W, H, 48);
+
+const vertexShader = /* glsl */`
+varying vec2 vUv;
+void main(){
+  vUv = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
+}`;
+
+const fragmentShader = /* glsl */`
+precision highp float;
+varying vec2 vUv;
+
+uniform float uTime;
+uniform vec2  uRes;
+uniform vec2  uMouse;
+uniform float uProgress;
+
+uniform sampler2D uTex0;
+uniform sampler2D uTex1;
+uniform sampler2D uTex2;
+
+// ─── math helpers ──────────────────────────────────────────────────────────
+#define PI  3.14159265358979
+#define TAU 6.28318530717959
+
+float hash(float n){ return fract(sin(n)*43758.5453123); }
+float hash2(vec2 p){ return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453); }
+
+float noise(vec3 p){
+  vec3 i=floor(p); vec3 f=fract(p); f=f*f*(3.0-2.0*f);
+  float n=i.x+i.y*57.0+113.0*i.z;
+  return mix(mix(mix(hash(n),hash(n+1.0),f.x),
+                 mix(hash(n+57.0),hash(n+58.0),f.x),f.y),
+             mix(mix(hash(n+113.0),hash(n+114.0),f.x),
+                 mix(hash(n+170.0),hash(n+171.0),f.x),f.y),f.z);
+}
+
+// ─── cosine palette ────────────────────────────────────────────────────────
+vec3 palette(float t, vec3 a, vec3 b, vec3 c, vec3 d){
+  return a + b*cos(TAU*(c*t+d));
+}
+
+vec3 palSun(float t){
+  return palette(t,
+    vec3(0.5,0.3,0.1), vec3(0.5,0.4,0.2),
+    vec3(1.0,1.0,0.5), vec3(0.0,0.1,0.8));
+}
+vec3 palTunnel(float t){
+  return palette(t,
+    vec3(0.1,0.2,0.4), vec3(0.3,0.3,0.5),
+    vec3(0.8,0.7,1.0), vec3(0.0,0.15,0.5));
+}
+vec3 palFractal(float t){
+  return palette(t,
+    vec3(0.0,0.1,0.2), vec3(0.4,0.2,0.5),
+    vec3(1.0,0.5,0.8), vec3(0.2,0.4,0.0));
+}
+
+// ─── SDFs ──────────────────────────────────────────────────────────────────
+float sdSphere(vec3 p, float r){ return length(p)-r; }
+
+float sdBox(vec3 p, vec3 b){
+  vec3 q=abs(p)-b;
+  return length(max(q,0.0))+min(max(q.x,max(q.y,q.z)),0.0);
+}
+
+float opSmoothUnion(float d1, float d2, float k){
+  float h=clamp(0.5+0.5*(d2-d1)/k, 0.0, 1.0);
+  return mix(d2,d1,h)-k*h*(1.0-h);
+}
+
+mat2 rot(float a){ float c=cos(a),s=sin(a); return mat2(c,-s,s,c); }
+
+// ─── Scene 0: pulsing sun / plasma ─────────────────────────────────────────
+float sceneSun(vec3 p, float t){
+  float pulse = 0.85 + 0.15*sin(t*1.3) + 0.05*sin(t*3.7);
+  float core  = sdSphere(p, pulse);
+  // surface noise bumps
+  float n = noise(p*2.5 + t*0.4)*0.15 + noise(p*5.0 - t*0.3)*0.07;
+  float d  = core - n;
+  // orbiting blobs
+  float ang = t*0.8;
+  vec3 o1 = vec3(cos(ang)*1.6, sin(ang*1.3)*0.5, sin(ang)*1.6);
+  vec3 o2 = vec3(cos(ang+2.1)*1.3, sin(ang*0.7+1.0)*0.8, sin(ang+2.1)*1.3);
+  d = opSmoothUnion(d, sdSphere(p-o1, 0.32), 0.4);
+  d = opSmoothUnion(d, sdSphere(p-o2, 0.22), 0.3);
+  return d;
+}
+
+// ─── Scene 1: corridor / tunnel ────────────────────────────────────────────
+float sceneTunnel(vec3 p, float t){
+  // infinite tunnel along Z
+  vec2 q = p.xy;
+  q *= rot(t*0.12);
+  float tunnel = length(q) - 1.4;
+  // inner ribs
+  float z = mod(p.z + t*1.8, 0.7) - 0.35;
+  float rib = sdBox(vec3(q - normalize(q)*1.4, z), vec3(0.04, 0.04, 0.04));
+  // glow rings
+  float ring = abs(length(q) - 1.4) - 0.018;
+  ring = min(ring, abs(length(q) - 1.1) - 0.012);
+  ring = min(ring, abs(length(q) - 0.7) - 0.008);
+  return min(tunnel, min(ring, rib));
+}
+
+// ─── Scene 2: fractal (iterated folding) ───────────────────────────────────
+float sceneFractal(vec3 p, float t){
+  p.xz *= rot(t*0.07); // rotate on the xz plane (vec2 *= mat2)
+  vec3 q = p;
+  float scale = 1.0;
+  for(int i=0; i<7; i++){
+    q = abs(q) - vec3(0.9, 0.7, 1.1);
+    float r2 = dot(q,q);
+    float k = max(1.2/r2, 1.0);
+    q *= k; scale *= k;
+    q += vec3(0.3,0.0,-0.2);
+  }
+  return (length(q)-1.2)/scale;
+}
+
+// ─── Blended scene ─────────────────────────────────────────────────────────
+// uProgress 0..1: 0..0.33 = sun, 0.33..0.66 = tunnel, 0.66..1.0 = fractal
+float mapScene(vec3 p, float t, float prog){
+  float s0 = sceneSun(p, t);
+  float s1 = sceneTunnel(p, t);
+  float s2 = sceneFractal(p, t);
+
+  // smooth blend weights
+  float w01 = smoothstep(0.28, 0.45, prog);   // sun→tunnel
+  float w12 = smoothstep(0.61, 0.78, prog);   // tunnel→fractal
+
+  float d = mix(s0, s1, w01);
+  d = mix(d, s2, w12);
+  return d;
+}
+
+// ─── Normal via central differences ────────────────────────────────────────
+vec3 calcNormal(vec3 p, float t, float prog){
+  float eps = 0.002;
+  vec2 e = vec2(1.0,-1.0)*eps;
+  return normalize(
+    e.xyy*mapScene(p+e.xyy,t,prog)+
+    e.yyx*mapScene(p+e.yyx,t,prog)+
+    e.yxy*mapScene(p+e.yxy,t,prog)+
+    e.xxx*mapScene(p+e.xxx,t,prog));
+}
+
+// ─── Text sampling ─────────────────────────────────────────────────────────
+// Sample a baked texture, centred in [cx,cy] with given wh scale in UV space
+vec4 sampleText(sampler2D tex, vec2 uv, vec2 centre, vec2 size){
+  vec2 lu = (uv - centre) / size + 0.5;
+  if(lu.x<0.0||lu.x>1.0||lu.y<0.0||lu.y>1.0) return vec4(0.0);
+  return texture2D(tex, lu);
+}
+
+// ─── Film grain ────────────────────────────────────────────────────────────
+float grain(vec2 uv, float t){
+  return (hash2(uv*1371.91 + t*0.07) - 0.5) * 0.04;
+}
+
+// ─── Main ──────────────────────────────────────────────────────────────────
+void main(){
+  vec2 uv = (vUv - 0.5) * vec2(uRes.x/uRes.y, 1.0);
+  float t   = uTime;
+  float prog = uProgress;
+
+  // section weights for colour / palette
+  float w01 = smoothstep(0.28, 0.45, prog);
+  float w12 = smoothstep(0.61, 0.78, prog);
+
+  // ── Camera ──
+  vec2 mouse = uMouse * 0.5; // -0.5..0.5
+  vec3 ro, rd;
+
+  float w_sun     = (1.0 - w01);
+  float w_tunnel  = w01 * (1.0 - w12);
+  float w_fractal = w12;
+
+  // sun cam: orbit around origin
+  if(w_fractal < 0.01 && w_tunnel < 0.5){
+    float camAng = t*0.12 + mouse.x*0.8;
+    ro = vec3(sin(camAng)*4.5, 1.5 + mouse.y*1.2, cos(camAng)*4.5);
+    vec3 target = vec3(0.0);
+    vec3 fwd = normalize(target - ro);
+    vec3 right = normalize(cross(fwd, vec3(0,1,0)));
+    vec3 up = cross(right, fwd);
+    rd = normalize(fwd + uv.x*right + uv.y*up);
+  } else if(w_fractal > 0.5){
+    ro = vec3(sin(t*0.07)*3.0 + mouse.x*0.6, cos(t*0.05)*1.5 + mouse.y*0.6, -4.0);
+    vec3 target = vec3(0.0,0.0,0.0);
+    vec3 fwd = normalize(target-ro);
+    vec3 right = normalize(cross(fwd,vec3(0,1,0)));
+    vec3 up2 = cross(right,fwd);
+    rd = normalize(fwd + uv.x*right + uv.y*up2);
+  } else {
+    // tunnel cam: fly down Z
+    ro = vec3(mouse.x*0.25, mouse.y*0.25, -t*1.8);
+    rd = normalize(vec3(uv*0.9, 1.0));
+  }
+
+  // ── Raymarching ──
+  float dTotal = 0.0;
+  float hitDist = -1.0;
+  vec3 hitP = ro;
+  int steps = 0;
+  float tMax = 18.0;
+
+  for(int i=0; i<70; i++){
+    vec3 p = ro + rd*dTotal;
+    float d = mapScene(p, t, prog);
+    if(d < 0.0015){
+      hitDist = dTotal;
+      hitP = p;
+      break;
+    }
+    if(dTotal > tMax) break;
+    dTotal += max(d*0.7, 0.003);
+    steps = i;
+  }
+
+  // ── Shading ──
+  vec3 col = vec3(0.0);
+  float stepGlow = float(steps)/70.0;
+
+  if(hitDist > 0.0){
+    vec3 n = calcNormal(hitP, t, prog);
+    vec3 ld = normalize(vec3(sin(t*0.3)*2.0, 2.0, cos(t*0.3)*2.0));
+    float diff = max(dot(n, ld), 0.0);
+    float spec = pow(max(dot(reflect(-ld,n), -rd), 0.0), 18.0);
+    float ao = 1.0 - float(steps)/70.0 * 0.6;
+
+    // per-section colour
+    vec3 cSun     = palSun(    hitP.x*0.3 + hitP.y*0.2 + t*0.15);
+    vec3 cTunnel  = palTunnel( length(hitP.xy)*0.5 + t*0.2);
+    vec3 cFractal = palFractal(length(hitP)*0.25 + t*0.1);
+
+    vec3 baseCol = mix(cSun, cTunnel, w01);
+    baseCol = mix(baseCol, cFractal, w12);
+
+    col = baseCol * (diff*0.7 + 0.3) * ao + spec * 0.6;
+  }
+
+  // ── Volumetric fog / glow from step count ──
+  float fogAmt = 1.0 - exp(-stepGlow * 1.8);
+  vec3 fogSun     = palSun(t*0.1 + stepGlow*0.5)     * 0.4;
+  vec3 fogTunnel  = palTunnel(t*0.1 + stepGlow*0.5)  * 0.35;
+  vec3 fogFractal = palFractal(t*0.1 + stepGlow*0.5) * 0.3;
+  vec3 fogCol = mix(fogSun, fogTunnel, w01);
+  fogCol = mix(fogCol, fogFractal, w12);
+  col = mix(col, fogCol, fogAmt * 0.55);
+
+  // miss = deep space glow
+  if(hitDist < 0.0){
+    col = fogCol * fogAmt * 0.35;
+  }
+
+  // ── Text compositing ──
+  // uv for text is in NDC [-aspect..aspect, -0.5..0.5]
+  // remap to [0..1,0..1]
+  vec2 tUV = vUv; // 0..1
+  float tAsp = uRes.x / uRes.y;
+
+  // section alpha values
+  float a0 = smoothstep(0.0,0.08,prog) * (1.0-smoothstep(0.25,0.38,prog));
+  float a1 = smoothstep(0.33,0.46,prog) * (1.0-smoothstep(0.58,0.68,prog));
+  float a2 = smoothstep(0.66,0.77,prog) * (1.0-smoothstep(0.90,0.99,prog));
+
+  // text distortion based on scene
+  float distAmt = 0.003 * sin(tUV.y*18.0 + t*2.5);
+  vec2 distUV = tUV + vec2(distAmt, 0.0);
+
+  // text block: centred horizontally, lower third
+  vec2 textCentre = vec2(0.5, 0.30);
+  vec2 textSize   = vec2(0.72, 0.13);
+
+  vec4 t0col = sampleText(uTex0, distUV, textCentre, textSize);
+  vec4 t1col = sampleText(uTex1, distUV, textCentre, textSize);
+  vec4 t2col = sampleText(uTex2, distUV, textCentre, textSize);
+
+  // glow pass — sample at slight offsets
+  float glowR = 0.006;
+  float glow0 = 0.0;
+  for(int gi=0; gi<6; gi++){
+    float ga = float(gi)/6.0 * TAU;
+    vec2 gOff = vec2(cos(ga),sin(ga)) * glowR;
+    glow0 += sampleText(uTex0, distUV+gOff, textCentre, textSize).r
+           + sampleText(uTex1, distUV+gOff, textCentre, textSize).r
+           + sampleText(uTex2, distUV+gOff, textCentre, textSize).r;
+  }
+  glow0 /= 18.0;
+
+  vec3 textGlowCol = mix(palSun(t*0.1+0.3), palTunnel(t*0.1+0.3), w01);
+  textGlowCol = mix(textGlowCol, palFractal(t*0.1+0.3), w12);
+  textGlowCol = clamp(textGlowCol, 0.0, 1.0);
+
+  col += textGlowCol * glow0 * 0.55;
+
+  // composite text
+  float ta0 = t0col.r * a0;
+  float ta1 = t1col.r * a1;
+  float ta2 = t2col.r * a2;
+  float textAlpha = clamp(ta0 + ta1 + ta2, 0.0, 1.0);
+  col = mix(col, vec3(1.0), textAlpha * 0.92);
+
+  // ── Vignette ──
+  vec2 vigUV = vUv - 0.5;
+  float vig = 1.0 - dot(vigUV, vigUV)*2.4;
+  col *= clamp(vig, 0.0, 1.0);
+
+  // ── Film grain ──
+  col += grain(tUV, t) * 0.9;
+
+  col = clamp(col, 0.0, 1.0);
+
+  // ── Tone mapping ──
+  col = col / (col + 0.8);   // Reinhard-ish
+  col = pow(col, vec3(0.454545)); // gamma
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+const canvas = document.getElementById('c');
+let renderer, scene, camera, mat, mesh;
+let uTime = 0, uProgress = 0;
+let mouseX = 0, mouseY = 0;
+
+function init() {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  scene = new THREE.Scene();
+  camera = new THREE.OrthographicCamera(-1,1,1,-1,0,1);
+
+  mat = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms: {
+      uTime:     { value: 0 },
+      uRes:      { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+      uMouse:    { value: new THREE.Vector2(0, 0) },
+      uProgress: { value: 0 },
+      uTex0:     { value: tex0 },
+      uTex1:     { value: tex1 },
+      uTex2:     { value: tex2 },
+    },
+    depthTest: false,
+    depthWrite: false,
+  });
+
+  // Fullscreen quad (two triangles)
+  const geo = new THREE.PlaneGeometry(2, 2);
+  mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+}
+
+function onResize() {
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  mat.uniforms.uRes.value.set(window.innerWidth, window.innerHeight);
+}
+
+function onMouseMove(e) {
+  mouseX = (e.clientX / window.innerWidth  - 0.5);
+  mouseY = -(e.clientY / window.innerHeight - 0.5);
+}
+
+function onScroll() {
+  const maxScroll = document.body.scrollHeight - window.innerHeight;
+  uProgress = Math.min(1, window.scrollY / maxScroll);
+}
+
+let rafId = null;
+let lastTime = null;
+
+function loop(ts) {
+  rafId = requestAnimationFrame(loop);
+  const dt = lastTime === null ? 0 : (ts - lastTime) / 1000;
+  lastTime = ts;
+  uTime += dt;
+
+  mat.uniforms.uTime.value     = uTime;
+  mat.uniforms.uMouse.value.set(mouseX, mouseY);
+  mat.uniforms.uProgress.value = uProgress;
+
+  renderer.render(scene, camera);
+}
+
+try {
+  init();
+  window.addEventListener('resize', onResize);
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('scroll', onScroll, { passive: true });
+  rafId = requestAnimationFrame(loop);
+} catch(err) {
+  document.getElementById('c').style.display = 'none';
+  document.getElementById('no-webgl').style.display = 'flex';
+  document.getElementById('no-webgl').textContent = 'Shader init failed: ' + err.message;
+}
+</script>
+</body>
+</html>
