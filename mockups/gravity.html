@@ -173,7 +173,7 @@
   const canvas  = document.getElementById('canvas');
   const ctx     = canvas.getContext('2d');
 
-  // ── Measure text width ───────────────────────────────────────────────────
+  // ── Measure text width (uses logical px, independent of DPR) ─────────────
   function measureLabel(label) {
     ctx.save();
     ctx.font = FONT;
@@ -183,7 +183,7 @@
   }
 
   // ── Build walls ───────────────────────────────────────────────────────────
-  const WALL_T = 60; // thickness
+  const WALL_T = 120; // thickness — thicker to prevent tunneling
 
   function buildWalls(W, H) {
     // Remove old walls
@@ -229,9 +229,10 @@
       const ch   = CHIP_H;
       const isAccent = accentSet.has(label);
 
-      // Drop from random x near top, staggered
-      const spawnX = WALL_T + Math.random() * (W - WALL_T * 2 - cw);
-      const spawnY = -ch * 2 - i * (ch + 8);
+      // Spawn INSIDE the viewport — scatter across x and upper half of y
+      const pad    = WALL_T + 10;
+      const spawnX = pad + Math.random() * Math.max(1, W - pad * 2 - cw);
+      const spawnY = 80 + Math.random() * (H * 0.5 - 80);
 
       const body = Bodies.rectangle(
         spawnX + cw / 2,
@@ -248,7 +249,7 @@
         }
       );
 
-      // Small random initial angle
+      // Zero initial velocity (default), small random angle
       Body.setAngle(body, (Math.random() - 0.5) * 0.3);
 
       Composite.add(world, body);
@@ -260,9 +261,13 @@
   function init() {
     const W = window.innerWidth;
     const H = window.innerHeight;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    canvas.width  = W;
-    canvas.height = H;
+    canvas.width  = W * dpr;
+    canvas.height = H * dpr;
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.scale(dpr, dpr);
 
     if (!engine) {
       engine = Engine.create({ gravity: { x: 0, y: 1.4 } });
@@ -281,8 +286,8 @@
 
     // Mouse constraint (also handles touch via pointer events mapped by Matter)
     const mouse = Mouse.create(canvas);
-    // Fix scroll offset issues
-    mouse.pixelRatio = window.devicePixelRatio || 1;
+    // pixelRatio must match the DPR used for canvas scaling
+    mouse.pixelRatio = dpr;
 
     mouseConstraint = MouseConstraint.create(engine, {
       mouse,
@@ -312,8 +317,8 @@
 
   // ── Render frame ──────────────────────────────────────────────────────────
   function renderFrame() {
-    const W = canvas.width;
-    const H = canvas.height;
+    const W = window.innerWidth;
+    const H = window.innerHeight;
 
     ctx.clearRect(0, 0, W, H);
 
@@ -333,10 +338,10 @@
       const x = -w / 2;
       const y = -h / 2;
 
-      // Shadow
-      ctx.shadowColor  = 'rgba(0,0,0,0.55)';
-      ctx.shadowBlur   = 14;
-      ctx.shadowOffsetY = 4;
+      // Cheap static drop-shadow via an offset fill underneath (no shadowBlur)
+      ctx.fillStyle = 'rgba(0,0,0,0.35)';
+      drawRoundRect(ctx, x + 3, y + 4, w, h, RADIUS);
+      ctx.fill();
 
       // Fill
       if (isAccent) {
@@ -348,9 +353,6 @@
       ctx.fill();
 
       // Border
-      ctx.shadowColor  = 'transparent';
-      ctx.shadowBlur   = 0;
-      ctx.shadowOffsetY = 0;
 
       ctx.strokeStyle = isAccent ? ACCENT : CHIP_EDGE;
       ctx.lineWidth   = isAccent ? 1.5 : 1;
@@ -369,22 +371,31 @@
       ctx.textBaseline = 'middle';
       ctx.font         = isAccent ? FONT : FONT_SM;
       ctx.fillStyle    = isAccent ? ACCENT : TEXT_COL;
-      ctx.shadowColor  = 'transparent';
       ctx.fillText(label, 0, 0);
 
       ctx.restore();
     });
   }
 
-  // ── Loop ──────────────────────────────────────────────────────────────────
-  let lastTime = 0;
+  // ── Safety net — teleport escaped chips back to center-top ───────────────
+  function recoverEscapedChips() {
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+    chips.forEach(({ body }) => {
+      const { x, y } = body.position;
+      if (y > H + 150 || y < -H || x < -W || x > W * 2) {
+        Body.setPosition(body, { x: W / 2 + (Math.random() - 0.5) * 100, y: 60 });
+        Body.setVelocity(body, { x: 0, y: 0 });
+        Body.setAngularVelocity(body, 0);
+      }
+    });
+  }
 
-  function loop(ts) {
+  // ── Loop — fixed 60 Hz timestep, no variable dt ──────────────────────────
+  function loop() {
     raf = requestAnimationFrame(loop);
-    const dt = Math.min(ts - lastTime, 32); // cap at ~30fps equiv for stability
-    lastTime = ts;
-
-    Engine.update(engine, dt);
+    Engine.update(engine, 1000 / 60);
+    recoverEscapedChips();
     renderFrame();
   }
 
@@ -400,7 +411,6 @@
   // ── Reset ─────────────────────────────────────────────────────────────────
   function reset() {
     if (raf) cancelAnimationFrame(raf);
-    lastTime = 0;
     init();
     raf = requestAnimationFrame(loop);
   }

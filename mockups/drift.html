@@ -132,8 +132,8 @@ const PROJECTS = [
   { title: 'Open Source',           sub: 'Community',   hue: 320 },
 ];
 
-const COLS = 5;
-const ROWS = 4;
+const COLS = 7;
+const ROWS = 6;
 const TOTAL = COLS * ROWS;
 const TILE_W = 0.38;
 const TILE_H = 0.28;
@@ -213,6 +213,11 @@ function makeTileTexture(project, index) {
   ctx.fillText(project.sub.toUpperCase(), 32, TEX_SIZE - 52);
 
   const tex = new THREE.CanvasTexture(cv);
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.generateMipmaps = true;
+  tex.needsUpdate = true;
   return tex;
 }
 
@@ -285,12 +290,15 @@ for (let i = 0; i < TOTAL; i++) {
 
   const col = i % COLS;
   const row = Math.floor(i / COLS);
+  // Offset bases so the grid period wraps symmetrically around world origin.
+  // Each tile occupies one slot in [0, GRID_W) x [0, GRID_H) space;
+  // positionTiles folds that into [-GRID_W/2, +GRID_W/2].
   tiles.push({
     mesh,
     mat,
     proj,
     col, row,
-    baseX: col * GAP_X,
+    baseX:  col * GAP_X,
     baseY: -row * GAP_Y,
     selected: false,
   });
@@ -488,23 +496,20 @@ renderer.domElement.addEventListener('touchend', e => {
 // Frame: world position = (col * GAP_X + ox) mod GRID_W + visual centering
 
 function positionTiles() {
-  const aspect = W / H;
-  // Center the grid in viewport
-  const totalW = (COLS - 1) * GAP_X;
-  const totalH = (ROWS - 1) * GAP_Y;
-  const centerOffX = -totalW / 2;
-  const centerOffY =  totalH / 2;
+  // Half the grid period — tiles wrap within [-GRID_W/2, +GRID_W/2]
+  // so the grid is always centred on world origin (0,0).
+  const halfW = GRID_W / 2;
+  const halfH = GRID_H / 2;
 
   for (const t of tiles) {
-    let wx = (t.baseX + ox) % GRID_W;
-    if (wx > GRID_W / 2)  wx -= GRID_W;
-    if (wx < -GRID_W / 2) wx += GRID_W;
+    // Shift base position by offset, then wrap into [-half, +half]
+    let wx = ((t.baseX + ox) % GRID_W + GRID_W) % GRID_W;
+    if (wx > halfW) wx -= GRID_W;
 
-    let wy = (t.baseY + oy) % GRID_H;
-    if (wy > GRID_H / 2)  wy -= GRID_H;
-    if (wy < -GRID_H / 2) wy += GRID_H;
+    let wy = ((t.baseY + oy) % GRID_H + GRID_H) % GRID_H;
+    if (wy > halfH) wy -= GRID_H;
 
-    t.mesh.position.set(wx + centerOffX, wy + centerOffY, 0);
+    t.mesh.position.set(wx, wy, 0);
   }
 }
 
@@ -527,11 +532,14 @@ function loop() {
     if (Math.abs(vy) < 0.00001) vy = 0;
   }
 
-  // Velocity magnitude for distortion
+  // Velocity magnitude for distortion.
+  // Fast decay (0.55 per frame) so it reaches zero quickly after release.
   const speed = Math.sqrt(vx * vx + vy * vy);
-  smoothedVel += (speed - smoothedVel) * 0.15;
-  // Normalize to [0..1] range where ~0.01 world/frame = full distortion
-  const velNorm = Math.min(smoothedVel / 0.012, 1.0);
+  smoothedVel = smoothedVel * 0.55 + speed * 0.45;
+  // Hard-zero below noise floor so tiles are perfectly crisp at rest.
+  if (smoothedVel < 0.0001) smoothedVel = 0;
+  // ~0.015 world-units/frame = full distortion
+  const velNorm = Math.min(smoothedVel / 0.015, 1.0);
 
   const velDir = speed > 0.00001
     ? new THREE.Vector2(vx / speed, vy / speed)

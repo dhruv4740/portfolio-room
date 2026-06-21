@@ -65,7 +65,8 @@ import { RenderPass }             from 'three/addons/postprocessing/RenderPass.j
 import { UnrealBloomPass }        from 'three/addons/postprocessing/UnrealBloomPass.js';
 
 /* ── constants ──────────────────────────────────────────────────── */
-const SIM   = 512;          // 512×512 = 262144 particles
+const SIM   = (navigator.hardwareConcurrency ?? 4) <= 4 ? 96
+             : (navigator.hardwareConcurrency ?? 4) <= 8 ? 128 : 160; // adaptive
 const COUNT = SIM * SIM;
 const TARGETS = ['DHRUV', 'FORM', 'REDDIT GROWTH COPILOT'];
 let   targetIdx = 0;
@@ -74,7 +75,7 @@ const AUTO_INTERVAL = 6; // seconds
 
 /* ── renderer ───────────────────────────────────────────────────── */
 const renderer = new THREE.WebGLRenderer({ antialias: false });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.25));
 renderer.setSize(innerWidth, innerHeight);
 document.body.appendChild(renderer.domElement);
 
@@ -330,7 +331,7 @@ const partMat = new THREE.ShaderMaterial({
   uniforms: {
     uPositionTex: { value: null },
     uVelocityTex: { value: null },
-    uSize:        { value: 2.2 },
+    uSize:        { value: 3.0 },
     uResolution:  { value: new THREE.Vector2(innerWidth, innerHeight) },
   },
   vertexShader: /* glsl */`
@@ -404,8 +405,8 @@ scene.add(points);
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 const bloom = new UnrealBloomPass(
-  new THREE.Vector2(innerWidth, innerHeight),
-  0.80,   // strength
+  new THREE.Vector2(innerWidth * 0.5, innerHeight * 0.5),
+  0.70,   // strength
   0.55,   // radius
   0.10    // threshold
 );
@@ -440,6 +441,7 @@ window.addEventListener('resize', () => {
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
   composer.setSize(innerWidth, innerHeight);
+  bloom.resolution.set(innerWidth * 0.5, innerHeight * 0.5);
   partMat.uniforms.uResolution.value.set(innerWidth, innerHeight);
 });
 
