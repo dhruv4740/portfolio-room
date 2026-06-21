@@ -14,6 +14,7 @@ dist-ssr
 
 # Playwright verification screenshots (throwaway)
 scripts/shots/
+mockups/shots/
 
 # Stray Windows NUL-device artifact (recreated by OneDrive; cannot be indexed)
 /nul

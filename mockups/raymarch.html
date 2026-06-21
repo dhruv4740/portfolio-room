@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Liminal — Dhruv Kothari</title>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.169.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.169.0/examples/jsm/"}}</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: auto; }
+
+  body {
+    background: #0a1418;
+    height: 600vh;
+    overflow-x: hidden;
+  }
+
+  #canvas-wrap {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  #back-link {
+    position: fixed;
+    top: 18px;
+    left: 20px;
+    z-index: 10;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    color: rgba(180, 210, 210, 0.45);
+    text-decoration: none;
+    letter-spacing: 0.08em;
+    transition: color 0.2s;
+  }
+  #back-link:hover { color: rgba(180, 210, 210, 0.85); }
+
+  #concept-label {
+    position: fixed;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    letter-spacing: 0.35em;
+    color: rgba(180, 210, 210, 0.5);
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  #scroll-hint {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: rgba(180, 210, 210, 0.35);
+    text-transform: lowercase;
+    transition: opacity 0.6s;
+    user-select: none;
+  }
+
+  #name-tag {
+    position: fixed;
+    bottom: 28px;
+    right: 24px;
+    z-index: 10;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: rgba(180, 210, 210, 0.3);
+    text-transform: uppercase;
+    user-select: none;
+  }
+
+  /* Project label overlay */
+  .proj-label {
+    position: fixed;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10;
+    text-align: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.7s ease;
+  }
+  .proj-label .num {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    color: rgba(255, 180, 122, 0.6);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .proj-label .title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(18px, 3vw, 28px);
+    letter-spacing: 0.06em;
+    color: rgba(220, 235, 235, 0.9);
+    font-style: italic;
+  }
+  .proj-label .sub {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: rgba(180, 210, 210, 0.45);
+    margin-top: 8px;
+    text-transform: uppercase;
+  }
+
+  #webgl-error {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 13px;
+    color: rgba(180, 210, 210, 0.6);
+    background: #0a1418;
+    z-index: 100;
+    display: none;
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-wrap">
+  <canvas id="c"></canvas>
+</div>
+
+<a href="index.html" id="back-link">← concepts</a>
+<div id="concept-label">LIMINAL</div>
+<div id="scroll-hint">scroll to drift forward</div>
+<div id="name-tag">Dhruv Kothari</div>
+
+<!-- Project labels -->
+<div class="proj-label" id="p1">
+  <div class="num">01</div>
+  <div class="title">Reddit Growth Copilot</div>
+  <div class="sub">AI · community · drafting</div>
+</div>
+<div class="proj-label" id="p2">
+  <div class="num">02</div>
+  <div class="title">Project Two</div>
+  <div class="sub">coming soon</div>
+</div>
+<div class="proj-label" id="p3">
+  <div class="num">03</div>
+  <div class="title">Project Three</div>
+  <div class="sub">coming soon</div>
+</div>
+<div class="proj-label" id="p4">
+  <div class="num">04</div>
+  <div class="title">Project Four</div>
+  <div class="sub">coming soon</div>
+</div>
+<div class="proj-label" id="p5">
+  <div class="num">05</div>
+  <div class="title">Project Five</div>
+  <div class="sub">coming soon</div>
+</div>
+
+<div id="webgl-error">WebGL not available in this browser.</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ── WebGL guard ──────────────────────────────────────────────────────────────
+function webglAvailable() {
+  try {
+    const c = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext &&
+      (c.getContext('webgl') || c.getContext('experimental-webgl')));
+  } catch(e) { return false; }
+}
+
+if (!webglAvailable()) {
+  document.getElementById('webgl-error').style.display = 'flex';
+  document.getElementById('canvas-wrap').style.display = 'none';
+  throw new Error('WebGL not supported');
+}
+
+// ── Scene setup ───────────────────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
+const DPR = Math.min(devicePixelRatio, 1.25);
+renderer.setPixelRatio(DPR);
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+const scene = new THREE.Scene();
+
+// ── Uniforms ──────────────────────────────────────────────────────────────────
+const uniforms = {
+  uTime:       { value: 0 },
+  uProgress:   { value: 0 },
+  uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
+  uMouse:      { value: new THREE.Vector2(0, 0) },
+};
+
+// ── Fragment shader ───────────────────────────────────────────────────────────
+const fragmentShader = /* glsl */`
+precision highp float;
+
+uniform float uTime;
+uniform float uProgress;
+uniform vec2  uResolution;
+uniform vec2  uMouse;  // normalized -1..1
+
+// ── SDF primitives ────────────────────────────────────────────────────────────
+float sdBox(vec3 p, vec3 b) {
+  vec3 q = abs(p) - b;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+
+float sdRoundBox(vec3 p, vec3 b, float r) {
+  vec3 q = abs(p) - b + r;
+  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0) - r;
+}
+
+float sdPlane(vec3 p) {
+  return p.y;  // plane at y=0
+}
+
+float opSmoothUnion(float d1, float d2, float k) {
+  float h = clamp(0.5 + 0.5*(d2-d1)/k, 0.0, 1.0);
+  return mix(d2, d1, h) - k*h*(1.0-h);
+}
+
+// ── Scene SDF ─────────────────────────────────────────────────────────────────
+// Returns (dist, materialId)
+// materialId: 0=floor, 1=monolith
+vec2 map(vec3 p) {
+  // floor
+  float dFloor = sdPlane(p);
+
+  // monoliths via domain repetition on z
+  // spacing = 12 units apart, camera moves ~70 units total
+  float spacing = 12.0;
+  float pz = p.z;
+  // repeat only in z, offset so first monolith is ahead
+  float cellZ = mod(pz + 5.0, spacing) - spacing * 0.5;
+  // slight x drift per cell using a hash-like trick
+  float cellId = floor((pz + 5.0) / spacing);
+  float xOff = sin(cellId * 2.717 + 1.3) * 1.8;
+  vec3 mp = vec3(p.x - xOff, p.y - 3.5, cellZ); // centered at half-height
+  float dMono = sdRoundBox(mp, vec3(0.55, 3.5, 0.28), 0.08);
+
+  // combine
+  float d = min(dFloor, dMono);
+  float matId = dFloor < dMono ? 0.0 : 1.0;
+  return vec2(d, matId);
+}
+
+// ── Normal via tetrahedron technique ─────────────────────────────────────────
+vec3 calcNormal(vec3 p) {
+  const float h = 0.001;
+  const vec2 k = vec2(1.0, -1.0);
+  return normalize(
+    k.xyy * map(p + k.xyy*h).x +
+    k.yyx * map(p + k.yyx*h).x +
+    k.yxy * map(p + k.yxy*h).x +
+    k.xxx * map(p + k.xxx*h).x
+  );
+}
+
+// ── Soft shadow ───────────────────────────────────────────────────────────────
+float softShadow(vec3 ro, vec3 rd, float tmin, float tmax, float k) {
+  float res = 1.0;
+  float t = tmin;
+  for (int i = 0; i < 24; i++) {
+    float h = map(ro + rd*t).x;
+    if (h < 0.001) return 0.0;
+    res = min(res, k*h/t);
+    t += clamp(h, 0.02, 0.3);
+    if (t > tmax) break;
+  }
+  return clamp(res, 0.0, 1.0);
+}
+
+// ── Fresnel ───────────────────────────────────────────────────────────────────
+float fresnel(vec3 I, vec3 N, float ior) {
+  float cosI = clamp(-dot(I, N), 0.0, 1.0);
+  float sinT2 = (1.0/ior)*(1.0/ior) * (1.0 - cosI*cosI);
+  if (sinT2 > 1.0) return 1.0;
+  float cosT = sqrt(1.0 - sinT2);
+  float rs = ((1.0/ior)*cosI - cosT) / ((1.0/ior)*cosI + cosT);
+  float rp = (cosI - (1.0/ior)*cosT) / (cosI + (1.0/ior)*cosT);
+  return 0.5*(rs*rs + rp*rp);
+}
+
+// ── Sky / environment ─────────────────────────────────────────────────────────
+vec3 skyColor(vec3 rd) {
+  // horizon glow
+  float h = rd.y; // -1..1
+  // deep teal base
+  vec3 skyTop    = vec3(0.04, 0.12, 0.16);
+  vec3 skyHoriz  = vec3(0.06, 0.18, 0.22);
+  vec3 sunColor  = vec3(1.0, 0.706, 0.478); // #ffb47a
+
+  // base gradient from bottom horizon to top
+  vec3 sky = mix(skyHoriz, skyTop, clamp(h * 2.0, 0.0, 1.0));
+  // below horizon: dark teal
+  sky = mix(vec3(0.04, 0.09, 0.11), sky, clamp(h * 8.0 + 0.5, 0.0, 1.0));
+
+  // Sun disk + glow
+  vec3 sunDir = normalize(vec3(0.15, 0.08, -1.0));
+  float sunDot = dot(rd, sunDir);
+  // wide glow
+  float sunGlow = pow(max(sunDot, 0.0), 6.0) * 0.6;
+  // narrow disk
+  float sunDisk = smoothstep(0.998, 1.0, sunDot) * 3.0;
+  sky += sunColor * (sunGlow + sunDisk);
+
+  return sky;
+}
+
+// ── Hash / grain ─────────────────────────────────────────────────────────────
+float hash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
+void main() {
+  vec2 uv = (gl_FragCoord.xy - uResolution * 0.5) / min(uResolution.x, uResolution.y);
+
+  // Camera
+  // camera advances forward (−z) as progress increases: 0→1 maps to z 0→70
+  float camZ = uProgress * 70.0;
+  vec3 ro = vec3(0.0, 1.6, camZ);
+
+  // Mouse parallax: gentle yaw/pitch
+  float yaw   = uMouse.x * 0.12;
+  float pitch = uMouse.y * 0.06;
+
+  // Ray direction from ortho-ish perspective
+  vec3 fwd = normalize(vec3(sin(yaw), sin(pitch), -cos(yaw)));
+  vec3 right = normalize(cross(fwd, vec3(0,1,0)));
+  vec3 up = cross(right, fwd);
+
+  float fov = 1.1;
+  vec3 rd = normalize(fwd * fov + right * uv.x + up * uv.y);
+
+  // ── Raymarching ──────────────────────────────────────────────────────────────
+  const int STEPS = 80;
+  const float TMAX = 120.0;
+  const float EPS  = 0.001;
+
+  float t = 0.0;
+  float matId = -1.0;
+  bool hit = false;
+
+  for (int i = 0; i < STEPS; i++) {
+    vec3 p = ro + rd * t;
+    vec2 res = map(p);
+    if (res.x < EPS) {
+      hit = true;
+      matId = res.y;
+      break;
+    }
+    t += res.x * 0.9;
+    if (t > TMAX) break;
+  }
+
+  // ── Shading ───────────────────────────────────────────────────────────────────
+  vec3 col;
+
+  // Exponential fog density
+  float fogDensity = 0.022;
+
+  if (hit) {
+    vec3 p = ro + rd * t;
+    vec3 n = calcNormal(p);
+
+    // Sun direction
+    vec3 sunDir = normalize(vec3(0.15, 0.08, -1.0));
+    vec3 sunCol  = vec3(1.0, 0.706, 0.478);
+    vec3 ambCol  = vec3(0.05, 0.14, 0.18); // teal ambient
+
+    // Shadow
+    float sha = softShadow(p + n*0.01, sunDir, 0.02, 40.0, 8.0);
+
+    // Diffuse
+    float diff = max(dot(n, sunDir), 0.0);
+
+    if (matId < 0.5) {
+      // ── Floor ──
+      // Glossy reflective floor
+      vec3 reflDir = reflect(rd, n);
+      vec3 reflCol = skyColor(reflDir);
+
+      float fr = fresnel(rd, n, 1.45);
+      // subtle tint
+      vec3 floorBase = vec3(0.05, 0.12, 0.15);
+      col = mix(floorBase, reflCol * 0.65, fr * 0.8 + 0.1);
+      col += sunCol * diff * sha * 0.3;
+      col += ambCol * 0.5;
+
+      // Grid lines for depth cue (subtle)
+      vec2 gp = p.xz;
+      vec2 gf = abs(fract(gp * 0.5) - 0.5);
+      float grid = 1.0 - smoothstep(0.0, 0.04, min(gf.x, gf.y));
+      col += vec3(0.04, 0.12, 0.16) * grid * 0.3;
+
+    } else {
+      // ── Monolith ──
+      // Dark obsidian with faint rim
+      vec3 monoBase = vec3(0.04, 0.07, 0.09);
+
+      // Specular highlight
+      vec3 halfV = normalize(sunDir - rd);
+      float spec = pow(max(dot(n, halfV), 0.0), 64.0) * sha;
+
+      // Fresnel rim — warm
+      float fr = fresnel(rd, n, 1.6);
+      vec3 rimCol = vec3(0.55, 0.28, 0.08);
+
+      col = monoBase;
+      col += sunCol * diff * sha * 0.15;
+      col += sunCol * spec * 0.6;
+      col += rimCol * fr * 0.4;
+      col += ambCol * 0.3;
+
+      // Faint vertical stripe detail
+      float stripe = smoothstep(0.0, 0.01, abs(fract(p.y * 0.5) - 0.5) - 0.48);
+      col += vec3(0.04, 0.10, 0.14) * (1.0 - stripe) * 0.1;
+    }
+
+    // Fog
+    float fog = exp(-fogDensity * t * t * 0.1) * exp(-fogDensity * t);
+    vec3 fogCol = vec3(0.05, 0.12, 0.16); // deep teal fog
+    // add sun bloom near horizon in fog
+    float sunFog = pow(max(dot(rd, normalize(vec3(0.15, 0.08, -1.0))), 0.0), 4.0);
+    fogCol += vec3(0.4, 0.18, 0.05) * sunFog * 0.5;
+    col = mix(fogCol, col, fog);
+
+  } else {
+    // Sky
+    col = skyColor(rd);
+    // Horizon fog
+    float hFog = exp(-abs(rd.y) * 3.0);
+    vec3 fogCol = vec3(0.06, 0.14, 0.18);
+    float sunFog = pow(max(dot(rd, normalize(vec3(0.15, 0.08, -1.0))), 0.0), 4.0);
+    fogCol += vec3(0.4, 0.18, 0.05) * sunFog * 0.6;
+    col = mix(col, fogCol, hFog * 0.5);
+  }
+
+  // ── Film grain ────────────────────────────────────────────────────────────────
+  float grain = hash(gl_FragCoord.xy + vec2(uTime * 0.1, 0.0)) * 2.0 - 1.0;
+  col += grain * 0.018;
+
+  // ── Vignette ──────────────────────────────────────────────────────────────────
+  vec2 q = gl_FragCoord.xy / uResolution;
+  float vign = q.x * (1.0-q.x) * q.y * (1.0-q.y);
+  vign = pow(vign * 16.0, 0.5);
+  col *= mix(0.35, 1.0, vign);
+
+  // ── Cinematic grade: lift shadows teal, warm highlights ──────────────────────
+  // Cool shadows
+  col = mix(vec3(0.03, 0.09, 0.11), col, clamp(col * 3.0 + 0.1, vec3(0.0), vec3(1.0)));
+  // Slight desaturation of mids
+  float lum = dot(col, vec3(0.2126, 0.7152, 0.0722));
+  col = mix(col, vec3(lum), 0.12);
+
+  // ── Tone map (simple Reinhard) ────────────────────────────────────────────────
+  col = col / (col + 1.0);
+  col = pow(col, vec3(1.0/2.2)); // gamma
+
+  gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+const vertexShader = /* glsl */`
+void main() {
+  gl_Position = vec4(position, 1.0);
+}
+`;
+
+// ── Fullscreen quad ───────────────────────────────────────────────────────────
+const geo = new THREE.PlaneGeometry(2, 2);
+const mat = new THREE.ShaderMaterial({
+  vertexShader,
+  fragmentShader,
+  uniforms,
+});
+scene.add(new THREE.Mesh(geo, mat));
+
+// ── Scroll + mouse ────────────────────────────────────────────────────────────
+let scrollProgress = 0;
+let targetProgress = 0;
+const mouse = { x: 0, y: 0 };
+const targetMouse = { x: 0, y: 0 };
+
+window.addEventListener('scroll', () => {
+  const maxScroll = document.body.scrollHeight - window.innerHeight;
+  targetProgress = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+}, { passive: true });
+
+window.addEventListener('mousemove', (e) => {
+  targetMouse.x = (e.clientX / window.innerWidth)  * 2 - 1;
+  targetMouse.y = -((e.clientY / window.innerHeight) * 2 - 1);
+}, { passive: true });
+
+// ── Project label system ──────────────────────────────────────────────────────
+// Each label fades in at a progress range and fades out before the next
+// 5 monoliths spread across ~0.15..0.95 of progress
+const labels = [
+  { el: document.getElementById('p1'), peak: 0.13, half: 0.04 },
+  { el: document.getElementById('p2'), peak: 0.32, half: 0.04 },
+  { el: document.getElementById('p3'), peak: 0.51, half: 0.04 },
+  { el: document.getElementById('p4'), peak: 0.70, half: 0.04 },
+  { el: document.getElementById('p5'), peak: 0.89, half: 0.04 },
+];
+
+function updateLabels(p) {
+  for (const lb of labels) {
+    const dist = Math.abs(p - lb.peak);
+    const op = Math.max(0, 1 - dist / lb.half);
+    lb.el.style.opacity = op.toFixed(3);
+  }
+}
+
+// ── Hint fade ─────────────────────────────────────────────────────────────────
+const hint = document.getElementById('scroll-hint');
+
+// ── Resize ────────────────────────────────────────────────────────────────────
+function onResize() {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  uniforms.uResolution.value.set(window.innerWidth, window.innerHeight);
+}
+window.addEventListener('resize', onResize);
+
+// ── rAF loop ──────────────────────────────────────────────────────────────────
+let lastTime = performance.now();
+
+function tick(now) {
+  requestAnimationFrame(tick);
+
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+
+  // Smooth scroll
+  scrollProgress += (targetProgress - scrollProgress) * (1 - Math.exp(-8 * dt));
+  // Smooth mouse
+  mouse.x += (targetMouse.x - mouse.x) * (1 - Math.exp(-6 * dt));
+  mouse.y += (targetMouse.y - mouse.y) * (1 - Math.exp(-6 * dt));
+
+  uniforms.uTime.value     = now * 0.001;
+  uniforms.uProgress.value = scrollProgress;
+  uniforms.uMouse.value.set(mouse.x, mouse.y);
+
+  // Hint opacity
+  hint.style.opacity = scrollProgress < 0.03 ? '1' : '0';
+
+  updateLabels(scrollProgress);
+
+  renderer.render(scene, camera);
+}
+
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
