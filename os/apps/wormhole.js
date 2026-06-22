@@ -24,6 +24,9 @@ export default {
       { id: 'cosmos',    label: 'COSMOS',    icon: '◉' },
       { id: 'gallery',   label: 'GALLERY',   icon: '⊞' },
       { id: 'wallpaper', label: 'WALLPAPER', icon: '≋' },
+      { id: 'gravity',   label: 'GRAVITY',   icon: '⊚' },
+      { id: 'decoder',   label: 'DECODER',   icon: '▓' },
+      { id: 'resonance', label: 'RESONANCE', icon: '♫' },
     ];
 
     let W, H, dpr, cx, cy;

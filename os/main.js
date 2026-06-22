@@ -8,6 +8,7 @@ import store from './shell/store.js';
 import { initDesktop } from './shell/desktop.js';
 import { openApp } from './shell/windowManager.js';
 import { runIntro } from './intro/tear.js';
+import { initBeneathCanvas } from './shell/beneathCanvas.js';
 import apps from './shell/registry.js';
 
 // ── Build ctx ────────────────────────────────────────────────────────────────
@@ -99,6 +100,8 @@ function showDesktop() {
 }
 
 // ── Entry point ───────────────────────────────────────────────────────────────
+initBeneathCanvas();
+
 runIntro(() => {
   runBoot(() => {
     showDesktop();

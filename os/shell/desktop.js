@@ -101,13 +101,20 @@ export function initDesktop(apps, ctx) {
     });
   }
 
-  // ── Desktop icons ──
+  // ── Desktop icons (max 6 per column, wrap to 2nd column) ──
   const workspace = document.getElementById('workspace');
+  const MAX_PER_COL = 6;
+  const ICON_TOP    = 36;
+  const ICON_GAP    = 72;
+  const COL_X       = [20, 100]; // left px for col 0, col 1
+
   apps.forEach((app, i) => {
+    const col = Math.floor(i / MAX_PER_COL);
+    const row = i % MAX_PER_COL;
     const icon = document.createElement('div');
     icon.className = 'desk-icon';
-    icon.style.top = (40 + i * 88) + 'px';
-    icon.style.left = '20px';
+    icon.style.top  = (ICON_TOP + row * ICON_GAP) + 'px';
+    icon.style.left = (COL_X[col] ?? 180) + 'px';
     icon.innerHTML = `
       <div class="icon-glyph">${app.icon}</div>
       <div class="icon-label">${app.title}</div>
@@ -120,6 +127,68 @@ export function initDesktop(apps, ctx) {
     });
     workspace.appendChild(icon);
   });
+
+  // ── Right-click context menu ──
+  let ctxMenu = null;
+  function removeCtxMenu() {
+    if (ctxMenu) { ctxMenu.remove(); ctxMenu = null; }
+  }
+
+  workspace.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    removeCtxMenu();
+
+    ctxMenu = document.createElement('div');
+    ctxMenu.style.cssText = [
+      'position:absolute',
+      `left:${e.clientX - workspace.getBoundingClientRect().left}px`,
+      `top:${e.clientY - workspace.getBoundingClientRect().top}px`,
+      'background:#0c1610', 'border:1px solid rgba(92,255,208,0.22)',
+      "font-family:'JetBrains Mono',monospace",
+      'color:rgba(92,255,208,0.8)', 'z-index:8000',
+      'min-width:170px', 'padding:4px 0',
+      'box-shadow:0 6px 28px rgba(0,0,0,0.6)',
+    ].join(';');
+
+    const items = [
+      { label: '⊚  Gravity',   action: () => ctx.openApp('gravity') },
+      { label: '▓  Decoder',   action: () => ctx.openApp('decoder') },
+      { label: '♫  Resonance', action: () => ctx.openApp('resonance') },
+      null,
+      { label: '≋  Wallpaper', action: () => ctx.openApp('wallpaper') },
+      { label: '✉  Contact',   action: () => ctx.openContact() },
+      null,
+      { label: '↺  Reset explored', action: () => {
+        try { localStorage.removeItem('dhruvos.v1'); } catch (_) {}
+        location.reload();
+      }},
+    ];
+
+    items.forEach(item => {
+      if (!item) {
+        const sep = document.createElement('div');
+        sep.style.cssText = 'height:1px;background:rgba(92,255,208,0.09);margin:3px 0;';
+        ctxMenu.appendChild(sep);
+        return;
+      }
+      const btn = document.createElement('button');
+      btn.textContent = item.label;
+      btn.style.cssText = [
+        'display:block', 'width:100%', 'background:none', 'border:none',
+        "padding:7px 16px", "font:10px 'JetBrains Mono',monospace",
+        'color:rgba(92,255,208,0.8)', 'cursor:pointer', 'text-align:left',
+        'letter-spacing:0.04em', 'transition:background 0.1s',
+      ].join(';');
+      btn.addEventListener('mouseover', () => { btn.style.background = 'rgba(92,255,208,0.07)'; });
+      btn.addEventListener('mouseout',  () => { btn.style.background = 'none'; });
+      btn.addEventListener('click', () => { removeCtxMenu(); item.action(); });
+      ctxMenu.appendChild(btn);
+    });
+
+    workspace.appendChild(ctxMenu);
+  });
+
+  workspace.addEventListener('click', removeCtxMenu);
 
   // ── Taskbar ──
   const taskbar = document.getElementById('taskbar');

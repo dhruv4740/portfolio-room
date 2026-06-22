@@ -23,5 +23,8 @@ await load('../apps/wormhole.js');
 await load('../apps/gallery.js');
 await load('../apps/wallpaper.js');
 await load('../apps/contact.js');
+await load('../apps/gravity.js');
+await load('../apps/decoder.js');
+await load('../apps/resonance.js');
 
 export default apps;

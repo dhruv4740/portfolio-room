@@ -170,13 +170,16 @@ export default {
           '  wallpaper     open wallpaper',
           '  cosmos        open cosmos',
           '  contact       show contact info',
+          '  gravity       open gravity (physics)',
+          '  decoder       open decoder (bio reveal)',
+          '  resonance     open resonance (audio viz)',
           '  whoami        identity',
           '  open <app>    open any app by name',
           '  clear         clear screen',
         );
       },
       ls(_, print) {
-        const appList = ['about', 'terminal', 'projects', 'cosmos', 'wormhole', 'gallery', 'wallpaper', 'contact'];
+        const appList = ['about', 'terminal', 'projects', 'cosmos', 'wormhole', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'resonance'];
         print('  ' + appList.join('  '));
       },
       about(ctx, print) {

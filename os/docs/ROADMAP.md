@@ -36,21 +36,21 @@
 | `wallpaper.js` | n/a | n/a | n/a | ✅ swatch UI + store persistence |
 | `contact.js` | ✅ | n/a | n/a | ✅ corner accents + copy-to-clipboard |
 
-## Phase 2 — Shell Features (pending)
+## Phase 2 — Shell Features
 
 | Item | Status |
 |---|---|
-| Right-click desktop context menu | ⬜ Pending |
-| Animated default wallpaper on boot | ⬜ Pending |
+| Right-click desktop context menu | ✅ Done (desktop.js — gravity/decoder/resonance/wallpaper/contact/reset) |
+| Animated default wallpaper on boot | ✅ Done (shell/beneathCanvas.js — 80-particle curl flow, 24fps) |
 | Mobile / small-screen layout | ⬜ Pending |
 
-## Phase 3 — New Apps (pending)
+## Phase 3 — New Apps
 
 | App | Mockup source | Status |
 |---|---|---|
-| Gravity (Matter.js skill chips) | `mockups/gravity.html` | ⬜ Pending |
-| Decoder (scramble-reveal bio) | `mockups/decoder.html` | ⬜ Pending |
-| Resonance (audio-reactive) | `mockups/resonance.html` | ⬜ Pending |
+| Gravity (Matter.js skill chips) | `mockups/gravity.html` | ✅ Done — chips from content.js, click→openProject |
+| Decoder (scramble-reveal bio) | `mockups/decoder.html` | ✅ Done — 5-stage DOM text reveal from content.js |
+| Resonance (audio-reactive) | `mockups/resonance.html` | ✅ Done — Canvas 2D, uses ctx.audio.analyser |
 | Liminal (raymarched fog) | `mockups/raymarch.html` | ⬜ Pending |
 | Particle Genesis lite | `mockups/particles.html` | ⬜ Pending |
 | Singularity (raymarched BH) | `mockups/singularity.html` | ⬜ Pending |
