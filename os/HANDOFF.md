@@ -2,7 +2,10 @@
 
 **Branch:** `feat/dhruvos`  
 **Owner:** Dhruv Kothari (`dhruvkothari13062006@gmail.com`, `github.com/dhruv4740`)  
-**Last updated:** 2026-06-22
+**Last updated:** 2026-06-22 (Wave 3 — backbone + overhaul)
+
+**Architecture docs:** See `os/docs/` — ROADMAP.md / ARCHITECTURE.md for full spec.  
+**Content:** Edit `os/shell/content.js` to update copy across all apps simultaneously.
 
 ---
 
@@ -19,7 +22,7 @@ A fake retro-future OS desktop that serves as Dhruv's portfolio. No build step, 
 
 1. **Reality Tear intro** — a flat minimalist landing page is shown. The user drags to "tear" through it, revealing the dark OS beneath. Clicking the "skip →" button in the bottom-right skips directly. (~55% torn triggers auto-complete via GSAP.)
 2. **BIOS boot** — green terminal-style boot lines scroll; the user clicks anywhere to skip.
-3. **Desktop** — 7 app icons on the left column. Single-click or double-click to open. Draggable windows, traffic-light close/minimize, taskbar at the bottom.
+3. **Desktop** — 8 app icons on the left column (7 original + `contact`). Single-click or double-click to open. Draggable windows, traffic-light close/minimize, taskbar at the bottom. Menubar has a persistent `✉ contact` button and a `SYS ▸ N%` exploration meter.
 
 ---
 
@@ -126,18 +129,25 @@ Passed as the second argument to every `mount()`:
 
 ```js
 ctx = {
-  openApp(id),           // open any registered app by id
+  openApp(id),                  // open any registered app by id
+  openProject(projectId),       // emit 'open-project' + open projects app
+  openContact(),                // open contact app
+
+  content,   // os/shell/content.js — single source of truth for all copy
+  store,     // os/shell/store.js — event bus + exploration state
+
   audio: {
     start(), stop(), toggle(),  // ambient synth control
     get analyser()              // Web Audio AnalyserNode for visualisers
   },
   theme: {
-    green: '#5cffd0',
-    amber: '#ffb000',
-    bg:    '#050a08',
+    green: '#5cffd0', amber: '#ffb000', red: '#ff4f4f',
+    bg: '#050a08', surface: '#0c1610', muted: 'rgba(92,255,208,0.45)',
   },
 }
 ```
+
+See `os/docs/ARCHITECTURE.md` for the full store API and canonical event list.
 
 ---
 
@@ -198,65 +208,46 @@ Screenshots go to `mockups/shots/`. The desktop screenshot shows only the beneat
 
 ---
 
-## Current App Status
+## Current App Status (Wave 3)
+
+**8 apps total.** All read content from `os/shell/content.js`. All cross-linked.
 
 | App | Status | Notes |
 |---|---|---|
-| `about` | Complete | Neural graph with 15 nodes, fire-propagation pulses, drag-to-pan. Click node → info panel. |
-| `terminal` | Complete | Shadow DOM scoped. Commands: help / ls / about / projects / cosmos / whoami / contact / clear / sudo / rm. Up/Down history. |
-| `projects` | Complete | 3 projects. Corrupted CSS clip-path glitch on load; hover/click scrambles to readable text. Integrity meter. |
-| `cosmos` | Complete | Powers of Ten zoom. 6 procedural layers (galaxy, planet, city, desk, eye, neuron). Wheel and drag input inside window only. |
-| `wormhole` | Complete | Hex-ring tunnel with wobble and star streaks. Mouse tilt deflects camera origin. |
-| `gallery` | Complete | 4 projects listed. Scroll-velocity skew on titles. Scramble-decode on hover. |
-| `wallpaper` | Complete | 300-particle curl-noise flow field. 4 palettes (green/amber/violet/blue). "Set as wallpaper" button patches `#os-beneath` background and `#workspace` radial gradient. |
+| `about` | ✅ Complete | Green palette. Nodes from content.js (skills + projects). Side-drawer on click. Project nodes → openProject. Contact node → openContact. Contact strip. |
+| `terminal` | ✅ Complete | All 8 apps in `ls`. `open <app>` command. Colorized output. ASCII contact card on `contact` command. All copy from content.js. |
+| `projects` | ✅ Complete | 4 real projects from content.js. Dramatic locked state. Scramble-reveal. Link chips (hidden when empty). Store deep-link support. Contact strip. |
+| `cosmos` | ✅ Complete | Overlay cards from content.js. Amber scale label. Card border treatment. Contact strip. |
+| `wormhole` | ✅ Complete | Repurposed as navigation hub. 6 portal rings (one per app). Labels + icons. Hover glow. Click → openApp. |
+| `gallery` | ✅ Complete | 4 projects from content.js. Amber year label. Hover expands description. Link chips. Cross-links to projects via openProject. Contact strip. |
+| `wallpaper` | ✅ Complete | 260 particles. Swatch palette selector (28×28 color squares). Amber SET button. Palette persisted to store. |
+| `contact` | ✅ Complete | Corner-accent card. Email copy-to-clipboard. GitHub link. Resume button (hidden until `content.contact.resume` filled). |
 
----
+## Real Content
 
-## Real Content Status
+All in `os/shell/content.js`. Edit once → changes everywhere.
 
-Some content is placeholder. Real info:
-
-- **Name:** Dhruv Kothari
-- **Location:** Mumbai, India
-- **Email:** dhruvkothari13062006@gmail.com
-- **GitHub:** github.com/dhruv4740
-- **Real projects:**
-  1. Reddit Growth Copilot — AI finds Reddit threads, drafts on-brand replies. (2024)
-  2. GeoSVG Maps Demo — Interactive SVG map generator with live coordinates. (2024)
-  3. 3D Portfolio — R3F walkable room with physics, shaders, car game. (2025)
-  4. dhruvOS — this thing. (2026)
-
-The `terminal.js` `ls` command still lists old names — update the `ls` handler and the `PROJECTS` array in `gallery.js` when content is finalised.
+- To add live/github links: fill `projects[n].links.live` and/or `.github`
+- To add resume: fill `contact.resume` with PDF URL
+- To update project descriptions: edit `projects[n].description`
 
 ---
 
 ## Pending / Next Up
 
-These are the logical next steps in priority order:
+See `os/docs/ROADMAP.md` for full checkbox list. Summary:
 
-### 1. Wire real content everywhere
-- `terminal.js` → update `ls` output to list all 7 apps; add `wormhole`, `gallery`, `wallpaper` commands
-- `about.js` → `NODE_DEFS` already has real projects; verify descriptions are accurate
-- `projects.js` → the 3 project cards have real names but placeholder descriptions; flesh them out
-- `gallery.js` → already has 4 real entries; add URLs/links when projects are deployed
+### Phase 2 — Shell (next priority)
+- Right-click desktop context menu
+- Animated default wallpaper on boot (low-cost, ≤120 particles)
+- Mobile/small-screen layout
 
-### 2. Make the desktop look alive
-The `#workspace` is bare dark background with icons. Possible improvements:
-- Show a subtle version of the wallpaper app's flow-field as the default desktop background
-- Add a "right-click" context menu on the desktop (Change Wallpaper → opens wallpaper app)
-- Animate icons on boot (stagger entrance)
+### Phase 3 — New Apps
+Priority order: **Gravity** (Matter.js skill chips) → **Decoder** → **Resonance** → others  
+Mockup sources in `mockups/` — see ROADMAP.md for the table.
 
-### 3. Resize-to-fit on small screens / mobile
-Windows are sized from `appDef.width/height` clamped to workspace. On narrow viewports, the left icon column may overflow. Consider a bottom dock layout on mobile, or disable drag on touch and use full-screen windows instead.
-
-### 4. Add more app ideas (user-approved concepts)
-The user liked all of these — each could become a new app window:
-- **Resonance** — audio visualiser using `ctx.audio.analyser`
-- **Singularity** — GLSL raymarched shader (note: was laggy on user's laptop; keep texture size ≤512×512 and skip in low-end mode)
-- **Liminal** — raymarched foggy floor / drifting SDF monoliths as a screensaver-style app
-
-### 5. Deploy
-Static files — deploy `os/` as-is to Vercel or Netlify. No build step needed. Just point the root to `os/index.html`.
+### Deploy
+Static files — deploy `os/` as-is to Vercel or Netlify. No build step needed.
 
 ---
 

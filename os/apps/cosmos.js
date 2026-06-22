@@ -1,5 +1,57 @@
 // cosmos.js — Powers of Ten infinite-zoom app for dhruvOS
 // No-build ES module. Ported from mockups/zoom.html.
+import content from '../shell/content.js';
+import { mountContactStrip } from '../shell/contactStrip.js';
+
+function techChip(t) {
+  return `<span style="display:inline-block;font-size:9px;color:rgba(92,255,208,0.55);border:1px solid rgba(92,255,208,0.2);padding:2px 8px;margin:2px;letter-spacing:.07em;font-family:'JetBrains Mono',monospace">${t}</span>`;
+}
+
+function buildCardDefs() {
+  const { identity, skills, projects } = content;
+  const p0 = projects[0]; // Reddit Growth Copilot — main quest
+  return [
+    {
+      id: 'galaxy',
+      html: `<div style="font:700 28px/1.1 'JetBrains Mono',monospace;color:#5cffd0;letter-spacing:.06em">${identity.name}</div>
+             <div style="font:400 12px/1.4 'JetBrains Mono',monospace;color:rgba(92,255,208,0.45);letter-spacing:.14em;margin-top:8px">${identity.tagline.toUpperCase()}</div>
+             <div style="font-size:10px;color:rgba(92,255,208,0.3);letter-spacing:.12em;margin-top:8px">${identity.role} · ${identity.location}</div>`,
+      start: 0, peak: .5, end: 1,
+    },
+    {
+      id: 'planet',
+      html: `<div style="font-size:9px;letter-spacing:.28em;color:rgba(92,255,208,0.35);margin-bottom:10px;font-family:'JetBrains Mono',monospace">PALE BLUE DOT</div>
+             <div style="font-size:13px;color:rgba(92,255,208,0.6);line-height:1.7;font-family:'JetBrains Mono',monospace">Earth, Solar System, Milky Way<br>somewhere in all of this —<br>a developer who builds things</div>`,
+      start: 1, peak: 1.5, end: 2,
+    },
+    {
+      id: 'city',
+      html: `<div style="font-size:9px;letter-spacing:.28em;color:rgba(92,255,208,0.35);margin-bottom:10px;font-family:'JetBrains Mono',monospace">CITY SCALE</div>
+             <div style="font-size:13px;color:rgba(92,255,208,0.6);line-height:1.7;font-family:'JetBrains Mono',monospace">Based in Mumbai, India<br>working across web, systems &amp; graphics</div>`,
+      start: 2, peak: 2.5, end: 3,
+    },
+    {
+      id: 'desk',
+      html: `<div style="font-size:9px;letter-spacing:.28em;color:rgba(92,255,208,0.35);margin-bottom:10px;font-family:'JetBrains Mono',monospace">SELECTED WORK</div>
+             <div style="font-size:15px;color:#5cffd0;letter-spacing:.04em;margin-bottom:6px;font-family:'JetBrains Mono',monospace;font-weight:700">${p0.name}</div>
+             <div style="font-size:11px;color:rgba(92,255,208,0.5);line-height:1.65;font-family:'JetBrains Mono',monospace;margin-bottom:10px">${p0.tagline}</div>
+             <div>${p0.tech.map(techChip).join('')}</div>`,
+      start: 3, peak: 3.5, end: 4,
+    },
+    {
+      id: 'eye',
+      html: `<div style="font-size:9px;letter-spacing:.28em;color:rgba(92,255,208,0.35);margin-bottom:10px;font-family:'JetBrains Mono',monospace">THE BUILDER</div>
+             <div style="font-size:12px;color:rgba(92,255,208,0.55);line-height:1.8;font-family:'JetBrains Mono',monospace">I build things that work at every scale —<br>from system architecture to pixel-perfect UI.<br>Obsessed with the craft.</div>`,
+      start: 4, peak: 4.5, end: 5,
+    },
+    {
+      id: 'neuron',
+      html: `<div style="font-size:9px;letter-spacing:.28em;color:rgba(92,255,208,0.35);margin-bottom:10px;font-family:'JetBrains Mono',monospace">CORE SKILLS</div>
+             <div style="margin-bottom:12px">${skills.map(s => techChip(s.label)).join('')}</div>`,
+      start: 4.8, peak: 5, end: 5.5,
+    },
+  ];
+}
 
 export default {
   id: 'cosmos',
@@ -8,7 +60,7 @@ export default {
   width: 820,
   height: 600,
 
-  mount(body) {
+  mount(body, _appCtx) {
     const DPR = Math.min(window.devicePixelRatio || 1, 1.25);
 
     // ── Canvas ──────────────────────────────────────────────────────────────
@@ -16,7 +68,7 @@ export default {
     canvas.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;display:block;';
     body.style.position = 'relative';
     body.style.overflow = 'hidden';
-    body.style.background = '#000';
+    body.style.background = '#050a08';
     body.appendChild(canvas);
     const ctx = canvas.getContext('2d');
 
@@ -45,13 +97,21 @@ export default {
 
     // Scale label (top-center)
     const scaleLbl = document.createElement('div');
-    scaleLbl.style.cssText = 'position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.18em;color:#3c9;opacity:.85;white-space:nowrap;text-transform:uppercase;';
-    scaleLbl.textContent = '10²⁶ m — galactic scale';
+    scaleLbl.style.cssText = [
+      'position:absolute', 'top:10px', 'left:50%', 'transform:translateX(-50%)',
+      "font:700 13px 'JetBrains Mono',monospace", 'letter-spacing:.18em',
+      'color:#ffb000', 'opacity:.9', 'white-space:nowrap', 'text-transform:uppercase',
+    ].join(';');
+    scaleLbl.textContent = '10²⁶ m — GALACTIC';
     ui.appendChild(scaleLbl);
 
     // Hint (bottom-center)
     const hint = document.createElement('div');
-    hint.style.cssText = 'position:absolute;bottom:16px;left:50%;transform:translateX(-50%);font-size:10px;letter-spacing:.12em;color:#444;transition:opacity .8s;white-space:nowrap;';
+    hint.style.cssText = [
+      'position:absolute', 'bottom:46px', 'left:50%', 'transform:translateX(-50%)',
+      "font:10px 'JetBrains Mono',monospace", 'letter-spacing:.12em',
+      'color:rgba(92,255,208,0.25)', 'transition:opacity .8s', 'white-space:nowrap',
+    ].join(';');
     hint.textContent = 'scroll or drag to zoom through scales';
     ui.appendChild(hint);
 
@@ -62,53 +122,18 @@ export default {
 
     body.appendChild(ui);
 
-    // ── Content cards ───────────────────────────────────────────────────────
-    const CARD_DEFS = [
-      {
-        id: 'galaxy',
-        html: `<h1 style="font:300 36px/1.1 Georgia,serif;color:#e8e4dc;letter-spacing:.06em;text-shadow:0 0 40px rgba(180,160,255,.4)">DHRUV KOTHARI</h1>
-               <h2 style="font:400 15px/1.4 Georgia,serif;color:#9090b0;letter-spacing:.12em;margin-top:8px">explore every scale</h2>
-               <p style="font-size:11px;line-height:1.7;color:#7a8a7a;letter-spacing:.05em;margin-top:12px">developer · designer · builder</p>`,
-        start: 0, peak: .5, end: 1,
-      },
-      {
-        id: 'planet',
-        html: `<h2 style="font:400 16px/1.4 Georgia,serif;color:#9090b0;letter-spacing:.14em">PALE BLUE DOT</h2>
-               <p style="font-size:11px;line-height:1.7;color:#7a8a7a;letter-spacing:.05em;margin-top:10px">Earth, Solar System, Milky Way<br>somewhere in all of this — a developer</p>`,
-        start: 1, peak: 1.5, end: 2,
-      },
-      {
-        id: 'city',
-        html: `<h2 style="font:400 16px/1.4 Georgia,serif;color:#9090b0;letter-spacing:.14em">CITY SCALE</h2>
-               <p style="font-size:11px;line-height:1.7;color:#7a8a7a;letter-spacing:.05em;margin-top:10px">based in Mumbai, India<br>working across web, systems &amp; data</p>`,
-        start: 2, peak: 2.5, end: 3,
-      },
-      {
-        id: 'desk',
-        html: `<h1 style="font:300 22px/1.1 Georgia,serif;color:#e8e4dc;letter-spacing:.06em">Selected Work</h1>
-               <h2 style="font:400 14px/1.4 Georgia,serif;color:#9090b0;letter-spacing:.12em;margin-top:10px">Reddit Growth Copilot</h2>
-               <p style="font-size:11px;line-height:1.7;color:#7a8a7a;letter-spacing:.05em;margin-top:8px">AI-powered community analytics dashboard<br>mock-mode, phase 6 complete, key-free</p>
-               <div style="margin-top:12px">${['React','Python','LLM','Reddit API'].map(t=>`<span style="display:inline-block;font-size:10px;color:#3a7a5a;border:1px solid #2a5a3a;padding:3px 9px;margin:2px;letter-spacing:.07em">${t}</span>`).join('')}</div>`,
-        start: 3, peak: 3.5, end: 4,
-      },
-      {
-        id: 'eye',
-        html: `<h2 style="font:400 16px/1.4 Georgia,serif;color:#9090b0;letter-spacing:.14em">THE BUILDER</h2>
-               <p style="font-size:11px;line-height:1.7;color:#7a8a7a;letter-spacing:.05em;margin-top:10px">I build things that work at every scale —<br>from system architecture to pixel-perfect UI.<br>Obsessed with the craft.</p>`,
-        start: 4, peak: 4.5, end: 5,
-      },
-      {
-        id: 'neuron',
-        html: `<h2 style="font:400 16px/1.4 Georgia,serif;color:#9090b0;letter-spacing:.14em">CORE SKILLS</h2>
-               <p style="margin-top:10px">${['JavaScript','TypeScript','Python','React / R3F','Node.js','Canvas / WebGL','ML / LLM integration','Data viz'].map(t=>`<span style="display:inline-block;font-size:10px;color:#3a7a5a;border:1px solid #2a5a3a;padding:3px 9px;margin:2px;letter-spacing:.07em">${t}</span>`).join('')}</p>`,
-        start: 4.8, peak: 5, end: 5.5,
-      },
-    ];
+    // ── Content cards (from content.js) ────────────────────────────────────
+    const CARD_DEFS = buildCardDefs();
 
     const cardEls = {};
     CARD_DEFS.forEach(c => {
       const el = document.createElement('div');
-      el.style.cssText = 'position:absolute;text-align:center;opacity:0;max-width:480px;padding:0 28px;transition:opacity .05s;';
+      el.style.cssText = [
+        'position:absolute', 'text-align:center', 'opacity:0',
+        'max-width:480px', 'padding:0 32px', 'transition:opacity .05s',
+        'background:rgba(5,10,8,0.7)', 'border:1px solid rgba(92,255,208,0.1)',
+        'padding:20px 28px', 'backdrop-filter:blur(2px)',
+      ].join(';');
       el.innerHTML = c.html;
       overlay.appendChild(el);
       cardEls[c.id] = el;
@@ -116,12 +141,12 @@ export default {
 
     // ── Scale ranges for label ──────────────────────────────────────────────
     const SCALE_RANGES = [
-      [0,   .8,  '10²⁶ m — galactic scale'],
-      [.8,  1.8, '10⁷ m — planetary scale'],
-      [1.8, 2.8, '10⁴ m — city scale'],
-      [2.8, 3.8, '10⁰ m — human scale'],
-      [3.8, 4.8, '10⁻² m — cellular scale'],
-      [4.8, 5,   '10⁻¹⁰ m — quantum scale'],
+      [0,   .8,  '10²⁶ m — GALACTIC'],
+      [.8,  1.8, '10⁷ m — PLANETARY'],
+      [1.8, 2.8, '10⁴ m — CITY'],
+      [2.8, 3.8, '10⁰ m — HUMAN'],
+      [3.8, 4.8, '10⁻² m — CELLULAR'],
+      [4.8, 5,   '10⁻¹⁰ m — QUANTUM'],
     ];
     function getScaleLabel(s) {
       for (const [a, b, lbl] of SCALE_RANGES) if (s >= a && s < b) return lbl;
@@ -464,10 +489,13 @@ export default {
 
     rafId = requestAnimationFrame(ts => { lastTs = ts; rafId = requestAnimationFrame(frame); });
 
+    const removeStrip = mountContactStrip(body);
+
     // ── Cleanup ─────────────────────────────────────────────────────────────
     return function cleanup() {
       cancelAnimationFrame(rafId);
       ro.disconnect();
+      removeStrip();
       body.removeEventListener('wheel',        onWheel);
       body.removeEventListener('pointerdown',  onPointerDown);
       body.removeEventListener('pointermove',  onPointerMove);

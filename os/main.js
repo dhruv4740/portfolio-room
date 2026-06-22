@@ -3,24 +3,46 @@
  * ES module; loaded as type="module" from index.html.
  */
 import audio from './shell/audio.js';
+import content from './shell/content.js';
+import store from './shell/store.js';
 import { initDesktop } from './shell/desktop.js';
 import { openApp } from './shell/windowManager.js';
 import { runIntro } from './intro/tear.js';
 import apps from './shell/registry.js';
 
-// ── Build ctx ───────────────────────────────────────────────────────────
+// ── Build ctx ────────────────────────────────────────────────────────────────
 const ctx = {
   openApp: (id) => {
     const app = apps.find(a => a.id === id);
-    if (app) openApp(app, ctx);
+    if (app) {
+      store.markExplored(id);
+      openApp(app, ctx);
+    }
+  },
+  openProject: (projectId) => {
+    store.emit('open-project', { id: projectId });
+    const app = apps.find(a => a.id === 'projects');
+    if (app) {
+      store.markExplored('projects');
+      openApp(app, ctx);
+    }
+  },
+  openContact: () => {
+    const app = apps.find(a => a.id === 'contact');
+    if (app) {
+      store.markExplored('contact');
+      openApp(app, ctx);
+    }
   },
   audio,
-  theme: { green: '#5cffd0', amber: '#ffb000', bg: '#050a08' },
+  content,
+  store,
+  theme: { green: '#5cffd0', amber: '#ffb000', bg: '#050a08', red: '#ff4f4f', surface: '#0c1610', muted: 'rgba(92,255,208,0.45)' },
 };
 
-// ── Boot sequence ───────────────────────────────────────────────────────
+// ── Boot sequence ─────────────────────────────────────────────────────────────
 const BOOT_LINES = [
-  'dhruvOS v1.0 — BIOS POST',
+  'dhruvOS v2.0 — BIOS POST',
   'Copyright (c) 2026 Dhruv Kothari',
   ' ',
   '[ OK ] CPU check ............ 4 cores detected',
@@ -28,6 +50,7 @@ const BOOT_LINES = [
   '[ OK ] Kernel init .......... v5.15.0-dhruv',
   '[ OK ] Mounting /apps ....... done',
   '[ OK ] Loading GUI stack .... done',
+  '[ OK ] Content manifest ..... loaded',
   '[ .. ] Spawning shell session',
   ' ',
   'Starting dhruvOS desktop environment...',
@@ -47,7 +70,7 @@ function runBoot(onDone) {
     done = true;
     gsap.to(bootEl, {
       opacity: 0, duration: 0.45,
-      onComplete: () => { bootEl.style.display = 'none'; onDone(); }
+      onComplete: () => { bootEl.style.display = 'none'; onDone(); },
     });
   }
 
@@ -75,7 +98,7 @@ function showDesktop() {
   initDesktop(apps, ctx);
 }
 
-// ── Entry point ─────────────────────────────────────────────────────────
+// ── Entry point ───────────────────────────────────────────────────────────────
 runIntro(() => {
   runBoot(() => {
     showDesktop();

@@ -22,5 +22,6 @@ await load('../apps/cosmos.js');
 await load('../apps/wormhole.js');
 await load('../apps/gallery.js');
 await load('../apps/wallpaper.js');
+await load('../apps/contact.js');
 
 export default apps;
