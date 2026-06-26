@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WORMHOLE — Dhruv Kothari</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.169.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.169.0/examples/jsm/"}}</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; font-family: monospace; }
+  #canvas-container { position: fixed; inset: 0; }
+  canvas { display: block; width: 100% !important; height: 100% !important; }
+  #back-link {
+    position: fixed; top: 16px; left: 18px; z-index: 100;
+    color: #444; text-decoration: none; font-size: 11px; letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  #back-link:hover { color: #888; }
+  #concept-label {
+    position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 100; color: #333; font-size: 10px; letter-spacing: 0.3em;
+    text-align: center; pointer-events: none;
+  }
+  #concept-label span { display: block; color: #555; letter-spacing: 0.15em; margin-top: 2px; font-size: 9px; }
+  #webgl-error {
+    display: none; position: fixed; inset: 0; background: #000;
+    color: #555; font-family: monospace; font-size: 13px;
+    align-items: center; justify-content: center; text-align: center;
+  }
+  #portal-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    pointer-events: none; opacity: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: #000;
+  }
+  #portal-overlay.active { pointer-events: all; }
+  #portal-overlay h2 {
+    color: #fff; font-family: monospace; font-size: clamp(14px, 2.5vw, 28px);
+    letter-spacing: 0.2em; font-weight: 400; text-align: center;
+  }
+  #portal-overlay p {
+    color: #555; font-family: monospace; font-size: 10px;
+    letter-spacing: 0.2em; margin-top: 8px;
+  }
+  #back-void {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+    z-index: 51; color: #444; font-family: monospace; font-size: 10px;
+    letter-spacing: 0.2em; cursor: pointer; pointer-events: none; opacity: 0;
+    border: 1px solid #222; padding: 8px 20px; transition: color 0.2s, border-color 0.2s;
+    background: transparent;
+  }
+  #back-void:hover { color: #888; border-color: #444; }
+</style>
+</head>
+<body>
+<a href="index.html" id="back-link">← concepts</a>
+<div id="concept-label">WORMHOLE<span>click a portal to enter</span></div>
+<div id="canvas-container"><canvas id="c"></canvas></div>
+<div id="webgl-error">WebGL not available in this browser.</div>
+<div id="portal-overlay" id="portal-overlay">
+  <h2 id="overlay-title"></h2>
+  <p id="overlay-sub"></p>
+</div>
+<button id="back-void">← back to the void</button>
+
+<script type="module">
+import * as THREE from 'three';
+
+const canvas = document.getElementById('c');
+const errorEl = document.getElementById('webgl-error');
+const overlay = document.getElementById('portal-overlay');
+const overlayTitle = document.getElementById('overlay-title');
+const overlaySub = document.getElementById('overlay-sub');
+const backBtn = document.getElementById('back-void');
+
+// WebGL guard
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+} catch(e) {
+  errorEl.style.display = 'flex';
+  canvas.style.display = 'none';
+  throw e;
+}
+
+const DPR = Math.min(devicePixelRatio, 1.75);
+renderer.setPixelRatio(DPR);
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.autoClear = false;
+
+// ─── PORTAL DATA ────────────────────────────────────────────────────────────
+const PORTALS = [
+  { label: '01 Reddit Growth Copilot', sub: 'Dhruv Kothari', color: 0xff4500, pos: new THREE.Vector3(-2.2, 0.8, 0) },
+  { label: '02 Coming Soon',           sub: '',              color: 0x00bfff, pos: new THREE.Vector3( 2.2, 0.8, -1) },
+  { label: '03 Coming Soon',           sub: '',              color: 0x7fff00, pos: new THREE.Vector3(-1.8,-1.2, -0.5) },
+  { label: '04 Coming Soon',           sub: '',              color: 0xdd88ff, pos: new THREE.Vector3( 2.0,-1.0, 0.5) },
+];
+
+const RT_SIZE = 512;
+
+// ─── MINI-SCENE BUILDERS ────────────────────────────────────────────────────
+function buildGalaxyScene() {
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(60, 1, 0.01, 100);
+  cam.position.set(0, 0, 4);
+  const geo = new THREE.BufferGeometry();
+  const N = 6000;
+  const pos = new Float32Array(N * 3);
+  const col = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    const r = Math.random() * 3.0;
+    const theta = Math.random() * Math.PI * 2;
+    const phi = (Math.random() - 0.5) * 0.3;
+    pos[i*3]   = r * Math.cos(theta + r * 1.2);
+    pos[i*3+1] = r * Math.sin(theta + r * 1.2);
+    pos[i*3+2] = phi * r;
+    const t = r / 3;
+    col[i*3]   = 1.0 - t * 0.5;
+    col[i*3+1] = 0.4 + t * 0.4;
+    col[i*3+2] = 0.6 + t * 0.3;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const mat = new THREE.PointsMaterial({ size: 0.025, vertexColors: true, transparent: true, opacity: 0.9 });
+  scene.add(new THREE.Points(geo, mat));
+  scene.background = new THREE.Color(0x01010a);
+  return { scene, cam, update(t) { scene.rotation.z = t * 0.15; } };
+}
+
+function buildTerrainScene() {
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(55, 1, 0.01, 100);
+  cam.position.set(0, 3.5, 5);
+  cam.lookAt(0, 0, 0);
+  const geo = new THREE.PlaneGeometry(8, 8, 32, 32);
+  const mat = new THREE.MeshBasicMaterial({ color: 0x00bfff, wireframe: true, opacity: 0.7, transparent: true });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.rotation.x = -Math.PI / 2.2;
+  scene.add(mesh);
+  const posArr = geo.attributes.position.array;
+  const baseY = new Float32Array(posArr.length / 3);
+  for (let i = 0; i < baseY.length; i++) baseY[i] = posArr[i*3+2];
+  scene.background = new THREE.Color(0x000d1a);
+  return {
+    scene, cam,
+    update(t) {
+      for (let i = 0; i < baseY.length; i++) {
+        const x = posArr[i*3], z = posArr[i*3+1];
+        posArr[i*3+2] = baseY[i] + Math.sin(x * 1.2 + t * 1.5) * 0.3 + Math.cos(z * 1.0 + t) * 0.2;
+      }
+      geo.attributes.position.needsUpdate = true;
+    }
+  };
+}
+
+function buildTorusKnotScene() {
+  const scene = new THREE.Scene();
+  const cam = new THREE.PerspectiveCamera(55, 1, 0.01, 100);
+  cam.position.set(0, 0, 4.5);
+  const ambient = new THREE.AmbientLight(0xffffff, 0.3);
+  scene.add(ambient);
+  const light1 = new THREE.PointLight(0xff00cc, 4, 10);
+  light1.position.set(2, 2, 2);
+  scene.add(light1);
+  const light2 = new THREE.PointLight(0x00ffaa, 3, 10);
+  light2.position.set(-2, -1, 1);
+  scene.add(light2);
+  const geo = new THREE.TorusKnotGeometry(1.1, 0.35, 128, 24);
+  const mat = new THREE.MeshStandardMaterial({
+    color: 0xcc44ff, emissive: 0x6600cc, emissiveIntensity: 0.6,
+    roughness: 0.2, metalness: 0.7
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+  scene.background = new THREE.Color(0x060010);
+  return {
+    scene, cam,
+    update(t) {
+      mesh.rotation.x = t * 0.4;
+      mesh.rotation.y = t * 0.6;
+      light1.position.set(Math.sin(t) * 3, Math.cos(t * 0.7) * 2, 2);
+    }
+  };
+}
+
+function buildFogScene() {
+  const scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x000a08, 0.18);
+  const cam = new THREE.PerspectiveCamera(60, 1, 0.01, 30);
+  cam.position.set(0, 0, 6);
+  const blobs = [];
+  const colors = [0x00ff88, 0x00ccff, 0x88ffaa, 0x44ffdd];
+  for (let i = 0; i < 8; i++) {
+    const r = 0.4 + Math.random() * 0.6;
+    const geo = new THREE.SphereGeometry(r, 16, 12);
+    const mat = new THREE.MeshBasicMaterial({
+      color: colors[i % colors.length], transparent: true,
+      opacity: 0.18 + Math.random() * 0.15
+    });
+    const m = new THREE.Mesh(geo, mat);
+    m.position.set((Math.random()-0.5)*3, (Math.random()-0.5)*3, (Math.random()-0.5)*2);
+    m.userData = {
+      ox: m.position.x, oy: m.position.y, oz: m.position.z,
+      phase: Math.random() * Math.PI * 2, speed: 0.3 + Math.random() * 0.4
+    };
+    scene.add(m);
+    blobs.push(m);
+  }
+  scene.background = new THREE.Color(0x000a08);
+  return {
+    scene, cam,
+    update(t) {
+      blobs.forEach(b => {
+        const d = b.userData;
+        b.position.x = d.ox + Math.sin(t * d.speed + d.phase) * 0.6;
+        b.position.y = d.oy + Math.cos(t * d.speed * 0.7 + d.phase) * 0.5;
+        b.position.z = d.oz + Math.sin(t * d.speed * 0.5 + d.phase * 2) * 0.4;
+      });
+      cam.position.x = Math.sin(t * 0.1) * 0.5;
+      cam.position.y = Math.cos(t * 0.08) * 0.3;
+      cam.lookAt(0, 0, 0);
+    }
+  };
+}
+
+const miniScenes = [buildGalaxyScene(), buildTerrainScene(), buildTorusKnotScene(), buildFogScene()];
+
+// ─── RENDER TARGETS ─────────────────────────────────────────────────────────
+const renderTargets = miniScenes.map(() =>
+  new THREE.WebGLRenderTarget(RT_SIZE, RT_SIZE, {
+    minFilter: THREE.LinearFilter, magFilter: THREE.LinearFilter
+  })
+);
+
+// ─── MAIN SCENE ─────────────────────────────────────────────────────────────
+const mainScene = new THREE.Scene();
+const mainCam = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.01, 200);
+mainCam.position.set(0, 0, 7);
+
+// Starfield
+{
+  const N = 3000;
+  const pos = new Float32Array(N * 3);
+  for (let i = 0; i < N; i++) {
+    pos[i*3]   = (Math.random() - 0.5) * 80;
+    pos[i*3+1] = (Math.random() - 0.5) * 80;
+    pos[i*3+2] = (Math.random() - 0.5) * 80;
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+  mainScene.add(new THREE.Points(geo, new THREE.PointsMaterial({ size: 0.08, color: 0x8899bb, opacity: 0.5, transparent: true })));
+}
+
+// ─── PORTAL MESHES ──────────────────────────────────────────────────────────
+const portalMeshes = [];
+const rimLights = [];
+const labelSprites = [];
+
+PORTALS.forEach((p, i) => {
+  const group = new THREE.Group();
+  group.position.copy(p.pos);
+
+  // Portal disc (circular via circle geometry)
+  const discGeo = new THREE.CircleGeometry(0.9, 64);
+  const discMat = new THREE.MeshBasicMaterial({ map: renderTargets[i].texture, side: THREE.DoubleSide });
+  const disc = new THREE.Mesh(discGeo, discMat);
+  group.add(disc);
+
+  // Ring
+  const ringGeo = new THREE.TorusGeometry(0.92, 0.045, 16, 80);
+  const ringMat = new THREE.MeshBasicMaterial({ color: p.color });
+  const ring = new THREE.Mesh(ringGeo, ringMat);
+  group.add(ring);
+
+  // Outer glow ring
+  const glowGeo = new THREE.TorusGeometry(0.97, 0.025, 16, 80);
+  const glowMat = new THREE.MeshBasicMaterial({ color: p.color, transparent: true, opacity: 0.3 });
+  const glow = new THREE.Mesh(glowGeo, glowMat);
+  group.add(glow);
+
+  mainScene.add(group);
+  portalMeshes.push({ group, disc, ring, glow, ringMat, glowMat, data: p, index: i, hovered: false });
+
+  // Point light per portal (off until hover)
+  const light = new THREE.PointLight(p.color, 0, 4);
+  light.position.copy(p.pos);
+  mainScene.add(light);
+  rimLights.push(light);
+});
+
+// ─── RAYCASTER / HOVER ──────────────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2(-9999, -9999);
+const targetMouse = new THREE.Vector2();
+let hoveredIndex = -1;
+let isInPortal = false;
+let activePortalIndex = -1;
+let animating = false;
+
+window.addEventListener('mousemove', e => {
+  targetMouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+  targetMouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+});
+
+window.addEventListener('click', e => {
+  if (animating || isInPortal) return;
+  if (hoveredIndex >= 0) enterPortal(hoveredIndex);
+});
+
+function enterPortal(idx) {
+  if (animating) return;
+  animating = true;
+  activePortalIndex = idx;
+  const p = PORTALS[idx];
+  overlayTitle.textContent = p.label;
+  overlaySub.textContent = p.sub ? `by ${p.sub}` : '';
+
+  // Fly camera toward portal
+  gsap.to(mainCam.position, {
+    x: p.pos.x, y: p.pos.y, z: p.pos.z + 0.3,
+    duration: 1.1, ease: 'power3.in',
+    onComplete: () => {
+      // Fade overlay in
+      overlay.classList.add('active');
+      gsap.to(overlay, { opacity: 1, duration: 0.4, ease: 'power2.out' });
+      gsap.to(backBtn, { opacity: 1, duration: 0.4, delay: 0.3, ease: 'power2.out',
+        onStart: () => { backBtn.style.pointerEvents = 'all'; }
+      });
+      isInPortal = true;
+      animating = false;
+    }
+  });
+}
+
+function exitPortal() {
+  if (animating || !isInPortal) return;
+  animating = true;
+  gsap.to(overlay, { opacity: 0, duration: 0.35, ease: 'power2.in',
+    onComplete: () => overlay.classList.remove('active')
+  });
+  gsap.to(backBtn, { opacity: 0, duration: 0.3, ease: 'power2.in',
+    onComplete: () => { backBtn.style.pointerEvents = 'none'; }
+  });
+  gsap.to(mainCam.position, {
+    x: 0, y: 0, z: 7,
+    duration: 1.0, delay: 0.3, ease: 'power3.out',
+    onComplete: () => { isInPortal = false; animating = false; activePortalIndex = -1; }
+  });
+}
+
+backBtn.addEventListener('click', exitPortal);
+
+// ─── RESIZE ─────────────────────────────────────────────────────────────────
+window.addEventListener('resize', () => {
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  mainCam.aspect = window.innerWidth / window.innerHeight;
+  mainCam.updateProjectionMatrix();
+});
+
+// ─── RENDER LOOP ────────────────────────────────────────────────────────────
+const clock = new THREE.Clock();
+const camBasePos = new THREE.Vector3(0, 0, 7);
+const camTarget = new THREE.Vector3();
+
+function tick() {
+  requestAnimationFrame(tick);
+  const t = clock.getElapsedTime();
+  const dt = clock.getDelta ? 0 : 0; // unused
+
+  // Smooth mouse
+  mouse.x += (targetMouse.x - mouse.x) * 0.06;
+  mouse.y += (targetMouse.y - mouse.y) * 0.06;
+
+  // Camera parallax (only when not in portal / animating)
+  if (!isInPortal && !animating) {
+    camTarget.set(mouse.x * 0.4, mouse.y * 0.3, 7);
+    mainCam.position.lerp(camTarget, 0.04);
+    mainCam.lookAt(mouse.x * 0.2, mouse.y * 0.15, 0);
+  }
+
+  // Raycasting for hover
+  if (!isInPortal && !animating) {
+    raycaster.setFromCamera(mouse, mainCam);
+    const hitTargets = portalMeshes.map(pm => pm.disc);
+    const hits = raycaster.intersectObjects(hitTargets);
+    const newHovered = hits.length > 0 ? hitTargets.indexOf(hits[0].object) : -1;
+
+    if (newHovered !== hoveredIndex) {
+      // Unhover old
+      if (hoveredIndex >= 0) {
+        const pm = portalMeshes[hoveredIndex];
+        gsap.to(pm.group.scale, { x: 1, y: 1, z: 1, duration: 0.3, ease: 'power2.out' });
+        gsap.to(rimLights[hoveredIndex], { intensity: 0, duration: 0.4 });
+        gsap.to(pm.glowMat, { opacity: 0.3, duration: 0.3 });
+        document.body.style.cursor = 'default';
+      }
+      hoveredIndex = newHovered;
+      // Hover new
+      if (hoveredIndex >= 0) {
+        const pm = portalMeshes[hoveredIndex];
+        gsap.to(pm.group.scale, { x: 1.1, y: 1.1, z: 1.1, duration: 0.3, ease: 'power2.out' });
+        gsap.to(rimLights[hoveredIndex], { intensity: 2.5, duration: 0.4 });
+        gsap.to(pm.glowMat, { opacity: 0.7, duration: 0.3 });
+        document.body.style.cursor = 'pointer';
+      }
+    }
+  }
+
+  // Animate portals float
+  portalMeshes.forEach((pm, i) => {
+    pm.group.position.y = PORTALS[i].pos.y + Math.sin(t * 0.6 + i * 1.3) * 0.12;
+    pm.group.rotation.y = Math.sin(t * 0.2 + i * 0.8) * 0.08;
+  });
+
+  // Update mini-scenes
+  miniScenes.forEach(ms => ms.update(t));
+
+  // Render each mini-scene to its RT
+  miniScenes.forEach((ms, i) => {
+    renderer.setRenderTarget(renderTargets[i]);
+    renderer.clear();
+    renderer.render(ms.scene, ms.cam);
+  });
+
+  // Render main scene
+  renderer.setRenderTarget(null);
+  renderer.clear();
+  renderer.render(mainScene, mainCam);
+
+  // If in portal, render active mini-scene fullscreen on top
+  if (isInPortal && activePortalIndex >= 0) {
+    // Already shown via overlay — mini-scene continues in RT
+  }
+}
+
+tick();
+</script>
+</body>
+</html>

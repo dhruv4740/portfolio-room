@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DRIFT — Dhruv Kothari</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.169.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.169.0/examples/jsm/"}}</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0a0a0c; font-family: 'Courier New', monospace; }
+  #canvas-wrap { position: fixed; inset: 0; }
+  canvas { display: block; }
+
+  #back {
+    position: fixed; top: 18px; left: 20px; z-index: 100;
+    color: #555; font-size: 11px; font-family: 'Courier New', monospace;
+    text-decoration: none; letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+  #back:hover { color: #aaa; }
+
+  #label-wrap {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 100; text-align: center; pointer-events: none;
+  }
+  #concept-label {
+    font-size: 12px; letter-spacing: 0.35em; color: #333;
+    font-family: 'Courier New', monospace; font-weight: 400;
+  }
+  #hint {
+    font-size: 10px; letter-spacing: 0.12em; color: #2a2a2e;
+    font-family: 'Courier New', monospace; margin-top: 3px;
+  }
+
+  #tile-overlay {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    pointer-events: none; opacity: 0;
+  }
+  #tile-card {
+    background: rgba(10,10,14,0.92);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 36px 48px;
+    text-align: center;
+    min-width: 240px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    transform: scale(0.92);
+  }
+  #tile-card-title {
+    font-family: 'Courier New', monospace;
+    font-size: 22px; letter-spacing: 0.08em;
+    color: #e8e8f0; margin-bottom: 8px;
+  }
+  #tile-card-sub {
+    font-family: 'Courier New', monospace;
+    font-size: 11px; letter-spacing: 0.22em;
+    color: #555;
+  }
+  #dismiss-hint {
+    font-family: 'Courier New', monospace;
+    font-size: 10px; letter-spacing: 0.14em;
+    color: #333; margin-top: 20px;
+  }
+
+  #no-webgl {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: #0a0a0c; color: #555;
+    font-family: 'Courier New', monospace;
+    font-size: 13px; letter-spacing: 0.1em;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<a href="index.html" id="back">← concepts</a>
+
+<div id="label-wrap">
+  <div id="concept-label">DRIFT</div>
+  <div id="hint">drag to explore · click a tile</div>
+</div>
+
+<div id="canvas-wrap"></div>
+
+<div id="tile-overlay">
+  <div id="tile-card">
+    <div id="tile-card-title">—</div>
+    <div id="tile-card-sub">PROJECT</div>
+    <div id="dismiss-hint">click anywhere to close</div>
+  </div>
+</div>
+
+<div id="no-webgl" style="display:none; position:fixed; inset:0; z-index:200; background:#0a0a0c; color:#555; font-family:'Courier New',monospace; font-size:13px; align-items:center; justify-content:center;">
+  WebGL not supported in this browser.
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ── WebGL guard ──────────────────────────────────────────────────────────────
+const canvas = document.createElement('canvas');
+const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+if (!gl) {
+  document.getElementById('no-webgl').style.display = 'flex';
+  throw new Error('WebGL not available');
+}
+
+// ── Scene setup ──────────────────────────────────────────────────────────────
+const wrap = document.getElementById('canvas-wrap');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setClearColor(0x0a0a0c, 1);
+const DPR = Math.min(devicePixelRatio, 1.75);
+renderer.setPixelRatio(DPR);
+wrap.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+camera.position.z = 10;
+
+// ── Tile data ────────────────────────────────────────────────────────────────
+const PROJECTS = [
+  { title: 'Reddit Growth Copilot', sub: 'AI · Growth', hue: 14 },
+  { title: 'Project 02',            sub: 'Web · Lab',   hue: 200 },
+  { title: 'Work',                  sub: 'Design',      hue: 270 },
+  { title: 'Lab',                   sub: 'Experiment',  hue: 150 },
+  { title: 'Archive',               sub: 'Legacy',      hue: 40  },
+  { title: 'Open Source',           sub: 'Community',   hue: 320 },
+];
+
+const COLS = 7;
+const ROWS = 6;
+const TOTAL = COLS * ROWS;
+const TILE_W = 0.38;
+const TILE_H = 0.28;
+const GAP_X = 0.46;
+const GAP_Y = 0.35;
+const GRID_W = COLS * GAP_X;
+const GRID_H = ROWS * GAP_Y;
+
+// ── Procedural textures ──────────────────────────────────────────────────────
+const TEX_SIZE = 512;
+
+function makeTileTexture(project, index) {
+  const cv = document.createElement('canvas');
+  cv.width = cv.height = TEX_SIZE;
+  const ctx = cv.getContext('2d');
+
+  const h = project.hue;
+  const grad = ctx.createLinearGradient(0, 0, TEX_SIZE, TEX_SIZE);
+  grad.addColorStop(0,   `hsl(${h}, 22%, 10%)`);
+  grad.addColorStop(0.5, `hsl(${h+20}, 28%, 14%)`);
+  grad.addColorStop(1,   `hsl(${h-15}, 18%, 8%)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, TEX_SIZE, TEX_SIZE);
+
+  // Subtle noise grain
+  for (let i = 0; i < 3000; i++) {
+    const x = Math.random() * TEX_SIZE;
+    const y = Math.random() * TEX_SIZE;
+    const a = Math.random() * 0.06;
+    ctx.fillStyle = `rgba(255,255,255,${a})`;
+    ctx.fillRect(x, y, 1, 1);
+  }
+
+  // Accent line
+  ctx.strokeStyle = `hsla(${h}, 60%, 55%, 0.25)`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(32, TEX_SIZE - 40);
+  ctx.lineTo(TEX_SIZE - 32, TEX_SIZE - 40);
+  ctx.stroke();
+
+  // Index number top-right
+  ctx.fillStyle = `hsla(${h}, 50%, 60%, 0.2)`;
+  ctx.font = `bold 96px 'Courier New', monospace`;
+  ctx.textAlign = 'right';
+  ctx.textBaseline = 'top';
+  const num = String(index + 1).padStart(2, '0');
+  ctx.fillText(num, TEX_SIZE - 28, 20);
+
+  // Title
+  ctx.fillStyle = `rgba(230,230,240,0.88)`;
+  ctx.font = `bold 36px 'Courier New', monospace`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  // Word wrap for title
+  const words = project.title.split(' ');
+  let line = '';
+  let y = TEX_SIZE / 2 + 10;
+  const maxW = TEX_SIZE - 64;
+  for (const word of words) {
+    const test = line ? line + ' ' + word : word;
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, 32, y);
+      line = word;
+      y += 44;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, 32, y);
+
+  // Sub label
+  ctx.fillStyle = `hsla(${h}, 45%, 60%, 0.55)`;
+  ctx.font = `13px 'Courier New', monospace`;
+  ctx.letterSpacing = '0.2em';
+  ctx.fillText(project.sub.toUpperCase(), 32, TEX_SIZE - 52);
+
+  const tex = new THREE.CanvasTexture(cv);
+  tex.minFilter = THREE.LinearMipmapLinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  tex.generateMipmaps = true;
+  tex.needsUpdate = true;
+  return tex;
+}
+
+// ── Shader material ──────────────────────────────────────────────────────────
+const vertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  uniform sampler2D uTexture;
+  uniform float uVelocity;
+  uniform vec2 uVelDir;
+  uniform float uSelected;
+  varying vec2 vUv;
+
+  void main() {
+    float v = clamp(uVelocity, 0.0, 1.0);
+
+    // UV stretch: pull UVs toward center of motion
+    vec2 center = vec2(0.5);
+    vec2 toCenter = center - vUv;
+    vec2 stretched = vUv + toCenter * v * 0.04 * uVelDir;
+
+    // RGB shift
+    float shift = v * 0.012;
+    vec2 rOff = stretched + uVelDir * shift;
+    vec2 bOff = stretched - uVelDir * shift;
+
+    float r = texture2D(uTexture, clamp(rOff, 0.001, 0.999)).r;
+    float g = texture2D(uTexture, clamp(stretched, 0.001, 0.999)).g;
+    float b = texture2D(uTexture, clamp(bOff, 0.001, 0.999)).b;
+    float a = texture2D(uTexture, clamp(stretched, 0.001, 0.999)).a;
+
+    // Edge glow when selected
+    vec2 border = abs(vUv - 0.5) * 2.0;
+    float edgeMask = max(border.x, border.y);
+    float glow = smoothstep(0.85, 1.0, edgeMask) * uSelected;
+
+    vec3 col = vec3(r, g, b);
+    col = mix(col, vec3(0.55, 0.55, 0.7), glow * 0.4);
+
+    gl_FragColor = vec4(col, a);
+  }
+`;
+
+// ── Build tile meshes ────────────────────────────────────────────────────────
+const tiles = [];
+const geo = new THREE.PlaneGeometry(TILE_W, TILE_H, 1, 1);
+
+for (let i = 0; i < TOTAL; i++) {
+  const proj = PROJECTS[i % PROJECTS.length];
+  const tex = makeTileTexture(proj, i % PROJECTS.length);
+  const mat = new THREE.ShaderMaterial({
+    uniforms: {
+      uTexture:  { value: tex },
+      uVelocity: { value: 0 },
+      uVelDir:   { value: new THREE.Vector2(1, 0) },
+      uSelected: { value: 0 },
+    },
+    vertexShader,
+    fragmentShader,
+    transparent: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+
+  const col = i % COLS;
+  const row = Math.floor(i / COLS);
+  // Offset bases so the grid period wraps symmetrically around world origin.
+  // Each tile occupies one slot in [0, GRID_W) x [0, GRID_H) space;
+  // positionTiles folds that into [-GRID_W/2, +GRID_W/2].
+  tiles.push({
+    mesh,
+    mat,
+    proj,
+    col, row,
+    baseX:  col * GAP_X,
+    baseY: -row * GAP_Y,
+    selected: false,
+  });
+}
+
+// ── Camera/renderer size ─────────────────────────────────────────────────────
+let W = window.innerWidth;
+let H = window.innerHeight;
+
+function onResize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  renderer.setSize(W, H);
+  const aspect = W / H;
+  camera.left   = -aspect;
+  camera.right  =  aspect;
+  camera.top    =  1;
+  camera.bottom = -1;
+  camera.updateProjectionMatrix();
+}
+onResize();
+window.addEventListener('resize', onResize);
+
+// ── Interaction state ────────────────────────────────────────────────────────
+let ox = 0, oy = 0;           // world offset
+let isDragging = false;
+let lastX = 0, lastY = 0;
+let vx = 0, vy = 0;           // velocity
+let dragMoved = false;
+let dragStartX = 0, dragStartY = 0;
+const INERTIA = 0.92;
+const DRAG_THRESHOLD = 5;     // px
+
+// px → world-space
+function pxToWorld(px, py) {
+  const aspect = W / H;
+  return {
+    wx: (px / W) * 2 * aspect - aspect,
+    wy: -(py / H) * 2 + 1,
+  };
+}
+
+function worldDelta(dxPx, dyPx) {
+  const aspect = W / H;
+  return {
+    dx: (dxPx / W) * 2 * aspect,
+    dy: -(dyPx / H) * 2,
+  };
+}
+
+// ── Tile overlay ─────────────────────────────────────────────────────────────
+const overlay   = document.getElementById('tile-overlay');
+const cardTitle = document.getElementById('tile-card-title');
+const cardSub   = document.getElementById('tile-card-sub');
+let selectedTile = null;
+let overlayOpen  = false;
+
+function openTile(tile) {
+  if (overlayOpen && selectedTile === tile) {
+    closeTile();
+    return;
+  }
+  if (selectedTile && selectedTile !== tile) {
+    selectedTile.mat.uniforms.uSelected.value = 0;
+    selectedTile.selected = false;
+  }
+  selectedTile = tile;
+  selectedTile.selected = true;
+  selectedTile.mat.uniforms.uSelected.value = 1;
+
+  cardTitle.textContent = tile.proj.title;
+  cardSub.textContent   = tile.proj.sub;
+
+  overlayOpen = true;
+  overlay.style.pointerEvents = 'auto';
+
+  gsap.to(overlay, { opacity: 1, duration: 0.3, ease: 'power2.out' });
+  gsap.to('#tile-card', { scale: 1, duration: 0.4, ease: 'back.out(1.4)' });
+}
+
+function closeTile() {
+  if (!overlayOpen) return;
+  overlayOpen = false;
+  overlay.style.pointerEvents = 'none';
+  if (selectedTile) {
+    selectedTile.mat.uniforms.uSelected.value = 0;
+    selectedTile.selected = false;
+    selectedTile = null;
+  }
+  gsap.to(overlay, { opacity: 0, duration: 0.25, ease: 'power2.in' });
+  gsap.to('#tile-card', { scale: 0.92, duration: 0.25, ease: 'power2.in' });
+}
+
+overlay.addEventListener('click', closeTile);
+
+// ── Raycasting for tile clicks ───────────────────────────────────────────────
+const raycaster = new THREE.Raycaster();
+const pointer   = new THREE.Vector2();
+
+function hitTest(clientX, clientY) {
+  pointer.x =  (clientX / W) * 2 - 1;
+  pointer.y = -(clientY / H) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+  const meshes = tiles.map(t => t.mesh);
+  const hits = raycaster.intersectObjects(meshes, false);
+  if (!hits.length) return null;
+  const hitMesh = hits[0].object;
+  return tiles.find(t => t.mesh === hitMesh) || null;
+}
+
+// ── Pointer events (mouse) ───────────────────────────────────────────────────
+renderer.domElement.addEventListener('mousedown', e => {
+  isDragging = true;
+  dragMoved = false;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  dragStartX = e.clientX;
+  dragStartY = e.clientY;
+  vx = vy = 0;
+  e.preventDefault();
+});
+
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastX;
+  const dy = e.clientY - lastY;
+  const d = worldDelta(dx, dy);
+  ox += d.dx;
+  oy += d.dy;
+  vx = d.dx;
+  vy = d.dy;
+  lastX = e.clientX;
+  lastY = e.clientY;
+  if (Math.abs(e.clientX - dragStartX) > DRAG_THRESHOLD || Math.abs(e.clientY - dragStartY) > DRAG_THRESHOLD) {
+    dragMoved = true;
+  }
+});
+
+window.addEventListener('mouseup', e => {
+  if (!isDragging) return;
+  isDragging = false;
+  if (!dragMoved) {
+    const hit = hitTest(e.clientX, e.clientY);
+    if (hit) { openTile(hit); }
+    else { closeTile(); }
+  }
+});
+
+// ── Touch events ─────────────────────────────────────────────────────────────
+let touch0 = null;
+
+renderer.domElement.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    dragMoved = false;
+    lastX = e.touches[0].clientX;
+    lastY = e.touches[0].clientY;
+    dragStartX = lastX;
+    dragStartY = lastY;
+    vx = vy = 0;
+    touch0 = e.touches[0];
+  }
+  e.preventDefault();
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchmove', e => {
+  if (!isDragging || e.touches.length !== 1) return;
+  const dx = e.touches[0].clientX - lastX;
+  const dy = e.touches[0].clientY - lastY;
+  const d = worldDelta(dx, dy);
+  ox += d.dx;
+  oy += d.dy;
+  vx = d.dx;
+  vy = d.dy;
+  lastX = e.touches[0].clientX;
+  lastY = e.touches[0].clientY;
+  if (Math.abs(e.touches[0].clientX - dragStartX) > DRAG_THRESHOLD || Math.abs(e.touches[0].clientY - dragStartY) > DRAG_THRESHOLD) {
+    dragMoved = true;
+  }
+  e.preventDefault();
+}, { passive: false });
+
+renderer.domElement.addEventListener('touchend', e => {
+  isDragging = false;
+  if (!dragMoved && touch0) {
+    const hit = hitTest(touch0.clientX, touch0.clientY);
+    if (hit) { openTile(hit); }
+    else { closeTile(); }
+  }
+  touch0 = null;
+});
+
+// ── Tile position update ─────────────────────────────────────────────────────
+// Each tile has a logical (col, row) slot.
+// Frame: world position = (col * GAP_X + ox) mod GRID_W + visual centering
+
+function positionTiles() {
+  // Half the grid period — tiles wrap within [-GRID_W/2, +GRID_W/2]
+  // so the grid is always centred on world origin (0,0).
+  const halfW = GRID_W / 2;
+  const halfH = GRID_H / 2;
+
+  for (const t of tiles) {
+    // Shift base position by offset, then wrap into [-half, +half]
+    let wx = ((t.baseX + ox) % GRID_W + GRID_W) % GRID_W;
+    if (wx > halfW) wx -= GRID_W;
+
+    let wy = ((t.baseY + oy) % GRID_H + GRID_H) % GRID_H;
+    if (wy > halfH) wy -= GRID_H;
+
+    t.mesh.position.set(wx, wy, 0);
+  }
+}
+
+// ── Velocity magnitude for shader ────────────────────────────────────────────
+let smoothedVel = 0;
+
+// ── rAF loop ─────────────────────────────────────────────────────────────────
+let rafId = null;
+
+function loop() {
+  rafId = requestAnimationFrame(loop);
+
+  // Inertia
+  if (!isDragging) {
+    ox += vx;
+    oy += vy;
+    vx *= INERTIA;
+    vy *= INERTIA;
+    if (Math.abs(vx) < 0.00001) vx = 0;
+    if (Math.abs(vy) < 0.00001) vy = 0;
+  }
+
+  // Velocity magnitude for distortion.
+  // Fast decay (0.55 per frame) so it reaches zero quickly after release.
+  const speed = Math.sqrt(vx * vx + vy * vy);
+  smoothedVel = smoothedVel * 0.55 + speed * 0.45;
+  // Hard-zero below noise floor so tiles are perfectly crisp at rest.
+  if (smoothedVel < 0.0001) smoothedVel = 0;
+  // ~0.015 world-units/frame = full distortion
+  const velNorm = Math.min(smoothedVel / 0.015, 1.0);
+
+  const velDir = speed > 0.00001
+    ? new THREE.Vector2(vx / speed, vy / speed)
+    : new THREE.Vector2(1, 0);
+
+  // Update shader uniforms
+  for (const t of tiles) {
+    t.mat.uniforms.uVelocity.value = velNorm;
+    t.mat.uniforms.uVelDir.value   = velDir;
+  }
+
+  positionTiles();
+  renderer.render(scene, camera);
+}
+
+loop();
+</script>
+</body>
+</html>

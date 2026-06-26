@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIDEO3D — Dhruv Kothari</title>
+<script type="importmap">{"imports":{"three":"https://unpkg.com/three@0.169.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.169.0/examples/jsm/"}}</script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow-x: hidden; background: #0a0a0c; font-family: 'Courier New', monospace; }
+  body { height: 300vh; }
+
+  #canvas-wrap { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1; }
+  canvas { display: block; }
+
+  #back {
+    position: fixed; top: 18px; left: 20px; z-index: 100;
+    color: #555; font-size: 11px; font-family: 'Courier New', monospace;
+    text-decoration: none; letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+  #back:hover { color: #aaa; }
+
+  #label-wrap {
+    position: fixed; top: 14px; left: 50%; transform: translateX(-50%);
+    z-index: 100; text-align: center; pointer-events: none;
+  }
+  #concept-label {
+    font-size: 12px; letter-spacing: 0.35em; color: #333;
+    font-family: 'Courier New', monospace; font-weight: 400;
+  }
+  #hint {
+    font-size: 10px; letter-spacing: 0.12em; color: #2a2a2e;
+    font-family: 'Courier New', monospace; margin-top: 3px;
+  }
+
+  #grain {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 50;
+    pointer-events: none; opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation: grain 1.1s steps(3) infinite;
+  }
+  @keyframes grain { 0% { transform: translate(0, 0); } 33% { transform: translate(-4%, 3%); } 66% { transform: translate(3%, -4%); } 100% { transform: translate(0, 0); } }
+
+  #no-webgl {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: #0a0a0c; color: #555;
+    font-family: 'Courier New', monospace;
+    font-size: 13px; letter-spacing: 0.1em;
+    align-items: center; justify-content: center;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<a href="index.html" id="back">← concepts</a>
+
+<div id="label-wrap">
+  <div id="concept-label">VIDEO3D</div>
+  <div id="hint">scroll to scrub · 300vh height</div>
+</div>
+
+<div id="canvas-wrap"></div>
+<div id="grain"></div>
+
+<div id="no-webgl" style="display:none; position:fixed; inset:0; z-index:200; background:#0a0a0c; color:#555; font-family:'Courier New',monospace; font-size:13px; align-items:center; justify-content:center;">
+  WebGL not supported in this browser.
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+
+// ── WebGL guard ──────────────────────────────────────────────────────────────
+const canvas = document.createElement('canvas');
+const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+if (!gl) {
+  document.getElementById('no-webgl').style.display = 'flex';
+  throw new Error('WebGL not available');
+}
+
+// ── Scene setup ──────────────────────────────────────────────────────────────
+const wrap = document.getElementById('canvas-wrap');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+renderer.setClearColor(0x0a0a0c, 1);
+const DPR = Math.min(devicePixelRatio, 1.5);
+renderer.setPixelRatio(DPR);
+wrap.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 100);
+camera.position.z = 10;
+
+// ── Procedural canvas texture ────────────────────────────────────────────────
+const CANVAS_SIZE = 512;
+const procCanvas = document.createElement('canvas');
+procCanvas.width = procCanvas.height = CANVAS_SIZE;
+const procCtx = procCanvas.getContext('2d');
+
+function drawProceduralFrame(scrub) {
+  // scrub = 0..1 representing playhead position
+  procCtx.fillStyle = '#0a0a0c';
+  procCtx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+
+  // Flowing gradient bands that shift with scrub
+  const bandCount = 5;
+  const bandHeight = CANVAS_SIZE / bandCount;
+  for (let i = 0; i < bandCount; i++) {
+    const hue = (i * 72 + scrub * 360) % 360;
+    const brightness = 15 + (Math.sin(scrub * Math.PI * 2 + i) * 0.5 + 0.5) * 10;
+    procCtx.fillStyle = `hsl(${hue}, 35%, ${brightness}%)`;
+    procCtx.fillRect(0, i * bandHeight, CANVAS_SIZE, bandHeight);
+  }
+
+  // Animated grid lines
+  procCtx.strokeStyle = 'rgba(100, 100, 120, 0.12)';
+  procCtx.lineWidth = 1;
+  const gridSpacing = 32 + Math.sin(scrub * Math.PI * 2) * 8;
+  for (let x = 0; x < CANVAS_SIZE; x += gridSpacing) {
+    procCtx.beginPath();
+    procCtx.moveTo(x, 0);
+    procCtx.lineTo(x, CANVAS_SIZE);
+    procCtx.stroke();
+  }
+  for (let y = 0; y < CANVAS_SIZE; y += gridSpacing) {
+    procCtx.beginPath();
+    procCtx.moveTo(0, y);
+    procCtx.lineTo(CANVAS_SIZE, y);
+    procCtx.stroke();
+  }
+
+  // Big title word
+  procCtx.fillStyle = 'rgba(230, 230, 240, 0.8)';
+  procCtx.font = 'bold 72px Courier New, monospace';
+  procCtx.textAlign = 'center';
+  procCtx.textBaseline = 'middle';
+  procCtx.fillText('VIDEO', CANVAS_SIZE / 2, CANVAS_SIZE / 2 - 40);
+
+  // Running timecode
+  const totalFrames = 300;
+  const frameNum = Math.floor(scrub * totalFrames);
+  const seconds = Math.floor(frameNum / 30);
+  const frames = frameNum % 30;
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+
+  procCtx.fillStyle = 'rgba(200, 200, 200, 0.6)';
+  procCtx.font = 'bold 40px Courier New, monospace';
+  procCtx.textAlign = 'center';
+  procCtx.textBaseline = 'middle';
+  procCtx.fillText(timeStr, CANVAS_SIZE / 2, CANVAS_SIZE / 2 + 60);
+}
+
+// Initial draw
+drawProceduralFrame(0);
+const canvasTex = new THREE.CanvasTexture(procCanvas);
+canvasTex.minFilter = THREE.LinearFilter;
+canvasTex.magFilter = THREE.LinearFilter;
+canvasTex.needsUpdate = true;
+
+// ── Shader material with displacement & chromatic aberration ────────────────
+const vertexShader = `
+  uniform float uScrollProgress;
+  varying vec2 vUv;
+
+  void main() {
+    vUv = uv;
+
+    // Vertex displacement: ripple amplitude driven by scrollProgress
+    vec3 pos = position;
+    float dispAmp = uScrollProgress * 0.15;
+    float wave = sin(uv.x * 8.0 + uScrollProgress * 6.28) * 0.05;
+    wave += sin(uv.y * 6.0 - uScrollProgress * 6.28) * 0.08;
+    pos.z += wave * dispAmp;
+
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  uniform sampler2D uTexture;
+  uniform float uScrollProgress;
+  varying vec2 vUv;
+
+  void main() {
+    // Chromatic aberration offset scaled by scrollProgress
+    float shift = uScrollProgress * 0.015;
+
+    float r = texture2D(uTexture, vUv + vec2(shift, 0.0)).r;
+    float g = texture2D(uTexture, vUv).g;
+    float b = texture2D(uTexture, vUv - vec2(shift, 0.0)).b;
+
+    vec3 col = vec3(r, g, b);
+    gl_FragColor = vec4(col, 1.0);
+  }
+`;
+
+const material = new THREE.ShaderMaterial({
+  uniforms: {
+    uTexture: { value: canvasTex },
+    uScrollProgress: { value: 0.0 },
+  },
+  vertexShader,
+  fragmentShader,
+});
+
+// Subdivided plane geometry (32x32 for displacement)
+const geometry = new THREE.PlaneGeometry(2, 1, 64, 64);
+const mesh = new THREE.Mesh(geometry, material);
+scene.add(mesh);
+
+// ── Window resize handler ────────────────────────────────────────────────────
+let W = window.innerWidth;
+let H = window.innerHeight;
+
+function onResize() {
+  W = window.innerWidth;
+  H = window.innerHeight;
+  renderer.setSize(W, H);
+  const aspect = W / H;
+  camera.left   = -aspect;
+  camera.right  =  aspect;
+  camera.top    =  1;
+  camera.bottom = -1;
+  camera.updateProjectionMatrix();
+}
+onResize();
+window.addEventListener('resize', onResize);
+
+// ── Scroll handling ──────────────────────────────────────────────────────────
+let scrollProgress = 0;
+
+function updateScrollProgress() {
+  const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+  scrollProgress = scrollHeight > 0 ? window.scrollY / scrollHeight : 0;
+}
+
+window.addEventListener('scroll', updateScrollProgress);
+
+// ── rAF loop ─────────────────────────────────────────────────────────────────
+let rafId = null;
+
+function loop() {
+  // Cancel rAF if page is hidden
+  if (document.hidden) {
+    rafId = null;
+    return;
+  }
+
+  rafId = requestAnimationFrame(loop);
+
+  // Update procedural canvas texture with current scrub value
+  drawProceduralFrame(scrollProgress);
+  canvasTex.needsUpdate = true;
+
+  // Update shader uniforms
+  material.uniforms.uScrollProgress.value = scrollProgress;
+
+  renderer.render(scene, camera);
+}
+
+loop();
+
+// Cleanup
+window.addEventListener('beforeunload', () => {
+  if (rafId) cancelAnimationFrame(rafId);
+});
+</script>
+</body>
+</html>

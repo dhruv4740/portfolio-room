@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DHRUV KOTHARI — Pick a direction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #070708;
+      --bg-card: #0d0d0f;
+      --cyan: #38e1ff;
+      --violet: #a06bff;
+      --text: #e8e8ec;
+      --text-muted: #6b6b78;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-hover: rgba(56, 225, 255, 0.25);
+    }
+
+    html, body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Grotesk', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Grain overlay — pure CSS, zero JS cost */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1000;
+      opacity: 0.028;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-size: 256px 256px;
+      animation: grain-shift 0.5s steps(2) infinite;
+    }
+
+    @keyframes grain-shift {
+      0%   { transform: translate(0, 0); }
+      25%  { transform: translate(-2px, 1px); }
+      50%  { transform: translate(1px, -2px); }
+      75%  { transform: translate(2px, 1px); }
+      100% { transform: translate(-1px, 2px); }
+    }
+
+    /* Ambient gradient */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 80% 10%, rgba(160, 107, 255, 0.07) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 35% at 15% 85%, rgba(56, 225, 255, 0.05) 0%, transparent 60%);
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 80px 40px 60px;
+    }
+
+    /* Header */
+    .kicker {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.18em;
+      color: var(--cyan);
+      text-transform: uppercase;
+      opacity: 0;
+    }
+
+    .headline {
+      font-size: clamp(48px, 8vw, 88px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.0;
+      margin-top: 20px;
+      background: linear-gradient(135deg, var(--text) 30%, rgba(160, 107, 255, 0.7) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      opacity: 0;
+    }
+
+    .sub {
+      margin-top: 24px;
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+      opacity: 0;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 56px 0;
+      opacity: 0;
+      transform-origin: left;
+    }
+
+    /* Concept rows */
+    .concepts {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .concept-link {
+      display: grid;
+      grid-template-columns: 48px 1fr auto;
+      align-items: center;
+      gap: 24px;
+      padding: 28px 32px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      transition:
+        border-color 0.35s ease,
+        background 0.35s ease;
+      outline: none;
+    }
+
+    /* Sweep bg on hover */
+    .concept-link::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(105deg, rgba(56, 225, 255, 0.04) 0%, rgba(160, 107, 255, 0.04) 100%);
+      opacity: 0;
+      transition: opacity 0.35s ease;
+    }
+
+    /* Left accent bar */
+    .concept-link::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, var(--cyan), var(--violet));
+      transform: scaleY(0);
+      transform-origin: bottom;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .concept-link:hover,
+    .concept-link:focus-visible {
+      border-color: var(--border-hover);
+      background: #0f0f12;
+    }
+
+    .concept-link:hover::before,
+    .concept-link:focus-visible::before {
+      opacity: 1;
+    }
+
+    .concept-link:hover::after,
+    .concept-link:focus-visible::after {
+      transform: scaleY(1);
+    }
+
+    .concept-link:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 2px;
+    }
+
+    .letter {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      transition: color 0.25s ease;
+    }
+
+    .concept-link:hover .letter,
+    .concept-link:focus-visible .letter {
+      color: var(--cyan);
+    }
+
+    .concept-body {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .concept-name {
+      font-size: 20px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: var(--text);
+      transition: color 0.25s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .concept-link:hover .concept-name,
+    .concept-link:focus-visible .concept-name {
+      color: #fff;
+      transform: skewX(-1.5deg) translateX(4px);
+    }
+
+    .concept-desc {
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--text-muted);
+      letter-spacing: 0.01em;
+      line-height: 1.5;
+      transition: color 0.25s ease;
+    }
+
+    .concept-link:hover .concept-desc,
+    .concept-link:focus-visible .concept-desc {
+      color: #8888a0;
+    }
+
+    /* Gradient swatch */
+    .swatch {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .concept-link:hover .swatch,
+    .concept-link:focus-visible .swatch {
+      transform: scale(1.15) rotate(15deg);
+    }
+
+    .swatch-inner {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background-size: 200% 200%;
+      animation: swatch-shift 4s ease infinite;
+    }
+
+    @keyframes swatch-shift {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .swatch-a .swatch-inner { background: linear-gradient(135deg, #38e1ff, #a06bff, #ff6bdb); }
+    .swatch-b .swatch-inner { background: linear-gradient(135deg, #00ff88, #38e1ff, #0a0a1a); }
+    .swatch-c .swatch-inner { background: linear-gradient(135deg, #1a0a2e, #6b38ff, #c0a0ff); }
+    .swatch-d .swatch-inner { background: linear-gradient(135deg, #ff9500, #ff3b6b, #a06bff); }
+    .swatch-e .swatch-inner { background: linear-gradient(135deg, #38ffb4, #38e1ff, #a06bff); }
+    .swatch-f .swatch-inner { background: linear-gradient(135deg, #ff6ec4, #7873f5, #4ade80); }
+    .swatch-g .swatch-inner { background: linear-gradient(135deg, #38e1ff, #5b6cff, #c0a0ff); }
+    .swatch-h .swatch-inner { background: linear-gradient(135deg, #00ff88, #0aff0a, #0a0a0a); }
+    .swatch-i .swatch-inner { background: linear-gradient(135deg, #ff3b6b, #ffb000, #38e1ff); }
+    .swatch-j .swatch-inner { background: linear-gradient(135deg, #ffd23f, #ff6b6b, #a06bff); }
+    .swatch-k .swatch-inner { background: linear-gradient(135deg, #f4f3ee, #1a1a2e, #ff3b6b); }
+    .swatch-l .swatch-inner { background: linear-gradient(135deg, #0a0a2e, #6b38ff, #38e1ff); }
+    .swatch-m .swatch-inner { background: linear-gradient(135deg, #00ffcc, #38e1ff, #a06bff); }
+    .swatch-n .swatch-inner { background: linear-gradient(135deg, #ff6b35, #f7c59f, #1a1a40); }
+    .swatch-o .swatch-inner { background: linear-gradient(135deg, #00ff66, #ff00ff, #0a0a0a); }
+    .swatch-p .swatch-inner { background: linear-gradient(135deg, #ffe066, #38e1ff, #0a0a2e); }
+
+    /* Arrow */
+    .arrow {
+      position: absolute;
+      right: 32px;
+      top: 50%;
+      transform: translateY(-50%) translateX(-8px);
+      opacity: 0;
+      color: var(--cyan);
+      font-size: 18px;
+      transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .concept-link:hover .arrow,
+    .concept-link:focus-visible .arrow {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 64px;
+      padding-top: 32px;
+      border-top: 1px solid var(--border);
+      opacity: 0;
+    }
+
+    .footer p {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    @media (max-width: 600px) {
+      .page {
+        padding: 48px 20px 40px;
+      }
+
+      .concept-link {
+        grid-template-columns: 36px 1fr;
+        padding: 20px 20px;
+        gap: 16px;
+      }
+
+      .swatch {
+        display: none;
+      }
+
+      .arrow {
+        right: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient" aria-hidden="true"></div>
+
+  <main class="page" role="main">
+    <p class="kicker" aria-label="Dhruv Kothari Portfolio">DHRUV KOTHARI — PORTFOLIO</p>
+
+    <h1 class="headline">Pick a direction.</h1>
+
+    <p class="sub">
+      Sixteen candidate concepts. Open each in a real browser — all run at 60fps.
+    </p>
+
+    <div class="divider" role="separator" aria-hidden="true"></div>
+
+    <nav class="concepts" aria-label="Portfolio concept demos">
+
+      <a href="particles.html" class="concept-link" aria-label="Concept A: Particle Genesis">
+        <span class="letter" aria-hidden="true">A</span>
+        <div class="concept-body">
+          <span class="concept-name">Particle Genesis</span>
+          <span class="concept-desc">A 200k-point GPU particle cloud that morphs between your name, 3D forms, and projects. Maximum wow.</span>
+        </div>
+        <div class="swatch swatch-a" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="os.html" class="concept-link" aria-label="Concept B: dhruvOS">
+        <span class="letter" aria-hidden="true">B</span>
+        <div class="concept-body">
+          <span class="concept-name">dhruvOS</span>
+          <span class="concept-desc">Boot into a living retro-future operating system. The portfolio is the file system. Most dev-authentic.</span>
+        </div>
+        <div class="swatch swatch-b" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="raymarch.html" class="concept-link" aria-label="Concept C: Liminal">
+        <span class="letter" aria-hidden="true">C</span>
+        <div class="concept-body">
+          <span class="concept-name">Liminal</span>
+          <span class="concept-desc">Scroll-fly through an infinite raymarched dreamscape; projects are monoliths drifting in fog. Most cinematic.</span>
+        </div>
+        <div class="swatch swatch-c" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="kinetic.html" class="concept-link" aria-label="Concept D: Kinetic">
+        <span class="letter" aria-hidden="true">D</span>
+        <div class="concept-body">
+          <span class="concept-name">Kinetic</span>
+          <span class="concept-desc">Award-tier editorial: giant kinetic typography, smooth scroll, WebGL liquid image distortion. Most polished.</span>
+        </div>
+        <div class="swatch swatch-d" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="fluid.html" class="concept-link" aria-label="Concept E: Flux">
+        <span class="letter" aria-hidden="true">E</span>
+        <div class="concept-body">
+          <span class="concept-name">Flux</span>
+          <span class="concept-desc">An interactive flowing-liquid backdrop you stir with the cursor, glass content floating over it. Most mesmerizing.</span>
+        </div>
+        <div class="swatch swatch-e" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="chromatic.html" class="concept-link" aria-label="Concept F: Chromatic">
+        <span class="letter" aria-hidden="true">F</span>
+        <div class="concept-body">
+          <span class="concept-name">Chromatic</span>
+          <span class="concept-desc">An iridescent liquid-chrome form that morphs and warps as you scroll. Apple-keynote gloss.</span>
+        </div>
+        <div class="swatch swatch-f" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="drift.html" class="concept-link" aria-label="Concept G: Drift">
+        <span class="letter" aria-hidden="true">G</span>
+        <div class="concept-body">
+          <span class="concept-name">Drift</span>
+          <span class="concept-desc">An infinite, draggable canvas of work you fling around with momentum and distortion. Most tactile.</span>
+        </div>
+        <div class="swatch swatch-g" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="decoder.html" class="concept-link" aria-label="Concept H: Decoder">
+        <span class="letter" aria-hidden="true">H</span>
+        <div class="concept-body">
+          <span class="concept-name">Decoder</span>
+          <span class="concept-desc">Live 3D rendered as glowing ASCII art — a hacker-terminal aesthetic. Most distinctive.</span>
+        </div>
+        <div class="swatch swatch-h" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="resonance.html" class="concept-link" aria-label="Concept I: Resonance">
+        <span class="letter" aria-hidden="true">I</span>
+        <div class="concept-body">
+          <span class="concept-name">Resonance</span>
+          <span class="concept-desc">An audio-reactive visualizer that pulses to sound — built-in track or your mic. Most alive.</span>
+        </div>
+        <div class="swatch swatch-i" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="gravity.html" class="concept-link" aria-label="Concept J: Gravity">
+        <span class="letter" aria-hidden="true">J</span>
+        <div class="concept-body">
+          <span class="concept-name">Gravity</span>
+          <span class="concept-desc">Your skills as throwable physics objects — drag, fling, stack, reset. Most playful.</span>
+        </div>
+        <div class="swatch swatch-j" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="tear.html" class="concept-link" aria-label="Concept K: Reality Tear">
+        <span class="letter" aria-hidden="true">K</span>
+        <div class="concept-body">
+          <span class="concept-name">Reality Tear</span>
+          <span class="concept-desc">A boring flat site your cursor tears open to reveal a 3D world beneath. Looks broken on purpose. ⚑ flagship.</span>
+        </div>
+        <div class="swatch swatch-k" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="portals.html" class="concept-link" aria-label="Concept L: Wormhole">
+        <span class="letter" aria-hidden="true">L</span>
+        <div class="concept-body">
+          <span class="concept-name">Wormhole</span>
+          <span class="concept-desc">Floating portals in a void, each a live window into a different 3D mini-world. Click to enter.</span>
+        </div>
+        <div class="swatch swatch-l" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="neural.html" class="concept-link" aria-label="Concept M: Neural">
+        <span class="letter" aria-hidden="true">M</span>
+        <div class="concept-body">
+          <span class="concept-name">Neural</span>
+          <span class="concept-desc">Your identity as a living neural graph — hover a node to fire it and watch activation ripple.</span>
+        </div>
+        <div class="swatch swatch-m" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="singularity.html" class="concept-link" aria-label="Concept N: Singularity">
+        <span class="letter" aria-hidden="true">N</span>
+        <div class="concept-body">
+          <span class="concept-name">Singularity</span>
+          <span class="concept-desc">The entire portfolio is ONE fragment shader. No meshes — even the text is GLSL. For the graphics-serious.</span>
+        </div>
+        <div class="swatch swatch-n" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="corrupted.html" class="concept-link" aria-label="Concept O: Corrupted">
+        <span class="letter" aria-hidden="true">O</span>
+        <div class="concept-body">
+          <span class="concept-name">Corrupted</span>
+          <span class="concept-desc">Presents as a glitched RPG save file you repair by interacting. Skills are stats, projects are quests.</span>
+        </div>
+        <div class="swatch swatch-o" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+      <a href="zoom.html" class="concept-link" aria-label="Concept P: Powers of Ten">
+        <span class="letter" aria-hidden="true">P</span>
+        <div class="concept-body">
+          <span class="concept-name">Powers of Ten</span>
+          <span class="concept-desc">A continuous infinite zoom from galaxy to atom; each scale is a section of the portfolio.</span>
+        </div>
+        <div class="swatch swatch-p" aria-hidden="true"><div class="swatch-inner"></div></div>
+        <span class="arrow" aria-hidden="true">→</span>
+      </a>
+
+    </nav>
+
+    <footer class="footer" role="contentinfo">
+      <p>Mockups are vibe demos — one hero moment each, not the full site.</p>
+    </footer>
+  </main>
+
+  <script>
+    (function () {
+      // Respect reduced motion
+      const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (prefersReduced) {
+        // Snap everything visible immediately
+        document.querySelectorAll('.kicker, .headline, .sub, .divider, .concept-link, .footer')
+          .forEach(el => { el.style.opacity = '1'; });
+        return;
+      }
+
+      const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+      // Header sequence
+      tl.to('.kicker', { opacity: 1, y: 0, duration: 0.6, clearProps: 'transform' }, 0)
+        .from('.kicker', { y: -12 }, 0)
+
+        .to('.headline', { opacity: 1, duration: 0.8 }, 0.15)
+        .from('.headline', { y: 32, skewX: -2 }, 0.15)
+
+        .to('.sub', { opacity: 1, duration: 0.6 }, 0.4)
+        .from('.sub', { y: 16 }, 0.4)
+
+        .to('.divider', { opacity: 1, scaleX: 1, duration: 0.7 }, 0.55)
+        .from('.divider', { scaleX: 0 }, 0.55)
+
+        // Stagger concept rows
+        .to('.concept-link', {
+          opacity: 1,
+          y: 0,
+          duration: 0.55,
+          stagger: 0.09,
+          ease: 'power2.out',
+        }, 0.75)
+        .from('.concept-link', { y: 28 }, 0.75)
+
+        // Footer
+        .to('.footer', { opacity: 1, duration: 0.5 }, 1.4);
+
+      // Lightweight hover — GSAP handles the transform for skew,
+      // CSS handles color/background for GPU compositing.
+      // (CSS transitions already declared — GSAP is only used for entrance.)
+    }());
+  </script>
+</body>
+</html>

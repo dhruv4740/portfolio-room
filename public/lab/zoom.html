@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Powers of Ten — Dhruv Kothari</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; background: #000; overflow: hidden; }
+  #scroll-track { position: fixed; top: 0; left: 0; width: 1px; height: 600vh; pointer-events: none; }
+  #canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; }
+  #back { position: fixed; top: 18px; left: 22px; font: 11px/1 monospace; color: #444; text-decoration: none; z-index: 100; letter-spacing: .04em; transition: color .2s; }
+  #back:hover { color: #888; }
+  #label { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); font: 700 11px/1 monospace; color: #555; letter-spacing: .2em; z-index: 100; }
+  #hint { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); font: 11px/1 monospace; color: #333; letter-spacing: .1em; z-index: 100; transition: opacity 1s; }
+  #scale-ind { position: fixed; bottom: 26px; right: 26px; font: 11px/1 monospace; color: #3a5; letter-spacing: .05em; z-index: 100; }
+  #content-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 50; display: flex; align-items: center; justify-content: center; }
+  .content-card { position: absolute; text-align: center; opacity: 0; transition: opacity .05s; max-width: 520px; padding: 0 32px; }
+  .content-card h1 { font: 300 42px/1.1 'Georgia', serif; color: #e8e4dc; letter-spacing: .06em; text-shadow: 0 0 40px rgba(180,160,255,.4); }
+  .content-card h2 { font: 400 18px/1.4 'Georgia', serif; color: #9090b0; letter-spacing: .12em; margin-top: 8px; }
+  .content-card p { font: 13px/1.7 monospace; color: #7a8a7a; letter-spacing: .05em; margin-top: 14px; }
+  .content-card .tag { display: inline-block; font: 10px/1 monospace; color: #3a7a5a; border: 1px solid #2a5a3a; padding: 4px 10px; margin: 3px; letter-spacing: .08em; }
+</style>
+</head>
+<body>
+<div id="scroll-track"></div>
+<canvas id="canvas"></canvas>
+<a href="index.html" id="back">← concepts</a>
+<div id="label">POWERS OF TEN</div>
+<div id="hint">scroll to zoom through scales</div>
+<div id="scale-ind">10⁰ m</div>
+<div id="content-overlay">
+  <div class="content-card" id="card-galaxy">
+    <h1>DHRUV KOTHARI</h1>
+    <h2>explore every scale</h2>
+    <p>developer · designer · builder</p>
+  </div>
+  <div class="content-card" id="card-planet">
+    <h2>PALE BLUE DOT</h2>
+    <p>Earth, Solar System, Milky Way<br>somewhere in all of this — a developer</p>
+  </div>
+  <div class="content-card" id="card-city">
+    <h2>CITY SCALE</h2>
+    <p>based in Mumbai, India<br>working across web, systems & data</p>
+  </div>
+  <div class="content-card" id="card-desk">
+    <h1 style="font-size:26px">Selected Work</h1>
+    <h2 style="margin-top:12px">Reddit Growth Copilot</h2>
+    <p>AI-powered community analytics dashboard<br>mock-mode, phase 6 complete, key-free</p>
+    <div style="margin-top:14px">
+      <span class="tag">React</span><span class="tag">Python</span><span class="tag">LLM</span><span class="tag">Reddit API</span>
+    </div>
+  </div>
+  <div class="content-card" id="card-eye">
+    <h2>THE BUILDER</h2>
+    <p>I build things that work at every scale —<br>from system architecture to pixel-perfect UI.<br>Obsessed with the craft.</p>
+  </div>
+  <div class="content-card" id="card-neuron">
+    <h2>CORE SKILLS</h2>
+    <p style="margin-top:10px">
+      <span class="tag">JavaScript</span><span class="tag">TypeScript</span><span class="tag">Python</span><br>
+      <span class="tag">React / R3F</span><span class="tag">Node.js</span><span class="tag">Canvas / WebGL</span><br>
+      <span class="tag">ML / LLM integration</span><span class="tag">Data viz</span>
+    </p>
+  </div>
+</div>
+<script>
+(function(){
+'use strict';
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const hint = document.getElementById('hint');
+const scaleInd = document.getElementById('scale-ind');
+
+// Scroll state
+let scrollY = 0;
+let targetScrollY = 0;
+const MAX_SCROLL = 5; // 0..5 range mapping to 6 layers
+const SCROLL_SPEED = 0.0018;
+let hintHidden = false;
+
+// Resize
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// Wheel accumulation
+window.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  targetScrollY = Math.max(0, Math.min(MAX_SCROLL, targetScrollY + e.deltaY * SCROLL_SPEED));
+  if (!hintHidden) { hint.style.opacity = '0'; hintHidden = true; }
+}, { passive: false });
+
+// Touch
+let touchStartY = 0;
+window.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, { passive: true });
+window.addEventListener('touchmove', e => {
+  const dy = touchStartY - e.touches[0].clientY;
+  touchStartY = e.touches[0].clientY;
+  targetScrollY = Math.max(0, Math.min(MAX_SCROLL, targetScrollY + dy * 0.006));
+  if (!hintHidden) { hint.style.opacity = '0'; hintHidden = true; }
+}, { passive: true });
+
+// Scale labels
+const SCALE_LABELS = ['10²⁶ m','10⁷ m','10⁴ m','10⁰ m','10⁻² m','10⁻¹⁰ m'];
+
+// ---- Procedural draw functions ----
+
+function drawGalaxy(ctx, W, H, t, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  // Deep space bg gradient
+  const bg = ctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, Math.max(W,H)*.7);
+  bg.addColorStop(0,'#0a0418'); bg.addColorStop(1,'#000');
+  ctx.fillStyle = bg; ctx.fillRect(0,0,W,H);
+  // Stars
+  const seed = 42;
+  const rng = (i) => { let x=Math.sin(i*127.1+seed)*43758.5453; return x-Math.floor(x); };
+  for(let i=0;i<400;i++){
+    const sx=rng(i*3)*W, sy=rng(i*3+1)*H, sr=rng(i*3+2)*1.5+.3;
+    const tw=.5+.5*Math.sin(t*.5+i*.7);
+    ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2);
+    ctx.fillStyle=`rgba(200,200,255,${(.3+.4*tw)*alpha})`; ctx.fill();
+  }
+  // Galaxy spiral arms
+  ctx.translate(W/2, H/2);
+  for(let arm=0;arm<3;arm++){
+    const aOff=arm*(Math.PI*2/3)+t*.04;
+    for(let j=0;j<180;j++){
+      const ang=aOff+j*.08;
+      const r=j*2.2;
+      const x=Math.cos(ang)*r, y=Math.sin(ang)*r*.42;
+      const sz=Math.max(.5,2.5-j*.01);
+      const bright=Math.max(0,1-j/180);
+      ctx.beginPath(); ctx.arc(x,y,sz,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${160+arm*20},${120+arm*10},${220-arm*20},${bright*.7})`; ctx.fill();
+    }
+  }
+  // Core glow
+  const glow=ctx.createRadialGradient(0,0,0,0,0,80);
+  glow.addColorStop(0,'rgba(255,220,180,.7)'); glow.addColorStop(.4,'rgba(200,120,255,.2)'); glow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=glow; ctx.beginPath(); ctx.arc(0,0,80,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+function drawPlanet(ctx, W, H, t, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha;
+  // Space
+  ctx.fillStyle='#000508'; ctx.fillRect(0,0,W,H);
+  // Stars (sparse)
+  const rng=(i)=>{let x=Math.sin(i*91.3)*5371.2;return x-Math.floor(x);};
+  for(let i=0;i<120;i++){
+    ctx.beginPath(); ctx.arc(rng(i)*W,rng(i+1)*H,rng(i+2)*.8+.2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${.2+rng(i+3)*.5})`; ctx.fill();
+  }
+  ctx.translate(W/2, H/2);
+  const R = Math.min(W,H)*.28;
+  // Planet shadow backdrop
+  const shadow = ctx.createRadialGradient(-R*.3,-R*.3,R*.1,-R*.3,-R*.3,R*2);
+  shadow.addColorStop(0,'rgba(0,0,0,0)'); shadow.addColorStop(1,'rgba(0,0,0,.85)');
+  // Planet body
+  const planet=ctx.createRadialGradient(-R*.3,-R*.3,R*.05,-R*.1,-R*.1,R*1.1);
+  planet.addColorStop(0,'#7ab8ff'); planet.addColorStop(.35,'#3a7acf'); planet.addColorStop(.65,'#1a4a8f'); planet.addColorStop(.85,'#0a2050'); planet.addColorStop(1,'#020810');
+  ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fillStyle=planet; ctx.fill();
+  // Land masses (procedural blobs)
+  ctx.save(); ctx.clip();
+  ctx.fillStyle='rgba(60,120,60,.7)';
+  [[-.2,-.1,.18],[.1,.2,.12],[-.15,.25,.09],[.25,-.2,.14]].forEach(([bx,by,br])=>{
+    ctx.beginPath(); ctx.arc(bx*R,by*R,br*R,0,Math.PI*2); ctx.fill();
+  });
+  // Clouds
+  ctx.fillStyle='rgba(255,255,255,.18)';
+  for(let i=0;i<6;i++){
+    const ang=t*.3+i*1.05, cr=R*(.4+Math.sin(i*7.3)*.3);
+    ctx.beginPath(); ctx.ellipse(Math.cos(ang)*cr,Math.sin(ang)*cr*.4,R*.12,R*.04,ang,0,Math.PI*2); ctx.fill();
+  }
+  ctx.restore();
+  // Atmosphere glow
+  const atm=ctx.createRadialGradient(0,0,R*.9,0,0,R*1.18);
+  atm.addColorStop(0,'rgba(100,160,255,.35)'); atm.addColorStop(1,'rgba(0,40,120,0)');
+  ctx.beginPath(); ctx.arc(0,0,R*1.18,0,Math.PI*2); ctx.fillStyle=atm; ctx.fill();
+  ctx.restore();
+}
+
+function drawCity(ctx, W, H, t, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha;
+  // Night sky gradient
+  const sky=ctx.createLinearGradient(0,0,0,H);
+  sky.addColorStop(0,'#020612'); sky.addColorStop(.6,'#0a0f28'); sky.addColorStop(1,'#1a1020');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
+  // Moon
+  ctx.save(); ctx.translate(W*.78, H*.15);
+  const moonG=ctx.createRadialGradient(-4,-4,2,-2,-2,28);
+  moonG.addColorStop(0,'#fffde8'); moonG.addColorStop(.7,'#c8c89a'); moonG.addColorStop(1,'rgba(200,200,160,0)');
+  ctx.beginPath(); ctx.arc(0,0,26,0,Math.PI*2); ctx.fillStyle=moonG; ctx.fill();
+  ctx.restore();
+  // Stars
+  const rng2=(i)=>{let x=Math.sin(i*53.7)*7312.4;return x-Math.floor(x);};
+  for(let i=0;i<80;i++){
+    ctx.beginPath(); ctx.arc(rng2(i)*W,rng2(i+1)*H*.5,rng2(i+2)*.7+.2,0,Math.PI*2);
+    ctx.fillStyle=`rgba(255,255,255,${.15+rng2(i+3)*.4})`; ctx.fill();
+  }
+  // Skyline silhouette
+  const ground = H*.68;
+  ctx.fillStyle='#080818';
+  const buildings=[
+    [0,.28],[.05,.35],[.08,.22],[.13,.42],[.17,.3],[.2,.38],[.24,.55],[.28,.45],
+    [.32,.35],[.36,.6],[.4,.48],[.44,.38],[.48,.65],[.52,.5],[.56,.42],[.6,.58],
+    [.64,.44],[.68,.36],[.72,.5],[.76,.38],[.8,.28],[.84,.44],[.88,.32],[.92,.38],[.96,.25],[1,.3]
+  ];
+  ctx.beginPath(); ctx.moveTo(0,H);
+  for(let i=0;i<buildings.length-1;i++){
+    const [bx,bh]=buildings[i],[nx]=buildings[i+1];
+    const bw=(nx-bx)*W, bX=bx*W, bY=ground-bh*H*.5;
+    ctx.lineTo(bX,ground); ctx.lineTo(bX,bY); ctx.lineTo(bX+bw,bY); ctx.lineTo(bX+bw,ground);
+  }
+  ctx.lineTo(W,H); ctx.closePath(); ctx.fill();
+  // Window lights
+  const rng3=(i)=>{let x=Math.sin(i*179.3)*3141.5;return x-Math.floor(x);};
+  for(let i=0;i<200;i++){
+    if(rng3(i)>.5) continue;
+    const wx=rng3(i+1)*W, wy=ground-rng3(i+2)*(H*.5)*.9;
+    const warm=rng3(i+3)>.6;
+    const flicker=.7+.3*Math.sin(t*2+i*3.7);
+    ctx.fillStyle=warm?`rgba(255,220,120,${.4*flicker})`:`rgba(150,200,255,${.35*flicker})`;
+    ctx.fillRect(wx,wy,2,2);
+  }
+  // Ground reflection
+  const refl=ctx.createLinearGradient(0,ground,0,H);
+  refl.addColorStop(0,'rgba(20,30,60,.8)'); refl.addColorStop(1,'rgba(5,8,20,.95)');
+  ctx.fillStyle=refl; ctx.fillRect(0,ground,W,H-ground);
+  ctx.restore();
+}
+
+function drawDesk(ctx, W, H, t, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha;
+  // Room bg
+  const room=ctx.createLinearGradient(0,0,0,H);
+  room.addColorStop(0,'#0d0d14'); room.addColorStop(.5,'#111118'); room.addColorStop(1,'#181820');
+  ctx.fillStyle=room; ctx.fillRect(0,0,W,H);
+  const cx=W/2, cy=H/2;
+  // Desk surface
+  ctx.save(); ctx.translate(cx,cy);
+  const dW=Math.min(W*.7,500), dH=80;
+  const desk=ctx.createLinearGradient(0,-10,0,dH);
+  desk.addColorStop(0,'#2a2418'); desk.addColorStop(1,'#1a1610');
+  ctx.fillStyle=desk; ctx.fillRect(-dW/2,-20,dW,dH+20);
+  // Monitor
+  const mW=Math.min(W*.35,240), mH=mW*.6;
+  ctx.fillStyle='#222230';
+  ctx.fillRect(-mW/2-8,-mH-30,mW+16,mH+8);
+  // Screen glow
+  const screen=ctx.createLinearGradient(-mW/2,-mH-28,mW/2,-28);
+  screen.addColorStop(0,'#0a1428'); screen.addColorStop(.3,'#0d1f3a'); screen.addColorStop(.7,'#102040'); screen.addColorStop(1,'#081428');
+  ctx.fillStyle=screen; ctx.fillRect(-mW/2,-mH-28,mW,mH);
+  // Code on screen
+  const lines=['> Reddit Growth Copilot','  phase 6 complete ✓','  mock-mode active','  key-free design','','> git push origin main','  [main] feat: dashboard'];
+  ctx.font=`${Math.max(7,mW*.038)}px monospace`; ctx.textAlign='left';
+  lines.forEach((line,i)=>{
+    const shade=line.startsWith('>')? '#4af':'#3a7';
+    ctx.fillStyle=line.startsWith('>') ? 'rgba(80,160,255,.9)' : 'rgba(60,180,100,.7)';
+    ctx.fillText(line,-mW/2+8,-mH-24+i*(mH*.13));
+  });
+  // Cursor blink
+  if(Math.sin(t*2.5)>0){ ctx.fillStyle='rgba(80,255,180,.8)'; ctx.fillRect(-mW/2+8+(lines[lines.length-1].length*mW*.022),-mH-24+(lines.length-1)*mH*.13-8,6,11); }
+  // Monitor stand
+  ctx.fillStyle='#1a1a24'; ctx.fillRect(-12,-28,24,20);
+  ctx.fillRect(-30,-10,60,6);
+  // Keyboard
+  ctx.fillStyle='#1c1c2a'; ctx.fillRect(-dW*.32,-6,dW*.64,26);
+  ctx.strokeStyle='#2a2a3a'; ctx.lineWidth=1;
+  for(let row=0;row<3;row++){for(let col=0;col<12;col++){
+    ctx.strokeRect(-dW*.3+col*dW*.05,row*8-2,dW*.044,6);
+  }}
+  // Coffee mug
+  ctx.fillStyle='#2a1a10'; ctx.fillRect(dW*.3,-18,22,24);
+  ctx.fillStyle='#3a2a18'; ctx.fillRect(dW*.3+2,-16,18,3);
+  // Screen ambient glow
+  const sglow=ctx.createRadialGradient(0,-mH/2-28,10,0,-mH/2-28,mW*.8);
+  sglow.addColorStop(0,`rgba(40,100,200,${.15+.05*Math.sin(t)})`); sglow.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=sglow; ctx.fillRect(-mW,-mH-80,mW*2,mH+60);
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawEye(ctx, W, H, t, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.fillStyle='#040408'; ctx.fillRect(0,0,W,H);
+  ctx.translate(W/2, H/2);
+  const R=Math.min(W,H)*.32;
+  // Sclera
+  ctx.save();
+  ctx.scale(1, .55);
+  const scl=ctx.createRadialGradient(0,0,R*.1,0,0,R);
+  scl.addColorStop(0,'#f0ede5'); scl.addColorStop(.7,'#e0ddd5'); scl.addColorStop(1,'#c8c5bc');
+  ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fillStyle=scl; ctx.fill();
+  ctx.restore();
+  // Eyelid clips
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(0,0,R*1.05,R*.55,0,0,Math.PI*2);
+  ctx.clip();
+  // Iris
+  const irisR=R*.45;
+  const iris=ctx.createRadialGradient(0,0,irisR*.05,0,0,irisR);
+  iris.addColorStop(0,'#1a3a5a'); iris.addColorStop(.4,'#2a6080'); iris.addColorStop(.75,'#3a7a5a'); iris.addColorStop(1,'#1a3030');
+  ctx.beginPath(); ctx.arc(0,0,irisR,0,Math.PI*2); ctx.fillStyle=iris; ctx.fill();
+  // Iris fibers
+  ctx.save(); ctx.clip();
+  for(let i=0;i<40;i++){
+    const ang=i*(Math.PI*2/40)+t*.05;
+    ctx.strokeStyle=`rgba(${80+i*3},${150+i*2},${120},0.3)`;
+    ctx.lineWidth=.8;
+    ctx.beginPath(); ctx.moveTo(Math.cos(ang)*irisR*.2,Math.sin(ang)*irisR*.2);
+    ctx.lineTo(Math.cos(ang)*irisR,Math.sin(ang)*irisR); ctx.stroke();
+  }
+  ctx.restore();
+  // Pupil
+  const pupilR=irisR*.38;
+  ctx.beginPath(); ctx.arc(0,0,pupilR,0,Math.PI*2); ctx.fillStyle='#000'; ctx.fill();
+  // Pupil glint
+  ctx.beginPath(); ctx.arc(-pupilR*.25,-pupilR*.3,pupilR*.18,0,Math.PI*2);
+  ctx.fillStyle='rgba(255,255,255,.6)'; ctx.fill();
+  ctx.restore();
+  // Eyelid shape top/bottom
+  ctx.fillStyle='#040408';
+  ctx.beginPath(); ctx.ellipse(0,-R*.55,R*1.08,R*.58,0,Math.PI,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0,R*.55,R*1.08,R*.58,0,0,Math.PI); ctx.fill();
+  // Lashes
+  ctx.strokeStyle='rgba(20,15,10,.8)'; ctx.lineWidth=2;
+  for(let i=-5;i<=5;i++){
+    const ang=(i/5)*Math.PI*.55;
+    const x0=Math.sin(ang)*R, y0=-Math.abs(Math.cos(ang))*R*.54;
+    ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0*1.08,y0-12); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawNeuron(ctx, W, H, t, alpha) {
+  ctx.save(); ctx.globalAlpha = alpha;
+  ctx.fillStyle='#000206'; ctx.fillRect(0,0,W,H);
+  ctx.translate(W/2, H/2);
+  const R=Math.min(W,H)*.18;
+  // Dendrites
+  const dendCount=7;
+  for(let d=0;d<dendCount;d++){
+    const baseAng=d*(Math.PI*2/dendCount)+t*.03;
+    ctx.strokeStyle=`rgba(60,${120+d*15},${200},0.4)`;
+    ctx.lineWidth=1.5;
+    let x=0, y=0;
+    ctx.beginPath(); ctx.moveTo(x,y);
+    for(let seg=0;seg<5;seg++){
+      const segAng=baseAng+Math.sin(t*.2+d+seg)*0.4;
+      const segL=R*(.6+seg*.3);
+      x+=Math.cos(segAng)*segL*.4; y+=Math.sin(segAng)*segL*.4;
+      ctx.lineTo(x,y);
+      // Branch
+      if(seg===3){
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+Math.cos(segAng+.6)*R*.4,y+Math.sin(segAng+.6)*R*.4);
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+Math.cos(segAng-.5)*R*.35,y+Math.sin(segAng-.5)*R*.35);
+        ctx.moveTo(x,y);
+      }
+    }
+    ctx.stroke();
+    // Synapse dots
+    const pulse=.5+.5*Math.sin(t*2+d*1.3);
+    ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2);
+    ctx.fillStyle=`rgba(100,200,255,${pulse*.7})`; ctx.fill();
+  }
+  // Cell body
+  const body=ctx.createRadialGradient(0,0,R*.05,0,0,R);
+  body.addColorStop(0,'rgba(120,180,255,.9)'); body.addColorStop(.5,'rgba(60,100,200,.6)'); body.addColorStop(1,'rgba(20,40,100,.1)');
+  ctx.beginPath(); ctx.arc(0,0,R,0,Math.PI*2); ctx.fillStyle=body; ctx.fill();
+  // Nucleus
+  const nuc=ctx.createRadialGradient(0,0,1,0,0,R*.4);
+  nuc.addColorStop(0,'rgba(200,230,255,.9)'); nuc.addColorStop(1,'rgba(80,120,200,.3)');
+  ctx.beginPath(); ctx.arc(0,0,R*.4,0,Math.PI*2); ctx.fillStyle=nuc; ctx.fill();
+  // Orbiting particles (atom metaphor)
+  for(let o=0;o<3;o++){
+    const oAng=t*.8+o*(Math.PI*2/3);
+    const oRx=R*1.8, oRy=R*.5;
+    const ox=Math.cos(oAng)*oRx, oy=Math.sin(oAng)*oRy;
+    ctx.beginPath(); ctx.arc(ox,oy,4,0,Math.PI*2);
+    ctx.fillStyle=`rgba(180,220,255,${.6+.4*Math.sin(oAng)})`; ctx.fill();
+    // Orbit trail
+    ctx.beginPath();
+    ctx.ellipse(0,0,oRx,oRy,0,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(80,140,200,0.12)`; ctx.lineWidth=1; ctx.stroke();
+  }
+  // Pulse ring
+  const pRad=R*(1+.3*((t*.5)%1));
+  const pA=Math.max(0,.5-((t*.5)%1)*.5);
+  ctx.beginPath(); ctx.arc(0,0,pRad,0,Math.PI*2);
+  ctx.strokeStyle=`rgba(100,180,255,${pA})`; ctx.lineWidth=2; ctx.stroke();
+  ctx.restore();
+}
+
+// Content cards
+const CARDS=[
+  { id:'card-galaxy',  start:0,   peak:.5,  end:1   },
+  { id:'card-planet',  start:1,   peak:1.5, end:2   },
+  { id:'card-city',    start:2,   peak:2.5, end:3   },
+  { id:'card-desk',    start:3,   peak:3.5, end:4   },
+  { id:'card-eye',     start:4,   peak:4.5, end:5   },
+  { id:'card-neuron',  start:4.8, peak:5,   end:5.5 },
+];
+const cardEls={};
+CARDS.forEach(c=>{ cardEls[c.id]=document.getElementById(c.id); });
+
+function cardAlpha(card, s) {
+  if(s<card.start||s>card.end) return 0;
+  if(s<=card.peak) return (s-card.start)/(card.peak-card.start);
+  return 1-(s-card.peak)/(card.end-card.peak);
+}
+
+// Layers: each has draw fn + scale range over scroll 0..5
+const LAYERS=[
+  { draw:drawGalaxy,  sIn:0,  sOut:1.3 },
+  { draw:drawPlanet,  sIn:0.7,sOut:2.3 },
+  { draw:drawCity,    sIn:1.7,sOut:3.3 },
+  { draw:drawDesk,    sIn:2.7,sOut:4.3 },
+  { draw:drawEye,     sIn:3.7,sOut:5.0 },
+  { draw:drawNeuron,  sIn:4.6,sOut:6.0 },
+];
+
+function layerAlpha(layer, s) {
+  const fadeLen=0.4;
+  if(s<layer.sIn||s>layer.sOut) return 0;
+  const inA=Math.min(1,(s-layer.sIn)/fadeLen);
+  const outA=Math.min(1,(layer.sOut-s)/fadeLen);
+  return Math.min(inA,outA);
+}
+
+// Scale indicator
+const SCALE_RANGES=[
+  [0,.8,'10²⁶ m — galactic scale'],
+  [.8,1.8,'10⁷ m — planetary scale'],
+  [1.8,2.8,'10⁴ m — city scale'],
+  [2.8,3.8,'10⁰ m — human scale'],
+  [3.8,4.8,'10⁻² m — cellular scale'],
+  [4.8,5,'10⁻¹⁰ m — quantum scale'],
+];
+function getScaleLabel(s) {
+  for(const [a,b,lbl] of SCALE_RANGES) if(s>=a&&s<b) return lbl;
+  return SCALE_RANGES[SCALE_RANGES.length-1][2];
+}
+
+let lastT=0, t=0;
+function frame(ts){
+  const dt=Math.min((ts-lastT)/1000,.05); lastT=ts; t+=dt;
+  // Smooth scroll
+  scrollY+=(targetScrollY-scrollY)*(.1);
+  const s=scrollY;
+  const W=canvas.width, H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,W,H);
+  // Draw layers
+  LAYERS.forEach(layer=>{
+    const a=layerAlpha(layer,s);
+    if(a>0.005) layer.draw(ctx,W,H,t,a);
+  });
+  // Update content cards
+  CARDS.forEach(c=>{
+    const el=cardEls[c.id];
+    const a=cardAlpha(c,s);
+    el.style.opacity=a;
+  });
+  // Scale indicator
+  scaleInd.textContent=getScaleLabel(s);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(ts=>{lastT=ts; requestAnimationFrame(frame);});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dhruvOS — Dhruv Kothari</title>
+
+<!-- Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- Libs (globals — no bundler) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+<!-- Three.js via importmap (for apps that need it) -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.169.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.169.0/examples/jsm/"
+  }
+}
+</script>
+
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ── OS BENEATH INTRO (light canvas background) ── -->
+<div id="os-beneath">
+  <canvas id="beneath-canvas"></canvas>
+</div>
+
+<!-- ── INTRO: torn shadow + flat site ── -->
+<div id="tear-shadow"><canvas id="shadow-canvas"></canvas></div>
+
+<div id="flat-site">
+  <div class="flat-inner">
+    <nav class="flat-nav">
+      <span class="logo">Dhruv Kothari</span>
+      <div class="nav-links">
+        <span>Work</span>
+        <span>About</span>
+        <span>Contact</span>
+      </div>
+    </nav>
+    <div class="flat-hero">
+      <h1>Dhruv<br>Kothari</h1>
+      <p>Developer &amp; designer interested in interfaces, systems, and the space between them. Based in Mumbai.</p>
+    </div>
+    <div class="flat-section-label">Selected Work</div>
+    <ul class="flat-work-list">
+      <li><span class="project-name">Reddit Growth Copilot</span><span class="project-year">2024</span></li>
+      <li><span class="project-name">GeoSVG Maps Demo</span><span class="project-year">2024</span></li>
+      <li><span class="project-name">3D Portfolio</span><span class="project-year">2025</span></li>
+    </ul>
+    <div class="flat-divider"></div>
+    <div class="flat-footer-row">
+      <span>dhruvkothari13062006@gmail.com</span>
+      <span>&copy; 2026</span>
+    </div>
+  </div>
+</div>
+
+<div id="tear-hint">drag to tear</div>
+<button id="intro-skip">skip →</button>
+
+<!-- ── BOOT ── -->
+<div id="boot">
+  <div id="boot-lines"></div>
+  <div id="boot-progress-wrap">
+    <div id="boot-progress-bar"></div>
+  </div>
+  <div id="boot-skip-hint">click to skip</div>
+</div>
+
+<!-- ── DESKTOP ── -->
+<div id="desktop">
+  <div id="menubar">
+    <div id="menubar-left">◆ dhruvOS</div>
+    <div id="menubar-right">
+      <button id="sound-toggle" title="Toggle ambient sound">♪ OFF</button>
+      <span id="clock">00:00:00</span>
+    </div>
+  </div>
+  <div id="workspace"></div>
+  <div id="taskbar"></div>
+</div>
+
+<!-- ── CRT OVERLAY ── -->
+<div id="crt" aria-hidden="true"></div>
+<div id="crt-flicker" aria-hidden="true"></div>
+<div id="crt-chroma" aria-hidden="true"></div>
+
+<!-- ── App entry point ── -->
+<script type="module" src="main.js"></script>
+</body>
+</html>
