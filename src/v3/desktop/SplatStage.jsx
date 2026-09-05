@@ -13,9 +13,12 @@ import { useEffect, useRef, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { createRig } from './cameraRig.js';
+import { computeSplatBounds, frameBounds, resolveAnchor } from './splatBounds.js';
 
-// Wide establishing shot the scene opens on and returns to.
-export const HOME_VIEW = {
+// Fallback only. The real establishing shot is derived from the capture's
+// bounds once it loads — see the onLoad handler. Hardcoding a camera for a
+// specific capture is how you end up framing empty space.
+export const FALLBACK_VIEW = {
   position: [1.6, 0.75, 2.1],
   target: [0, 0.15, -0.3],
 };
@@ -29,11 +32,19 @@ export default function SplatStage({
   onReady,
   onStats,
   onError,
+  expectedBytes = 0,
   reducedMotion = false,
 }) {
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
   const apiRef = useRef(null);
+  // Anchors resolved from normalised coords into this capture's world space,
+  // and the establishing shot derived from its bounds. Both are only known
+  // after the capture loads, so they live in refs the render loop reads.
+  // Starts empty: content anchors carry normalised `at`, not world positions,
+  // so nothing can be projected until bounds exist.
+  const resolvedRef = useRef([]);
+  const homeRef = useRef(FALLBACK_VIEW);
 
   // Keep the latest callbacks without retriggering the (expensive) scene effect.
   const cb = useRef({});
@@ -88,7 +99,7 @@ export default function SplatStage({
 
       scene = new THREE.Scene();
       camera = new THREE.PerspectiveCamera(52, w / h, 0.05, 200);
-      camera.position.set(...HOME_VIEW.position);
+      camera.position.set(...FALLBACK_VIEW.position);
 
       spark = new SparkRenderer({ renderer });
       scene.add(spark);
@@ -96,7 +107,7 @@ export default function SplatStage({
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true;
       controls.dampingFactor = 0.075;
-      controls.target.set(...HOME_VIEW.target);
+      controls.target.set(...FALLBACK_VIEW.target);
       controls.minDistance = 0.4;
       controls.maxDistance = 6;
       // Stop the visitor orbiting under the floor into the capture's null space,
@@ -111,18 +122,67 @@ export default function SplatStage({
         url: src,
         onProgress: (e) => {
           if (disposed) return;
-          const total = e?.total || 0;
           const loaded = e?.loaded || 0;
+          // Some static hosts omit Content-Length (or send it compressed), so
+          // e.total is 0. Fall back to the size recorded alongside the capture
+          // so the loader still tracks real bytes rather than sitting at 0%
+          // and snapping to 100%. Never invent a value beyond that.
+          const total = e?.total || expectedBytes || 0;
           cb.current.onProgress?.({
             progress: total ? Math.min(loaded / total, 1) : 0,
             loadedMB: loaded / 1048576,
-            totalMB: total / 1048576,
+            totalMB: total ? total / 1048576 : undefined,
           });
         },
         onLoad: () => {
           if (disposed) return;
           cb.current.onProgress?.({ progress: 1 });
-          cb.current.onReady?.({ splatCount: readSplatCount(splat) });
+
+          // Derive framing from the capture rather than trusting authored
+          // coordinates. Percentile bounds reject the floater noise that every
+          // splat reconstruction carries.
+          const bounds = computeSplatBounds(splat);
+
+          if (bounds) {
+            const home = frameBounds(bounds, camera);
+            homeRef.current = home;
+
+            // Scale the orbit limits to the capture so the visitor can neither
+            // clip inside the geometry nor drift off into the void.
+            controls.minDistance = home.distance * 0.18;
+            controls.maxDistance = home.distance * 2.6;
+
+            resolvedRef.current = anchors.map((a) => resolveAnchor(a, bounds, camera));
+            rig.flyTo(home, { reduced: true }); // snap: nothing is visible yet
+          } else {
+            // Bounds unavailable (older Spark shape): fall back rather than
+            // leaving the camera pointed at nothing. Anchors still resolve, but
+            // against a synthetic unit box, so they will be approximate.
+            homeRef.current = FALLBACK_VIEW;
+            const unit = {
+              box: new THREE.Box3(
+                new THREE.Vector3(-1, -1, -1),
+                new THREE.Vector3(1, 1, 1),
+              ),
+              center: new THREE.Vector3(0, 0, 0),
+              size: new THREE.Vector3(2, 2, 2),
+              radius: 1.73,
+              count: 0,
+            };
+            resolvedRef.current = anchors.map((a) => resolveAnchor(a, unit, camera));
+            rig.flyTo(FALLBACK_VIEW, { reduced: true });
+          }
+
+          cb.current.onReady?.({
+            splatCount: readSplatCount(splat) ?? bounds?.count ?? null,
+            bounds: bounds
+              ? {
+                  center: bounds.center.toArray(),
+                  size: bounds.size.toArray(),
+                  radius: bounds.radius,
+                }
+              : null,
+          });
         },
       });
 
@@ -163,17 +223,23 @@ export default function SplatStage({
         // than through React state — this runs 60x/sec and re-rendering the
         // tree that often would cost more than the whole scene.
         const rect = host.getBoundingClientRect();
-        for (const a of anchors) {
+        for (const a of resolvedRef.current) {
           const el = markerRefs.current.get(a.id);
-          if (!el) continue;
+          if (!el || !a.position) continue;
           const p = rig.project(a.position, rect.width, rect.height);
           if (!p) {
             el.style.opacity = '0';
             el.style.pointerEvents = 'none';
             continue;
           }
-          el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0)`;
-          el.style.opacity = '1';
+          // Depth cueing: markers deeper into the capture recede. Keeps the
+          // foreground one legible when several project near each other, and
+          // reads as spatial rather than as a flat HUD.
+          const near = 1 - Math.min(Math.max((p.depth + 1) * 0.5, 0), 1);
+          const fade = 0.42 + near * 0.58;
+          el.style.transform = `translate3d(${p.x}px, ${p.y}px, 0) scale(${0.9 + near * 0.1})`;
+          el.style.opacity = fade.toFixed(3);
+          el.style.zIndex = String(Math.round(near * 100));
           el.style.pointerEvents = 'auto';
         }
 
@@ -218,8 +284,8 @@ export default function SplatStage({
   useEffect(() => {
     const api = apiRef.current;
     if (!api) return;
-    const a = anchors.find((x) => x.id === activeAnchorId);
-    api.rig.flyTo(a ? a.view : HOME_VIEW, { reduced: reducedMotion });
+    const a = resolvedRef.current.find((x) => x.id === activeAnchorId);
+    api.rig.flyTo(a ? a.view : homeRef.current, { reduced: reducedMotion });
   }, [activeAnchorId, anchors, reducedMotion]);
 
   return (

@@ -74,6 +74,7 @@ export default function Scan() {
 
       <SplatStage
         src={capture.source}
+        expectedBytes={capture.bytes}
         anchors={anchors}
         activeAnchorId={activeId}
         onAnchorSelect={handleSelect}
@@ -190,8 +191,7 @@ const css = `
 .scan-hint {
   position: absolute;
   bottom: var(--gutter);
-  left: 50%;
-  transform: translateX(-50%);
+  right: var(--gutter);
   z-index: var(--z-hud);
   color: var(--dim);
   pointer-events: none;

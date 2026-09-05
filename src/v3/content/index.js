@@ -94,8 +94,18 @@ export const projects = [
 
 // ---------------------------------------------------------------------------
 // ANCHORS — points of interest inside the scanned room.
-// `position` is in splat-space metres and MUST be re-tuned after the real
-// capture lands; these values are calibrated to the dev placeholder splat.
+//
+// `at` is NORMALISED: [x, y, z] each 0..1 within the capture's bounding box,
+// where 0 is the box minimum and 1 the maximum. World positions and camera
+// viewpoints are derived at runtime (see desktop/splatBounds.js).
+//
+// This is deliberate. Captures come out of training at arbitrary scale and
+// origin, so absolute metre coordinates break the moment a scan is retrained
+// or replaced. Normalised coordinates survive that, and tuning an anchor for
+// the real room means nudging three numbers here — nothing else.
+//
+// `dolly` (default 0.55) is how close the camera parks, as a fraction of the
+// capture radius. Smaller = tighter close-up.
 // `ref` links an anchor to a project id, or 'lab' / 'about' / 'contact'.
 // ---------------------------------------------------------------------------
 export const anchors = [
@@ -103,9 +113,8 @@ export const anchors = [
     id: 'monitor',
     label: 'Monitor',
     ref: 'lab',
-    position: [0.0, 0.35, -0.6],
-    // Camera parks here when the anchor is opened.
-    view: { position: [0.0, 0.35, 0.9], target: [0.0, 0.32, -0.6] },
+    at: [0.5, 0.72, 0.35],
+    dolly: 0.45,
     readout: '17 EXPERIMENTS · LIVE',
     body: 'Everything I have built that runs in a browser. Each one is playable.',
   },
@@ -113,8 +122,8 @@ export const anchors = [
     id: 'desk',
     label: 'Desk',
     ref: 'reddit',
-    position: [-0.55, 0.05, -0.2],
-    view: { position: [-0.7, 0.4, 0.7], target: [-0.55, 0.05, -0.2] },
+    at: [0.28, 0.42, 0.55],
+    dolly: 0.6,
     readout: 'MAIN PROJECT',
     body: '',
   },
@@ -122,8 +131,8 @@ export const anchors = [
     id: 'notebook',
     label: 'Notebook',
     ref: 'about',
-    position: [0.45, 0.0, -0.1],
-    view: { position: [0.6, 0.35, 0.6], target: [0.45, 0.0, -0.1] },
+    at: [0.72, 0.38, 0.6],
+    dolly: 0.5,
     readout: 'WHO',
     body: identity.statement,
   },
@@ -131,8 +140,8 @@ export const anchors = [
     id: 'window',
     label: 'Window',
     ref: 'contact',
-    position: [1.1, 0.6, -1.2],
-    view: { position: [0.6, 0.6, 0.2], target: [1.1, 0.6, -1.2] },
+    at: [0.85, 0.75, 0.2],
+    dolly: 0.7,
     readout: 'GET IN TOUCH',
     body: '',
   },
@@ -144,6 +153,9 @@ export const anchors = [
 export const capture = {
   // TODO(dhruv): replace when the real room scan is trained.
   source: '/splats/dev-room.splat',
+  // Used only as a progress denominator when the host omits Content-Length.
+  // Update alongside `source` when the real capture lands.
+  bytes: 8655712,
   isPlaceholder: true,
   label: 'DEV PLACEHOLDER',
   capturedOn: '',

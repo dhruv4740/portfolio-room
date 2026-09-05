@@ -150,7 +150,8 @@ export default function Telemetry({
 const CSS = `
 .telemetry-root {
   position: fixed;
-  top: var(--gutter);
+  /* Bottom-left: the masthead owns the top-left corner on the scan surface. */
+  bottom: var(--gutter);
   left: var(--gutter);
   z-index: var(--z-hud);
   display: flex;
