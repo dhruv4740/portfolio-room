@@ -1,0 +1,102 @@
+/* ============================================================================
+   v3 design system — "Technical Instrument"
+   A photoreal scan floating in void, overlaid with measurement-grade chrome.
+   Rules: no gradients. One accent. Three durations. One easing curve.
+   ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* ---- colour -------------------------------------------------------- */
+  --void:      #0A0A0B;   /* the space the scan floats in */
+  --void-lift: #131316;   /* panels, raised surfaces */
+  --bone:      #E8E4DC;   /* primary type */
+  --dim:       #6B6B72;   /* secondary type, labels */
+  --faint:     #2A2A2F;   /* hairlines, dividers */
+  --signal:    #FF5F1F;   /* THE accent. sodium orange. use sparingly. */
+  --signal-dim:rgba(255, 95, 31, 0.18);
+
+  /* No --gradient-* tokens exist. This is deliberate. */
+
+  /* ---- type ---------------------------------------------------------- */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-mono:    'JetBrains Mono', ui-monospace, monospace;
+
+  --t-hero:  clamp(2.75rem, 9vw, 7.5rem);
+  --t-head:  clamp(1.6rem, 4vw, 2.75rem);
+  --t-body:  clamp(0.95rem, 1.1vw, 1.05rem);
+  --t-data:  0.7rem;    /* mono readouts */
+  --t-micro: 0.625rem;  /* telemetry */
+
+  --track-data: 0.14em;  /* mono letterspacing */
+  --track-hero: -0.03em; /* display tightening */
+
+  /* ---- motion -------------------------------------------------------- */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --d-feedback:   150ms;  /* hover, press */
+  --d-transition: 400ms;  /* panel in/out */
+  --d-reveal:     900ms;  /* first paint, scene changes */
+
+  /* ---- layout -------------------------------------------------------- */
+  --gutter: clamp(1rem, 3.5vw, 3rem);
+  --hair: 1px;
+  --z-scene: 1;
+  --z-hud: 10;
+  --z-panel: 20;
+  --z-intro: 40;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #root { height: 100%; }
+
+body {
+  background: var(--void);
+  color: var(--bone);
+  font-family: var(--font-display);
+  font-size: var(--t-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overscroll-behavior: none;
+}
+
+/* ---- shared primitives ------------------------------------------------ */
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--t-data);
+  letter-spacing: var(--track-data);
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.hair { border: 0; border-top: var(--hair) solid var(--faint); }
+
+.signal { color: var(--signal); }
+
+/* Focus ring: visible, on-brand, keyboard-only. */
+:focus-visible {
+  outline: var(--hair) solid var(--signal);
+  outline-offset: 3px;
+}
+
+a { color: inherit; text-decoration: none; }
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* ---- accessibility ---------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

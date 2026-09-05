@@ -4,21 +4,18 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
+    // Spark's renderer is ~5MB raw / ~1.8MB gzip and is dynamically imported by
+    // SplatStage, so it lands in its own lazy chunk automatically. Nothing on
+    // the /work path may pull it in — if this warning starts naming a chunk on
+    // the fast path, that is a regression, not noise.
+    chunkSizeWarningLimit: 2048,
     rollupOptions: {
       output: {
         manualChunks(id) {
-          // Rapier WASM + JS bindings → separate lazy chunk
-          if (id.includes('@react-three/rapier') || id.includes('@dimforge/rapier3d')) {
-            return 'physics'
-          }
-          // drei utilities (large, but not WASM) → separate vendor chunk
-          if (id.includes('@react-three/drei')) {
-            return 'drei'
-          }
-          // postprocessing → separate chunk (loaded eagerly but tree-shaken better)
-          if (id.includes('@react-three/postprocessing') || id.includes('postprocessing')) {
-            return 'postprocessing'
-          }
+          // three is shared by the scan surface only, but splitting it keeps
+          // the Scan chunk readable when checking what actually grew.
+          if (id.includes('node_modules/three/')) return 'three'
+          if (id.includes('react-dom') || id.includes('node_modules/react/')) return 'react'
         },
       },
     },

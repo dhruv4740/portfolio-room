@@ -29,3 +29,10 @@ mockups/shots/
 *.njsproj
 *.sln
 *.sw?
+
+# Gaussian splat captures — binary, large, and the dev one is a public placeholder.
+# The real room capture is added by the owner and is intentionally not in git.
+public/splats/*.splat
+public/splats/*.ply
+public/splats/*.spz
+public/splats/*.ksplat
