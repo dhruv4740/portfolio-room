@@ -1,5 +1,10 @@
 # Roadmap
 
+> 2026-09-12: Read [the proposed creative and build plan](PLAN.md) first.
+> It revises the ordering below and records source-verified renderer constraints,
+> the telemetry measurement issue, and current OS integration work. The older
+> candidate list remains for context; the new direction is a recommendation.
+
 Ordered. Flex-first, per `docs/VISION.md`.
 
 ## Blocked on the user
