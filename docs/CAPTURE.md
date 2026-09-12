@@ -1,9 +1,15 @@
-# Replacing the placeholder capture
+# Capturing a room yourself — FALLBACK
+
+> **This is no longer the plan.** The current direction is to source a public
+> room scan rather than capture the user's own room — see `docs/VISION.md`.
+> This document is kept because the path is still valid if sourcing fails, and
+> because sections 3, 4 and "If the capture loads upside down" apply to **any**
+> capture, downloaded or shot.
 
 The scan surface currently renders a public demo splat (a shoe). Everything
 else is built; this is the one input that has to come from you.
 
-## 1. Capture the room
+## 1. Capture the room (fallback path only)
 
 Free, on-device, no account: **Scaniverse** (iOS/Android) → Splat mode.
 Cloud alternative: **Luma AI** or **Polycam**.
