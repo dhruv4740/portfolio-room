@@ -4,7 +4,9 @@
 //
 // Props:
 //   splatCount  number   — total gaussian splat count
-//   frameMs     number   — last frame time in ms
+//   frameMs     number   — average rAF callback interval in ms (presentation cadence)
+//   cpuMs       number   — average CPU-side rig update + render submission time
+//   gpuMs       number   — measured GPU duration; null/undefined when unavailable
 //   loadedMB    number   — bytes loaded, in MB
 //   totalMB     number   — total asset size, in MB
 //   cameraPos   {x,y,z} | [x,y,z] — live camera position, splat-space metres
@@ -70,6 +72,8 @@ function fmtAnchor(anchorId) {
 export default function Telemetry({
   splatCount,
   frameMs,
+  cpuMs,
+  gpuMs,
   loadedMB,
   totalMB,
   cameraPos,
@@ -93,6 +97,11 @@ export default function Telemetry({
             <span className="t-item">
               <span className="t-key">FPS</span>
               <span className="t-val">{fmtFps(frameMs)}</span>
+            </span>
+            <span className="t-sep">&middot;</span>
+            <span className="t-item">
+              <span className="t-key">CPU</span>
+              <span className="t-val">{fmtFixed(cpuMs, 1)} MS</span>
             </span>
             <span className="t-sep">&middot;</span>
             <span className="t-item">
@@ -125,10 +134,18 @@ export default function Telemetry({
           <span className="t-val">{fmtInt(splatCount)}</span>
         </div>
         <div className="t-row">
-          <span className="t-key">FRAME</span>
+          <span className="t-key">RAF</span>
           <span className="t-val">
             {fmtFixed(frameMs, 1)} MS &middot; {fmtFps(frameMs)} FPS
           </span>
+        </div>
+        <div className="t-row">
+          <span className="t-key">CPU</span>
+          <span className="t-val">{fmtFixed(cpuMs, 1)} MS</span>
+        </div>
+        <div className="t-row">
+          <span className="t-key">GPU</span>
+          <span className="t-val">{fmtFixed(gpuMs, 1)} MS</span>
         </div>
         <div className="t-row">
           <span className="t-key">LOAD</span>

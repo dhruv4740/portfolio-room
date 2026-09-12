@@ -34,6 +34,7 @@ export default function SplatStage({
   onError,
   expectedBytes = 0,
   reducedMotion = false,
+  paused = false,
 }) {
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
@@ -45,6 +46,8 @@ export default function SplatStage({
   // so nothing can be projected until bounds exist.
   const resolvedRef = useRef([]);
   const homeRef = useRef(FALLBACK_VIEW);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
 
   // Keep the latest callbacks without retriggering the (expensive) scene effect.
   const cb = useRef({});
@@ -65,10 +68,16 @@ export default function SplatStage({
     let renderer, scene, camera, controls, rig, spark, splat;
     const clock = new THREE.Clock();
 
-    // Rolling frame-time average — a single frame's dt is far too noisy to show.
-    let frameAccum = 0;
-    let frameCount = 0;
-    let lastEmit = 0;
+    // Keep presentation cadence separate from CPU submission work. The
+    // renderer timer ends when commands have been submitted; it says nothing
+    // about when the GPU finishes or when the browser presents a frame.
+    const MAX_CADENCE_GAP_MS = 250;
+    let cadenceAccum = 0;
+    let cadenceCount = 0;
+    let cpuAccum = 0;
+    let cpuCount = 0;
+    let lastRafAt = null;
+    let lastEmitAt = null;
 
     (async () => {
       let Spark;
@@ -206,18 +215,85 @@ export default function SplatStage({
       ro.observe(host);
 
       // ---- loop ----------------------------------------------------------
-      const tick = () => {
+      const resetTiming = () => {
+        cadenceAccum = 0;
+        cadenceCount = 0;
+        cpuAccum = 0;
+        cpuCount = 0;
+        lastRafAt = null;
+        lastEmitAt = null;
+      };
+
+      const emitTimingReset = () => {
+        cb.current.onStats?.({
+          frameMs: undefined,
+          cpuMs: undefined,
+          gpuMs: null,
+          cameraPos: camera
+            ? [camera.position.x, camera.position.y, camera.position.z]
+            : undefined,
+        });
+      };
+
+      // A hidden tab pauses or throttles rAF. Clear the sample window so the
+      // first visible callback establishes a fresh baseline instead of
+      // turning the background pause into a fake low-FPS frame.
+      const onVisibilityChange = () => {
+        resetTiming();
+        cb.current.onStats?.({
+          frameMs: undefined,
+          cpuMs: undefined,
+          gpuMs: null,
+          cameraPos: camera
+            ? [camera.position.x, camera.position.y, camera.position.z]
+            : undefined,
+        });
+      };
+      document.addEventListener('visibilitychange', onVisibilityChange);
+
+      const tick = (rafTimestamp) => {
         if (disposed) return;
+        if (pausedRef.current) {
+          raf = 0;
+          resetTiming();
+          emitTimingReset();
+          return;
+        }
         raf = requestAnimationFrame(tick);
 
+        // The rAF timestamp is the browser's presentation-clock sample. Use
+        // performance.now only as a fallback for test shims that omit it.
+        const now = Number.isFinite(rafTimestamp) ? rafTimestamp : performance.now();
+        const hadPreviousRaf = lastRafAt !== null;
+        const cadenceMs = hadPreviousRaf ? now - lastRafAt : 0;
+        const cadenceValid =
+          hadPreviousRaf && cadenceMs > 0 && cadenceMs <= MAX_CADENCE_GAP_MS;
+
+        if (!hadPreviousRaf) {
+          lastEmitAt = now;
+        } else if (!cadenceValid) {
+          // A long gap means the page was backgrounded or the main thread was
+          // paused. Discard both aggregates and restart from this callback.
+          resetTiming();
+          lastEmitAt = now;
+        }
+        lastRafAt = now;
+
         const dt = Math.min(clock.getDelta(), 0.1);
-        const t0 = performance.now();
+        const cpuStart = performance.now();
 
         rig.update(dt);
         renderer.render(scene, camera);
 
-        frameAccum += performance.now() - t0;
-        frameCount++;
+        // This is CPU-side submission work only, not GPU duration.
+        if (!hadPreviousRaf || cadenceValid) {
+          cpuAccum += performance.now() - cpuStart;
+          cpuCount++;
+        }
+        if (cadenceValid) {
+          cadenceAccum += cadenceMs;
+          cadenceCount++;
+        }
 
         // Position anchor markers in screen space. Done imperatively rather
         // than through React state — this runs 60x/sec and re-rendering the
@@ -244,22 +320,49 @@ export default function SplatStage({
         }
 
         // Emit telemetry ~5x/sec. Faster than that and the digits are unreadable.
-        const now = performance.now();
-        if (now - lastEmit > 200 && frameCount) {
+        if (lastEmitAt !== null && now - lastEmitAt > 200 && cadenceCount) {
+          const frameMs = cadenceAccum / cadenceCount;
           cb.current.onStats?.({
-            frameMs: frameAccum / frameCount,
+            // Average time between browser rAF callbacks. Telemetry derives
+            // cadence FPS from this value, independently of CPU work.
+            frameMs,
+            cpuMs: cpuCount ? cpuAccum / cpuCount : undefined,
+            // No timer query is active here, so GPU duration is unavailable.
+            gpuMs: null,
             cameraPos: [camera.position.x, camera.position.y, camera.position.z],
           });
-          frameAccum = 0;
-          frameCount = 0;
-          lastEmit = now;
+          cadenceAccum = 0;
+          cadenceCount = 0;
+          cpuAccum = 0;
+          cpuCount = 0;
+          lastEmitAt = now;
         }
       };
-      raf = requestAnimationFrame(tick);
+
+      // Pausing is used while the destination iframe prepares and while it
+      // owns the viewport. Stopping scheduling releases the main thread for
+      // the child document; resuming starts a fresh timing window.
+      apiRef.current.pause = () => {
+        if (raf) cancelAnimationFrame(raf);
+        raf = 0;
+        resetTiming();
+        emitTimingReset();
+      };
+      apiRef.current.resume = () => {
+        if (disposed || pausedRef.current || raf) return;
+        resetTiming();
+        raf = requestAnimationFrame(tick);
+      };
+
+      if (!pausedRef.current) raf = requestAnimationFrame(tick);
 
       // ---- teardown ------------------------------------------------------
       apiRef.current.cleanup = () => {
         ro.disconnect();
+        document.removeEventListener('visibilitychange', onVisibilityChange);
+        if (raf) cancelAnimationFrame(raf);
+        raf = 0;
+        resetTiming();
       };
     })();
 
@@ -279,6 +382,15 @@ export default function SplatStage({
     };
     // `anchors` is read inside the loop via closure; it is static content data.
   }, [src, anchors]);
+
+  // Keep pause outside the expensive scene effect. If the prop changes before
+  // Spark finishes importing, pausedRef is still read when the loop is built.
+  useEffect(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    if (paused) api.pause?.();
+    else api.resume?.();
+  }, [paused]);
 
   // ---- fly to the active anchor -----------------------------------------
   useEffect(() => {

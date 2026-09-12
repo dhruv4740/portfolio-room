@@ -11,7 +11,7 @@ import SplatStage from './SplatStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import ScanIntro from '../ui/ScanIntro.jsx';
-import LabScreen from './LabScreen.jsx';
+import DhruvOSScreen from './DhruvOSScreen.jsx';
 import { anchors, projects, capture, identity } from '../content/index.js';
 import {
   prefersReducedMotion,
@@ -20,14 +20,25 @@ import {
   setOverride,
 } from '../lib/capability.js';
 
+const ENTRY_MS = 1400;
+const RETURN_MS = 1100;
+const PREPARE_TIMEOUT_MS = 9000;
+
 export default function Scan() {
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const [introDone, setIntroDone] = useState(() => hasSeenIntro());
   const [load, setLoad] = useState({ progress: 0, loadedMB: 0, totalMB: 0 });
-  const [stats, setStats] = useState({ frameMs: undefined, cameraPos: undefined });
+  const [stats, setStats] = useState({
+    frameMs: undefined,
+    cpuMs: undefined,
+    gpuMs: undefined,
+    cameraPos: undefined,
+  });
   const [splatCount, setSplatCount] = useState(null);
   const [activeId, setActiveId] = useState(null);
-  const [labOpen, setLabOpen] = useState(false);
+  const [screenPhase, setScreenPhase] = useState('room');
+  const [osReady, setOsReady] = useState(false);
+  const [screenError, setScreenError] = useState(null);
   const [error, setError] = useState(null);
 
   const lastTrigger = useRef(null);
@@ -36,40 +47,107 @@ export default function Scan() {
   const activeProject = activeAnchor
     ? projects.find((p) => p.id === activeAnchor.ref) || null
     : null;
+  // The monitor anchor is the one that opens the embedded OS.
+  const monitorIsActive = activeAnchor?.ref === 'lab';
 
   const handleSelect = useCallback((id) => {
+    if (screenPhase !== 'room') return;
     lastTrigger.current = document.activeElement;
     setActiveId((cur) => (cur === id ? null : id));
-  }, []);
+  }, [screenPhase]);
 
   const handleClose = useCallback(() => {
+    if (screenPhase !== 'room') return;
     setActiveId(null);
-    setLabOpen(false);
+    setScreenError(null);
     // Return focus to whatever opened the panel.
     if (lastTrigger.current?.focus) lastTrigger.current.focus();
-  }, []);
+  }, [screenPhase]);
+
+  const handleEnterScreen = useCallback(() => {
+    if (screenPhase !== 'room' || !monitorIsActive) return;
+    setScreenError(null);
+    setScreenPhase(osReady ? (reduced ? 'inside' : 'entering') : 'preparing');
+  }, [monitorIsActive, osReady, reduced, screenPhase]);
+
+  const handleLeaveScreen = useCallback(() => {
+    if (screenPhase === 'room' || screenPhase === 'leaving') return;
+    setScreenPhase('leaving');
+    // Clearing the anchor starts the existing rig's flight home. The screen
+    // contracts over that same interval, so the handoff has one direction.
+    setActiveId(null);
+  }, [screenPhase]);
 
   const handleIntroDone = useCallback(() => {
     setIntroDone(true);
     markIntroSeen();
   }, []);
 
-  // Escape always backs out one level: lab screen, then panel, then home.
+  // Escape backs out one level: the embedded OS, then the selected anchor.
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape') return;
-      if (labOpen) setLabOpen(false);
-      else if (activeId) handleClose();
+      if (screenPhase === 'inside' || screenPhase === 'entering') {
+        e.preventDefault();
+        handleLeaveScreen();
+      } else if (screenPhase === 'preparing') {
+        e.preventDefault();
+        setScreenPhase('room');
+        setActiveId(null);
+        window.requestAnimationFrame(() => lastTrigger.current?.focus?.());
+      } else if (activeId) handleClose();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [labOpen, activeId, handleClose]);
+  }, [activeId, handleClose, handleLeaveScreen, screenPhase]);
 
-  // The monitor anchor is the one that opens the live lab.
-  const monitorIsActive = activeAnchor?.ref === 'lab';
+  // The destination is prepared before the camera handoff commits. If the
+  // child never answers, restore the room instead of leaving an inert overlay.
+  useEffect(() => {
+    if (screenPhase !== 'preparing') return undefined;
+    const timer = window.setTimeout(() => {
+      setScreenError('dhruvOS did not respond. The room is still available.');
+      setScreenPhase('room');
+      setActiveId(null);
+    }, PREPARE_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [screenPhase]);
+
+  useEffect(() => {
+    if (screenPhase !== 'preparing' || !osReady) return;
+    setScreenPhase(reduced ? 'inside' : 'entering');
+  }, [osReady, reduced, screenPhase]);
+
+  useEffect(() => {
+    if (screenPhase !== 'entering') return undefined;
+    const timer = window.setTimeout(() => setScreenPhase('inside'), reduced ? 0 : ENTRY_MS);
+    return () => window.clearTimeout(timer);
+  }, [reduced, screenPhase]);
+
+  useEffect(() => {
+    if (screenPhase !== 'leaving') return undefined;
+    const timer = window.setTimeout(() => {
+      setScreenPhase('room');
+      setScreenError(null);
+      window.requestAnimationFrame(() => lastTrigger.current?.focus?.());
+    }, reduced ? 0 : RETURN_MS);
+    return () => window.clearTimeout(timer);
+  }, [reduced, screenPhase]);
+
+  const handleOSLoadError = useCallback((message) => {
+    setOsReady(false);
+    setScreenError(message || 'The embedded screen could not be loaded.');
+    setScreenPhase('room');
+    setActiveId(null);
+  }, []);
+
+  const handleOSReady = useCallback(() => {
+    setOsReady(true);
+    setScreenError(null);
+  }, []);
 
   return (
-    <div className="scan-root">
+    <div className="scan-root" data-entrance-state={screenPhase}>
       <style>{css}</style>
 
       <SplatStage
@@ -83,6 +161,7 @@ export default function Scan() {
         onStats={setStats}
         onError={setError}
         reducedMotion={reduced}
+        paused={screenPhase === 'preparing' || screenPhase === 'inside'}
       />
 
       {/* ---- masthead ---------------------------------------------------- */}
@@ -113,9 +192,11 @@ export default function Scan() {
       )}
 
       {/* ---- instrument chrome -------------------------------------------- */}
-      <Telemetry
+        <Telemetry
         splatCount={splatCount}
         frameMs={stats.frameMs}
+        cpuMs={stats.cpuMs}
+        gpuMs={stats.gpuMs}
         loadedMB={load.loadedMB}
         totalMB={load.totalMB}
         cameraPos={stats.cameraPos}
@@ -126,17 +207,30 @@ export default function Scan() {
       <AnchorPanel
         anchor={activeAnchor}
         project={activeProject}
-        open={!!activeAnchor && !labOpen}
+        open={!!activeAnchor && screenPhase === 'room'}
         onClose={handleClose}
       />
 
-      {monitorIsActive && !labOpen && (
-        <button className="lab-cue mono" onClick={() => setLabOpen(true)}>
-          ENTER THE SCREEN →
-        </button>
+      {monitorIsActive && screenPhase === 'room' && (
+        <div className="screen-cue-wrap">
+          {screenError && <p className="screen-cue-error mono" role="alert">{screenError}</p>}
+          <button className="lab-cue mono" data-testid="enter-screen" onClick={handleEnterScreen}>
+            ENTER THE SCREEN <span aria-hidden="true">→</span>
+          </button>
+        </div>
       )}
 
-      <LabScreen open={labOpen} onClose={() => setLabOpen(false)} />
+      {screenError && screenPhase === 'room' && !monitorIsActive && (
+        <div className="screen-failure mono" role="alert">{screenError}</div>
+      )}
+
+      <DhruvOSScreen
+        phase={screenPhase}
+        reducedMotion={reduced}
+        onReady={handleOSReady}
+        onLoadError={handleOSLoadError}
+        onRequestLeave={handleLeaveScreen}
+      />
 
       {!introDone && (
         <ScanIntro
@@ -215,6 +309,34 @@ const css = `
               color var(--d-feedback) var(--ease);
 }
 .lab-cue:hover { background: var(--signal); color: var(--void); }
+
+.screen-cue-wrap {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--gutter) * 2.5);
+  z-index: var(--z-panel);
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transform: translateX(-50%);
+}
+.screen-cue-error {
+  max-width: 18rem;
+  color: var(--signal);
+  text-align: right;
+}
+.screen-failure {
+  position: absolute;
+  left: 50%;
+  bottom: var(--gutter);
+  z-index: var(--z-panel);
+  max-width: min(30rem, 80vw);
+  padding: 0.65rem 0.9rem;
+  border: var(--hair) solid var(--faint);
+  color: var(--signal);
+  background: var(--void-lift);
+  transform: translateX(-50%);
+}
 
 .scan-error {
   position: absolute;

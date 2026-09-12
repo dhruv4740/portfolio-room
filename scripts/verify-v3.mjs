@@ -20,6 +20,9 @@ mkdirSync(SHOTS, { recursive: true });
 const results = [];
 const record = (name, pass, detail) => {
   results.push({ name, pass, detail });
+  // Persist after every assertion so an infrastructure failure still leaves
+  // a durable record of the checks that completed before it.
+  writeFileSync(`${SHOTS}/v3-results.json`, JSON.stringify(results, null, 2));
   console.log(`${pass ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`);
 };
 
@@ -53,6 +56,20 @@ async function screenCoverage(page) {
     }
     return { litRatio: lit / total, meanLuma: sum / total };
   }, b64);
+}
+
+// Screenshots are diagnostic artifacts, not state-machine assertions. A busy
+// WebGL compositor can occasionally miss Playwright's screenshot deadline even
+// while DOM interaction is healthy; keep the functional checks running and
+// leave a visible warning instead of abandoning the result file.
+async function saveScreenshot(page, options) {
+  try {
+    await page.screenshot({ timeout: 10_000, ...options });
+    return true;
+  } catch (err) {
+    console.warn(`WARN screenshot skipped — ${err.message}`);
+    return false;
+  }
 }
 
 // Headless Chromium reports a SwiftShader renderer, which resolveSurface()
@@ -99,7 +116,7 @@ const pinSurface = (page, surface) =>
   page.on('pageerror', (e) => errors.push(String(e)));
 
   await page.goto(`${BASE}/#/work`, { waitUntil: 'networkidle' });
-  await page.screenshot({ path: `${SHOTS}/v3-work.png`, fullPage: true });
+  await saveScreenshot(page, { path: `${SHOTS}/v3-work.png`, fullPage: true });
 
   const pulledSpark = requests.filter((u) => /spark/i.test(u));
   const pulledThree = requests.filter((u) => /\/three-|\/assets\/three/i.test(u));
@@ -161,15 +178,114 @@ const pinSurface = (page, surface) =>
     (els) => els.filter((e) => parseFloat(e.style.opacity || '0') > 0.05).length);
   record('scan: markers project on screen', visibleMarkers > 0, `${visibleMarkers} visible`);
 
-  await page.screenshot({ path: `${SHOTS}/v3-scan.png` });
+  await saveScreenshot(page, { path: `${SHOTS}/v3-scan.png` });
 
-  // Open the first anchor and confirm the panel responds.
+  // Open the first anchor and confirm the panel responds. Focus + Enter keeps
+  // this deterministic while the projected marker continues moving every RAF.
   if (visibleMarkers > 0) {
-    await page.locator('.anchor-marker').first().click({ force: true });
-    await page.waitForTimeout(1800);
-    await page.screenshot({ path: `${SHOTS}/v3-scan-anchor.png` });
-    const panel = await page.locator('[role="dialog"]').count();
+    const monitorMarker = page.locator('.anchor-marker[aria-label^="Monitor"]');
+    await monitorMarker.focus();
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await saveScreenshot(page, { path: `${SHOTS}/v3-scan-anchor.png` });
+    const panel = await page.locator('.anchor-panel-root.is-open').count();
     record('scan: anchor opens a panel', panel > 0, `${panel} dialog(s)`);
+
+    const enterCue = page.locator('[data-testid="enter-screen"]');
+    const cueVisible = await enterCue.count();
+    record('scan: monitor exposes screen entry', cueVisible === 1, `${cueVisible} entry control(s)`);
+
+    if (cueVisible === 1) {
+      await enterCue.focus();
+      await page.keyboard.press('Enter');
+
+      const prepared = await page
+        .locator('.scan-root[data-entrance-state="preparing"]')
+        .count()
+        .then((n) => n === 1);
+      record('scan: prepares embedded screen', prepared, prepared ? 'preparing' : 'state changed before sample');
+
+      const entered = await page
+        .waitForFunction(
+          () => document.querySelector('.scan-root')?.dataset.entranceState === 'inside',
+          { timeout: 12_000 },
+        )
+        .then(() => true)
+        .catch(() => false);
+      record('scan: camera handoff reaches dhruvOS', entered,
+        entered ? 'inside' : `state=${await page.locator('.scan-root').getAttribute('data-entrance-state')}`);
+
+      if (entered) {
+        await saveScreenshot(page, { path: `${SHOTS}/v3-scan-inside.png` });
+        const osFrame = page.frameLocator('[data-testid="dhruv-os-frame"]');
+        const osWindow = await osFrame.locator('.os-window').count().catch(() => 0);
+        record('scan: embedded dhruvOS is functional', osWindow > 0, `${osWindow} window(s)`);
+
+        // Decode one real project card, then leave and re-enter. The same
+        // iframe should retain that app state rather than booting from zero.
+        const firstCard = osFrame.locator('.ql-card').first();
+        const cardPresent = await firstCard.count().catch(() => 0);
+        let decoded = false;
+        if (cardPresent) {
+          await firstCard.click();
+          decoded = await osFrame
+            .locator('.ql-card.ql-decoded')
+            .first()
+            .waitFor({ timeout: 4_000 })
+            .then(() => true)
+            .catch(() => false);
+        }
+        record('scan: embedded project responds', decoded, decoded ? 'project decoded' : 'project card did not decode');
+
+        await page.locator('[data-testid="back-to-room"]').click();
+        const returned = await page
+          .waitForFunction(
+            () => document.querySelector('.scan-root')?.dataset.entranceState === 'room',
+            { timeout: 6_000 },
+          )
+          .then(() => true)
+          .catch(() => false);
+        record('scan: back to room completes', returned,
+          returned ? 'room' : `state=${await page.locator('.scan-root').getAttribute('data-entrance-state')}`);
+        const returnShot = await saveScreenshot(page, { path: `${SHOTS}/v3-scan-return.png` });
+        record('scan: return screenshot captured', returnShot,
+          returnShot ? 'v3-scan-return.png' : 'diagnostic screenshot timed out');
+
+        const keptFrame = await page.locator('[data-testid="dhruv-os-frame"]').count();
+        record('scan: return keeps the OS instance', keptFrame === 1, `${keptFrame} iframe(s)`);
+        const focusLabel = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
+        record('scan: return restores marker focus', focusLabel.startsWith('Monitor'), focusLabel || 'no labelled focus');
+
+        // Re-enter through the same keyboard path and verify the decoded card
+        // survived the round trip.
+        await monitorMarker.focus();
+        await page.keyboard.press('Enter');
+        // The room resumes its render loop during the return flight. Wait for
+        // React to commit the reopened panel before looking for its cue; the
+        // first entry has a 500 ms settle above, but this path follows a
+        // heavier iframe round trip and can take longer on software Chromium.
+        await page.locator('.anchor-panel-root.is-open').waitFor({ timeout: 10_000 });
+        await page.locator('[data-testid="enter-screen"]').waitFor({ timeout: 10_000 });
+        await page.locator('[data-testid="enter-screen"]').focus();
+        await page.keyboard.press('Enter');
+        const reentered = await page
+          .waitForFunction(
+            () => document.querySelector('.scan-root')?.dataset.entranceState === 'inside',
+            { timeout: 8_000 },
+          )
+          .then(() => true)
+          .catch(() => false);
+        const retained = reentered
+          ? await osFrame.locator('.ql-card.ql-decoded').count().catch(() => 0)
+          : 0;
+        record('scan: repeated entry retains app state', reentered && retained > 0,
+          reentered ? `${retained} decoded card(s)` : 'second entry did not reach inside');
+        if (reentered) {
+          await page.locator('[data-testid="back-to-room"]').click();
+          await page.waitForTimeout(1_300);
+        }
+      }
+    }
   }
 
   record('scan: no console errors', errors.length === 0, errors.slice(0, 3).join(' | ') || 'clean');
@@ -195,7 +311,7 @@ const pinSurface = (page, surface) =>
   record('touch: serves the deck', deck > 0, `deck=${deck}`);
   record('touch: does NOT serve the scan', stage === 0, `stage=${stage}`);
 
-  await page.screenshot({ path: `${SHOTS}/v3-deck.png` });
+  await saveScreenshot(page, { path: `${SHOTS}/v3-deck.png` });
   record('touch: no console errors', errors.length === 0, errors.slice(0, 2).join(' | ') || 'clean');
   await ctx.close();
 }
