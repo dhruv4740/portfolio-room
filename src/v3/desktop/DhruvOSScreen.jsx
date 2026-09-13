@@ -8,7 +8,7 @@
 // matching validation in os/main.js.
 // ============================================================================
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 // A dependency-free document entry avoids parser-blocking CDN scripts from
 // the historical standalone OS page. main.js still receives embed=1 and
@@ -23,19 +23,71 @@ const PHASE_LABELS = {
   leaving: 'RETURNING TO ROOM',
 };
 
-export default function DhruvOSScreen({
+const DhruvOSScreen = forwardRef(function DhruvOSScreen({
   phase = 'room',
   reducedMotion = false,
   onReady,
   onLoadError,
   onRequestLeave,
-}) {
+}, ref) {
   const frameRef = useRef(null);
   const backRef = useRef(null);
+  const rootRef = useRef(null);
+  const frameBoxRef = useRef(null);
+  const vignetteRef = useRef(null);
+  const flashRef = useRef(null);
   const [mounted, setMounted] = useState(false);
   const [frameState, setFrameState] = useState('idle');
   const [src, setSrc] = useState(OS_SRC);
   const previousPhase = useRef(phase);
+
+  // Imperative bridge from WorkspaceStage's per-frame camera math. Both fire at
+  // up to 60fps during travel — routing them through refs instead of React
+  // state avoids a re-render per frame for what is pure style mutation.
+  useImperativeHandle(ref, () => ({
+    setScreenRect(rect) {
+      const root = rootRef.current, box = frameBoxRef.current;
+      if (!root || !box) return;
+      if (!rect) {
+        root.removeAttribute('data-aligning');
+        box.style.transform = '';
+        box.style.width = '';
+        box.style.height = '';
+        return;
+      }
+      root.setAttribute('data-aligning', 'true');
+      box.style.width = `${rect.width}px`;
+      box.style.height = `${rect.height}px`;
+      box.style.transform = `matrix(${rect.matrix.join(',')})`;
+    },
+    setTravel(t, travelPhase) {
+      const vg = vignetteRef.current, fl = flashRef.current;
+      if (!vg || !fl) return;
+      if (travelPhase === 'entering' || travelPhase === 'leaving') {
+        vg.style.opacity = String(Math.min(1, t * 1.15));
+        fl.style.opacity = String(Math.max(0, (t - 0.82) / 0.18) * 0.85);
+      } else {
+        vg.style.opacity = '0';
+        fl.style.opacity = '0';
+      }
+    },
+  }), []);
+
+  // Safety net: if a phase change lands without a matching final onScreenRect
+  // / onTravel(0|1, …) call — e.g. under reduced motion's early-return paths —
+  // don't leave the frame stuck mid-transform or the fx layers lit.
+  useEffect(() => {
+    if (phase === 'inside' || phase === 'room') {
+      rootRef.current?.removeAttribute('data-aligning');
+      if (frameBoxRef.current) {
+        frameBoxRef.current.style.transform = '';
+        frameBoxRef.current.style.width = '';
+        frameBoxRef.current.style.height = '';
+      }
+      if (vignetteRef.current) vignetteRef.current.style.opacity = '0';
+      if (flashRef.current) flashRef.current.style.opacity = '0';
+    }
+  }, [phase]);
 
   // Mount lazily on the first attempt, but never unmount after that. The
   // hidden iframe is one OS instance, so its windows and experiments survive
@@ -133,6 +185,7 @@ export default function DhruvOSScreen({
 
   return (
     <div
+      ref={rootRef}
       className={`dhruv-os-screen is-${phase}${reducedMotion ? ' is-reduced' : ''}`}
       data-screen-state={phase}
       aria-hidden={!visible}
@@ -142,7 +195,9 @@ export default function DhruvOSScreen({
       aria-label="dhruvOS embedded screen"
     >
       <style>{css}</style>
-      <div className="os-screen-frame">
+      <div ref={vignetteRef} className="os-screen-vignette" aria-hidden="true" />
+      <div ref={flashRef} className="os-screen-flash" aria-hidden="true" />
+      <div ref={frameBoxRef} className="os-screen-frame">
         <div className="os-screen-bar">
           <span className="mono os-screen-title">MONITOR // {label}</span>
           <button
@@ -186,9 +241,53 @@ export default function DhruvOSScreen({
       </div>
     </div>
   );
-}
+});
+
+export default DhruvOSScreen;
 
 const css = `
+/* Aligned to the monitor's projected screen quad during travel — see
+   setScreenRect() above. The bar/foot chrome would not exist on the real
+   monitor, so it is hidden for the duration of the alignment. */
+.dhruv-os-screen[data-aligning="true"] {
+  padding: 0;
+  background: transparent;
+}
+.dhruv-os-screen[data-aligning="true"] .os-screen-bar,
+.dhruv-os-screen[data-aligning="true"] .os-screen-foot {
+  display: none;
+}
+.dhruv-os-screen[data-aligning="true"] .os-screen-frame {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 0;
+  max-width: none;
+  border: 0;
+  display: block;
+  transform-origin: 0 0;
+  opacity: 1;
+  animation: none;
+}
+.dhruv-os-screen[data-aligning="true"] .os-screen-viewport {
+  height: 100%;
+}
+
+.os-screen-vignette,
+.os-screen-flash {
+  position: fixed;
+  inset: 0;
+  z-index: calc(var(--z-panel) + 1);
+  pointer-events: none;
+  opacity: 0;
+}
+.os-screen-vignette { box-shadow: inset 0 0 18vmin 6vmin rgba(0, 0, 0, 0.9); }
+.os-screen-flash { background: #eaf4ff; }
+
+@media (prefers-reduced-motion: reduce) {
+  .os-screen-vignette, .os-screen-flash { display: none; }
+}
+
 .dhruv-os-screen {
   position: fixed;
   inset: 0;
@@ -242,27 +341,17 @@ const css = `
 
 .dhruv-os-screen.is-preparing .os-screen-frame { opacity: 0; }
 
-.dhruv-os-screen.is-entering .os-screen-frame {
-  animation: os-screen-enter 1.4s var(--ease) both;
+/* Entering/leaving no longer fade — the frame is visible throughout and its
+   position/size is driven by setScreenRect() so it visually rides the
+   monitor's projected quad instead of cross-fading over it. */
+.dhruv-os-screen.is-entering .os-screen-frame,
+.dhruv-os-screen.is-leaving .os-screen-frame {
+  opacity: 1;
+  animation: none;
 }
 
 .dhruv-os-screen.is-inside .os-screen-frame {
   opacity: 1;
-}
-
-.dhruv-os-screen.is-leaving .os-screen-frame {
-  animation: os-screen-leave 1.1s var(--ease) both;
-}
-
-@keyframes os-screen-enter {
-  from,
-  82% { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes os-screen-leave {
-  from { opacity: 1; }
-  to { opacity: 0; }
 }
 
 .dhruv-os-screen.is-reduced .os-screen-frame {

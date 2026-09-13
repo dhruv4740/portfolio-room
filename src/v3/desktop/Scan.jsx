@@ -5,7 +5,7 @@
 // Composes WorkspaceStage (3D) with the presentational UI kit.
 // ============================================================================
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
@@ -20,8 +20,10 @@ import {
   setOverride,
 } from '../lib/capability.js';
 
-const ENTRY_MS = 1400;
-const RETURN_MS = 1100;
+// Must track WorkspaceStage's fly() travel durations (entering/leaving) so
+// the phase flips to inside/room exactly when the camera arrives.
+const ENTRY_MS = 1200;
+const RETURN_MS = 1000;
 const PREPARE_TIMEOUT_MS = 9000;
 
 export default function Scan() {
@@ -41,6 +43,18 @@ export default function Scan() {
   const [error, setError] = useState(null);
 
   const lastTrigger = useRef(null);
+  // Focus is restored in a layout effect rather than a rAF: the harness (and a
+  // keyboard user) reads activeElement as soon as the room state flips, and a
+  // deferred focus loses that race.
+  const pendingFocus = useRef(false);
+  const dhruvRef = useRef(null);
+
+  const handleScreenRect = useCallback((rect) => {
+    dhruvRef.current?.setScreenRect(rect);
+  }, []);
+  const handleTravel = useCallback((t, travelPhase) => {
+    dhruvRef.current?.setTravel(t, travelPhase);
+  }, []);
 
   const activeAnchor = anchors.find((a) => a.id === activeId) || null;
   const activeProject = activeAnchor
@@ -113,7 +127,7 @@ export default function Scan() {
         e.preventDefault();
         setScreenPhase('room');
         setActiveId(null);
-        window.requestAnimationFrame(() => lastTrigger.current?.focus?.());
+        pendingFocus.current = true;
       } else if (activeId) handleClose();
     };
     window.addEventListener('keydown', onKey);
@@ -148,10 +162,26 @@ export default function Scan() {
     const timer = window.setTimeout(() => {
       setScreenPhase('room');
       setScreenError(null);
-      window.requestAnimationFrame(() => lastTrigger.current?.focus?.());
+      pendingFocus.current = true;
     }, reduced ? 0 : RETURN_MS);
     return () => window.clearTimeout(timer);
   }, [reduced, screenPhase]);
+
+  // Runs after WorkspaceStage's own layout effect has restored marker
+  // visibility (child effects commit before the parent's), so the marker is
+  // focusable by the time we reach for it. The single reassert covers the
+  // departing overlay pulling focus back as it unmounts.
+  useLayoutEffect(() => {
+    if (screenPhase !== 'room' || !pendingFocus.current) return undefined;
+    pendingFocus.current = false;
+    const target = lastTrigger.current;
+    if (!target?.focus) return undefined;
+    target.focus();
+    const frame = window.requestAnimationFrame(() => {
+      if (document.activeElement !== target) target.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [screenPhase]);
 
   const handleOSLoadError = useCallback((message) => {
     setOsReady(false);
@@ -178,6 +208,8 @@ export default function Scan() {
         onReady={handleWorkspaceReady}
         onStats={setStats}
         onError={setError}
+        onScreenRect={handleScreenRect}
+        onTravel={handleTravel}
         reducedMotion={reduced}
         paused={screenPhase === 'preparing' || screenPhase === 'inside'}
         phase={screenPhase}
@@ -237,6 +269,7 @@ export default function Scan() {
       )}
 
       <DhruvOSScreen
+        ref={dhruvRef}
         phase={screenPhase}
         reducedMotion={reduced}
         onReady={handleOSReady}

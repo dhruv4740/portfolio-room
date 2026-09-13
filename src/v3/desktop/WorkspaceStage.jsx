@@ -6,14 +6,14 @@ import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
 
 export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
-  onProgress, onReady, onStats, onError, reducedMotion = false,
+  onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
   paused = false, phase = 'room',
 }) {
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
   const api = useRef(null);
   const callbacks = useRef({});
-  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError };
+  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel };
   const state = useRef({ paused, phase, reducedMotion, activeAnchorId });
   state.current = { paused, phase, reducedMotion, activeAnchorId };
 
@@ -76,7 +76,36 @@ export default function WorkspaceStage({
           el.style.transform = `translate3d(${(projected.x * 0.5 + 0.5) * rect.width}px,${(-projected.y * 0.5 + 0.5) * rect.height}px,0)`;
         }
       }
-      function render() { controls.update(); renderer.render(scene, camera); updateMarkers(); }
+      // Project the monitor screen's top-left/top-right/bottom-left corners and
+      // derive the 2D affine CSS matrix that maps a full-viewport box onto that
+      // projected quad. The screen plane is not rotated (buildWorkspace places
+      // it fronto-parallel to +Z), so an affine map is an exact fit, not an
+      // approximation. Lets the real dhruvOS iframe ride along the monitor's
+      // projected rectangle throughout travel instead of cross-fading in cold.
+      const halfW = WORKSPACE.screen.width / 2, halfH = WORKSPACE.screen.height / 2;
+      const sc = WORKSPACE.screen.center;
+      const corners = [
+        [sc[0] - halfW, sc[1] + halfH, sc[2]], // top-left
+        [sc[0] + halfW, sc[1] + halfH, sc[2]], // top-right
+        [sc[0] - halfW, sc[1] - halfH, sc[2]], // bottom-left
+      ];
+      function updateScreenAlign() {
+        const p = state.current.phase;
+        if (p !== 'entering' && p !== 'leaving') return;
+        if (state.current.reducedMotion) return;
+        const rect = host.getBoundingClientRect();
+        const W = rect.width || 1, H = rect.height || 1;
+        const pts = corners.map((pt) => {
+          projected.set(...pt).project(camera);
+          return { x: (projected.x * 0.5 + 0.5) * W, y: (-projected.y * 0.5 + 0.5) * H, z: projected.z };
+        });
+        if (pts.some((pt) => pt.z > 1)) { callbacks.current.onScreenRect?.(null); return; }
+        const [tl, tr, bl] = pts;
+        const a = (tr.x - tl.x) / W, b = (tr.y - tl.y) / W;
+        const c = (bl.x - tl.x) / H, d = (bl.y - tl.y) / H;
+        callbacks.current.onScreenRect?.({ matrix: [a, b, c, d, tl.x, tl.y], width: W, height: H });
+      }
+      function render() { controls.update(); renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
       function tick(now) {
         raf = 0;
@@ -99,9 +128,13 @@ export default function WorkspaceStage({
         if (!state.current.paused && !document.hidden) raf = requestAnimationFrame(tick);
         else callbacks.current.onStats?.({ frameMs: null, cpuMs: null, gpuMs: null, cameraPos: camera.position.toArray() });
       }
+      const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
         tween?.kill();
         const { phase: currentPhase, activeAnchorId: selected, reducedMotion: reduced } = state.current;
+        if (currentPhase !== 'entering' && currentPhase !== 'leaving') {
+          callbacks.current.onScreenRect?.(null);
+        }
         let view = home;
         controls.minDistance = 0.025;
         controls.minPolarAngle = currentPhase === 'room' ? Math.PI * 0.2 : 0.01;
@@ -109,23 +142,54 @@ export default function WorkspaceStage({
         if (currentPhase === 'entering' || currentPhase === 'inside') {
           // Move perpendicular to the screen; its known physical size defines
           // the end distance. The HTML handoff occurs only at the end of flight.
-          const fitHeight = WORKSPACE.screen.height / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
-          const fitWidth = WORKSPACE.screen.width / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * camera.aspect);
+          const fitHeight = WORKSPACE.screen.height / (2 * Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2)));
+          const fitWidth = WORKSPACE.screen.width / (2 * Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2)) * camera.aspect);
           view = { position: screenCenter.clone().add(new THREE.Vector3(0, 0, Math.min(fitHeight, fitWidth) * 0.94)), target: screenCenter.clone() };
         } else if (currentPhase !== 'leaving' && selected && WORKSPACE.anchors[selected]) {
           const target = new THREE.Vector3(...WORKSPACE.anchors[selected]);
           const offset = selected === 'monitor' ? new THREE.Vector3(0.2, 0.17, 2.1) : new THREE.Vector3(1.15, 0.95, 2.3);
           view = { position: target.clone().add(offset), target };
         }
-        if (reduced) { place(view); updateMarkers(); return; }
+        if (reduced) {
+          place(view); updateMarkers();
+          camera.fov = BASE_FOV; camera.updateProjectionMatrix();
+          callbacks.current.onScreenRect?.(null);
+          callbacks.current.onTravel?.(currentPhase === 'entering' ? 1 : 0, currentPhase === 'entering' ? 'inside' : 'room');
+          return;
+        }
         const proxy = { x: camera.position.x, y: camera.position.y, z: camera.position.z, tx: controls.target.x, ty: controls.target.y, tz: controls.target.z };
+        const isTravel = currentPhase === 'entering' || currentPhase === 'leaving';
         tween = gsap.to(proxy, {
           x: view.position.x, y: view.position.y, z: view.position.z,
           tx: view.target.x, ty: view.target.y, tz: view.target.z,
-          duration: currentPhase === 'entering' ? 1.35 : currentPhase === 'leaving' ? 1.05 : 0.9,
-          ease: currentPhase === 'entering' ? 'power3.inOut' : 'power2.inOut',
-          onUpdate() { camera.position.set(proxy.x, proxy.y, proxy.z); controls.target.set(proxy.tx, proxy.ty, proxy.tz); },
-          onComplete() { controls.minDistance = currentPhase === 'room' ? 1.4 : 0.025; },
+          duration: currentPhase === 'entering' ? 1.2 : currentPhase === 'leaving' ? 1.0 : 0.9,
+          // Entering ramps hard — slow start, violent finish — for a "pulled
+          // into the machine" feel. Leaving mirrors it: fast start settling out,
+          // as if pulling back out of the screen into the room.
+          ease: currentPhase === 'entering' ? 'power4.in' : currentPhase === 'leaving' ? 'power4.out' : 'power2.inOut',
+          onUpdate() {
+            camera.position.set(proxy.x, proxy.y, proxy.z);
+            controls.target.set(proxy.tx, proxy.ty, proxy.tz);
+            if (isTravel) {
+              const raw = tween.progress(); // linear time fraction, independent of the position easing above
+              const t = currentPhase === 'entering' ? raw : 1 - raw;
+              const punch = Math.max(0, (t - 0.6) / 0.4);
+              camera.fov = BASE_FOV + punch * PUNCH_FOV;
+              camera.updateProjectionMatrix();
+              callbacks.current.onTravel?.(t, currentPhase);
+            }
+          },
+          onComplete() {
+            controls.minDistance = currentPhase === 'room' ? 1.4 : 0.025;
+            if (currentPhase === 'entering') {
+              callbacks.current.onScreenRect?.(null);
+              callbacks.current.onTravel?.(1, 'inside');
+            } else if (currentPhase === 'leaving') {
+              camera.fov = BASE_FOV; camera.updateProjectionMatrix();
+              callbacks.current.onScreenRect?.(null);
+              callbacks.current.onTravel?.(0, 'room');
+            }
+          },
         });
       }
       function resize() {
