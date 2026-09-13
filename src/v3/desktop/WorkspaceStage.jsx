@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
 import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
+import { createPerfGovernor } from './perfGovernor.js';
 
 export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
@@ -34,6 +35,7 @@ export default function WorkspaceStage({
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.2;
       host.appendChild(renderer.domElement);
+      const gov = createPerfGovernor(renderer); // render-on-demand + adaptive pixel ratio; see perfGovernor.js
       const scene = new THREE.Scene();
       // The room stays warm/naturalistic and drops into the --void black at
       // its edges — that contrast against the app's black chrome is intentional.
@@ -47,6 +49,7 @@ export default function WorkspaceStage({
       controls.minPolarAngle = Math.PI * 0.2; controls.maxPolarAngle = Math.PI * 0.47;
       controls.minAzimuthAngle = -0.8; controls.maxAzimuthAngle = 0.85;
       controls.minDistance = 2.2; controls.maxDistance = 11;
+      controls.addEventListener('change', () => invalidate());
       let home;
       const screenCenter = new THREE.Vector3(...WORKSPACE.screen.center);
       const projected = new THREE.Vector3();
@@ -107,16 +110,23 @@ export default function WorkspaceStage({
       }
       function render() { controls.update(); renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
+      // Re-arm the render loop from outside tick() itself — used wherever something
+      // animates without going through OrbitControls (camera-travel tween, resize).
+      function invalidate() { gov.markDirty(); if (!raf && !disposed && !state.current.paused && !document.hidden) raf = requestAnimationFrame(tick); }
       function tick(now) {
         raf = 0;
         if (disposed || state.current.paused || document.hidden) return;
+        if (!gov.isDirty()) return; // idle: stop issuing frames until something invalidates again
+        if (!gov.shouldRender(now)) { raf = requestAnimationFrame(tick); return; } // still dirty, 60Hz floor
         const start = performance.now(); render(); const cpu = performance.now() - start;
+        gov.recordFrame(cpu, now);
         const delta = last === null ? null : now - last;
         if (delta !== null && delta > 0 && delta < 250) { cadenceSum += delta; cpuSum += cpu; count++; }
         else { cadenceSum = 0; cpuSum = 0; count = 0; }
         last = now;
         if (now - emitted > 300) {
-          callbacks.current.onStats?.({ frameMs: count ? cadenceSum / count : null, cpuMs: count ? cpuSum / count : null, gpuMs: null, cameraPos: camera.position.toArray() });
+          const stats = gov.getStats();
+          callbacks.current.onStats?.({ frameMs: count ? cadenceSum / count : null, cpuMs: count ? cpuSum / count : null, gpuMs: null, cameraPos: camera.position.toArray(), perfTier: stats.tier, pixelRatio: stats.pixelRatio });
           cadenceSum = 0; cpuSum = 0; count = 0; emitted = now;
         }
         raf = requestAnimationFrame(tick);
@@ -125,6 +135,7 @@ export default function WorkspaceStage({
         cancelAnimationFrame(raf); raf = 0; resetTiming();
         controls.enabled = state.current.phase === 'room' && !state.current.paused;
         updateMarkers();
+        gov.markDirty();
         if (!state.current.paused && !document.hidden) raf = requestAnimationFrame(tick);
         else callbacks.current.onStats?.({ frameMs: null, cpuMs: null, gpuMs: null, cameraPos: camera.position.toArray() });
       }
@@ -168,6 +179,7 @@ export default function WorkspaceStage({
           // as if pulling back out of the screen into the room.
           ease: currentPhase === 'entering' ? 'power4.in' : currentPhase === 'leaving' ? 'power4.out' : 'power2.inOut',
           onUpdate() {
+            invalidate(); // GSAP drives the camera directly here, bypassing OrbitControls' own 'change' event
             camera.position.set(proxy.x, proxy.y, proxy.z);
             controls.target.set(proxy.tx, proxy.ty, proxy.tz);
             if (isTravel) {
@@ -235,7 +247,7 @@ export default function WorkspaceStage({
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
         renderer.domElement.removeEventListener('pointerup', pointerUp);
-        controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); api.current = null;
+        controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); gov.dispose(); api.current = null;
       };
     } catch (error) {
       disposed = true; cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect(); controls?.dispose(); model?.dispose(); renderer?.dispose(); renderer?.domElement?.remove();

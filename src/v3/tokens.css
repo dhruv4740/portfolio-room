@@ -23,6 +23,7 @@
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
   --t-hero:  clamp(2.75rem, 9vw, 7.5rem);
+  --t-lede:  clamp(2rem, 5vw, 3.5rem);   /* /work statement — a document lede, not a poster headline */
   --t-head:  clamp(1.6rem, 4vw, 2.75rem);
   --t-body:  clamp(0.95rem, 1.1vw, 1.05rem);
   --t-data:  0.7rem;    /* mono readouts */

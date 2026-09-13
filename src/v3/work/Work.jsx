@@ -1,8 +1,39 @@
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import '../tokens.css';
 import { identity, contact, skills, projects } from '../content/index.js';
 
+/** Resolve a skill's `proof` ids to the project names they reference.
+ *  Evidence, not a percentage bar — the whole point of the content model. */
+function resolveProof(proofIds) {
+  return proofIds
+    .map((id) => projects.find((p) => p.id === id)?.name)
+    .filter(Boolean);
+}
+
 const css = `
+  /* ---- skip link --------------------------------------------------------- */
+
+  .work-skip {
+    position: absolute;
+    left: 1rem;
+    top: -4rem;
+    background: var(--signal);
+    color: var(--void);
+    padding: 0.65rem 1rem;
+    font-family: var(--font-mono);
+    font-size: var(--t-data);
+    letter-spacing: var(--track-data);
+    text-transform: uppercase;
+    z-index: 50;
+    transition: top var(--d-feedback) var(--ease);
+  }
+
+  .work-skip:focus-visible {
+    top: 1rem;
+    outline-offset: 0;
+  }
+
   .work-root {
     background: var(--void);
     color: var(--bone);
@@ -17,79 +48,59 @@ const css = `
     padding: var(--gutter);
   }
 
-  /* ---- header ---------------------------------------------------------- */
+  main:focus {
+    outline: none;
+  }
+
+  /* ---- header ------------------------------------------------------------ */
 
   .work-header {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 0.75rem 1.5rem;
-    padding-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
     border-bottom: var(--hair) solid var(--faint);
   }
 
-  .work-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4em;
-    transition: color var(--d-feedback) var(--ease);
+  .work-masthead {
+    color: var(--dim);
   }
 
-  .work-back:hover,
-  .work-back:focus-visible {
+  .work-masthead strong {
     color: var(--bone);
-  }
-
-  .work-back-arrow {
-    color: var(--signal);
-  }
-
-  .work-id {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.3rem;
-    text-align: right;
-  }
-
-  .work-name {
-    font-size: var(--t-body);
     font-weight: 500;
   }
 
-  /* ---- statement --------------------------------------------------------- */
+  /* ---- hero / introduction ------------------------------------------------ */
 
   .work-hero {
-    padding: clamp(2.5rem, 8vw, 5rem) 0;
+    padding: clamp(1.75rem, 5vw, 3rem) 0 clamp(1.75rem, 5vw, 2.5rem);
     border-bottom: var(--hair) solid var(--faint);
   }
 
   .work-statement {
-    font-size: var(--t-hero);
+    font-size: var(--t-lede);
     font-weight: 500;
     letter-spacing: var(--track-hero);
-    line-height: 1.05;
-    max-width: 18ch;
+    line-height: 1.1;
+    max-width: 34ch;
   }
 
-  /* ---- contact ------------------------------------------------------------ */
-
-  .work-contact {
-    padding: 1.5rem 0;
-    border-bottom: var(--hair) solid var(--faint);
+  .work-tagline {
+    margin-top: 1rem;
+    color: var(--dim);
   }
 
   .work-contact-list {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.75rem 1.75rem;
+    gap: 0.65rem 1.5rem;
     list-style: none;
+    margin-top: 1.75rem;
   }
 
   .work-contact-list a {
-    transition: color var(--d-feedback) var(--ease);
-    border-bottom: var(--hair) solid transparent;
+    transition: color var(--d-feedback) var(--ease), border-color var(--d-feedback) var(--ease);
+    border-bottom: var(--hair) solid var(--faint);
+    padding-bottom: 0.15rem;
+    display: inline-block;
   }
 
   .work-contact-list a:hover,
@@ -98,33 +109,69 @@ const css = `
     border-bottom-color: var(--dim);
   }
 
-  /* ---- sections ------------------------------------------------------------ */
+  /* ---- room callout -------------------------------------------------------- */
+
+  .work-room {
+    padding: clamp(2rem, 5vw, 3rem) 0;
+    border-bottom: var(--hair) solid var(--faint);
+  }
+
+  .work-room-panel {
+    background: var(--void-lift);
+    border: var(--hair) solid var(--faint);
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+  }
+
+  .work-room-copy {
+    max-width: 56ch;
+    margin-top: 0.85rem;
+  }
+
+  .work-room-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    margin-top: 1.5rem;
+    padding: 0.85rem 1.4rem;
+    border: var(--hair) solid var(--signal);
+    color: var(--signal);
+    font-family: var(--font-mono);
+    font-size: var(--t-data);
+    letter-spacing: var(--track-data);
+    text-transform: uppercase;
+    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease);
+  }
+
+  .work-room-cta:hover,
+  .work-room-cta:focus-visible {
+    background: var(--signal);
+    color: var(--void);
+  }
+
+  .work-room-note {
+    margin-top: 1rem;
+    color: var(--dim);
+  }
+
+  /* ---- shared section head ------------------------------------------------- */
 
   .work-section {
-    padding: clamp(2.5rem, 6vw, 4rem) 0;
+    padding: clamp(2.25rem, 6vw, 4rem) 0;
     border-bottom: var(--hair) solid var(--faint);
   }
 
   .work-section-head {
-    display: flex;
-    align-items: center;
-    gap: 0.6em;
     font-family: var(--font-mono);
     font-size: var(--t-data);
     letter-spacing: var(--track-data);
     text-transform: uppercase;
     color: var(--dim);
     margin-bottom: 2rem;
+    padding-bottom: 0.75rem;
+    border-bottom: var(--hair) solid var(--faint);
   }
 
-  .work-marker {
-    width: 6px;
-    height: 6px;
-    background: var(--signal);
-    flex-shrink: 0;
-  }
-
-  /* ---- projects ------------------------------------------------------------ */
+  /* ---- projects -------------------------------------------------------------- */
 
   .work-projects {
     list-style: none;
@@ -133,7 +180,7 @@ const css = `
   }
 
   .work-project {
-    padding: 2rem 0;
+    padding: 1.75rem 0;
   }
 
   .work-project + .work-project {
@@ -142,8 +189,14 @@ const css = `
 
   .work-project-meta {
     display: flex;
-    gap: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
     margin-bottom: 0.75rem;
+    color: var(--dim);
+  }
+
+  .work-project-index {
+    color: var(--dim);
   }
 
   .work-project-name {
@@ -199,11 +252,13 @@ const css = `
 
   .work-project-links {
     display: flex;
+    flex-wrap: wrap;
     gap: 1.5rem;
+    margin-top: 0.25rem;
   }
 
   .work-link {
-    transition: color var(--d-feedback) var(--ease);
+    transition: color var(--d-feedback) var(--ease), border-color var(--d-feedback) var(--ease);
     border-bottom: var(--hair) solid var(--faint);
     padding-bottom: 0.15rem;
   }
@@ -214,7 +269,7 @@ const css = `
     border-bottom-color: var(--dim);
   }
 
-  /* ---- skills ------------------------------------------------------------ */
+  /* ---- skills ---------------------------------------------------------------- */
 
   .work-skills {
     list-style: none;
@@ -224,10 +279,8 @@ const css = `
 
   .work-skill {
     display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 0.35rem 1rem;
+    flex-direction: column;
+    gap: 0.35rem;
     padding: 0.9rem 0;
   }
 
@@ -241,29 +294,27 @@ const css = `
 
   .work-skill-meta {
     display: flex;
-    gap: 1.25rem;
-    margin-left: auto;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
   .work-skill-proof,
   .work-skill-note {
     color: var(--dim);
-    white-space: nowrap;
   }
 
-  /* ---- footer ------------------------------------------------------------ */
+  /* ---- footer ------------------------------------------------------------------ */
 
   .work-footer {
     padding: 1.75rem 0 clamp(2rem, 6vw, 3rem);
     display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 0.5rem 1.5rem;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   .work-footer a {
     transition: color var(--d-feedback) var(--ease);
+    width: fit-content;
   }
 
   .work-footer a:hover,
@@ -271,73 +322,165 @@ const css = `
     color: var(--bone);
   }
 
-  /* ---- responsive ---------------------------------------------------------- */
+  /* ---- responsive: widen up from mobile base ----------------------------------- */
 
-  @media (max-width: 640px) {
+  @media (min-width: 560px) {
     .work-header {
-      flex-direction: column;
-      align-items: flex-start;
-    }
-
-    .work-id {
-      align-items: flex-start;
-      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
     }
 
     .work-project-meta {
-      gap: 0.75rem;
+      gap: 1.25rem;
     }
 
     .work-skill {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.3rem;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.35rem 1rem;
     }
 
     .work-skill-meta {
-      margin-left: 0;
-      gap: 1rem;
+      flex-direction: row;
+      gap: 1.25rem;
+      margin-left: auto;
+    }
+
+    .work-skill-proof,
+    .work-skill-note {
+      white-space: nowrap;
     }
 
     .work-footer {
-      flex-direction: column;
-      align-items: flex-start;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: baseline;
+    }
+  }
+
+  /* ---- print ---------------------------------------------------------------------- */
+
+  @media print {
+    @page {
+      margin: 1.6cm;
+    }
+
+    html, body, #root {
+      height: auto;
+    }
+
+    body {
+      background: #fff;
+      color: #000;
+    }
+
+    .work-root {
+      background: #fff;
+      color: #000;
+      min-height: 0;
+    }
+
+    .work-skip,
+    .work-room {
+      display: none;
+    }
+
+    .work-inner {
+      max-width: none;
+      padding: 0;
+    }
+
+    * {
+      animation: none !important;
+      transition: none !important;
+      box-shadow: none !important;
+      text-shadow: none !important;
+    }
+
+    .work-header,
+    .work-hero,
+    .work-section {
+      border-bottom-color: #ccc;
+    }
+
+    .work-section-head {
+      border-bottom-color: #ccc;
+      color: #444;
+    }
+
+    .work-masthead,
+    .work-tagline,
+    .work-project-meta,
+    .work-project-tagline,
+    .work-project-index,
+    .work-note-label,
+    .work-skill-proof,
+    .work-skill-note {
+      color: #444;
+    }
+
+    .work-tech li {
+      color: #444;
+      border-color: #ccc;
+    }
+
+    .work-contact-list a,
+    .work-link,
+    .work-footer a {
+      color: #000;
+      border-bottom-color: #999;
+    }
+
+    a[href^="http"]::after {
+      content: " (" attr(href) ")";
+      font-size: 0.7em;
+      color: #666;
+    }
+
+    .work-project {
+      break-inside: avoid;
+    }
+
+    :focus-visible {
+      outline: none;
     }
   }
 `;
 
 export default function Work() {
+  const mainRef = useRef(null);
+
   const hasContact =
     contact.email || contact.github || contact.linkedin || contact.twitter || contact.resume;
 
   return (
     <>
       <style>{css}</style>
+      <button
+        type="button"
+        className="work-skip mono"
+        onClick={() => mainRef.current?.focus()}
+      >
+        Skip to content
+      </button>
       <div className="work-root">
         <div className="work-inner">
           <header className="work-header">
-            <Link to="/" className="work-back mono" aria-label="Back to scan">
-              <span className="work-back-arrow" aria-hidden="true">
-                &larr;
-              </span>
-              SCAN
-            </Link>
-            <div className="work-id">
-              <span className="work-name">{identity.name}</span>
-              <span className="mono">
-                {identity.role} &middot; {identity.location}
-              </span>
-            </div>
+            <p className="mono work-masthead">
+              <strong>{identity.name}</strong> &middot; {identity.role} &middot; {identity.location}
+            </p>
           </header>
 
-          <main>
-            <section className="work-hero" aria-label="Statement">
+          <main id="work-main" ref={mainRef} tabIndex={-1}>
+            <section className="work-hero" aria-label="Introduction">
               <h1 className="work-statement">{identity.statement}</h1>
-            </section>
+              {identity.tagline && <p className="mono work-tagline">{identity.tagline}</p>}
 
-            {hasContact && (
-              <section className="work-contact" aria-label="Contact">
-                <ul className="work-contact-list">
+              {hasContact && (
+                <ul className="work-contact-list" aria-label="Contact">
                   {contact.email && (
                     <li>
                       <a className="mono" href={`mailto:${contact.email}`}>
@@ -394,26 +537,54 @@ export default function Work() {
                     </li>
                   )}
                 </ul>
-              </section>
-            )}
+              )}
+            </section>
+
+            <section className="work-room" aria-labelledby="work-room-heading">
+              <div className="work-room-panel">
+                <h2 id="work-room-heading" className="work-section-head">
+                  Full 3D room
+                </h2>
+                <p className="work-room-copy">
+                  There is also a modeled 3D workspace — desk, monitor, notebook — that you orbit
+                  and click into. This page is the fast, GPU-free path; that one needs a real
+                  graphics card.
+                </p>
+                <Link className="work-room-cta" to="/">
+                  Enter the 3D room <span aria-hidden="true">&rarr;</span>
+                </Link>
+                <p className="mono work-room-note">
+                  Needs a hardware GPU. If your device can&rsquo;t run it, you&rsquo;ll land back
+                  here automatically.
+                </p>
+              </div>
+            </section>
 
             <section className="work-section" aria-labelledby="work-projects-heading">
               <h2 id="work-projects-heading" className="work-section-head">
-                <span className="work-marker" aria-hidden="true" />
-                Work
+                Projects
               </h2>
-              <ul className="work-projects">
-                {projects.map((project) => {
+              <ol className="work-projects">
+                {projects.map((project, index) => {
                   const hasLinks = project.links?.live || project.links?.github;
+                  const ordinal = String(index + 1).padStart(2, '0');
+                  const total = String(projects.length).padStart(2, '0');
                   return (
                     <li key={project.id} className="work-project">
                       <div className="work-project-meta mono">
+                        <span className="work-project-index">
+                          {ordinal}/{total}
+                        </span>
                         <span>{project.year}</span>
                         <span>{project.kind}</span>
                       </div>
                       <h3 className="work-project-name">{project.name}</h3>
-                      <p className="work-project-tagline">{project.tagline}</p>
-                      <p className="work-project-desc">{project.description}</p>
+                      {project.tagline && (
+                        <p className="work-project-tagline">{project.tagline}</p>
+                      )}
+                      {project.description && (
+                        <p className="work-project-desc">{project.description}</p>
+                      )}
 
                       {project.tech?.length > 0 && (
                         <ul className="work-tech" aria-label={`${project.name} technologies`}>
@@ -464,26 +635,28 @@ export default function Work() {
                     </li>
                   );
                 })}
-              </ul>
+              </ol>
             </section>
 
             <section className="work-section" aria-labelledby="work-skills-heading">
               <h2 id="work-skills-heading" className="work-section-head">
-                <span className="work-marker" aria-hidden="true" />
                 Skills
               </h2>
               <ul className="work-skills">
-                {skills.map((skill) => (
-                  <li key={skill.id} className="work-skill">
-                    <span className="work-skill-label">{skill.label}</span>
-                    <span className="work-skill-meta">
-                      <span className="mono work-skill-proof">
-                        Proof &middot; {skill.proof.length}
+                {skills.map((skill) => {
+                  const proof = resolveProof(skill.proof);
+                  return (
+                    <li key={skill.id} className="work-skill">
+                      <span className="work-skill-label">{skill.label}</span>
+                      <span className="work-skill-meta">
+                        <span className="mono work-skill-proof">
+                          Evidence &middot; {proof.length > 0 ? proof.join(', ') : '—'}
+                        </span>
+                        {skill.note && <span className="mono work-skill-note">{skill.note}</span>}
                       </span>
-                      {skill.note && <span className="mono work-skill-note">{skill.note}</span>}
-                    </span>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </section>
           </main>
@@ -494,7 +667,7 @@ export default function Work() {
                 {contact.email}
               </a>
             )}
-            <p className="mono">{identity.name} &mdash; technical instrument mode</p>
+            <p className="mono">{identity.name} &mdash; static build, zero WebGL</p>
           </footer>
         </div>
       </div>
