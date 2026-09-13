@@ -90,16 +90,49 @@ export const INSTAGRAM_ICON_UV_RECT = Object.freeze({
   uMin: 205 / 540, uMax: 335 / 540,
   vMin: 1 - 610 / 1200, vMax: 1 - 480 / 1200,
 });
-// Exactly one labelled icon placeholder; no logo, dock, status bar or fake UI.
+// One app icon, drawn rather than loaded so the phone needs no external asset.
+// The joke only works if the icon is recognisable, so this is the real mark.
 export function phoneHomeTexture(highlighted = false) {
   return canvasTexture((ctx, w, h) => {
-    ctx.fillStyle = '#3b3e42'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#15171a'; ctx.fillRect(0, 0, w, h);
+
     const r = INSTAGRAM_ICON_UV_RECT;
-    ctx.fillStyle = highlighted ? '#c1c4c8' : '#85878a';
-    ctx.fillRect(r.uMin * w, (1 - r.vMax) * h, (r.uMax - r.uMin) * w, (r.vMax - r.vMin) * h);
-    ctx.textAlign = 'center'; ctx.fillStyle = '#eeeeee';
-    ctx.font = '28px sans-serif'; ctx.fillText('Instagram', w / 2, 652);
-    ctx.font = '20px monospace'; ctx.fillText('PLACEHOLDER', w / 2, 551);
+    const x = r.uMin * w, y = (1 - r.vMax) * h;
+    const size = (r.uMax - r.uMin) * w;
+    const radius = size * 0.24;
+
+    if (highlighted) {
+      ctx.save();
+      ctx.shadowColor = 'rgba(255,255,255,0.55)'; ctx.shadowBlur = 34;
+    }
+
+    // Rounded-square tile with the familiar warm corner-to-corner gradient.
+    const tile = ctx.createLinearGradient(x, y + size, x + size, y);
+    tile.addColorStop(0, '#FFD521');
+    tile.addColorStop(0.35, '#F50000');
+    tile.addColorStop(0.7, '#B900B4');
+    tile.addColorStop(1, '#4C68D7');
+    ctx.beginPath(); ctx.roundRect(x, y, size, size, radius);
+    ctx.fillStyle = tile; ctx.fill();
+    if (highlighted) ctx.restore();
+
+    // Camera glyph: rounded outline, lens, and the small top-right dot.
+    const stroke = size * 0.075;
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = stroke;
+    const inset = size * 0.21;
+    ctx.beginPath();
+    ctx.roundRect(x + inset, y + inset, size - inset * 2, size - inset * 2, size * 0.2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, size * 0.17, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(x + size * 0.72, y + size * 0.28, stroke * 0.62, 0, Math.PI * 2);
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+
+    ctx.textAlign = 'center'; ctx.fillStyle = '#e9e9ea';
+    ctx.font = '26px -apple-system, Segoe UI, sans-serif';
+    ctx.fillText('Instagram', w / 2, y + size + 44);
   }, 540, 1200);
 }
 
