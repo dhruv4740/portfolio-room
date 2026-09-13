@@ -10,10 +10,6 @@
 import { LAB_APPS } from '../shell/labRegistry.js';
 import { mountContactStrip } from '../shell/contactStrip.js';
 
-const STATUS_LABEL = {
-  works: 'EXPERIMENT',
-  degraded: 'EXPERIMENT — PARTIAL',
-};
 
 export default {
   id: 'lab',
@@ -34,7 +30,6 @@ export default {
     const hdr = document.createElement('div');
     hdr.style.cssText = 'padding:24px 32px 16px;border-bottom:1px solid rgba(92,255,208,0.08);';
     hdr.innerHTML = `
-      <div style="font-size:8px;letter-spacing:0.26em;color:rgba(92,255,208,0.3);margin-bottom:8px;">LAB — CRAFT EXPERIMENTS, NOT PRODUCTS</div>
       <div style="font-size:20px;font-weight:700;letter-spacing:0.04em;color:#5cffd0;">dhruv.lab</div>
       <div style="font-size:10px;color:rgba(92,255,208,0.4);line-height:1.6;margin-top:8px;max-width:52ch;">
         Standalone rendering demos. Each is a self-contained sketch — some are
@@ -112,9 +107,6 @@ export default {
       card.addEventListener('mouseover', () => { card.style.background = 'rgba(92,255,208,0.05)'; });
       card.addEventListener('mouseout', () => { card.style.background = '#050a08'; });
 
-      const statusEl = document.createElement('div');
-      statusEl.textContent = STATUS_LABEL[entry.status] || 'EXPERIMENT';
-      statusEl.style.cssText = `font-size:8px;letter-spacing:0.2em;margin-bottom:8px;color:${entry.status === 'degraded' ? 'rgba(255,176,0,0.6)' : 'rgba(92,255,208,0.3)'};`;
 
       const titleEl = document.createElement('div');
       titleEl.textContent = entry.title;
@@ -124,7 +116,7 @@ export default {
       blurbEl.textContent = entry.blurb;
       blurbEl.style.cssText = 'font-size:10px;color:rgba(92,255,208,0.45);line-height:1.6;';
 
-      card.append(statusEl, titleEl, blurbEl);
+      card.append(titleEl, blurbEl);
 
       if (entry.note) {
         const noteEl = document.createElement('div');
