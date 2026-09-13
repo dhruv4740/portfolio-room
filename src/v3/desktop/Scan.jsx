@@ -228,6 +228,8 @@ export default function Scan() {
         <div className="seat-exit mono">
           <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
           <button onClick={() => handleSelect('phone')}>PHONE</button>
+          <button onClick={() => handleSelect('desk')}>DESK</button>
+          <button onClick={() => handleSelect('window')}>CONTACT</button>
           {activeId && <button onClick={handleClose}>BACK TO SEAT</button>}
           <button onClick={handleEnterScreen}>MONITOR</button>
           <button onClick={() => { setActiveId(null); setSeated(false); }}>STAND UP / ESC</button>
@@ -306,7 +308,7 @@ export default function Scan() {
 
       {/* Hint shown once the scene is live and nothing is selected. */}
       {introDone && !activeId && !error && (
-        <p className="scan-hint mono">{seated ? 'DRAG TO LOOK / SELECT AN OBJECT' : 'DRAG TO ORBIT / SELECT A MARKER'}</p>
+        <p className="scan-hint mono">{seated ? 'DRAG TO LOOK / SELECT AN OBJECT' : 'SIT TO ENTER'}</p>
       )}
     </div>
   );

@@ -23,7 +23,7 @@ export default function WorkspaceStage({
   useEffect(() => {
     const host = hostRef.current;
     let renderer, controls, model, resizeObserver, tween, rig, action;
-    let phoneInHand = false, returningPhone = false;
+    let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
     const entryTimers = [];
     let raf = 0, disposed = false, last = null, cadenceSum = 0, cpuSum = 0, count = 0, emitted = 0;
     try {
@@ -82,7 +82,7 @@ export default function WorkspaceStage({
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           projected.set(...point).project(camera);
-          const visible = state.current.phase === 'room' && (id !== 'phone' || (state.current.seated && state.current.activeAnchorId !== 'phone')) && (!state.current.seated || id === 'notebook' || id === 'monitor' || id === 'phone') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const visible = state.current.phase === 'room' && (!['phone','notebook'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : id === 'chair') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
@@ -143,7 +143,7 @@ export default function WorkspaceStage({
       }
       function refresh() {
         cancelAnimationFrame(raf); raf = 0; resetTiming();
-        controls.enabled = state.current.phase === 'room' && !state.current.paused && !state.current.seated && !rig.flying;
+        controls.enabled = false;
         updateMarkers();
         gov.markDirty();
         if (!state.current.paused && !document.hidden) raf = requestAnimationFrame(tick);
@@ -160,13 +160,12 @@ export default function WorkspaceStage({
       }
       function followPhone() {
         const holding = model.hands.left;
-        holding.hand.position.set(-0.10, -0.025, 0.025).applyEuler(model.phone.rotation).add(model.phone.position);
+        holding.hand.position.set(-0.035, -0.061, 0.025).applyEuler(model.phone.rotation).add(model.phone.position);
         holding.hand.rotation.copy(model.phone.rotation);
-        holding.thumb.position.y = 0.045; holding.thumb.scale.x = 0.6;
-        holding.fingers.forEach(f => { f.rotation.x = -1.15; });
+        holding.thumb.scale.set(0.65, 0.8, 0.8);
       }
       const tapRotation = new THREE.Euler(1.15, 0, 0.65);
-      let tapPosition = new THREE.Vector3();
+      const tapPosition = new THREE.Vector3(), readyPosition = new THREE.Vector3();
       function finishPhoneTap() {
         model.setPhoneScreen('focuslock'); model.phoneGlow.color.set('#b6d8ff'); model.phoneGlow.intensity = 0.14;
         markPhone('focuslock'); invalidate();
@@ -177,10 +176,10 @@ export default function WorkspaceStage({
         if (state.current.reducedMotion) { finishPhoneTap(); return; }
         const tapping = model.hands.right.hand;
         action = gsap.timeline({ onUpdate() { model.hands.update(); invalidate(); }, onComplete: finishPhoneTap });
-        action.to(tapping.position, { y: tapPosition.y - 0.009, z: tapPosition.z - 0.020, duration: 0.12, ease: 'power2.in' }, 0)
-          .to(tapping.position, { y: tapPosition.y, z: tapPosition.z, duration: 0.12, ease: 'power2.out' }, 0.12)
-          .call(() => markPhone('hesitation'), [], 0.24)
-          .to(tapping.position, { x: tapPosition.x + 0.13, y: tapPosition.y - 0.12, z: tapPosition.z + 0.04, duration: 0.3, ease: 'power2.out' }, 0.24)
+        action.to(tapping.position, { x: tapPosition.x, y: tapPosition.y - 0.009, z: tapPosition.z - 0.020, duration: 0.24, ease: 'power2.in' }, 0)
+          .to(tapping.position, { x: readyPosition.x, y: readyPosition.y, z: readyPosition.z, duration: 0.24, ease: 'power2.out' }, 0.24)
+          .call(() => markPhone('hesitation'), [], 0.48)
+          .to(tapping.position, { x: readyPosition.x, y: readyPosition.y, z: readyPosition.z, duration: 0.3, ease: 'power2.out' }, 0.48)
           .call(() => { model.setPhoneScreen('focuslock'); markPhone('takeover'); }, [], 0.70)
           .to(model.phoneGlow.color, { r: new THREE.Color('#b6d8ff').r, g: new THREE.Color('#b6d8ff').g, b: new THREE.Color('#b6d8ff').b, duration: 0.3 }, 0.70)
           .to(model.phoneGlow, { intensity: 0.14, duration: 0.3 }, 0.70);
@@ -188,7 +187,7 @@ export default function WorkspaceStage({
       }
       function animatePhone(reduced) {
         action?.kill(); phoneInHand = true; iconHovered = false;
-        model.resetPhone(); model.hands.reset(); model.setHandsVisible(true);
+        model.resetPhone(); model.hands.reset(); model.hands.grip(model.hands.left); model.hands.grip(model.hands.right, true); model.setHandsVisible(true);
         const holding = model.hands.left.hand, tapping = model.hands.right.hand;
         rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, {
           reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
@@ -201,12 +200,13 @@ export default function WorkspaceStage({
         const index = model.hands.right.index;
         const tip = model.hands.right.fingers[index].userData.tip.clone().applyEuler(tapRotation);
         tapPosition.copy(iconCenter).sub(tip);
+        readyPosition.copy(tapPosition).add(new THREE.Vector3(0.15, -0.10, 0.015));
         let gripping = false;
         const update = () => { if (gripping) followPhone(); model.hands.update(); invalidate(); };
         if (reduced) {
           model.phone.position.copy(held); model.phone.rotation.x = 1.15;
-          followPhone(); tapping.position.copy(tapPosition); tapping.rotation.copy(tapRotation);
-          model.hands.right.fingers.forEach((finger, i) => { if (i !== index) finger.rotation.x = -1.1; });
+          followPhone(); tapping.position.copy(readyPosition); tapping.rotation.copy(tapRotation);
+
           model.hands.update(); markPhone('waiting'); invalidate(); return;
         }
         action = gsap.timeline({ onUpdate: update, onComplete() { markPhone('waiting'); invalidate(); } });
@@ -217,9 +217,9 @@ export default function WorkspaceStage({
           .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 0.85, ease: 'power2.inOut' }, 0.8)
           .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 0.8)
           .call(() => markPhone('home'), [], 1.65)
-          .to(tapping.position, { x: tapPosition.x, y: tapPosition.y, z: tapPosition.z, duration: 0.55, ease: 'power2.inOut' }, 1.65)
+          .to(tapping.position, { x: readyPosition.x, y: readyPosition.y, z: readyPosition.z, duration: 0.55, ease: 'power2.inOut' }, 1.65)
           .to(tapping.rotation, { x: tapRotation.x, z: tapRotation.z, duration: 0.55 }, 1.65);
-        model.hands.right.fingers.forEach((finger, i) => { if (i !== index) action.to(finger.rotation, { x: -1.1, duration: 0.3 }, 1.8); });
+
         gsap.ticker.wake();
       }
       function returnPhone(reduced) {
@@ -230,7 +230,7 @@ export default function WorkspaceStage({
         };
         if (reduced) { finish(); return; }
         if (model.phone.position.distanceTo(new THREE.Vector3(...WORKSPACE.anchors.phone)) < 0.002) {
-          action = gsap.to(model.hands.left.hand.position, { x: -0.27, y: 1.301, z: 0.405, duration: 0.5,
+          action = gsap.to(model.hands.left.hand.position, { x: -0.27, y: 1.28, z: 0.405, duration: 0.5,
             onUpdate() { model.hands.update(); invalidate(); }, onComplete: finish });
           gsap.ticker.wake(); return;
         }
@@ -239,18 +239,50 @@ export default function WorkspaceStage({
         action.to(model.phone.position, { x: -0.45, y: 1.43, z: 0.10, duration: 0.55, ease: 'power2.inOut' }, 0)
           .to(model.phone.rotation, { x: 0, y: 0, z: 0, duration: 0.9, ease: 'power2.inOut' }, 0)
           .to(model.phone.position, { x: WORKSPACE.anchors.phone[0], y: WORKSPACE.anchors.phone[1], z: WORKSPACE.anchors.phone[2], duration: 0.4, ease: 'power2.out' }, 0.55)
-          .to(model.hands.right.hand.position, { x: 0.27, y: 1.301, z: 0.405, duration: 0.65 }, 0)
+          .to(model.hands.right.hand.position, { x: 0.27, y: 1.28, z: 0.405, duration: 0.65 }, 0)
           .to(model.hands.right.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.65 }, 0)
           .call(() => { attached = false; }, [], 0.95)
-          .to(model.hands.left.hand.position, { x: -0.27, y: 1.301, z: 0.405, duration: 0.4, ease: 'power2.inOut' }, 0.95)
+          .to(model.hands.left.hand.position, { x: -0.27, y: 1.28, z: 0.405, duration: 0.4, ease: 'power2.inOut' }, 0.95)
           .to(model.hands.left.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.4 }, 0.95);
         for (const finger of model.hands.right.fingers) action.to(finger.rotation, { x: 0, duration: 0.65 }, 0);
+        gsap.ticker.wake();
+      }
+      function followNotebook() {
+        const h = model.hands.right;
+        h.hand.position.set(0.12,-0.075,0.15).applyEuler(model.notebook.rotation).add(model.notebook.position);
+        h.hand.rotation.copy(model.notebook.rotation); model.hands.update();
+      }
+      function animateNotebook(reduced) {
+        action?.kill(); notebookInHand = true; model.resetNotebook(); model.hands.reset();
+        model.hands.grip(model.hands.right); model.setHandsVisible(true);
+        const left = model.hands.left; left.hand.visible = left.arm.visible = left.sleeve.visible = false;
+        const held = { x:0.05,y:1.60,z:0.61 };
+        rig.flyTo({position:WORKSPACE.seat.position,target:[0.05,1.60,0.61]}, {
+          reduced,duration:0.8,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}
+        });
+        const finish=()=>{host.dataset.notebookState='reading';followNotebook();invalidate();};
+        if(reduced){ model.notebook.position.set(held.x,held.y,held.z);model.notebook.rotation.x=1.39;finish();return; }
+        host.dataset.notebookState='lifting';
+        action=gsap.timeline({onUpdate(){followNotebook();invalidate();},onComplete:finish});
+        action.to(model.notebook.position,{...held,duration:1.15,ease:'power2.inOut'},0)
+          .to(model.notebook.rotation,{x:1.39,duration:1.15,ease:'power2.inOut'},0);
+        gsap.ticker.wake();
+      }
+      function returnNotebook(reduced) {
+        action?.kill();rig.dispose();returningNotebook=true;host.dataset.notebookState='returning';
+        const finish=()=>{notebookInHand=false;returningNotebook=false;model.resetNotebook();model.hands.reset();host.dataset.notebookState='desk';fly();invalidate();};
+        if(reduced){finish();return;}
+        const [x,y,z]=WORKSPACE.anchors.notebook;
+        action=gsap.timeline({onUpdate(){followNotebook();invalidate();},onComplete:finish});
+        action.to(model.notebook.position,{x,y,z,duration:0.95,ease:'power2.inOut'},0)
+          .to(model.notebook.rotation,{x:0,y:0,z:0,duration:0.95,ease:'power2.inOut'},0);
         gsap.ticker.wake();
       }
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
         tween?.kill(); rig.dispose();
-        if (returningPhone) return;
+        if (returningPhone || returningNotebook) return;
+        if (notebookInHand) { returnNotebook(state.current.reducedMotion); return; }
         if (phoneInHand) { returnPhone(state.current.reducedMotion); return; }
         action?.kill();
         model.setHandsVisible(model.hands.root.visible && state.current.seated && state.current.phase === 'room' && !state.current.activeAnchorId);
@@ -265,7 +297,12 @@ export default function WorkspaceStage({
           controls.minPolarAngle = 0.001; controls.maxPolarAngle = Math.PI - 0.001;
           controls.minAzimuthAngle = -Infinity; controls.maxAzimuthAngle = Infinity;
           if (selected === 'phone') { animatePhone(reduced); return; }
-          const view = selected === 'phone'
+          if (selected === 'notebook') { animateNotebook(reduced); return; }
+          const view = selected === 'window'
+            ? { position: [0.05,1.72,1.16], target: WORKSPACE.anchors.window }
+            : selected === 'desk'
+            ? { position: [0.05,1.72,1.16], target: WORKSPACE.anchors.desk }
+            : selected === 'phone'
             ? { position: [-0.80, 1.72, 0.10], target: WORKSPACE.anchors.phone }
             : selected === 'notebook'
             ? { position: [1.14, 1.99, 0.40], target: WORKSPACE.anchors.notebook }
@@ -352,7 +389,7 @@ export default function WorkspaceStage({
             }
           },
           onComplete() {
-            controls.enabled = state.current.phase === 'room' && !state.current.seated;
+            controls.enabled = false;
             const CLOSE_READ = selected === 'phone' || selected === 'notebook';
             controls.minDistance = currentPhase === 'room' && !CLOSE_READ ? 1.4 : 0.025;
             if (currentPhase === 'entering') {
@@ -398,6 +435,7 @@ export default function WorkspaceStage({
           const over = host.dataset.phoneState === 'waiting' && hitPhoneIcon(event);
           hoverIcon(over); renderer.domElement.style.cursor = over ? 'pointer' : 'default'; return;
         }
+        if (notebookInHand) return;
         if (down && !phoneInHand && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
           headYaw -= (event.clientX - down.lx) * 0.005;
           headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -Math.PI / 2 + 0.02, Math.PI / 2 - 0.02);
@@ -413,7 +451,7 @@ export default function WorkspaceStage({
         down = null;
         if (phoneInHand) { if (hitPhoneIcon(event)) tapPhone(); return; }
         const id = hit(event); if (!id) return;
-        if (state.current.seated && !['monitor', 'notebook', 'phone'].includes(id)) return;
+        if (!state.current.seated && id !== 'chair') return;
         if (id === 'chair') { callbacks.current.onSit?.(); return; }
         const marker = markerRefs.current.get(id); marker?.focus();
         if (id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
@@ -478,7 +516,7 @@ export default function WorkspaceStage({
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
-          onClick={() => seated && anchor.id === 'monitor' ? callbacks.current.onEnterScreen?.() : callbacks.current.onAnchorSelect?.(anchor.id)}>
+          onClick={() => seated && callbacks.current.onAnchorSelect?.(anchor.id)}>
           <span className="workspace-marker-dot" aria-hidden="true" />
           <span className="workspace-marker-label"><small>0{index + 1}</small>{anchor.label}<span aria-hidden="true">↗</span></span>
         </button>

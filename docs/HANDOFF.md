@@ -1,3 +1,21 @@
+# Current update — 2026-09-14, fifth room pass
+
+The historical handoff below predates the completed night rig and seated interactions.
+Current app changes start from ea0f479 plus its brief-only documentation commit.
+
+- Initial scene offers SIT. Seated DESK and CONTACT controls preserve both anchors.
+- Phone uses the unchanged Instagram UV rectangle; the ready finger waits below/right of it.
+- Continuous tapered skin surfaces replace joint collars. Resting hands are retained per the user's latest request. Both hands/forearms total 19,392 triangles in 16 draw parts, no shadow casting. This is geometry submitted before occlusion, not a count of pixels visible behind an object.
+- Notebook lifts to a held reading pose, returns on Escape, and uses the existing page texture unchanged. Reduced motion places both objects immediately in their held pose.
+- Ceiling and pendant rose join static geometry. Lighting values, fixed light positions, WORKSPACE.screen and CLOSE_READ are preserved.
+- Build passed. Updated navigation regression passed 37/37. Focused phone/notebook tests measured zero rAF callbacks over three seconds at idle. Reduced-motion keyboard activation and returns passed. Final rest-height-only adjustment was checked with a fresh build and screenshots after that full regression.
+- Review artifacts: scripts/shots/fifth-rest.png, fifth-phone.png (hover), fifth-notebook.png. The page was visually compared with check-notebook.png; text remains comparably sized, without projected markers over it.
+- scripts/verify-held-objects.mjs reproduces normal-motion pickup, tap, idle and return checks at BASE (defaults to 4174).
+- Real AMD GPU performance remains unmeasured. FocusLock is still a labelled placeholder. Hands remain authored procedural geometry, not a scan; their realism needs the owner's judgement.
+- Written room redesign options, estimated costs and ordering: [ROOM-SHAPE-PROPOSAL.md](ROOM-SHAPE-PROPOSAL.md). Reshape options are not implemented.
+
+---
+
 # Handoff â€” updated 2026-09-13
 
 Branch `feat/v3`. Nothing pushed, no remote configured. Working tree clean as of

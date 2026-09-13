@@ -178,9 +178,9 @@ function skylineTexture(foreground = false) {
 // forearms join the wrists and long sleeves continue behind the seated eye.
 function seatedHands() {
   const root = new THREE.Group(); root.name = 'Seated hands and forearms'; root.visible = false;
-  const skin = new THREE.MeshStandardMaterial({ color: '#c8bda4', roughness: 1 });
+  const skin = new THREE.MeshStandardMaterial({ color: '#b9896e', roughness: 0.82 });
   const cloth = new THREE.MeshStandardMaterial({ color: '#3c4949', roughness: 1 });
-  const joint = new THREE.MeshStandardMaterial({ color: '#77766b', roughness: 1 });
+
   function mesh(geometry, material, parent, position = [0, 0, 0]) {
     const m = new THREE.Mesh(geometry, material); m.position.set(...position);
     m.castShadow = false; m.receiveShadow = true; m.raycast = () => {}; parent.add(m); return m;
@@ -190,66 +190,89 @@ function seatedHands() {
     const m = mesh(new THREE.CylinderGeometry(tip, radius, av.distanceTo(bv), 10), material, parent, av.clone().add(bv).multiplyScalar(0.5).toArray());
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bv.sub(av).normalize()); return m;
   }
-  // Lofted twelve-sided palm: narrow wrist, broad knuckles, flatter fingertips.
-  // This is a designed matte maquette, not an inflated skin ellipsoid.
+  // Continuous skin surfaces: smoothly varying cross sections, no joint collars.
+  function skinSweep(points, radii, segments = 32, sides = 20, flatten = 1) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
+    const frames = curve.computeFrenetFrames(segments, false);
+    const vertices = [], indices = [], uv = [];
+    for (let j = 0; j <= segments; j++) {
+      const t = j / segments, q = curve.getPointAt(t), f = t * (radii.length - 1);
+      const k = Math.min(radii.length - 2, Math.floor(f));
+      const u = f - k;
+      const blend = k === radii.length - 2 ? 1 - Math.sqrt(Math.max(0,1-u*u)) : u*u*(3-2*u);
+      const radius = THREE.MathUtils.lerp(radii[k], radii[k + 1], blend);
+      for (let i = 0; i <= sides; i++) {
+        const angle = i / sides * Math.PI * 2;
+        const v = q.clone().addScaledVector(frames.normals[j], Math.cos(angle) * radius)
+          .addScaledVector(frames.binormals[j], Math.sin(angle) * radius * flatten);
+        vertices.push(v.x,v.y,v.z); uv.push(i / sides,t);
+        if(j < segments && i < sides) { const a=j*(sides+1)+i,b=a+sides+1; indices.push(a,a+1,b,b,a+1,b+1); }
+      }
+    }
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
+  }
   function palmGeometry() {
-    const rings = [[0.07, 0.030, 0.021], [0.035, 0.052, 0.025], [-0.025, 0.054, 0.018], [-0.057, 0.043, 0.012]];
-    const vertices = [], indices = [];
-    for (const [z, width, thick] of rings) for (let i = 0; i < 12; i++) {
-      const a = i * Math.PI / 6; vertices.push(Math.cos(a) * width, Math.sin(a) * thick, z);
+    const profile = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(0.025,0.018,0.105),new THREE.Vector3(0.033,0.022,0.067),
+      new THREE.Vector3(0.047,0.024,0.022),new THREE.Vector3(0.051,0.019,-0.02),
+      new THREE.Vector3(0.046,0.013,-0.049),new THREE.Vector3(0.032,0.008,-0.064),
+      new THREE.Vector3(0.001,0.001,-0.070)]);
+    const vertices=[],uv=[],indices=[],rings=48,sides=32;
+    for(let j=0;j<=rings;j++) {
+      const p=profile.getPoint(j/rings);
+      for(let i=0;i<=sides;i++) {
+        const a=i/sides*Math.PI*2;vertices.push(Math.cos(a)*p.x,Math.sin(a)*p.y,p.z);uv.push(i/sides,j/rings);
+        if(j<rings&&i<sides){const a=j*(sides+1)+i,b=a+sides+1;indices.push(a,b,a+1,b,b+1,a+1);}
+      }
     }
-    for (let r = 0; r < rings.length - 1; r++) for (let i = 0; i < 12; i++) {
-      const a = r * 12 + i, b = r * 12 + (i + 1) % 12, c = a + 12, d = b + 12;
-      indices.push(a, c, b, b, c, d);
-    }
-    vertices.push(0, 0, rings[0][0], 0, 0, rings[3][0]);
-    for (let i = 0; i < 12; i++) { indices.push(48, i, (i + 1) % 12); indices.push(49, 36 + (i + 1) % 12, 36 + i); }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(vertices.length / 3 * 2), 2)); g.setIndex(indices); g.computeVertexNormals(); return g;
+    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
+    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
   }
   const hands = [];
   for (const side of [-1, 1]) {
     const hand = new THREE.Group(); root.add(hand);
-    hand.position.set(side * 0.27, 1.301, 0.405);
+    hand.position.set(side * 0.27, 1.28, 0.405);
     mesh(palmGeometry(), skin, hand);
-    mesh(new THREE.SphereGeometry(0.026, 12, 8), skin, hand, [0, -0.012, 0.058]);
+
     const fingers = [];
     for (let i = 0; i < 4; i++) {
       const finger = new THREE.Group();
       const order = side === 1 ? i : 3 - i;
-      finger.position.set(-0.0435 + i * 0.029, 0, -[0.044, 0.057, 0.049, 0.026][order]); hand.add(finger);
+      finger.position.set(-0.036 + i * 0.024, 0, -[0.044, 0.057, 0.049, 0.026][order]); hand.add(finger);
       const length = [0.079, 0.091, 0.081, 0.057][order];
       finger.userData.tip = new THREE.Vector3(0, -0.028, -length).add(finger.position);
-      // Bent knuckles and downturned tips, with at least 10mm lateral gaps.
-      rod(finger, [0, 0, 0], [0, 0.013, -length * (2 / 4.2)], 0.011, 0.010, skin);
-      mesh(new THREE.SphereGeometry(0.0095, 10, 6), joint, finger, [0, 0.013, -length * (2 / 4.2)]);
-      rod(finger, [0, 0.013, -length * (2 / 4.2)], [0, -0.006, -length * (3.2 / 4.2)], 0.010, 0.0085, skin);
-      mesh(new THREE.SphereGeometry(0.008, 10, 6), joint, finger, [0, -0.006, -length * (3.2 / 4.2)]);
-      mesh(new THREE.SphereGeometry(0.007, 10, 6), skin, finger, [0, -0.028, -length]);
-      rod(finger, [0, -0.006, -length * (3.2 / 4.2)], [0, -0.028, -length], 0.0085, 0.007, skin);
+      const relaxed = skinSweep([[0,0,0.012],[0,0.004,-length*0.25],[0,0.009,-length*0.48],
+        [0,-0.002,-length*0.76],[0,-0.018,-length*0.96],[0,-0.028,-length]],
+        [0.0125,0.0118,0.0115,0.0098,0.008,0.001]);
+      const curled = skinSweep([[0,0,0.012],[0,0.008,-0.025],[0,-0.012,-0.039],
+        [0,-0.035,-0.018],[0,-0.026,0.010]], [0.0125,0.012,0.011,0.009,0.001]);
+      finger.userData.relaxed = relaxed; finger.userData.curled = curled;
+      mesh(relaxed.clone(), skin, finger);
       fingers.push(finger);
     }
     const thumb = new THREE.Group(); hand.add(thumb);
-    rod(thumb, [-side * 0.049, -0.004, 0.019], [-side * 0.086, -0.006, -0.015], 0.016, 0.013, skin);
-    rod(thumb, [-side * 0.086, -0.006, -0.015], [-side * 0.105, -0.017, -0.048], 0.013, 0.009, skin);
+    mesh(skinSweep([[-side*0.028,-0.004,0.042],[-side*0.051,-0.004,0.013],
+      [-side*0.070,-0.010,-0.006],[-side*0.087,-0.018,-0.03]], [0.024,0.019,0.013,0.001]),skin,thumb);
     // Separate sleeve/forearm rods follow the authored wrist, without IK.
-    const sleeve = mesh(new THREE.CylinderGeometry(0.067, 0.096, 1, 12), cloth, root);
-    const arm = mesh(new THREE.CylinderGeometry(0.035, 0.059, 1, 12), skin, root);
+    const sleeve = mesh(new THREE.CylinderGeometry(0.054, 0.082, 1, 24), cloth, root);
+    const arm = mesh(new THREE.CylinderGeometry(0.028, 0.048, 1, 32), skin, root);
     const wrist = new THREE.Vector3(), elbow = new THREE.Vector3(side * 0.40, 1.13, 1.10);
     const shoulder = new THREE.Vector3(side * 0.46, 0.98, 1.85);
     const fit = (m, a, b) => {
       m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.y = a.distanceTo(b);
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
     };
-    hands.push({ hand, fingers, thumb, index: side === 1 ? 0 : 3, update() {
-      wrist.set(0, -0.006, 0.058).applyEuler(hand.rotation).add(hand.position);
+    hands.push({ hand, fingers, thumb, arm, sleeve, index: side === 1 ? 0 : 3, update() {
+      wrist.set(0, 0, 0.095).applyEuler(hand.rotation).add(hand.position);
       fit(arm, elbow, wrist); fit(sleeve, shoulder, elbow);
     }});
   }
   function update() { hands.forEach(h => h.update()); }
   function reset() {
-    hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.301, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); }); update();
+    hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.28, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); h.hand.visible = h.arm.visible = h.sleeve.visible = true; }); update();
   }
-  const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
+  const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82 });
   for (const h of hands) for (const group of [h.hand, ...h.fingers, h.thumb]) {
     const parts = group.children.filter(o => o.isMesh), geometries = [];
     for (const part of parts) {
@@ -262,9 +285,27 @@ function seatedHands() {
     }
     mesh(mergeGeometries(geometries, false), mergedMaterial, group); geometries.forEach(g => g.dispose());
   }
-  joint.dispose();
+  function grip(h, pointing = false) {
+    h.fingers.forEach((f,i) => {
+      const geometry = pointing && i === h.index ? f.userData.relaxed : f.userData.curled;
+      const m = f.children[0]; m.geometry.dispose(); m.geometry = geometry.clone();
+      const c = skin.color, colors = new Float32Array(m.geometry.attributes.position.count * 3);
+      for(let n=0;n<colors.length;n+=3){ colors[n]=c.r;colors[n+1]=c.g;colors[n+2]=c.b; }
+      m.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3)); f.rotation.set(0,0,0);
+    });
+  }
+  const resetPose = reset;
+  function rest() { resetPose(); hands.forEach(h => {
+    h.fingers.forEach(f => {
+      const m=f.children[0];m.geometry.dispose();m.geometry=f.userData.relaxed.clone();
+      const c=skin.color, colors=new Float32Array(m.geometry.attributes.position.count*3);
+      for(let n=0;n<colors.length;n+=3){colors[n]=c.r;colors[n+1]=c.g;colors[n+2]=c.b;}
+      m.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
+    });
+  }); }
+
   reset();
-  return { root, left: hands[0], right: hands[1], update, reset };
+  return { root, left: hands[0], right: hands[1], update, reset: rest, grip };
 }
 
 export function buildWorkspace(scene) {
@@ -319,6 +360,7 @@ export function buildWorkspace(scene) {
   const backWall = box('Back wall', [5, 3.12, 0.13], [0, 1.58, -1.8], plaster);
   backWall.castShadow = false;
   box('Left return wall', [0.13, 3.12, 1.55], [-2.43, 1.58, -1.09], plaster);
+  box('Ceiling', [5, 0.08, 3.9], [0, 3.16, 0.1], plaster);
   box('Back skirting', [4.95, 0.065, 0.045], [0, 0.12, -1.708], dark);
   box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
   const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
@@ -480,6 +522,11 @@ export function buildWorkspace(scene) {
   const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.514), new THREE.MeshStandardMaterial(
     { map: notes, roughness: 0.98, emissive: '#ffffff', emissiveMap: notes, emissiveIntensity: 0.34 }));
   notePlane.rotation.set(-Math.PI / 2, 0, -0.04); notePlane.position.set(1.14, 1.209, 0.3); root.add(notePlane); tag(notePlane, 'notebook');
+  // Movable assembly stays outside static batching and the baked shadow map.
+  const notebook = new THREE.Group(); notebook.position.set(...WORKSPACE.anchors.notebook); root.add(notebook);
+  for (const part of [book, pages, notePlane]) {
+    part.position.sub(notebook.position); part.castShadow = false; notebook.add(part);
+  }
   rod('Graphite pencil', [1.47, 1.218, 0.06], [1.54, 1.218, 0.43], 0.009, dark);
 
   // Task light, books and a ceramic cup give the room a human scale.
@@ -551,6 +598,7 @@ export function buildWorkspace(scene) {
   lampInterior.position.set(-1.03, 1.818, -0.4); root.add(lampInterior);
 
   // Static pendant; only its local emission changes during the entry stutter.
+  cylinder('Ceiling rose', 0.10, 0.025, [-0.65, 3.1075, 0.5], dark);
   rod('Pendant cord', [-0.65, 3.12, 0.5], [-0.65, 2.58, 0.5], 0.008, black);
   cylinder('Pendant socket', 0.036, 0.09, [-0.65, 2.55, 0.5], dark);
   const pendantMaterial = new THREE.MeshStandardMaterial({ color: '#ad8860', emissive: '#e0ac68', emissiveIntensity: 0.7 });
@@ -648,7 +696,8 @@ export function buildWorkspace(scene) {
 
   return {
     root, interactive,
-    hands, phone, phoneGlow, phoneDisplay,
+    hands, phone, phoneGlow, phoneDisplay, notebook,
+    resetNotebook() { notebook.position.set(...WORKSPACE.anchors.notebook); notebook.rotation.set(0, 0, 0); },
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
     setHandsVisible(visible) { hands.root.visible = visible; },
@@ -660,6 +709,7 @@ export function buildWorkspace(scene) {
         if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(m => mats.add(m));
         if (object.isLight) object.dispose?.();
       });
+      for (const h of [hands.left,hands.right]) for (const f of h.fingers) { geometries.add(f.userData.relaxed); geometries.add(f.userData.curled); }
       Object.values(phoneTextures).forEach(t => textures.add(t));
       mats.forEach(m => { for (const value of Object.values(m)) if (value?.isTexture) textures.add(value); m.dispose(); });
       geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose());

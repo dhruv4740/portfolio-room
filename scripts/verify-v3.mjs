@@ -180,6 +180,10 @@ const pinSurface = (page, surface) =>
   record('scan: workspace actually paints', cov.litRatio > 0.08,
     `${(cov.litRatio * 100).toFixed(1)}% lit, mean luma ${cov.meanLuma.toFixed(1)}`);
 
+  const initialMarkers = await page.locator('.anchor-marker').evaluateAll(els => els.filter(e => e.style.visibility === 'visible').map(e => e.dataset.object));
+  record('scan: only SIT is offered initially', initialMarkers.length === 1 && initialMarkers[0] === 'chair', initialMarkers.join(', '));
+  await page.locator('[data-object="chair"]').focus(); await page.keyboard.press('Enter');
+  await page.waitForTimeout(1600);
   const expectedObjects = [
     ['monitor', 'Monitor'],
     ['desk', 'Desk'],
@@ -212,7 +216,7 @@ const pinSurface = (page, surface) =>
   // can use. This catches markers that merely look like labels but are not
   // wired to the shared anchor-selection callback.
   for (const [id, label] of expectedObjects) {
-    const marker = page.locator(`.anchor-marker[data-object="${id}"]`).first();
+    const marker = id === 'monitor' ? monitorMarker : page.getByRole('button', { name: {desk:'DESK',notebook:'NOTEBOOK',window:'CONTACT'}[id], exact:true });
     let activated = false;
     try {
       await marker.focus();
@@ -232,11 +236,7 @@ const pinSurface = (page, surface) =>
         () => !document.querySelector('.anchor-marker.is-active'),
         { timeout: 3_000 },
       ).catch(() => {});
-      await page.waitForFunction(
-        () => [...document.querySelectorAll('.anchor-marker')]
-          .filter((el) => el.style.visibility === 'visible' && parseFloat(el.style.opacity || '0') > 0.05).length >= 4,
-        { timeout: 3_000 },
-      ).catch(() => {});
+      await page.waitForTimeout(id === 'notebook' ? 2400 : 1400);
     }
   }
 
