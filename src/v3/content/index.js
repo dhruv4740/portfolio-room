@@ -165,7 +165,7 @@ export const projects = [
     name: 'Basket Price',
     year: 2026,
     kind: 'tool',
-    tagline: 'Refuses to show you a price it cannot prove.', // TODO: pending scan — see docs/PROJECT-MATERIAL.md
+    tagline: 'Refuses to show you a price it cannot prove.',
     description: 
       'A private grocery price comparison and cart-sync tool for one family, across three delivery services. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
     decision:
