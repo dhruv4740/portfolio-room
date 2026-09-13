@@ -1,157 +1,155 @@
 # AGENTS.md
 
-> CURRENT HANDOFF (2026-09-13): Read [docs/HANDOFF.md](docs/HANDOFF.md) first.
-> The user replaced the shoe-scan direction with an authored modeled workspace.
-> Live desktop: `WorkspaceStage.jsx` + `buildWorkspace.js`, not `SplatStage.jsx`.
-> The room changes are uncommitted; HEAD `1912627` is the older prototype.
-> Capture setup and normalized-capture rules below are historical for the
-> unused splat renderer. Do not download/restore the shoe. Claude is explicitly
-> authorized to continue; the old subagent-model preference below is superseded
-> by the user's current instructions. See the handoff for exact test limits.
+Operational guide for any coding agent in this repo. Setup, commands,
+invariants, traps. Narrative and rationale live in `docs/`.
 
-Operational guide for any coding agent working in this repo. Narrative and
-rationale live in `docs/`; this file is setup, commands, invariants and traps.
-
-Read `docs/VISION.md` before changing anything user-facing — the current
-direction changed recently and the code has not caught up yet.
+**Start with [docs/HANDOFF.md](docs/HANDOFF.md)** — it records the live state
+and what is genuinely unverified.
 
 ## What this is
 
-A personal portfolio (Dhruv Kothari). One content source drives three surfaces
-chosen at runtime by device capability:
+A personal portfolio (Dhruv Kothari). Its first job is to impress other
+builders; its second is to get an internship screener to the facts fast. One
+content source drives three surfaces chosen at runtime by device capability:
 
-| Surface  | Route    | Who gets it                   | Source            |
-|----------|----------|-------------------------------|-------------------|
-| `scan`   | `/`      | desktop + real GPU            | `src/v3/desktop/` |
-| `deck`   | `/`      | touch devices                 | `src/v3/mobile/`  |
-| `static` | `/work`  | software GPU, saveData, or anyone who clicks WORK | `src/v3/work/` |
+| Surface  | Route   | Who gets it                                       | Source            |
+|----------|---------|---------------------------------------------------|-------------------|
+| `scan`   | `/`     | desktop + real GPU                                | `src/v3/desktop/` |
+| `deck`   | `/`     | touch devices                                     | `src/v3/mobile/`  |
+| `static` | `/work` | software GPU, saveData, or anyone who clicks WORK | `src/v3/work/`    |
+
+The desktop surface is an **authored three.js room** — desk, monitor, keyboard,
+notebook, chair, lamp, window — that you orbit. Clicking the monitor travels the
+camera into the screen and hands off to **dhruvOS**, a real OS-like environment
+the user built, which keeps its state across visits.
 
 `src/v3/` is the live app. Everything outside it is dead — see Traps.
 
 Stack: Vite 8 (rolldown), React 19, react-router-dom v7 (HashRouter), GSAP,
-three.js, `@sparkjsdev/spark` for Gaussian splats, Playwright for verification.
+three.js, Playwright for verification.
 
 ## Setup
 
 ```bash
 npm install
-curl -sL -o public/splats/dev-room.splat https://huggingface.co/cakewalk/splat-data/resolve/main/nike.splat
 npm run dev
 ```
 
-**The second line is not optional.** `public/splats/*.splat` is gitignored, so a
-fresh clone has no capture and `/` renders `SCAN FAILED TO LOAD`. That is
-missing data, not a bug — do not debug the loader.
+That's it. No asset download step. **If you find instructions anywhere telling
+you to `curl` a `.splat` file, they are stale — ignore them.**
 
 ## Commands
 
 ```bash
-npm run dev       # vite dev server
 npm run build     # production build
-npm run preview   # serve dist
-```
-
-There is **no lint and no test script.** The entire quality signal is
-`npm run build` plus the verification harness below.
-
-### Verification
-
-Three steps, in order. Skipping either prerequisite gives a confusing error.
-
-```bash
-npx playwright install chromium
-npx vite preview --port 4173 &
+npm run dev       # dev server
+node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4174
 node scripts/verify-v3.mjs
 ```
 
-16 checks across all three surfaces. `scripts/shots/` gets screenshots and
-`v3-results.json`. The check that matters most after touching the capture or
-the camera is `scan: splat actually paints` — it measures what fraction of the
-frame is lit, which is the only thing that catches a camera framing empty space.
+Invoke Vite's bin directly for preview — `npm run preview` strips arguments on
+this machine. There is **no lint and no test script**; `npm run build` plus the
+Playwright harness is the entire quality signal.
+
+Check `BASE` in `scripts/verify-v3.mjs` before running — it has defaulted to
+port 4173 while the preview ran on 4174, which silently tests nothing.
 
 ## Invariants
 
-**Anchors are normalised, not world coordinates.** `at: [x, y, z]` in
-`src/v3/content/index.js` is `0..1` within the capture's bounding box — `0` is
-the box minimum, `1` the maximum. World positions and camera viewpoints are
-derived at runtime in `src/v3/desktop/splatBounds.js`. This is the least
-guessable thing in the codebase. Never write world coordinates into content.
+**The desktop scene is authored geometry, not photogrammetry.**
+`buildWorkspace.js` exports `WORKSPACE` with world-space `anchors` and `screen`
+dimensions. Content anchors in `src/v3/content/index.js` stay normalised and map
+onto it. Do not write raw world coordinates into the content file.
 
-**Spark must stay dynamically imported.** It is 4.9MB raw / 1.81MB gzip. It is
-`await import()`ed inside `SplatStage.jsx` so `/work` never pays for it. If
-spark, three, or a `.splat` ever appears on the `/work` request list that is a
-regression, and `verify-v3.mjs` fails on it.
+**`WORKSPACE.screen` is load-bearing.** The camera-travel target and the
+monitor's clickable plane both derive from it. Changing the monitor's geometry
+means changing `screen` in the same edit.
 
-**Camera framing is derived, never hardcoded.** Every capture trains at a
-different scale, origin and orientation. `computeSplatBounds()` samples splat
-centres, takes a percentile range per axis (rejecting reconstruction floaters),
-and bakes the mesh world matrix in. Hardcoding a camera position is how this
-broke before.
+**Shadows are static on purpose.** `shadowMap.autoUpdate = false` with a
+one-time `needsUpdate`. Furniture and lights don't move, so camera motion must
+not re-render the shadow map. Preserve this when adding lights.
 
-**One accent colour, no gradients.** See `docs/DESIGN.md`. `src/v3/tokens.css`
-deliberately has no `--gradient-*` token.
+**Vanilla three.js, not react-three-fiber.** `WorkspaceStage.jsx` owns its own
+renderer and loop. Don't "modernise" it.
+
+**One accent, no gradients.** `--signal: #FF5F1F`, used for exactly one thing
+per view. `src/v3/tokens.css` has no `--gradient-*` token, deliberately. The
+*room* is warm and naturalistic — that contrast against the `--void` background
+is intended. Don't recolour the room to match the UI chrome.
+
+**dhruvOS state persists.** `DhruvOSScreen.jsx` holds a same-origin iframe
+bridge that survives exit and re-entry. Don't remount it on phase change.
+
+**Keep `/work` lightweight.** It must never pull three.js or the 3D scene.
+`verify-v3.mjs` asserts this.
 
 ## Traps
 
-- **Headless Chromium reports a SwiftShader renderer**, so `resolveSurface()`
-  correctly routes it to `/work`. That makes scan and deck untestable by
-  default. `verify-v3.mjs` pins `localStorage['v3:surface-override']` via
-  `addInitScript` to reach them. If a surface test "fails," check the pin
-  before touching `src/v3/lib/capability.js` — the fallback is intended
-  behaviour and is asserted as its own case.
-- **If a capture loads upside down**, there is exactly one line:
-  `splat.quaternion.set(1, 0, 0, 0)` in `src/v3/desktop/SplatStage.jsx` (180°
-  about X). Use `(0, 0, 0, 1)` for no rotation. Trainers disagree on up-axis
-  convention; this is the only place it matters.
+- **Headless Chromium reports a SwiftShader software GPU**, so
+  `resolveSurface()` correctly routes it to `/work`. To test the 3D scene you
+  must set `localStorage['v3:surface-override'] = 'scan'` via `addInitScript`
+  *before* page load. If a surface test "fails," check the pin before touching
+  `src/v3/lib/capability.js` — the fallback is intended and is asserted as its
+  own case.
+- **Clicking a projected `.anchor-marker` button is not the same as clicking the
+  monitor mesh.** Both paths must work. Tests that only exercise the button
+  prove less than they appear to.
+- **rAF cadence is not GPU frame time.** The telemetry readout measures
+  submission interval. Under software rendering it will look terrible and mean
+  nothing. Do not convert it into an FPS claim.
 - **Dead v1/v2 code**: `src/App.jsx`, `src/Shell.jsx`, `src/routes/`,
-  `src/flagship/`, `src/components/`. Unreferenced by `src/main.jsx`. Do not
-  repair, refactor or import them. Precedent: a stale `manualChunks` entry in
-  `vite.config.js` was force-emitting a dead 514KB postprocessing chunk.
-  Exception: `src/lab/registry.js` and `public/lab/*.html` are **live** —
-  `LabScreen.jsx` iframes them.
-- **`SplatStage.jsx` is vanilla three.js, not R3F**, because Spark hooks the
-  render loop and requires `antialias: false`. Don't "modernise" it to
-  react-three-fiber.
-- **The progress denominator is `capture.bytes`**, because the splat host omits
-  `Content-Length` and `ProgressEvent.total` comes back `0`. Telemetry shows
-  `—` when total is genuinely unknown rather than `0.0 MB`.
+  `src/flagship/`, `src/components/`. Unreferenced. Do not repair or import.
+  Precedent: a stale `manualChunks` entry was force-emitting a dead 514KB chunk.
+  Exception: `src/lab/registry.js` and `public/lab/*.html` are **live**.
+- **`SplatStage.jsx`, `splatBounds.js` and `@sparkjsdev/spark` are historical.**
+  The Gaussian-splat direction was abandoned — the placeholder was a shoe and
+  the user rejected it. Nothing imports them. Do not restore the shoe, do not
+  re-source a capture, and treat any capture/normalised-bounds rules in older
+  docs as applying only to that dead renderer.
+- **Gravity in the embedded OS needs Matter.js** and is unavailable on the
+  dependency-free embedded path. Known, not a bug to chase.
 
 ## Git
 
-- Never commit to `main` or `master`. Branch: `feat/`, `fix/`, `chore/`,
-  `docs/`. Current work is on `feat/v3`.
+- Never commit to `main`/`master`. Current work is on `feat/v3`.
 - Conventional Commits, subject under 72 chars, no trailing period.
-- **Do not push.** The user has not supplied a remote yet; commit locally after
-  each logical unit of completed work.
-- No attribution or co-author lines in commit messages.
+- Commit locally per logical unit. **Do not push** — no remote is configured.
+- No attribution or co-author lines.
 
 ## Working style the user expects
 
 - Conclusion first. No filler, no flattery, no restating the request.
 - Smallest change that achieves the goal. No speculative abstractions.
-- State what is measured vs. inferred. "I don't know" is acceptable; a
-  confident guess that gets walked back is not.
-- Anything skipped, stubbed or deferred gets a named line in the final report.
-- Subagents on Sonnet, or Haiku for read-only exploration. Never Opus.
+- **Do not overstate verification.** The user has called this out before. Say
+  what passed, what failed, and what you did not test. A partial run is not a
+  passing suite.
+- State what is measured vs. inferred. "I don't know" is a complete answer.
+- Anything skipped or stubbed gets a named line in the final report.
+- The user dislikes long waits, redundant checks and heavy delegation. One clean
+  verification run, fix, one confirming run — not a probe loop.
+- Never fabricate project links, metrics or evidence. Those come from the user.
 
 ## Map
 
 ```
 src/v3/
-  App.jsx              HashRouter; / resolves by capability, /work always available
-  tokens.css           design system — every other file pulls from here
-  content/index.js     SINGLE source of truth for all three surfaces
-  lib/capability.js    resolveSurface(), override + intro-seen localStorage keys
+  App.jsx               HashRouter; / resolves by capability, /work always available
+  tokens.css            design system — every other file pulls from here
+  content/index.js      single source of truth for all three surfaces
+  lib/capability.js     resolveSurface(), override + intro-seen localStorage keys
   desktop/
-    Scan.jsx           composes stage + chrome
-    SplatStage.jsx     vanilla three.js + Spark; dynamic import lives here
-    splatBounds.js     percentile bounds, frameBounds(), resolveAnchor()
-    cameraRig.js       flyTo (GSAP power3.inOut), idle drift, project()
-    LabScreen.jsx      sandboxed iframe over public/lab/*.html
-  mobile/Deck.jsx      100dvh scroll-snap + gyro
-  mobile/useGyro.js    lerped in RAF, decoupled from event frequency
-  work/Work.jsx        static recruiter page, no WebGL
-  ui/                  Telemetry, AnchorPanel, ScanIntro
-docs/                  vision, decisions, state, roadmap, design, capture
-scripts/verify-v3.mjs  16-check Playwright harness
+    Scan.jsx            composes stage + chrome; owns phase machine
+                        (room / preparing / entering / inside / leaving)
+    WorkspaceStage.jsx  renderer, orbit, raycast, projected markers, camera travel
+    buildWorkspace.js   geometry, materials, WORKSPACE anchors + screen dims
+    DhruvOSScreen.jsx   persistent same-origin iframe bridge to dhruvOS
+    cameraRig.js        flyTo (GSAP power3.inOut), idle drift, project()
+    LabScreen.jsx       sandboxed iframe over public/lab/*.html
+    SplatStage.jsx      DEAD — historical splat renderer, unimported
+    splatBounds.js      DEAD — supports SplatStage only
+  mobile/Deck.jsx       100dvh scroll-snap + gyro
+  work/Work.jsx         static recruiter page, no WebGL
+  ui/                   Telemetry, AnchorPanel, ScanIntro
+docs/                   HANDOFF first, then VISION, DECISIONS, STATE, ROADMAP, DESIGN
+scripts/verify-v3.mjs   Playwright harness
 ```

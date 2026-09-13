@@ -5,6 +5,8 @@ decision attached are trivia and are not recorded here.
 
 ## 1. Gaussian splatting as the hero, not a shader scene
 
+**SUPERSEDED 2026-09-13 by #9.** Kept for the reasoning.
+
 **Decided.** A splat capture reads as a real artifact with volume. Shader scenes
 read as "someone used three.js." Rarity is the whole point of the flex.
 
@@ -15,6 +17,9 @@ Chromium. Real GPUs have enormous headroom.
 Reverses if: a licensed capture with a visible laptop can't be sourced (see #7).
 
 ## 2. Spark (`@sparkjsdev/spark`) as the renderer
+
+**SUPERSEDED 2026-09-13 by #9.** Spark is no longer imported. The r186
+evaluation below is moot for now — no splat renderer is in the live path.
 
 **Decided** at build time. MIT, WebGL2, by World Labs. Peer dep `three >=0.180`.
 Reads `.ply / .splat / .spz / .ksplat / .sog`. Crucially it exposes
@@ -72,6 +77,9 @@ page every time.
 
 ## 7. Capture licensing — UNRESOLVED, and it now gates the plan
 
+**MOOT 2026-09-13 by #9.** No capture ships, so no licence is needed. This
+entry resolves itself: authoring the room removed the blocker entirely.
+
 The plan is to ship a **downloaded** scan, so its licence matters.
 
 - The current placeholder is `cakewalk/splat-data` (`nike.splat`) on HuggingFace.
@@ -102,3 +110,34 @@ farms and paper mirrors, not terms. Ask the user to run it and paste back.
 
 **Decided** by the user: the next agent is not Claude. `AGENTS.md` is the
 cross-vendor convention. Root `CLAUDE.md` is a one-line pointer to avoid drift.
+
+## 9. Authored geometry instead of a captured splat (2026-09-13)
+
+**Decided by the user.** The desktop scene is now a hand-authored three.js room
+built in `src/v3/desktop/buildWorkspace.js`, rendered by `WorkspaceStage.jsx`.
+Spark, `SplatStage.jsx` and `splatBounds.js` are retained as dead source and
+imported by nothing.
+
+Why it beat the splat direction on every axis that mattered:
+
+- **The shoe was indefensible.** The placeholder capture was a sneaker, and no
+  amount of chrome made that read as a workspace. The user rejected it outright.
+- **Interaction was the real requirement.** The concept needs a monitor you can
+  click and travel into. A photogrammetry capture has no monitor *object* — it
+  has splats that happen to look like one. Authored geometry gives a real mesh,
+  a real screen plane, and a real raycast target. `WORKSPACE.screen` exists
+  because the scene is modeled.
+- **It deleted two blockers at once.** Licensing (#7) and recognition risk both
+  evaporate when nothing is downloaded. So does the 1.81MB gzip Spark payload.
+- **Authored beats sourced for a flex.** "I modeled and lit this" is a stronger
+  claim than "I found a good scan," which was the recognition worry in #7 stated
+  from the other direction.
+
+**What was given up, honestly:** photoreal. A modeled room cannot look like a
+photograph, and the current scene reads as a stylised diorama. The wow now has
+to come from lighting, composition and the transition rather than from raw
+capture fidelity. That is the active work.
+
+Reverses if: the authored room plateaus at "nice Blender scene" and the
+transition can't carry it. Unlikely to reverse — the interaction requirement
+alone rules the capture out.
