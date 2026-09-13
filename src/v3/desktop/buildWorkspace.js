@@ -85,11 +85,18 @@ export function phoneFocusLockTexture() {
   }, 540, 1200);
 }
 
+// Texture UV origin is bottom-left. Drawing, hover and click tests share this.
+export const INSTAGRAM_ICON_UV_RECT = Object.freeze({
+  uMin: 205 / 540, uMax: 335 / 540,
+  vMin: 1 - 610 / 1200, vMax: 1 - 480 / 1200,
+});
 // Exactly one labelled icon placeholder; no logo, dock, status bar or fake UI.
-export function phoneHomeTexture() {
+export function phoneHomeTexture(highlighted = false) {
   return canvasTexture((ctx, w, h) => {
     ctx.fillStyle = '#3b3e42'; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#85878a'; ctx.fillRect(205, 480, 130, 130);
+    const r = INSTAGRAM_ICON_UV_RECT;
+    ctx.fillStyle = highlighted ? '#c1c4c8' : '#85878a';
+    ctx.fillRect(r.uMin * w, (1 - r.vMax) * h, (r.uMax - r.uMin) * w, (r.vMax - r.vMin) * h);
     ctx.textAlign = 'center'; ctx.fillStyle = '#eeeeee';
     ctx.font = '28px sans-serif'; ctx.fillText('Instagram', w / 2, 652);
     ctx.font = '20px monospace'; ctx.fillText('PLACEHOLDER', w / 2, 551);
@@ -138,9 +145,9 @@ function skylineTexture(foreground = false) {
 // forearms join the wrists and long sleeves continue behind the seated eye.
 function seatedHands() {
   const root = new THREE.Group(); root.name = 'Seated hands and forearms'; root.visible = false;
-  const skin = new THREE.MeshStandardMaterial({ color: '#bb8b68', roughness: 0.86 });
+  const skin = new THREE.MeshStandardMaterial({ color: '#c8bda4', roughness: 1 });
   const cloth = new THREE.MeshStandardMaterial({ color: '#3c4949', roughness: 1 });
-  const nail = new THREE.MeshStandardMaterial({ color: '#cfaa8b', roughness: 0.7 });
+  const joint = new THREE.MeshStandardMaterial({ color: '#77766b', roughness: 1 });
   function mesh(geometry, material, parent, position = [0, 0, 0]) {
     const m = new THREE.Mesh(geometry, material); m.position.set(...position);
     m.castShadow = false; m.receiveShadow = true; m.raycast = () => {}; parent.add(m); return m;
@@ -150,24 +157,42 @@ function seatedHands() {
     const m = mesh(new THREE.CylinderGeometry(tip, radius, av.distanceTo(bv), 10), material, parent, av.clone().add(bv).multiplyScalar(0.5).toArray());
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bv.sub(av).normalize()); return m;
   }
+  // Lofted twelve-sided palm: narrow wrist, broad knuckles, flatter fingertips.
+  // This is a designed matte maquette, not an inflated skin ellipsoid.
+  function palmGeometry() {
+    const rings = [[0.07, 0.030, 0.021], [0.035, 0.052, 0.025], [-0.025, 0.054, 0.018], [-0.057, 0.043, 0.012]];
+    const vertices = [], indices = [];
+    for (const [z, width, thick] of rings) for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6; vertices.push(Math.cos(a) * width, Math.sin(a) * thick, z);
+    }
+    for (let r = 0; r < rings.length - 1; r++) for (let i = 0; i < 12; i++) {
+      const a = r * 12 + i, b = r * 12 + (i + 1) % 12, c = a + 12, d = b + 12;
+      indices.push(a, c, b, b, c, d);
+    }
+    vertices.push(0, 0, rings[0][0], 0, 0, rings[3][0]);
+    for (let i = 0; i < 12; i++) { indices.push(48, i, (i + 1) % 12); indices.push(49, 36 + (i + 1) % 12, 36 + i); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(new Float32Array(vertices.length / 3 * 2), 2)); g.setIndex(indices); g.computeVertexNormals(); return g;
+  }
   const hands = [];
   for (const side of [-1, 1]) {
     const hand = new THREE.Group(); root.add(hand);
     hand.position.set(side * 0.27, 1.301, 0.405);
-    mesh(new THREE.SphereGeometry(1, 12, 8).scale(0.061, 0.026, 0.072), skin, hand);
-    mesh(new THREE.SphereGeometry(0.034, 12, 8), skin, hand, [0, -0.012, 0.058]);
+    mesh(palmGeometry(), skin, hand);
+    mesh(new THREE.SphereGeometry(0.026, 12, 8), skin, hand, [0, -0.012, 0.058]);
     const fingers = [];
     for (let i = 0; i < 4; i++) {
-      const finger = new THREE.Group(); finger.position.set(-0.048 + i * 0.032, 0, -0.046); hand.add(finger);
-      const length = [0.073, 0.089, 0.083, 0.065][side === 1 ? i : 3 - i];
+      const finger = new THREE.Group();
+      const order = side === 1 ? i : 3 - i;
+      finger.position.set(-0.0435 + i * 0.029, 0, -[0.044, 0.057, 0.049, 0.026][order]); hand.add(finger);
+      const length = [0.079, 0.091, 0.081, 0.057][order];
+      finger.userData.tip = new THREE.Vector3(0, -0.028, -length).add(finger.position);
       // Bent knuckles and downturned tips, with at least 10mm lateral gaps.
-      rod(finger, [0, 0, 0], [0, 0.013, -length * 0.48], 0.011, 0.010, skin);
-      mesh(new THREE.SphereGeometry(0.011, 10, 6), skin, finger, [0, 0.013, -length * 0.48]);
-      rod(finger, [0, 0.013, -length * 0.48], [0, -0.006, -length * 0.83], 0.010, 0.0085, skin);
-      mesh(new THREE.SphereGeometry(0.009, 10, 6), skin, finger, [0, -0.006, -length * 0.83]);
+      rod(finger, [0, 0, 0], [0, 0.013, -length * (2 / 4.2)], 0.011, 0.010, skin);
+      mesh(new THREE.SphereGeometry(0.0095, 10, 6), joint, finger, [0, 0.013, -length * (2 / 4.2)]);
+      rod(finger, [0, 0.013, -length * (2 / 4.2)], [0, -0.006, -length * (3.2 / 4.2)], 0.010, 0.0085, skin);
+      mesh(new THREE.SphereGeometry(0.008, 10, 6), joint, finger, [0, -0.006, -length * (3.2 / 4.2)]);
       mesh(new THREE.SphereGeometry(0.007, 10, 6), skin, finger, [0, -0.028, -length]);
-      rod(finger, [0, -0.006, -length * 0.83], [0, -0.028, -length], 0.0085, 0.007, skin);
-      mesh(new THREE.SphereGeometry(1, 8, 4).scale(0.006, 0.002, 0.008), nail, finger, [0, -0.010, -length * 0.86]);
+      rod(finger, [0, -0.006, -length * (3.2 / 4.2)], [0, -0.028, -length], 0.0085, 0.007, skin);
       fingers.push(finger);
     }
     const thumb = new THREE.Group(); hand.add(thumb);
@@ -182,7 +207,7 @@ function seatedHands() {
       m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.y = a.distanceTo(b);
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
     };
-    hands.push({ hand, fingers, thumb, update() {
+    hands.push({ hand, fingers, thumb, index: side === 1 ? 0 : 3, update() {
       wrist.set(0, -0.006, 0.058).applyEuler(hand.rotation).add(hand.position);
       fit(arm, elbow, wrist); fit(sleeve, shoulder, elbow);
     }});
@@ -191,7 +216,7 @@ function seatedHands() {
   function reset() {
     hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.301, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); }); update();
   }
-  const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86 });
+  const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 });
   for (const h of hands) for (const group of [h.hand, ...h.fingers, h.thumb]) {
     const parts = group.children.filter(o => o.isMesh), geometries = [];
     for (const part of parts) {
@@ -204,7 +229,7 @@ function seatedHands() {
     }
     mesh(mergeGeometries(geometries, false), mergedMaterial, group); geometries.forEach(g => g.dispose());
   }
-  nail.dispose();
+  joint.dispose();
   reset();
   return { root, left: hands[0], right: hands[1], update, reset };
 }
@@ -335,7 +360,7 @@ export function buildWorkspace(scene) {
   phone.position.set(...WORKSPACE.anchors.phone); root.add(phone);
   const phoneBody = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.023, 0.33, 2, 0.012), dark);
   phoneBody.position.y = -0.016; phone.add(phoneBody); tag(phoneBody, 'phone');
-  const phoneTextures = { home: phoneHomeTexture(), focuslock: phoneFocusLockTexture() };
+  const phoneTextures = { home: phoneHomeTexture(), hover: phoneHomeTexture(true), focuslock: phoneFocusLockTexture() };
   const phoneMaterial = new THREE.MeshBasicMaterial({ map: phoneTextures.home, toneMapped: false });
   const phoneDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.135, 0.30), phoneMaterial);
   phoneDisplay.rotation.x = -Math.PI / 2; phone.add(phoneDisplay); tag(phoneDisplay, 'phone');
@@ -590,7 +615,7 @@ export function buildWorkspace(scene) {
 
   return {
     root, interactive,
-    hands, phone, phoneGlow,
+    hands, phone, phoneGlow, phoneDisplay,
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
     setHandsVisible(visible) { hands.root.visible = visible; },

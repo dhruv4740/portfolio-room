@@ -1,9 +1,9 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
 import { createRig } from './cameraRig.js';
-import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
+import { buildWorkspace, WORKSPACE, INSTAGRAM_ICON_UV_RECT } from './buildWorkspace.js';
 import { createPerfGovernor } from './perfGovernor.js';
 
 export default function WorkspaceStage({
@@ -14,6 +14,7 @@ export default function WorkspaceStage({
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
   const api = useRef(null);
+  const [phoneBeat, setPhoneBeat] = useState('desk');
   const callbacks = useRef({});
   callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit };
   const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated });
@@ -148,67 +149,88 @@ export default function WorkspaceStage({
         if (!state.current.paused && !document.hidden) raf = requestAnimationFrame(tick);
         else callbacks.current.onStats?.({ frameMs: null, cpuMs: null, gpuMs: null, cameraPos: camera.position.toArray() });
       }
-      function markPhone(beat) { host.dataset.phoneState = beat; }
+      function markPhone(beat) { host.dataset.phoneState = beat; setPhoneBeat(beat); }
+      let iconHovered = false;
+      function hoverIcon(hovered) {
+        hovered = hovered && host.dataset.phoneState === 'waiting';
+        if (hovered === iconHovered) return;
+        iconHovered = hovered;
+        if (host.dataset.phoneState === 'waiting') model.setPhoneScreen(hovered ? 'hover' : 'home');
+        invalidate();
+      }
       function followPhone() {
-        const right = model.hands.right;
-        right.hand.position.set(0.10, -0.025, 0.025).applyEuler(model.phone.rotation).add(model.phone.position);
-        right.hand.rotation.copy(model.phone.rotation);
-        right.thumb.position.y = 0.045; right.thumb.scale.x = 0.6;
-        right.fingers.forEach(f => { f.rotation.x = -1.15; });
+        const holding = model.hands.left;
+        holding.hand.position.set(-0.10, -0.025, 0.025).applyEuler(model.phone.rotation).add(model.phone.position);
+        holding.hand.rotation.copy(model.phone.rotation);
+        holding.thumb.position.y = 0.045; holding.thumb.scale.x = 0.6;
+        holding.fingers.forEach(f => { f.rotation.x = -1.15; });
+      }
+      const tapRotation = new THREE.Euler(1.15, 0, 0.65);
+      let tapPosition = new THREE.Vector3();
+      function finishPhoneTap() {
+        model.setPhoneScreen('focuslock'); model.phoneGlow.color.set('#b6d8ff'); model.phoneGlow.intensity = 0.14;
+        markPhone('focuslock'); invalidate();
+      }
+      function tapPhone() {
+        if (!phoneInHand || returningPhone || host.dataset.phoneState !== 'waiting' || state.current.phase !== 'room' || state.current.activeAnchorId !== 'phone') return;
+        hoverIcon(false); markPhone('tap');
+        if (state.current.reducedMotion) { finishPhoneTap(); return; }
+        const tapping = model.hands.right.hand;
+        action = gsap.timeline({ onUpdate() { model.hands.update(); invalidate(); }, onComplete: finishPhoneTap });
+        action.to(tapping.position, { y: tapPosition.y - 0.009, z: tapPosition.z - 0.020, duration: 0.12, ease: 'power2.in' }, 0)
+          .to(tapping.position, { y: tapPosition.y, z: tapPosition.z, duration: 0.12, ease: 'power2.out' }, 0.12)
+          .call(() => markPhone('hesitation'), [], 0.24)
+          .to(tapping.position, { x: tapPosition.x + 0.13, y: tapPosition.y - 0.12, z: tapPosition.z + 0.04, duration: 0.3, ease: 'power2.out' }, 0.24)
+          .call(() => { model.setPhoneScreen('focuslock'); markPhone('takeover'); }, [], 0.70)
+          .to(model.phoneGlow.color, { r: new THREE.Color('#b6d8ff').r, g: new THREE.Color('#b6d8ff').g, b: new THREE.Color('#b6d8ff').b, duration: 0.3 }, 0.70)
+          .to(model.phoneGlow, { intensity: 0.14, duration: 0.3 }, 0.70);
+        gsap.ticker.wake();
       }
       function animatePhone(reduced) {
-        action?.kill(); phoneInHand = true;
+        action?.kill(); phoneInHand = true; iconHovered = false;
         model.resetPhone(); model.hands.reset(); model.setHandsVisible(true);
-        const right = model.hands.right.hand, left = model.hands.left.hand;
-        // Keep the eye at the seat. Only its gaze changes to the held device.
+        const holding = model.hands.left.hand, tapping = model.hands.right.hand;
         rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, {
           reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
         });
-        const held = { x: 0.08, y: 1.53, z: 0.59 };
-        const leftRotation = new THREE.Euler(1.15, 0, -0.65);
-        const tip = new THREE.Vector3(-0.016, -0.028, -0.129).applyEuler(leftRotation);
-        const tapPosition = new THREE.Vector3(0.08, 1.543, 0.616).sub(tip);
+        const held = new THREE.Vector3(0.08, 1.53, 0.59);
+        const r = INSTAGRAM_ICON_UV_RECT;
+        const screen = model.phoneDisplay.geometry.parameters;
+        const iconCenter = new THREE.Vector3(((r.uMin + r.uMax) / 2 - 0.5) * screen.width, 0.03,
+          (0.5 - (r.vMin + r.vMax) / 2) * screen.height).applyEuler(new THREE.Euler(1.15, 0, 0)).add(held);
+        const index = model.hands.right.index;
+        const tip = model.hands.right.fingers[index].userData.tip.clone().applyEuler(tapRotation);
+        tapPosition.copy(iconCenter).sub(tip);
         let gripping = false;
         const update = () => { if (gripping) followPhone(); model.hands.update(); invalidate(); };
         if (reduced) {
-          model.phone.position.set(held.x, held.y, held.z); model.phone.rotation.x = 1.15;
-          followPhone(); left.position.copy(tapPosition).add(new THREE.Vector3(-0.13, -0.12, 0.04)); left.rotation.copy(leftRotation);
-          [0,2,3].forEach(i => { model.hands.left.fingers[i].rotation.x = -1.1; });
-          model.setPhoneScreen('focuslock'); model.phoneGlow.color.set('#b6d8ff'); model.phoneGlow.intensity = 0.14;
-          model.hands.update(); markPhone('focuslock'); invalidate(); return;
+          model.phone.position.copy(held); model.phone.rotation.x = 1.15;
+          followPhone(); tapping.position.copy(tapPosition); tapping.rotation.copy(tapRotation);
+          model.hands.right.fingers.forEach((finger, i) => { if (i !== index) finger.rotation.x = -1.1; });
+          model.hands.update(); markPhone('waiting'); invalidate(); return;
         }
-        action = gsap.timeline({ onUpdate: update, onComplete() { markPhone('focuslock'); invalidate(); } });
+        action = gsap.timeline({ onUpdate: update, onComplete() { markPhone('waiting'); invalidate(); } });
         markPhone('reaching');
-        action.to(right.position, { x: -0.15, y: 1.46, z: 0.32, duration: 0.4, ease: 'power2.inOut' }, 0)
-          .to(right.position, { x: -0.70, y: 1.23, z: -0.005, duration: 0.4, ease: 'power2.inOut' }, 0.4)
+        action.to(holding.position, { x: -0.55, y: 1.44, z: 0.25, duration: 0.4, ease: 'power2.inOut' }, 0)
+          .to(holding.position, { x: -0.90, y: 1.23, z: -0.005, duration: 0.4, ease: 'power2.inOut' }, 0.4)
           .call(() => { gripping = true; markPhone('lifting'); }, [], 0.8)
-          .to(model.phone.position, { ...held, duration: 0.85, ease: 'power2.inOut' }, 0.8)
+          .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 0.85, ease: 'power2.inOut' }, 0.8)
           .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 0.8)
           .call(() => markPhone('home'), [], 1.65)
-          .to(left.position, { x: tapPosition.x, y: tapPosition.y, z: tapPosition.z, duration: 0.55, ease: 'power2.inOut' }, 1.65)
-          .to(left.rotation, { x: leftRotation.x, z: leftRotation.z, duration: 0.55 }, 1.65)
-          .to(model.hands.left.fingers[0].rotation, { x: -1.1, duration: 0.3 }, 1.8)
-          .to(model.hands.left.fingers[2].rotation, { x: -1.1, duration: 0.3 }, 1.8)
-          .to(model.hands.left.fingers[3].rotation, { x: -1.1, duration: 0.3 }, 1.8)
-          .call(() => markPhone('tap'), [], 2.2)
-          .to(left.position, { y: tapPosition.y - 0.009, z: tapPosition.z - 0.020, duration: 0.12, ease: 'power2.in' }, 2.2)
-          .to(left.position, { y: tapPosition.y, z: tapPosition.z, duration: 0.12, ease: 'power2.out' }, 2.32)
-          .call(() => markPhone('hesitation'), [], 2.44)
-          .to(left.position, { x: tapPosition.x - 0.13, y: tapPosition.y - 0.12, z: tapPosition.z + 0.04, duration: 0.3, ease: 'power2.out' }, 2.44)
-          .call(() => { model.setPhoneScreen('focuslock'); markPhone('takeover'); }, [], 2.9)
-          .to(model.phoneGlow.color, { r: new THREE.Color('#b6d8ff').r, g: new THREE.Color('#b6d8ff').g, b: new THREE.Color('#b6d8ff').b, duration: 0.3 }, 2.9)
-          .to(model.phoneGlow, { intensity: 0.14, duration: 0.3 }, 2.9);
+          .to(tapping.position, { x: tapPosition.x, y: tapPosition.y, z: tapPosition.z, duration: 0.55, ease: 'power2.inOut' }, 1.65)
+          .to(tapping.rotation, { x: tapRotation.x, z: tapRotation.z, duration: 0.55 }, 1.65);
+        model.hands.right.fingers.forEach((finger, i) => { if (i !== index) action.to(finger.rotation, { x: -1.1, duration: 0.3 }, 1.8); });
         gsap.ticker.wake();
       }
       function returnPhone(reduced) {
-        action?.kill(); rig.dispose(); returningPhone = true; markPhone('returning');
+        action?.kill(); rig.dispose(); returningPhone = true; hoverIcon(false); markPhone('returning');
         const finish = () => {
           phoneInHand = false; returningPhone = false; model.resetPhone(); model.hands.reset();
           markPhone('desk'); fly(); invalidate();
         };
         if (reduced) { finish(); return; }
         if (model.phone.position.distanceTo(new THREE.Vector3(...WORKSPACE.anchors.phone)) < 0.002) {
-          action = gsap.to(model.hands.right.hand.position, { x: 0.27, y: 1.301, z: 0.405, duration: 0.5,
+          action = gsap.to(model.hands.left.hand.position, { x: -0.27, y: 1.301, z: 0.405, duration: 0.5,
             onUpdate() { model.hands.update(); invalidate(); }, onComplete: finish });
           gsap.ticker.wake(); return;
         }
@@ -217,12 +239,12 @@ export default function WorkspaceStage({
         action.to(model.phone.position, { x: -0.45, y: 1.43, z: 0.10, duration: 0.55, ease: 'power2.inOut' }, 0)
           .to(model.phone.rotation, { x: 0, y: 0, z: 0, duration: 0.9, ease: 'power2.inOut' }, 0)
           .to(model.phone.position, { x: WORKSPACE.anchors.phone[0], y: WORKSPACE.anchors.phone[1], z: WORKSPACE.anchors.phone[2], duration: 0.4, ease: 'power2.out' }, 0.55)
-          .to(model.hands.left.hand.position, { x: -0.27, y: 1.301, z: 0.405, duration: 0.65 }, 0)
-          .to(model.hands.left.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.65 }, 0)
+          .to(model.hands.right.hand.position, { x: 0.27, y: 1.301, z: 0.405, duration: 0.65 }, 0)
+          .to(model.hands.right.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.65 }, 0)
           .call(() => { attached = false; }, [], 0.95)
-          .to(model.hands.right.hand.position, { x: 0.27, y: 1.301, z: 0.405, duration: 0.4, ease: 'power2.inOut' }, 0.95)
-          .to(model.hands.right.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.4 }, 0.95);
-        for (const finger of model.hands.left.fingers) action.to(finger.rotation, { x: 0, duration: 0.65 }, 0);
+          .to(model.hands.left.hand.position, { x: -0.27, y: 1.301, z: 0.405, duration: 0.4, ease: 'power2.inOut' }, 0.95)
+          .to(model.hands.left.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.4 }, 0.95);
+        for (const finger of model.hands.right.fingers) action.to(finger.rotation, { x: 0, duration: 0.65 }, 0);
         gsap.ticker.wake();
       }
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
@@ -360,9 +382,22 @@ export default function WorkspaceStage({
         const result = raycaster.intersectObject(model.root, true)[0];
         return result?.object.userData.anchorId || null;
       }
+      function hitPhoneIcon(event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObject(model.phoneDisplay, false)[0];
+        const uv = hit?.uv, r = INSTAGRAM_ICON_UV_RECT;
+        return !!uv && uv.x >= r.uMin && uv.x <= r.uMax && uv.y >= r.vMin && uv.y <= r.vMax;
+      }
+      function pointerLeave() { hoverIcon(false); }
       function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); }
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
+        if (phoneInHand) {
+          const over = host.dataset.phoneState === 'waiting' && hitPhoneIcon(event);
+          hoverIcon(over); renderer.domElement.style.cursor = over ? 'pointer' : 'default'; return;
+        }
         if (down && !phoneInHand && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
           headYaw -= (event.clientX - down.lx) * 0.005;
           headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -Math.PI / 2 + 0.02, Math.PI / 2 - 0.02);
@@ -375,7 +410,9 @@ export default function WorkspaceStage({
       }
       function pointerUp(event) {
         if (!down || down.moved || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || state.current.phase !== 'room') { down = null; return; }
-        down = null; const id = hit(event); if (!id) return;
+        down = null;
+        if (phoneInHand) { if (hitPhoneIcon(event)) tapPhone(); return; }
+        const id = hit(event); if (!id) return;
         if (state.current.seated && !['monitor', 'notebook', 'phone'].includes(id)) return;
         if (id === 'chair') { callbacks.current.onSit?.(); return; }
         const marker = markerRefs.current.get(id); marker?.focus();
@@ -385,6 +422,7 @@ export default function WorkspaceStage({
       renderer.domElement.addEventListener('pointerdown', pointerDown);
       renderer.domElement.addEventListener('pointermove', pointerMove);
       renderer.domElement.addEventListener('pointerup', pointerUp);
+      renderer.domElement.addEventListener('pointerleave', pointerLeave);
       document.addEventListener('visibilitychange', refresh);
       resizeObserver = new ResizeObserver(resize); resizeObserver.observe(host);
       resize(); place(home); render();
@@ -401,7 +439,7 @@ export default function WorkspaceStage({
           }
         }
       }
-      api.current = { fly, refresh, startEntryPower };
+      api.current = { fly, refresh, startEntryPower, tapPhone, hoverIcon };
       refresh();
       return () => {
         disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
@@ -409,6 +447,7 @@ export default function WorkspaceStage({
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
         renderer.domElement.removeEventListener('pointerup', pointerUp);
+        renderer.domElement.removeEventListener('pointerleave', pointerLeave);
         controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); gov.dispose(); api.current = null;
       };
     } catch (error) {
@@ -426,6 +465,12 @@ export default function WorkspaceStage({
   return (
     <div ref={hostRef} className="stage-root workspace-stage" data-scene="workspace">
       <style>{css}</style>
+      {phoneBeat === 'waiting' && seated && activeAnchorId === 'phone' && phase === 'room' && (
+        <button className="phone-app-control mono" onClick={() => api.current?.tapPhone()}
+          onFocus={() => api.current?.hoverIcon(true)} onBlur={() => api.current?.hoverIcon(false)}>
+          TAP INSTAGRAM
+        </button>
+      )}
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker" data-object="chair" aria-label="Sit in the chair"
         onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT</span></button>
@@ -443,6 +488,7 @@ export default function WorkspaceStage({
 }
 
 const css = `
+.phone-app-control { position:absolute; right:var(--gutter); bottom:calc(var(--gutter) + 48px); z-index:3; padding:12px 16px; color:var(--bone); background:var(--void); border:1px solid var(--dim); }
 .workspace-stage { position:absolute; inset:0; overflow:hidden; background:#15191b; }
 .workspace-stage canvas { display:block; width:100%; height:100%; touch-action:none; }
 .workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
