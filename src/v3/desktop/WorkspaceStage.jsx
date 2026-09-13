@@ -35,7 +35,7 @@ export default function WorkspaceStage({
       renderer.shadowMap.needsUpdate = true;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.2;
+      renderer.toneMappingExposure = 1.35;
       host.appendChild(renderer.domElement);
       const gov = createPerfGovernor(renderer); // render-on-demand + adaptive pixel ratio; see perfGovernor.js
       const scene = new THREE.Scene();

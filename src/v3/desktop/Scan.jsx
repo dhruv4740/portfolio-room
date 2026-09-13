@@ -61,6 +61,10 @@ export default function Scan() {
   const activeProject = activeAnchor
     ? projects.find((p) => p.id === activeAnchor.ref) || null
     : null;
+  // The notebook carries its text on the page itself, so zooming in IS the
+  // content. A side panel repeating it would be the same words twice.
+  const panelOpens = !!activeAnchor && activeAnchor.id !== 'notebook';
+
   // The monitor anchor is the one that opens the embedded OS.
   const monitorIsActive = activeAnchor?.ref === 'lab';
 
@@ -263,7 +267,7 @@ export default function Scan() {
       <AnchorPanel
         anchor={activeAnchor}
         project={activeProject}
-        open={!!activeAnchor && screenPhase === 'room'}
+        open={panelOpens && screenPhase === 'room'}
         onClose={handleClose}
       />
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { identity, education, experience, achievements } from '../content/index.js';
 
 // An authored architectural model. Coordinates here describe its geometry,
 // not a capture; content anchors remain normalized in the content source.
@@ -176,15 +177,52 @@ export function buildWorkspace(scene) {
   const book = box('Notebook cover', [0.57, 0.024, 0.4], [1.14, 1.18, 0.3], mat('cover', '#3e4942'), 0.007, 'notebook');
   book.rotation.y = -0.12;
   const pages = box('Notebook pages', [0.55, 0.016, 0.38], [1.14, 1.199, 0.3], paper, 0.003, 'notebook'); pages.rotation.y = -0.12;
+  // The notebook is read by zooming in on it, not by opening a side panel, so
+  // this page has to carry real legible text. Facts come from the content
+  // source; nothing here is authored twice.
   const notes = canvasTexture((ctx, w, h) => {
     ctx.fillStyle = '#e4dfcc'; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = '#b9b6a7'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(w / 2, 0); ctx.lineTo(w / 2, h); ctx.stroke();
-    ctx.fillStyle = '#474c45'; ctx.font = '32px monospace'; ctx.fillText('WORK NOTES', 40, 67);
-    ctx.font = '23px monospace'; ['01  Make it useful.', '02  Make it strange.', '03  Make it work.'].forEach((s, i) => ctx.fillText(s, 38, 128 + i * 47));
-    ctx.strokeStyle = '#696e60'; ctx.strokeRect(590, 80, 240, 180); ctx.strokeRect(650, 140, 230, 180);
-    ctx.fillStyle = '#c6532b'; ctx.fillRect(590, 356, 130, 7);
-  });
-  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.548, 0.378), new THREE.MeshStandardMaterial({ map: notes, roughness: 0.98 }));
+    // Ruled lines and a margin, so it reads as a page and not as a label.
+    ctx.strokeStyle = 'rgba(120,126,112,0.22)'; ctx.lineWidth = 1.5;
+    for (let y = 150; y < h - 40; y += 52) {
+      ctx.beginPath(); ctx.moveTo(96, y); ctx.lineTo(w - 70, y); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(198,83,43,0.45)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(96, 40); ctx.lineTo(96, h - 40); ctx.stroke();
+
+    ctx.fillStyle = '#3f443d';
+    ctx.font = 'bold 46px Georgia, serif';
+    ctx.fillText(identity.name, 118, 96);
+
+    ctx.font = '26px monospace'; ctx.fillStyle = '#6b7064';
+    ctx.fillText(`${education.degree} · ${education.year}`, 118, 140);
+
+    const line = (text, y, { size = 27, colour = '#474c45', font = 'monospace' } = {}) => {
+      ctx.font = `${size}px ${font}`; ctx.fillStyle = colour; ctx.fillText(text, 118, y);
+    };
+
+    let y = 200;
+    line('NOW', y, { size: 22, colour: '#9aa08f' }); y += 46;
+    const current = experience[0];
+    line(`${current.role} — ${current.org}`, y); y += 52;
+    line(current.note || '', y, { size: 23, colour: '#6b7064' }); y += 68;
+
+    line('BEFORE', y, { size: 22, colour: '#9aa08f' }); y += 46;
+    experience.slice(1).forEach((job) => {
+      line(`${job.role} — ${job.org}`, y, { size: 25 }); y += 52;
+    });
+    y += 18;
+
+    line('RESULTS', y, { size: 22, colour: '#9aa08f' }); y += 46;
+    achievements.forEach((item) => {
+      const [event] = item.label.split(' — ');
+      line(`${item.result.toUpperCase()} · ${event}`, y, { size: 25 }); y += 52;
+    });
+
+    // A hand-drawn underline in the accent, the one warm mark on the page.
+    ctx.fillStyle = '#c6532b'; ctx.fillRect(118, y + 14, 150, 6);
+  }, 1280, 1000);
+  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.39), new THREE.MeshStandardMaterial({ map: notes, roughness: 0.98 }));
   notePlane.rotation.set(-Math.PI / 2, 0, -0.12); notePlane.position.set(1.14, 1.209, 0.3); root.add(notePlane); tag(notePlane, 'notebook');
   rod('Graphite pencil', [1.47, 1.218, 0.06], [1.54, 1.218, 0.43], 0.009, dark);
 
@@ -242,14 +280,14 @@ export function buildWorkspace(scene) {
   }
 
   // A faint cool rim is the only shadow-casting source. Depth is baked once.
-  scene.add(new THREE.HemisphereLight('#8294b2', '#21160e', 0.085));
-  const moon = new THREE.DirectionalLight('#8eadd8', 0.32);
+  scene.add(new THREE.HemisphereLight('#8294b2', '#21160e', 0.26));
+  const moon = new THREE.DirectionalLight('#8eadd8', 0.75);
   moon.position.set(2.1, 3.6, -2.7); moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
   Object.assign(moon.shadow.camera, { left: -2.6, right: 2.6, top: 3, bottom: -1.6, near: 0.3, far: 9 });
   moon.shadow.bias = -0.00018;
   moon.target.position.set(-0.8, 1.6, -0.7); scene.add(moon, moon.target);
-  bulb.intensity = 1.35; bulb.distance = 1.35;
+  bulb.intensity = 1.5; bulb.distance = 2.3;
   shade.material = dark;
   const lampInterior = new THREE.Mesh(new THREE.CircleGeometry(0.115, 24),
     new THREE.MeshBasicMaterial({ color: '#d6a26b' }));
@@ -262,7 +300,7 @@ export function buildWorkspace(scene) {
   const pendantMaterial = new THREE.MeshStandardMaterial({ color: '#ad8860', emissive: '#e0ac68', emissiveIntensity: 0.7 });
   const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), pendantMaterial);
   pendant.position.set(-0.65, 2.47, 0.5); pendant.scale.y = 1.35; root.add(pendant);
-  const pendantLight = new THREE.PointLight('#ffd29a', 0.12, 1.35, 2);
+  const pendantLight = new THREE.PointLight('#ffd29a', 0.55, 2.4, 2);
   pendantLight.position.copy(pendant.position); root.add(pendantLight);
 
   // A post-batch group for effects that must keep their own transforms and
@@ -353,7 +391,7 @@ export function buildWorkspace(scene) {
 
   return {
     root, interactive,
-    setEntryPower(value) { pendantLight.intensity = 0.12 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
+    setEntryPower(value) { pendantLight.intensity = 0.55 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
     dispose() {
       const geometries = new Set(), mats = new Set(), textures = new Set();
       scene.traverse(object => {
