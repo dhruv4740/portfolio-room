@@ -21,9 +21,11 @@ export const contact = {
   email: 'dhruvkothari13062006@gmail.com',
   github: 'https://github.com/dhruv4740',
   githubLabel: 'github.com/dhruv4740',
-  linkedin: '', // TODO(dhruv): paste the full URL — empty hides the link
+  linkedin: 'https://linkedin.com/in/dhruv4740',
   twitter: '',  // TODO(dhruv): empty hides the link
-  resume: '',   // TODO(dhruv): put the PDF in public/ and point here
+  // Drop the PDF at public/resume.pdf, then set this to '/resume.pdf'.
+  // Empty hides the download button, so a missing file can never 404.
+  resume: '',
 };
 
 export const education = {
@@ -120,6 +122,21 @@ export const projects = [
     links: { live: '', github: 'https://github.com/dhruv4740/expense-tracker' },
   },
   {
+    id: 'basket',
+    name: 'Basket Price',
+    year: 2026,
+    kind: 'tool',
+    tagline: 'Refuses to show you a price it cannot prove.',
+    description: 
+      'A private grocery price comparison and cart-sync tool for one family, across three delivery services. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
+    decision:
+      'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
+    broke:
+      'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
+    tech: ['Python'],
+    links: { live: '', github: '' },
+  },
+  {
     id: 'darksentinel',
     name: 'DarkSentinel',
     year: 2025,
@@ -141,7 +158,8 @@ export const projects = [
     tagline: 'Claim verification for a misinformation-heavy feed.',
     description:
       'Built at MumbaiHacks. AI-assisted claim checking with structured verdicts and a modular backend. Frontend on Vercel, backend on Render.',
-    decision: '',
+    decision:
+      'Built on LangGraph so the verification flow has explicit steps and state rather than one opaque prompt — every verdict comes from a path you can trace and debug. The model was fixed by what a hackathon budget allows, which made the real problem getting reliable structured output from one constrained model rather than shopping for a better one.',
     broke:
       'The WhatsApp bridge took a day of passes: Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.',
     tech: ['Next.js', 'TypeScript', 'Node.js', 'Python'],
@@ -158,21 +176,6 @@ export const projects = [
     decision: '',
     broke: '',
     tech: ['TypeScript', 'Next.js', 'Node.js', 'Reddit API'],
-    links: { live: '', github: '' },
-  },
-  {
-    id: 'basket',
-    name: 'Basket Price',
-    year: 2026,
-    kind: 'tool',
-    tagline: 'Refuses to show you a price it cannot prove.',
-    description: 
-      'A private grocery price comparison and cart-sync tool for one family, across three delivery services. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
-    decision:
-      'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
-    broke:
-      'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
-    tech: ['Python'],
     links: { live: '', github: '' },
   },
   {
