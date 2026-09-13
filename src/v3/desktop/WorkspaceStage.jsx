@@ -35,7 +35,7 @@ export default function WorkspaceStage({
       renderer.shadowMap.needsUpdate = true;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.35;
+      renderer.toneMappingExposure = 1.5;
       host.appendChild(renderer.domElement);
       const gov = createPerfGovernor(renderer); // render-on-demand + adaptive pixel ratio; see perfGovernor.js
       const scene = new THREE.Scene();
@@ -164,7 +164,7 @@ export default function WorkspaceStage({
           const view = selected === 'phone'
             ? { position: [-0.80, 1.72, 0.10], target: WORKSPACE.anchors.phone }
             : selected === 'notebook'
-            ? { position: [1.10, 1.72, 0.78], target: WORKSPACE.anchors.notebook }
+            ? { position: [1.14, 1.99, 0.40], target: WORKSPACE.anchors.notebook }
             : { position: [0.05, reduced ? 1.72 : 1.745, 1.16], target: WORKSPACE.seat.target };
           const startFov = camera.fov;
           const started = performance.now();
@@ -195,7 +195,7 @@ export default function WorkspaceStage({
         let view = currentPhase === 'leaving' && state.current.seated
           ? { position: new THREE.Vector3(...WORKSPACE.seat.position), target: new THREE.Vector3(...WORKSPACE.seat.target) } : home;
         controls.minDistance = 0.025;
-        controls.minPolarAngle = currentPhase === 'room' && selected !== 'phone' ? Math.PI * 0.2 : 0.01;
+        controls.minPolarAngle = currentPhase === 'room' && selected !== 'phone' && selected !== 'notebook' ? Math.PI * 0.2 : 0.01;
         controls.maxPolarAngle = currentPhase === 'room' ? Math.PI * 0.47 : Math.PI - 0.01;
         if (currentPhase === 'entering' || currentPhase === 'inside') {
           // Move perpendicular to the screen; its known physical size defines
@@ -205,7 +205,10 @@ export default function WorkspaceStage({
           view = { position: screenCenter.clone().add(new THREE.Vector3(0, 0, Math.min(fitHeight, fitWidth) * 0.94)), target: screenCenter.clone() };
         } else if (currentPhase !== 'leaving' && selected && WORKSPACE.anchors[selected]) {
           const target = new THREE.Vector3(...WORKSPACE.anchors[selected]);
-          const offset = selected === 'phone' ? new THREE.Vector3(0, 0.524, 0.13) : selected === 'monitor' ? new THREE.Vector3(0.2, 0.17, 2.1) : new THREE.Vector3(1.15, 0.95, 2.3);
+          const offset = selected === 'phone' ? new THREE.Vector3(0, 0.524, 0.13)
+            : selected === 'notebook' ? new THREE.Vector3(0.0, 0.78, 0.10)
+            : selected === 'monitor' ? new THREE.Vector3(0.2, 0.17, 2.1)
+            : new THREE.Vector3(1.15, 0.95, 2.3);
           view = { position: target.clone().add(offset), target };
         }
         if (reduced) {
@@ -240,7 +243,8 @@ export default function WorkspaceStage({
           },
           onComplete() {
             controls.enabled = state.current.phase === 'room' && !state.current.seated;
-            controls.minDistance = currentPhase === 'room' && selected !== 'phone' ? 1.4 : 0.025;
+            const CLOSE_READ = selected === 'phone' || selected === 'notebook';
+            controls.minDistance = currentPhase === 'room' && !CLOSE_READ ? 1.4 : 0.025;
             if (currentPhase === 'entering') {
               callbacks.current.onScreenRect?.(null);
               callbacks.current.onTravel?.(1, 'inside');

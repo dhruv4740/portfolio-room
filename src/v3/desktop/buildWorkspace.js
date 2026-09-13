@@ -11,7 +11,7 @@ export const WORKSPACE = {
   anchors: {
     monitor: [0, 1.79, -0.37],
     desk: [-1.22, 1.18, 0.28],
-    notebook: [1.12, 1.21, 0.38],
+    notebook: [1.14, 1.21, 0.30],
     window: [1.4, 2.12, -1.75],
     phone: [-0.80, 1.196, -0.03],
   },
@@ -295,56 +295,83 @@ export function buildWorkspace(scene) {
   phoneGlow.position.set(-0.80, 1.24, -0.03); root.add(phoneGlow);
 
   // Open notebook: a real document object, pencil and authored page markings.
-  const book = box('Notebook cover', [0.57, 0.024, 0.4], [1.14, 1.18, 0.3], mat('cover', '#3e4942'), 0.007, 'notebook');
-  book.rotation.y = -0.12;
-  const pages = box('Notebook pages', [0.55, 0.016, 0.38], [1.14, 1.199, 0.3], paper, 0.003, 'notebook'); pages.rotation.y = -0.12;
+  const book = box('Notebook cover', [0.46, 0.024, 0.57], [1.14, 1.18, 0.3], mat('cover', '#3e4942'), 0.007, 'notebook');
+  book.rotation.y = -0.04;
+  const pages = box('Notebook pages', [0.44, 0.016, 0.55], [1.14, 1.199, 0.3], paper, 0.003, 'notebook'); pages.rotation.y = -0.04;
   // The notebook is read by zooming in on it, not by opening a side panel, so
   // this page has to carry real legible text. Facts come from the content
   // source; nothing here is authored twice.
+  // Read by zooming, so legibility beats atmosphere: dark ink, generous type,
+  // and a layout that uses the whole page rather than crowding the top edge —
+  // the top is the most foreshortened part of the page from the reading angle.
   const notes = canvasTexture((ctx, w, h) => {
-    ctx.fillStyle = '#e4dfcc'; ctx.fillRect(0, 0, w, h);
-    // Ruled lines and a margin, so it reads as a page and not as a label.
-    ctx.strokeStyle = 'rgba(120,126,112,0.22)'; ctx.lineWidth = 1.5;
-    for (let y = 150; y < h - 40; y += 52) {
-      ctx.beginPath(); ctx.moveTo(96, y); ctx.lineTo(w - 70, y); ctx.stroke();
+    const M = 130;                 // left margin
+    const R = w - 110;             // right edge of the ruled area
+    ctx.fillStyle = '#efeade'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = 'rgba(110,116,104,0.20)'; ctx.lineWidth = 1.5;
+    for (let y = 250; y < h - 60; y += 74) {
+      ctx.beginPath(); ctx.moveTo(M - 34, y); ctx.lineTo(R, y); ctx.stroke();
     }
-    ctx.strokeStyle = 'rgba(198,83,43,0.45)'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(96, 40); ctx.lineTo(96, h - 40); ctx.stroke();
+    ctx.strokeStyle = 'rgba(198,83,43,0.5)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(M - 34, 60); ctx.lineTo(M - 34, h - 60); ctx.stroke();
 
-    ctx.fillStyle = '#3f443d';
-    ctx.font = 'bold 46px Georgia, serif';
-    ctx.fillText(identity.name, 118, 96);
-
-    ctx.font = '26px monospace'; ctx.fillStyle = '#6b7064';
-    ctx.fillText(`${education.degree} · ${education.year}`, 118, 140);
-
-    const line = (text, y, { size = 27, colour = '#474c45', font = 'monospace' } = {}) => {
-      ctx.font = `${size}px ${font}`; ctx.fillStyle = colour; ctx.fillText(text, 118, y);
+    const line = (text, y, size, colour, font = 'monospace', weight = '') => {
+      ctx.font = `${weight} ${size}px ${font}`.trim();
+      ctx.fillStyle = colour; ctx.fillText(text, M, y);
     };
+    const INK = '#22261f', SOFT = '#4d5349', FAINT = '#8b9182';
 
-    let y = 200;
-    line('NOW', y, { size: 22, colour: '#9aa08f' }); y += 46;
+    line(identity.name, 168, 76, INK, 'Georgia, serif', 'bold');
+    line(`${education.degree} · ${education.year}`, 224, 34, SOFT);
+
+    let y = 336;
+    line('NOW', y, 28, FAINT); y += 66;
     const current = experience[0];
-    line(`${current.role} — ${current.org}`, y); y += 52;
-    line(current.note || '', y, { size: 23, colour: '#6b7064' }); y += 68;
+    line(`${current.role}`, y, 40, INK); y += 56;
+    line(current.org, y, 34, SOFT); y += 88;
 
-    line('BEFORE', y, { size: 22, colour: '#9aa08f' }); y += 46;
+    line('BEFORE', y, 28, FAINT); y += 66;
     experience.slice(1).forEach((job) => {
-      line(`${job.role} — ${job.org}`, y, { size: 25 }); y += 52;
+      line(`${job.role} — ${job.org}`, y, 33, INK); y += 62;
     });
-    y += 18;
+    y += 34;
 
-    line('RESULTS', y, { size: 22, colour: '#9aa08f' }); y += 46;
+    line('RESULTS', y, 28, FAINT); y += 66;
     achievements.forEach((item) => {
       const [event] = item.label.split(' — ');
-      line(`${item.result.toUpperCase()} · ${event}`, y, { size: 25 }); y += 52;
+      ctx.font = 'bold 32px monospace';
+      ctx.fillStyle = item.result === 'Winner' ? '#c6532b' : SOFT;
+      ctx.fillText(item.result.toUpperCase(), M, y); y += 44;
+      // Wrap: the longest of these names is far wider than the page.
+      ctx.font = '31px monospace'; ctx.fillStyle = INK;
+      let row = '';
+      for (const word of event.split(' ')) {
+        const next = row ? `${row} ${word}` : word;
+        if (ctx.measureText(next).width > R - M - 20) {
+          ctx.fillText(row, M, y); y += 40; row = word;
+        } else { row = next; }
+      }
+      if (row) { ctx.fillText(row, M, y); y += 40; }
+      y += 22;
     });
 
-    // A hand-drawn underline in the accent, the one warm mark on the page.
-    ctx.fillStyle = '#c6532b'; ctx.fillRect(118, y + 14, 150, 6);
-  }, 1280, 1000);
-  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.39), new THREE.MeshStandardMaterial({ map: notes, roughness: 0.98 }));
-  notePlane.rotation.set(-Math.PI / 2, 0, -0.12); notePlane.position.set(1.14, 1.209, 0.3); root.add(notePlane); tag(notePlane, 'notebook');
+    // The lower half of the page was empty. The statement is real copy and it
+    // is the one first-person line in the whole room.
+    y += 50;
+    line('—', y, 30, FAINT); y += 62;
+    ctx.font = 'italic 34px Georgia, serif'; ctx.fillStyle = SOFT;
+    let row = '';
+    for (const word of identity.statement.split(' ')) {
+      const next = row ? `${row} ${word}` : word;
+      if (ctx.measureText(next).width > R - M - 20) {
+        ctx.fillText(row, M, y); y += 48; row = word;
+      } else { row = next; }
+    }
+    if (row) ctx.fillText(row, M, y);
+  }, 1400, 1800);
+  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.514), new THREE.MeshStandardMaterial(
+    { map: notes, roughness: 0.98, emissive: '#ffffff', emissiveMap: notes, emissiveIntensity: 0.34 }));
+  notePlane.rotation.set(-Math.PI / 2, 0, -0.04); notePlane.position.set(1.14, 1.209, 0.3); root.add(notePlane); tag(notePlane, 'notebook');
   rod('Graphite pencil', [1.47, 1.218, 0.06], [1.54, 1.218, 0.43], 0.009, dark);
 
   // Task light, books and a ceramic cup give the room a human scale.
@@ -401,14 +428,14 @@ export function buildWorkspace(scene) {
   }
 
   // A faint cool rim is the only shadow-casting source. Depth is baked once.
-  scene.add(new THREE.HemisphereLight('#8294b2', '#21160e', 0.26));
-  const moon = new THREE.DirectionalLight('#8eadd8', 0.75);
+  scene.add(new THREE.HemisphereLight('#8294b2', '#21160e', 0.42));
+  const moon = new THREE.DirectionalLight('#8eadd8', 1.15);
   moon.position.set(2.1, 3.6, -2.7); moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
   Object.assign(moon.shadow.camera, { left: -2.6, right: 2.6, top: 3, bottom: -1.6, near: 0.3, far: 9 });
   moon.shadow.bias = -0.00018;
   moon.target.position.set(-0.8, 1.6, -0.7); scene.add(moon, moon.target);
-  bulb.intensity = 1.5; bulb.distance = 2.3;
+  bulb.intensity = 1.85; bulb.distance = 3.0;
   shade.material = dark;
   const lampInterior = new THREE.Mesh(new THREE.CircleGeometry(0.115, 24),
     new THREE.MeshBasicMaterial({ color: '#d6a26b' }));
@@ -421,7 +448,7 @@ export function buildWorkspace(scene) {
   const pendantMaterial = new THREE.MeshStandardMaterial({ color: '#ad8860', emissive: '#e0ac68', emissiveIntensity: 0.7 });
   const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), pendantMaterial);
   pendant.position.set(-0.65, 2.47, 0.5); pendant.scale.y = 1.35; root.add(pendant);
-  const pendantLight = new THREE.PointLight('#ffd29a', 0.55, 2.4, 2);
+  const pendantLight = new THREE.PointLight('#ffd29a', 0.85, 3.2, 2);
   pendantLight.position.copy(pendant.position); root.add(pendantLight);
 
   // A post-batch group for effects that must keep their own transforms and
@@ -514,7 +541,7 @@ export function buildWorkspace(scene) {
   return {
     root, interactive,
     setHandsVisible(visible) { hands.visible = visible; },
-    setEntryPower(value) { pendantLight.intensity = 0.55 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
+    setEntryPower(value) { pendantLight.intensity = 0.85 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
     dispose() {
       const geometries = new Set(), mats = new Set(), textures = new Set();
       scene.traverse(object => {
