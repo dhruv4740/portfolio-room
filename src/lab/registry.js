@@ -136,13 +136,6 @@ export const LAB_ENTRIES = [
     src: `${import.meta.env.BASE_URL}os/index.html`,
   },
   {
-    id: 'room',
-    title: '3D Room',
-    letter: '—',
-    blurb: 'Walkable R3F room with physics & shaders.',
-    kind: 'react',
-  },
-  {
     id: 'video3d',
     title: 'Video 3D',
     letter: '+',

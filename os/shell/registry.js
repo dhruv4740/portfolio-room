@@ -26,5 +26,6 @@ await load('../apps/contact.js');
 await load('../apps/gravity.js');
 await load('../apps/decoder.js');
 await load('../apps/resonance.js');
+await load('../apps/lab.js');
 
 export default apps;
