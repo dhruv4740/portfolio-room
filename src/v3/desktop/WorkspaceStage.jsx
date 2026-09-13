@@ -21,7 +21,8 @@ export default function WorkspaceStage({
 
   useEffect(() => {
     const host = hostRef.current;
-    let renderer, controls, model, resizeObserver, tween, rig;
+    let renderer, controls, model, resizeObserver, tween, rig, action;
+    let phoneInHand = false, returningPhone = false;
     const entryTimers = [];
     let raf = 0, disposed = false, last = null, cadenceSum = 0, cpuSum = 0, count = 0, emitted = 0;
     try {
@@ -147,10 +148,90 @@ export default function WorkspaceStage({
         if (!state.current.paused && !document.hidden) raf = requestAnimationFrame(tick);
         else callbacks.current.onStats?.({ frameMs: null, cpuMs: null, gpuMs: null, cameraPos: camera.position.toArray() });
       }
+      function markPhone(beat) { host.dataset.phoneState = beat; }
+      function followPhone() {
+        const right = model.hands.right;
+        right.hand.position.set(0.10, -0.025, 0.025).applyEuler(model.phone.rotation).add(model.phone.position);
+        right.hand.rotation.copy(model.phone.rotation);
+        right.thumb.position.y = 0.045; right.thumb.scale.x = 0.6;
+        right.fingers.forEach(f => { f.rotation.x = -1.15; });
+      }
+      function animatePhone(reduced) {
+        action?.kill(); phoneInHand = true;
+        model.resetPhone(); model.hands.reset(); model.setHandsVisible(true);
+        const right = model.hands.right.hand, left = model.hands.left.hand;
+        // Keep the eye at the seat. Only its gaze changes to the held device.
+        rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, {
+          reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
+        });
+        const held = { x: 0.08, y: 1.53, z: 0.59 };
+        const leftRotation = new THREE.Euler(1.15, 0, -0.65);
+        const tip = new THREE.Vector3(-0.016, -0.028, -0.129).applyEuler(leftRotation);
+        const tapPosition = new THREE.Vector3(0.08, 1.543, 0.616).sub(tip);
+        let gripping = false;
+        const update = () => { if (gripping) followPhone(); model.hands.update(); invalidate(); };
+        if (reduced) {
+          model.phone.position.set(held.x, held.y, held.z); model.phone.rotation.x = 1.15;
+          followPhone(); left.position.copy(tapPosition).add(new THREE.Vector3(-0.13, -0.12, 0.04)); left.rotation.copy(leftRotation);
+          [0,2,3].forEach(i => { model.hands.left.fingers[i].rotation.x = -1.1; });
+          model.setPhoneScreen('focuslock'); model.phoneGlow.color.set('#b6d8ff'); model.phoneGlow.intensity = 0.14;
+          model.hands.update(); markPhone('focuslock'); invalidate(); return;
+        }
+        action = gsap.timeline({ onUpdate: update, onComplete() { markPhone('focuslock'); invalidate(); } });
+        markPhone('reaching');
+        action.to(right.position, { x: -0.15, y: 1.46, z: 0.32, duration: 0.4, ease: 'power2.inOut' }, 0)
+          .to(right.position, { x: -0.70, y: 1.23, z: -0.005, duration: 0.4, ease: 'power2.inOut' }, 0.4)
+          .call(() => { gripping = true; markPhone('lifting'); }, [], 0.8)
+          .to(model.phone.position, { ...held, duration: 0.85, ease: 'power2.inOut' }, 0.8)
+          .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 0.8)
+          .call(() => markPhone('home'), [], 1.65)
+          .to(left.position, { x: tapPosition.x, y: tapPosition.y, z: tapPosition.z, duration: 0.55, ease: 'power2.inOut' }, 1.65)
+          .to(left.rotation, { x: leftRotation.x, z: leftRotation.z, duration: 0.55 }, 1.65)
+          .to(model.hands.left.fingers[0].rotation, { x: -1.1, duration: 0.3 }, 1.8)
+          .to(model.hands.left.fingers[2].rotation, { x: -1.1, duration: 0.3 }, 1.8)
+          .to(model.hands.left.fingers[3].rotation, { x: -1.1, duration: 0.3 }, 1.8)
+          .call(() => markPhone('tap'), [], 2.2)
+          .to(left.position, { y: tapPosition.y - 0.009, z: tapPosition.z - 0.020, duration: 0.12, ease: 'power2.in' }, 2.2)
+          .to(left.position, { y: tapPosition.y, z: tapPosition.z, duration: 0.12, ease: 'power2.out' }, 2.32)
+          .call(() => markPhone('hesitation'), [], 2.44)
+          .to(left.position, { x: tapPosition.x - 0.13, y: tapPosition.y - 0.12, z: tapPosition.z + 0.04, duration: 0.3, ease: 'power2.out' }, 2.44)
+          .call(() => { model.setPhoneScreen('focuslock'); markPhone('takeover'); }, [], 2.9)
+          .to(model.phoneGlow.color, { r: new THREE.Color('#b6d8ff').r, g: new THREE.Color('#b6d8ff').g, b: new THREE.Color('#b6d8ff').b, duration: 0.3 }, 2.9)
+          .to(model.phoneGlow, { intensity: 0.14, duration: 0.3 }, 2.9);
+        gsap.ticker.wake();
+      }
+      function returnPhone(reduced) {
+        action?.kill(); rig.dispose(); returningPhone = true; markPhone('returning');
+        const finish = () => {
+          phoneInHand = false; returningPhone = false; model.resetPhone(); model.hands.reset();
+          markPhone('desk'); fly(); invalidate();
+        };
+        if (reduced) { finish(); return; }
+        if (model.phone.position.distanceTo(new THREE.Vector3(...WORKSPACE.anchors.phone)) < 0.002) {
+          action = gsap.to(model.hands.right.hand.position, { x: 0.27, y: 1.301, z: 0.405, duration: 0.5,
+            onUpdate() { model.hands.update(); invalidate(); }, onComplete: finish });
+          gsap.ticker.wake(); return;
+        }
+        let attached = true;
+        action = gsap.timeline({ onUpdate() { if (attached) followPhone(); model.hands.update(); invalidate(); }, onComplete: finish });
+        action.to(model.phone.position, { x: -0.45, y: 1.43, z: 0.10, duration: 0.55, ease: 'power2.inOut' }, 0)
+          .to(model.phone.rotation, { x: 0, y: 0, z: 0, duration: 0.9, ease: 'power2.inOut' }, 0)
+          .to(model.phone.position, { x: WORKSPACE.anchors.phone[0], y: WORKSPACE.anchors.phone[1], z: WORKSPACE.anchors.phone[2], duration: 0.4, ease: 'power2.out' }, 0.55)
+          .to(model.hands.left.hand.position, { x: -0.27, y: 1.301, z: 0.405, duration: 0.65 }, 0)
+          .to(model.hands.left.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.65 }, 0)
+          .call(() => { attached = false; }, [], 0.95)
+          .to(model.hands.right.hand.position, { x: 0.27, y: 1.301, z: 0.405, duration: 0.4, ease: 'power2.inOut' }, 0.95)
+          .to(model.hands.right.hand.rotation, { x: 0, y: 0, z: 0, duration: 0.4 }, 0.95);
+        for (const finger of model.hands.left.fingers) action.to(finger.rotation, { x: 0, duration: 0.65 }, 0);
+        gsap.ticker.wake();
+      }
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
         tween?.kill(); rig.dispose();
-        model.setHandsVisible(false);
+        if (returningPhone) return;
+        if (phoneInHand) { returnPhone(state.current.reducedMotion); return; }
+        action?.kill();
+        model.setHandsVisible(model.hands.root.visible && state.current.seated && state.current.phase === 'room' && !state.current.activeAnchorId);
         const { phase: currentPhase, activeAnchorId: selected, reducedMotion: reduced } = state.current;
         if (currentPhase !== 'entering' && currentPhase !== 'leaving') {
           callbacks.current.onScreenRect?.(null);
@@ -161,6 +242,7 @@ export default function WorkspaceStage({
           controls.minDistance = 0.025; controls.maxDistance = 20;
           controls.minPolarAngle = 0.001; controls.maxPolarAngle = Math.PI - 0.001;
           controls.minAzimuthAngle = -Infinity; controls.maxAzimuthAngle = Infinity;
+          if (selected === 'phone') { animatePhone(reduced); return; }
           const view = selected === 'phone'
             ? { position: [-0.80, 1.72, 0.10], target: WORKSPACE.anchors.phone }
             : selected === 'notebook'
@@ -175,7 +257,13 @@ export default function WorkspaceStage({
           }, onComplete() {
             headYaw = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
             headPitch = Math.asin((controls.target.y - camera.position.y) / camera.position.distanceTo(controls.target));
-            model.setHandsVisible(!selected);
+            model.hands.reset(); model.setHandsVisible(!selected);
+            if (!selected && !reduced) {
+              action?.kill();
+              model.hands.left.fingers[1].rotation.x = -0.12;
+              action = gsap.to(model.hands.left.fingers[1].rotation, { x: 0, duration: 0.35, ease: 'power2.out', onUpdate: invalidate });
+              gsap.ticker.wake();
+            }
             // A small downward landing, then no more frames.
             if (!reduced && !selected) {
               const landing = { y: camera.position.y };
@@ -275,7 +363,7 @@ export default function WorkspaceStage({
       function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); }
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
-        if (down && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
+        if (down && !phoneInHand && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
           headYaw -= (event.clientX - down.lx) * 0.005;
           headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -Math.PI / 2 + 0.02, Math.PI / 2 - 0.02);
           down.moved ||= Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6;
@@ -316,7 +404,7 @@ export default function WorkspaceStage({
       api.current = { fly, refresh, startEntryPower };
       refresh();
       return () => {
-        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
+        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
@@ -324,7 +412,7 @@ export default function WorkspaceStage({
         controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); gov.dispose(); api.current = null;
       };
     } catch (error) {
-      disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect(); controls?.dispose(); model?.dispose(); renderer?.dispose(); renderer?.domElement?.remove();
+      disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect(); controls?.dispose(); model?.dispose(); renderer?.dispose(); renderer?.domElement?.remove();
       callbacks.current.onError?.(error);
     }
   }, []);

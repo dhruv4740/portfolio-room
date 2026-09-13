@@ -72,7 +72,7 @@ function screenTexture() {
 
 // Replace this function's returned texture with the supplied FocusLock capture.
 // Portrait 9:20, 540 x 1200 pixels; UVs run top-to-bottom with no crop.
-export function phoneScreenTexture() {
+export function phoneFocusLockTexture() {
   return canvasTexture((ctx, w, h) => {
     ctx.fillStyle = '#33444d'; ctx.fillRect(0, 0, w, h);
     ctx.strokeStyle = '#aebcc2'; ctx.lineWidth = 3;
@@ -82,6 +82,17 @@ export function phoneScreenTexture() {
     ctx.font = '25px monospace'; ctx.fillText('SCREEN PLACEHOLDER', w / 2, 510);
     ctx.font = '22px monospace'; ctx.fillText('Actual capture pending', w / 2, 560);
     ctx.fillText('540 x 1200', w / 2, 940);
+  }, 540, 1200);
+}
+
+// Exactly one labelled icon placeholder; no logo, dock, status bar or fake UI.
+export function phoneHomeTexture() {
+  return canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = '#3b3e42'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#85878a'; ctx.fillRect(205, 480, 130, 130);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#eeeeee';
+    ctx.font = '28px sans-serif'; ctx.fillText('Instagram', w / 2, 652);
+    ctx.font = '20px monospace'; ctx.fillText('PLACEHOLDER', w / 2, 551);
   }, 540, 1200);
 }
 
@@ -123,43 +134,79 @@ function skylineTexture(foreground = false) {
   }, 768, 1024);
 }
 
-// One vertex-coloured mesh. World-space wrists stay on the keyboard when the
-// head turns. No skeleton, shadows, camera parenting, or per-frame update.
+// Authored rigid parts, not a skeleton. Finger gaps remain visible at rest;
+// forearms join the wrists and long sleeves continue behind the seated eye.
 function seatedHands() {
-  const parts = [];
-  const add = (geometry, position, color, rotation = null) => {
-    const mesh = new THREE.Mesh(geometry); mesh.position.set(...position);
-    if (rotation) mesh.quaternion.copy(rotation);
-    mesh.updateMatrix();
-    const g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
-    g.applyMatrix4(mesh.matrix); geometry.dispose();
-    const c = new THREE.Color(color), values = new Float32Array(g.attributes.position.count * 3);
-    for (let i = 0; i < values.length; i += 3) { values[i] = c.r; values[i + 1] = c.g; values[i + 2] = c.b; }
-    g.setAttribute('color', new THREE.BufferAttribute(values, 3)); parts.push(g);
-  };
-  const limb = (from, to, r1, r2, color) => {
-    const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to);
-    add(new THREE.CylinderGeometry(r2, r1, a.distanceTo(b), 8), a.clone().add(b).multiplyScalar(0.5).toArray(), color,
-      new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize()));
-  };
-  for (const side of [-1, 1]) {
-    const x = side * 0.27;
-    limb([side * 0.38, 1.16, 1.06], [x, 1.235, 0.61], 0.077, 0.051, '#46504c');
-    limb([x, 1.235, 0.62], [x, 1.265, 0.43], 0.045, 0.043, '#b98a68');
-    add(new THREE.SphereGeometry(1, 8, 4).scale(0.060, 0.025, 0.072), [x, 1.286, 0.395], '#c99b78');
-    for (let finger = 0; finger < 4; finger++) {
-      const fx = x - 0.04 + finger * 0.027;
-      const end = 0.27 + Math.abs(finger - 1.5) * 0.012;
-      limb([fx, 1.287, 0.35], [fx, 1.279, end], 0.013, 0.009, '#c99b78');
-    }
-    limb([x - side * 0.049, 1.283, 0.416], [x - side * 0.087, 1.278, 0.361], 0.017, 0.011, '#c99b78');
+  const root = new THREE.Group(); root.name = 'Seated hands and forearms'; root.visible = false;
+  const skin = new THREE.MeshStandardMaterial({ color: '#bb8b68', roughness: 0.86 });
+  const cloth = new THREE.MeshStandardMaterial({ color: '#3c4949', roughness: 1 });
+  const nail = new THREE.MeshStandardMaterial({ color: '#cfaa8b', roughness: 0.7 });
+  function mesh(geometry, material, parent, position = [0, 0, 0]) {
+    const m = new THREE.Mesh(geometry, material); m.position.set(...position);
+    m.castShadow = false; m.receiveShadow = true; m.raycast = () => {}; parent.add(m); return m;
   }
-  const geometry = mergeGeometries(parts, false); parts.forEach(g => g.dispose());
-  const hands = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }));
-  hands.name = 'Seated hands and forearms'; hands.visible = false;
-  hands.castShadow = false; hands.receiveShadow = true;
-  hands.raycast = () => {}; // Embodiment never blocks content selection.
-  return hands;
+  function rod(parent, a, b, radius, tip, material) {
+    const av = new THREE.Vector3(...a), bv = new THREE.Vector3(...b);
+    const m = mesh(new THREE.CylinderGeometry(tip, radius, av.distanceTo(bv), 10), material, parent, av.clone().add(bv).multiplyScalar(0.5).toArray());
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bv.sub(av).normalize()); return m;
+  }
+  const hands = [];
+  for (const side of [-1, 1]) {
+    const hand = new THREE.Group(); root.add(hand);
+    hand.position.set(side * 0.27, 1.301, 0.405);
+    mesh(new THREE.SphereGeometry(1, 12, 8).scale(0.061, 0.026, 0.072), skin, hand);
+    mesh(new THREE.SphereGeometry(0.034, 12, 8), skin, hand, [0, -0.012, 0.058]);
+    const fingers = [];
+    for (let i = 0; i < 4; i++) {
+      const finger = new THREE.Group(); finger.position.set(-0.048 + i * 0.032, 0, -0.046); hand.add(finger);
+      const length = [0.073, 0.089, 0.083, 0.065][side === 1 ? i : 3 - i];
+      // Bent knuckles and downturned tips, with at least 10mm lateral gaps.
+      rod(finger, [0, 0, 0], [0, 0.013, -length * 0.48], 0.011, 0.010, skin);
+      mesh(new THREE.SphereGeometry(0.011, 10, 6), skin, finger, [0, 0.013, -length * 0.48]);
+      rod(finger, [0, 0.013, -length * 0.48], [0, -0.006, -length * 0.83], 0.010, 0.0085, skin);
+      mesh(new THREE.SphereGeometry(0.009, 10, 6), skin, finger, [0, -0.006, -length * 0.83]);
+      mesh(new THREE.SphereGeometry(0.007, 10, 6), skin, finger, [0, -0.028, -length]);
+      rod(finger, [0, -0.006, -length * 0.83], [0, -0.028, -length], 0.0085, 0.007, skin);
+      mesh(new THREE.SphereGeometry(1, 8, 4).scale(0.006, 0.002, 0.008), nail, finger, [0, -0.010, -length * 0.86]);
+      fingers.push(finger);
+    }
+    const thumb = new THREE.Group(); hand.add(thumb);
+    rod(thumb, [-side * 0.049, -0.004, 0.019], [-side * 0.086, -0.006, -0.015], 0.016, 0.013, skin);
+    rod(thumb, [-side * 0.086, -0.006, -0.015], [-side * 0.105, -0.017, -0.048], 0.013, 0.009, skin);
+    // Separate sleeve/forearm rods follow the authored wrist, without IK.
+    const sleeve = mesh(new THREE.CylinderGeometry(0.067, 0.096, 1, 12), cloth, root);
+    const arm = mesh(new THREE.CylinderGeometry(0.035, 0.059, 1, 12), skin, root);
+    const wrist = new THREE.Vector3(), elbow = new THREE.Vector3(side * 0.40, 1.13, 1.10);
+    const shoulder = new THREE.Vector3(side * 0.46, 0.98, 1.85);
+    const fit = (m, a, b) => {
+      m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.y = a.distanceTo(b);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
+    };
+    hands.push({ hand, fingers, thumb, update() {
+      wrist.set(0, -0.006, 0.058).applyEuler(hand.rotation).add(hand.position);
+      fit(arm, elbow, wrist); fit(sleeve, shoulder, elbow);
+    }});
+  }
+  function update() { hands.forEach(h => h.update()); }
+  function reset() {
+    hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.301, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); }); update();
+  }
+  const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.86 });
+  for (const h of hands) for (const group of [h.hand, ...h.fingers, h.thumb]) {
+    const parts = group.children.filter(o => o.isMesh), geometries = [];
+    for (const part of parts) {
+      part.updateMatrix();
+      const g = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone(); g.applyMatrix4(part.matrix);
+      const color = part.material.color, values = new Float32Array(g.attributes.position.count * 3);
+      for (let i = 0; i < values.length; i += 3) { values[i] = color.r; values[i+1] = color.g; values[i+2] = color.b; }
+      g.setAttribute('color', new THREE.BufferAttribute(values, 3)); geometries.push(g);
+      part.geometry.dispose(); group.remove(part);
+    }
+    mesh(mergeGeometries(geometries, false), mergedMaterial, group); geometries.forEach(g => g.dispose());
+  }
+  nail.dispose();
+  reset();
+  return { root, left: hands[0], right: hands[1], update, reset };
 }
 
 export function buildWorkspace(scene) {
@@ -283,15 +330,18 @@ export function buildWorkspace(scene) {
   box('Mouse', [0.13, 0.057, 0.21], [0.63, 1.22, 0.32], bone, 0.04, 'desk');
   box('Mouse wheel', [0.014, 0.011, 0.032], [0.63, 1.252, 0.279], dark, 0.004);
 
-  // Android device: the placeholder is explicitly not a recreation of its UI.
-  box('Phone enclosure', [0.16, 0.023, 0.33], [-0.80, 1.18, -0.03], dark, 0.016, 'phone');
-  const phoneDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.135, 0.30),
-    new THREE.MeshBasicMaterial({ map: phoneScreenTexture(), toneMapped: false }));
-  phoneDisplay.name = 'FocusLock screen placeholder';
-  phoneDisplay.rotation.x = -Math.PI / 2;
-  phoneDisplay.position.set(...WORKSPACE.anchors.phone); root.add(phoneDisplay); tag(phoneDisplay, 'phone');
-  box('Phone earpiece', [0.032, 0.002, 0.003], [-0.80, 1.197, -0.187], black, 0, 'phone');
-  const phoneGlow = new THREE.PointLight('#c6dbe4', 0.09, 0.38, 2);
+  // Keep the complete phone out of static batching and out of baked shadows.
+  const phone = new THREE.Group(); phone.name = 'Animated phone';
+  phone.position.set(...WORKSPACE.anchors.phone); root.add(phone);
+  const phoneBody = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.023, 0.33, 2, 0.012), dark);
+  phoneBody.position.y = -0.016; phone.add(phoneBody); tag(phoneBody, 'phone');
+  const phoneTextures = { home: phoneHomeTexture(), focuslock: phoneFocusLockTexture() };
+  const phoneMaterial = new THREE.MeshBasicMaterial({ map: phoneTextures.home, toneMapped: false });
+  const phoneDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.135, 0.30), phoneMaterial);
+  phoneDisplay.rotation.x = -Math.PI / 2; phone.add(phoneDisplay); tag(phoneDisplay, 'phone');
+  const earpiece = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.002, 0.003), black);
+  earpiece.position.set(0, 0.001, -0.157); phone.add(earpiece); tag(earpiece, 'phone');
+  const phoneGlow = new THREE.PointLight('#d4d5d8', 0.07, 0.38, 2);
   phoneGlow.position.set(-0.80, 1.24, -0.03); root.add(phoneGlow);
 
   // Open notebook: a real document object, pencil and authored page markings.
@@ -536,11 +586,14 @@ export function buildWorkspace(scene) {
     root.add(mesh); tag(mesh, batch.id);
   }
   root.add(fx);
-  const hands = seatedHands(); root.add(hands);
+  const hands = seatedHands(); root.add(hands.root);
 
   return {
     root, interactive,
-    setHandsVisible(visible) { hands.visible = visible; },
+    hands, phone, phoneGlow,
+    setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
+    resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
+    setHandsVisible(visible) { hands.root.visible = visible; },
     setEntryPower(value) { pendantLight.intensity = 0.85 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
     dispose() {
       const geometries = new Set(), mats = new Set(), textures = new Set();
@@ -549,6 +602,7 @@ export function buildWorkspace(scene) {
         if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(m => mats.add(m));
         if (object.isLight) object.dispose?.();
       });
+      Object.values(phoneTextures).forEach(t => textures.add(t));
       mats.forEach(m => { for (const value of Object.values(m)) if (value?.isTexture) textures.add(value); m.dispose(); });
       geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose());
     },
