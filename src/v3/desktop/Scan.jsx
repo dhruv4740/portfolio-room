@@ -36,6 +36,7 @@ export default function Scan() {
     gpuMs: undefined,
     cameraPos: undefined,
   });
+  const [seated, setSeated] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [screenPhase, setScreenPhase] = useState('room');
   const [osReady, setOsReady] = useState(false);
@@ -119,7 +120,7 @@ export default function Scan() {
   // Escape backs out one level: the embedded OS, then the selected anchor.
   useEffect(() => {
     const onKey = (e) => {
-      if (e.key !== 'Escape') return;
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
       if (screenPhase === 'inside' || screenPhase === 'entering') {
         e.preventDefault();
         handleLeaveScreen();
@@ -129,10 +130,11 @@ export default function Scan() {
         setActiveId(null);
         pendingFocus.current = true;
       } else if (activeId) handleClose();
+      else if (seated) setSeated(false);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activeId, handleClose, handleLeaveScreen, screenPhase]);
+  }, [activeId, handleClose, handleLeaveScreen, screenPhase, seated]);
 
   // The destination is prepared before the camera handoff commits. If the
   // child never answers, restore the room instead of leaving an inert overlay.
@@ -200,6 +202,9 @@ export default function Scan() {
       <style>{css}</style>
 
       <WorkspaceStage
+        entryVisible={introDone}
+        seated={seated}
+        onSit={() => { setActiveId(null); setSeated(true); }}
         anchors={anchors}
         activeAnchorId={activeId}
         onAnchorSelect={handleSelect}
@@ -215,6 +220,13 @@ export default function Scan() {
         phase={screenPhase}
       />
 
+      {screenPhase === 'room' && seated && (
+        <div className="seat-exit mono">
+          <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
+          <button onClick={handleEnterScreen}>MONITOR</button>
+          <button onClick={() => { setActiveId(null); setSeated(false); }}>STAND UP / ESC</button>
+        </div>
+      )}
       {/* ---- masthead ---------------------------------------------------- */}
       <header className="scan-head">
         <div className="scan-id">
@@ -288,13 +300,14 @@ export default function Scan() {
 
       {/* Hint shown once the scene is live and nothing is selected. */}
       {introDone && !activeId && !error && (
-        <p className="scan-hint mono">DRAG TO ORBIT — SELECT A MARKER</p>
+        <p className="scan-hint mono">{seated ? 'DRAG TO LOOK / SELECT NOTEBOOK OR MONITOR' : 'DRAG TO ORBIT / SELECT A MARKER'}</p>
       )}
     </div>
   );
 }
 
 const css = `
+.seat-exit { display:flex; gap:18px; position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:12px 16px; color:var(--bone); background:var(--void); border:1px solid var(--dim); }
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
 
 .scan-head {

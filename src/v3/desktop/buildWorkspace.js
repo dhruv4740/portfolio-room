@@ -13,6 +13,8 @@ export const WORKSPACE = {
     notebook: [1.12, 1.21, 0.38],
     window: [1.4, 2.12, -1.75],
   },
+  seat: { position: [0.05, 1.72, 1.16], target: [0, 1.65, -0.37] },
+  chair: [0.05, 1.08, 1.414],
   screen: { center: [0, 1.79, -0.362], width: 1.28, height: 0.79 },
 };
 
@@ -44,8 +46,8 @@ function woodTexture() {
 
 function screenTexture() {
   return canvasTexture((ctx, w, h) => {
-    ctx.fillStyle = '#151719'; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#242729'; ctx.fillRect(0, 0, w, 42);
+    ctx.fillStyle = '#667e91'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#354757'; ctx.fillRect(0, 0, w, 42);
     ctx.font = '20px monospace'; ctx.fillStyle = '#ddd9d0';
     ctx.fillText('dhruvOS', 26, 28); ctx.fillStyle = '#8e918e'; ctx.fillText('WORKSPACE 01', w - 210, 28);
     ctx.strokeStyle = '#464845'; ctx.lineWidth = 1;
@@ -122,7 +124,7 @@ export function buildWorkspace(scene) {
   box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
   const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
   windowRecess.castShadow = false;
-  const lightPanel = new THREE.MeshBasicMaterial({ color: '#e8e3cc' });
+  const lightPanel = new THREE.MeshBasicMaterial({ color: '#253849' });
   const daylight = box('Daylight', [1.41, 1.91, 0.016], [1.39, 1.99, -1.65], lightPanel, 0, 'window');
   daylight.castShadow = false;
   const mullion = box('Window mullion', [0.034, 1.92, 0.04], [1.39, 1.99, -1.62], bone);
@@ -182,7 +184,7 @@ export function buildWorkspace(scene) {
     ctx.strokeStyle = '#696e60'; ctx.strokeRect(590, 80, 240, 180); ctx.strokeRect(650, 140, 230, 180);
     ctx.fillStyle = '#c6532b'; ctx.fillRect(590, 356, 130, 7);
   });
-  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.548, 0.378), new THREE.MeshBasicMaterial({ map: notes }));
+  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.548, 0.378), new THREE.MeshStandardMaterial({ map: notes, roughness: 0.98 }));
   notePlane.rotation.set(-Math.PI / 2, 0, -0.12); notePlane.position.set(1.14, 1.209, 0.3); root.add(notePlane); tag(notePlane, 'notebook');
   rod('Graphite pencil', [1.47, 1.218, 0.06], [1.54, 1.218, 0.43], 0.009, dark);
 
@@ -207,12 +209,12 @@ export function buildWorkspace(scene) {
   for (let i = 0; i < 12; i++) box('Tower vent', [0.24, 0.009, 0.009], [1.0, 0.27 + i * 0.027, -0.054], black);
 
   // Chair with timber seat, perforated back and tubular steel frame.
-  box('Chair seat', [0.6, 0.07, 0.55], [0.05, 0.63, 1.2], wood, 0.055);
+  box('Chair seat', [0.6, 0.07, 0.55], [0.05, 0.63, 1.2], wood, 0.055, 'chair');
   for (const x of [-0.19, 0.29]) {
     rod('Chair front leg', [x, 0.12, 0.98], [x, 0.62, 1.0], 0.019, dark);
     rod('Chair rear leg', [x, 0.12, 1.48], [x, 1.2, 1.4], 0.019, dark);
   }
-  box('Chair back', [0.57, 0.29, 0.045], [0.05, 1.08, 1.414], wood, 0.04);
+  box('Chair back', [0.57, 0.29, 0.045], [0.05, 1.08, 1.414], wood, 0.04, 'chair');
   for (let i = 0; i < 7; i++) box('Chair back slot', [0.025, 0.18, 0.005], [-0.145 + i * 0.064, 1.08, 1.441], dark, 0.009);
 
   // Pinboard, shelf and a quiet typographic print instead of decorative neon.
@@ -224,7 +226,7 @@ export function buildWorkspace(scene) {
     ctx.fillStyle = '#c9572e'; ctx.fillRect(42, 304, 180, 12);
     ctx.font = '22px monospace'; ctx.fillStyle = '#555a50'; ctx.fillText('NOTES FROM THE WORKSPACE', 42, 418);
   }, 640, 480);
-  const poster = new THREE.Mesh(new THREE.PlaneGeometry(0.79, 0.59), new THREE.MeshBasicMaterial({ map: print }));
+  const poster = new THREE.Mesh(new THREE.PlaneGeometry(0.79, 0.59), new THREE.MeshStandardMaterial({ map: print, roughness: 0.95 }));
   poster.position.set(-1.56, 2.37, -1.645); poster.rotation.z = -0.035; root.add(poster);
   box('Pinned note', [0.24, 0.27, 0.004], [-0.97, 2.51, -1.64], paper);
   box('Wall shelf', [1.28, 0.055, 0.25], [-1.44, 1.74, -1.56], wood, 0.008);
@@ -239,38 +241,46 @@ export function buildWorkspace(scene) {
     leaf.position.set(...tip); leaf.scale.set(0.055, 0.11, 0.016); leaf.rotation.set(0.2, angle, angle * 0.4); root.add(leaf);
   }
 
-  // Ambient is a trickle, not a floor: the window is the key, everything else
-  // falls away from it. Sun now rakes in through the window opening (behind
-  // it, high, at negative z) instead of from the camera side, so the blinds
-  // it passes through actually cast slatted shadows across desk and floor.
-  scene.add(new THREE.HemisphereLight('#8f97a6', '#2c2a24', 0.55));
-  const sun = new THREE.DirectionalLight('#ffd9a0', 4.4);
-  // Positioned just outside the (non-physical) window opening, aimed across
-  // the desk, so the blind slats sit between light and desk and band it.
-  sun.position.set(2.1, 3.6, -2.7); sun.castShadow = true;
-  sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, { left: -2.6, right: 2.6, top: 3, bottom: -1.6, near: 0.3, far: 9 });
-  sun.shadow.bias = -0.00018;
-  sun.target.position.set(0.1, 0.9, 0.3); scene.add(sun, sun.target);
-  const fill = new THREE.DirectionalLight('#a9c2d6', 0.4); fill.position.set(-4, 3, 3); scene.add(fill);
+  // A faint cool rim is the only shadow-casting source. Depth is baked once.
+  scene.add(new THREE.HemisphereLight('#8294b2', '#21160e', 0.085));
+  const moon = new THREE.DirectionalLight('#8eadd8', 0.32);
+  moon.position.set(2.1, 3.6, -2.7); moon.castShadow = true;
+  moon.shadow.mapSize.set(1024, 1024);
+  Object.assign(moon.shadow.camera, { left: -2.6, right: 2.6, top: 3, bottom: -1.6, near: 0.3, far: 9 });
+  moon.shadow.bias = -0.00018;
+  moon.target.position.set(-0.8, 1.6, -0.7); scene.add(moon, moon.target);
+  bulb.intensity = 1.35; bulb.distance = 1.35;
+  shade.material = dark;
+  const lampInterior = new THREE.Mesh(new THREE.CircleGeometry(0.115, 24),
+    new THREE.MeshBasicMaterial({ color: '#d6a26b' }));
+  lampInterior.rotation.x = Math.PI / 2;
+  lampInterior.position.set(-1.03, 1.818, -0.4); root.add(lampInterior);
 
-  // Lamp: raise the pool intensity and shrink its reach so it reads as a real
-  // local source rather than another ambient wash; emissive shade interior.
-  bulb.intensity = 3.2; bulb.distance = 1.8; bulb.decay = 2;
-  shade.material = new THREE.MeshStandardMaterial({
-    color: '#1c1a17', emissive: '#ffb35c', emissiveIntensity: 1.6,
-    roughness: 0.6, side: THREE.DoubleSide,
-  });
+  // Static pendant; only its local emission changes during the entry stutter.
+  rod('Pendant cord', [-0.65, 3.12, 0.5], [-0.65, 2.58, 0.5], 0.008, black);
+  cylinder('Pendant socket', 0.036, 0.09, [-0.65, 2.55, 0.5], dark);
+  const pendantMaterial = new THREE.MeshStandardMaterial({ color: '#ad8860', emissive: '#e0ac68', emissiveIntensity: 0.7 });
+  const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), pendantMaterial);
+  pendant.position.set(-0.65, 2.47, 0.5); pendant.scale.y = 1.35; root.add(pendant);
+  const pendantLight = new THREE.PointLight('#ffd29a', 0.12, 1.35, 2);
+  pendantLight.position.copy(pendant.position); root.add(pendantLight);
 
   // A post-batch group for effects that must keep their own transforms and
   // stay untagged: screen spill, lamp pool decal, and contact shadows under
   // legs/chair/tower. Added after the merge loop below so batching can't eat them.
   const fx = new THREE.Group(); fx.name = 'Lighting FX';
 
+  const poolTexture = canvasTexture((ctx, w, h) => {
+    const gradient = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+    gradient.addColorStop(0, 'rgba(255,255,255,0.85)');
+    gradient.addColorStop(0.4, 'rgba(255,255,255,0.4)');
+    gradient.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = gradient; ctx.fillRect(0, 0, w, h);
+  }, 128, 128);
   function glowDecal(name, size, position, rotationX, color, opacity) {
     const decal = new THREE.Mesh(
-      new THREE.CircleGeometry(size, 24),
-      new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, toneMapped: false }),
+      new THREE.PlaneGeometry(size * 2, size * 2),
+      new THREE.MeshBasicMaterial({ map: poolTexture, color, transparent: true, opacity, depthWrite: false, toneMapped: false }),
     );
     decal.name = name; decal.position.set(...position); decal.rotation.x = rotationX;
     decal.renderOrder = 2; fx.add(decal); return decal;
@@ -290,24 +300,27 @@ export function buildWorkspace(scene) {
   }
 
   // Warm lamp pool on the desk surface beneath the shade.
-  glowDecal('Lamp pool', 0.34, [-1.03, 1.176, -0.3], -Math.PI / 2, '#ffb35c', 0.22);
+  glowDecal('Lamp pool', 0.48, [-1.03, 1.167, -0.3], -Math.PI / 2, '#ffb35c', 0.38);
   // Screen spill onto desk/keyboard in front of the monitor.
-  glowDecal('Screen spill', 0.55, [0, 1.177, 0.05], -Math.PI / 2, '#dfe6ea', 0.1);
-  const screenGlow = new THREE.PointLight('#cfe0ec', 0.5, 1.4, 2);
-  screenGlow.position.set(0, 1.6, -0.15); fx.add(screenGlow);
+  glowDecal('Screen spill', 0.67, [0, 1.183, 0.02], -Math.PI / 2, '#b6d8ff', 0.38);
+  const screenGlow = new THREE.PointLight('#b6d8ff', 2.4, 1.65, 2);
+  screenGlow.position.set(0, 1.57, -0.08); fx.add(screenGlow);
+
+  const edgeSpill = glowDecal('Screen desk edge', 0.55, [0, 1.108, 0.687], 0, '#b6d8ff', 0.23);
+  edgeSpill.scale.y = 0.1;
 
   // Contact shadows: desk legs, chair feet, tower, monitor foot, wall/floor corner.
-  for (const x of [-1.46, 1.46]) for (const z of [-0.54, 0.49]) contactShadow('Leg contact', [0.22, 0.22], [x, 0.006, z]);
-  contactShadow('Chair contact', [0.7, 0.7], [0.05, 0.006, 1.22]);
-  contactShadow('Tower contact', [0.5, 0.5], [1.0, 0.006, -0.38]);
-  contactShadow('Monitor contact', [0.62, 0.4], [0, 1.116, -0.35]);
+  for (const x of [-1.46, 1.46]) for (const z of [-0.54, 0.49]) contactShadow('Leg contact', [0.22, 0.22], [x, 0.068, z]);
+  contactShadow('Chair contact', [0.7, 0.7], [0.05, 0.068, 1.22]);
+  contactShadow('Tower contact', [0.5, 0.5], [1.0, 0.068, -0.38]);
+  contactShadow('Monitor contact', [0.62, 0.4], [0, 1.167, -0.35]);
   const cornerShadow = new THREE.Mesh(
     new THREE.PlaneGeometry(5, 0.5),
     new THREE.MeshBasicMaterial({
       color: '#000000', transparent: true, opacity: 0.28, depthWrite: false, toneMapped: false,
     }),
   );
-  cornerShadow.rotation.x = -Math.PI / 2; cornerShadow.position.set(0, 0.007, -1.55); cornerShadow.renderOrder = 1;
+  cornerShadow.rotation.x = -Math.PI / 2; cornerShadow.position.set(0, 0.068, -1.55); cornerShadow.renderOrder = 1;
   fx.add(cornerShadow);
 
   // Bake static transforms and batch by material + interaction target. A room
@@ -340,6 +353,7 @@ export function buildWorkspace(scene) {
 
   return {
     root, interactive,
+    setEntryPower(value) { pendantLight.intensity = 0.12 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
     dispose() {
       const geometries = new Set(), mats = new Set(), textures = new Set();
       scene.traverse(object => {

@@ -2,25 +2,27 @@ import { useEffect, useLayoutEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
+import { createRig } from './cameraRig.js';
 import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
 import { createPerfGovernor } from './perfGovernor.js';
 
 export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
   onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
-  paused = false, phase = 'room',
+  paused = false, phase = 'room', seated = false, onSit, entryVisible = true,
 }) {
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
   const api = useRef(null);
   const callbacks = useRef({});
-  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel };
-  const state = useRef({ paused, phase, reducedMotion, activeAnchorId });
-  state.current = { paused, phase, reducedMotion, activeAnchorId };
+  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit };
+  const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated });
+  state.current = { paused, phase, reducedMotion, activeAnchorId, seated };
 
   useEffect(() => {
     const host = hostRef.current;
-    let renderer, controls, model, resizeObserver, tween;
+    let renderer, controls, model, resizeObserver, tween, rig;
+    const entryTimers = [];
     let raf = 0, disposed = false, last = null, cadenceSum = 0, cpuSum = 0, count = 0, emitted = 0;
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -50,6 +52,9 @@ export default function WorkspaceStage({
       controls.minAzimuthAngle = -0.8; controls.maxAzimuthAngle = 0.85;
       controls.minDistance = 2.2; controls.maxDistance = 11;
       controls.addEventListener('change', () => invalidate());
+      gsap.config({ autoSleep: 10 }); // Let the shared ticker sleep promptly after bounded flights.
+      rig = createRig(camera, controls); rig.setIdle(false);
+      let headYaw = 0, headPitch = 0;
       let home;
       const screenCenter = new THREE.Vector3(...WORKSPACE.screen.center);
       const projected = new THREE.Vector3();
@@ -70,9 +75,9 @@ export default function WorkspaceStage({
       function updateMarkers() {
         const rect = host.getBoundingClientRect();
         for (const [id, el] of markerRefs.current) {
-          const point = WORKSPACE.anchors[id]; if (!point || !el) continue;
+          const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           projected.set(...point).project(camera);
-          const visible = state.current.phase === 'room' && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const visible = state.current.phase === 'room' && (!state.current.seated || id === 'notebook' || id === 'monitor') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
@@ -108,7 +113,7 @@ export default function WorkspaceStage({
         const c = (bl.x - tl.x) / H, d = (bl.y - tl.y) / H;
         callbacks.current.onScreenRect?.({ matrix: [a, b, c, d, tl.x, tl.y], width: W, height: H });
       }
-      function render() { controls.update(); renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
+      function render() { if (!state.current.seated || state.current.phase !== 'room') controls.update(); renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
       // Re-arm the render loop from outside tick() itself — used wherever something
       // animates without going through OrbitControls (camera-travel tween, resize).
@@ -133,7 +138,7 @@ export default function WorkspaceStage({
       }
       function refresh() {
         cancelAnimationFrame(raf); raf = 0; resetTiming();
-        controls.enabled = state.current.phase === 'room' && !state.current.paused;
+        controls.enabled = state.current.phase === 'room' && !state.current.paused && !state.current.seated && !rig.flying;
         updateMarkers();
         gov.markDirty();
         if (!state.current.paused && !document.hidden) raf = requestAnimationFrame(tick);
@@ -141,12 +146,47 @@ export default function WorkspaceStage({
       }
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
-        tween?.kill();
+        tween?.kill(); rig.dispose();
         const { phase: currentPhase, activeAnchorId: selected, reducedMotion: reduced } = state.current;
         if (currentPhase !== 'entering' && currentPhase !== 'leaving') {
           callbacks.current.onScreenRect?.(null);
         }
-        let view = home;
+        // Seated travel shares the existing rig. No idle update() is called.
+        if (currentPhase === 'room' && state.current.seated) {
+          controls.enabled = false; controls.enableDamping = false;
+          controls.minDistance = 0.025; controls.maxDistance = 20;
+          controls.minPolarAngle = 0.001; controls.maxPolarAngle = Math.PI - 0.001;
+          controls.minAzimuthAngle = -Infinity; controls.maxAzimuthAngle = Infinity;
+          const view = selected === 'notebook'
+            ? { position: [1.10, 1.72, 0.78], target: WORKSPACE.anchors.notebook }
+            : { position: [0.05, reduced ? 1.72 : 1.745, 1.16], target: WORKSPACE.seat.target };
+          const startFov = camera.fov;
+          const started = performance.now();
+          rig.flyTo(view, { reduced, duration: 1.05, onUpdate() {
+            const t = reduced ? 1 : Math.min(1, (performance.now() - started) / 1050);
+            camera.fov = reduced ? 40 : THREE.MathUtils.lerp(startFov, 46, t);
+            camera.updateProjectionMatrix(); invalidate();
+          }, onComplete() {
+            headYaw = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+            headPitch = Math.asin((controls.target.y - camera.position.y) / camera.position.distanceTo(controls.target));
+            // A small downward landing, then no more frames.
+            if (!reduced && !selected) {
+              const landing = { y: camera.position.y };
+              tween = gsap.to(landing, { y: WORKSPACE.seat.position[1], duration: 0.18, ease: 'power2.out', onUpdate() {
+                camera.position.y = landing.y; camera.lookAt(controls.target); invalidate();
+              }});
+              gsap.ticker.wake();
+            }
+            invalidate();
+          }});
+          return;
+        }
+        controls.enableDamping = !state.current.seated;
+        controls.minAzimuthAngle = -0.8; controls.maxAzimuthAngle = 0.85;
+        controls.maxDistance = 11;
+        camera.fov = BASE_FOV; camera.updateProjectionMatrix();
+        let view = currentPhase === 'leaving' && state.current.seated
+          ? { position: new THREE.Vector3(...WORKSPACE.seat.position), target: new THREE.Vector3(...WORKSPACE.seat.target) } : home;
         controls.minDistance = 0.025;
         controls.minPolarAngle = currentPhase === 'room' ? Math.PI * 0.2 : 0.01;
         controls.maxPolarAngle = currentPhase === 'room' ? Math.PI * 0.47 : Math.PI - 0.01;
@@ -192,6 +232,7 @@ export default function WorkspaceStage({
             }
           },
           onComplete() {
+            controls.enabled = state.current.phase === 'room' && !state.current.seated;
             controls.minDistance = currentPhase === 'room' ? 1.4 : 0.025;
             if (currentPhase === 'entering') {
               callbacks.current.onScreenRect?.(null);
@@ -203,11 +244,12 @@ export default function WorkspaceStage({
             }
           },
         });
+        gsap.ticker.wake();
       }
       function resize() {
         const width = host.clientWidth || 1, height = host.clientHeight || 1;
         renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix(); framing();
-        if (!state.current.activeAnchorId && state.current.phase === 'room') place(home);
+        if (!state.current.seated && !state.current.activeAnchorId && state.current.phase === 'room') place(home);
         else if (state.current.phase === 'inside') fly();
         if (!state.current.paused) render();
       }
@@ -219,14 +261,24 @@ export default function WorkspaceStage({
         const result = raycaster.intersectObject(model.root, true)[0];
         return result?.object.userData.anchorId || null;
       }
-      function pointerDown(event) { down = { x: event.clientX, y: event.clientY }; }
+      function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); }
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
+        if (down && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
+          headYaw -= (event.clientX - down.lx) * 0.005;
+          headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -Math.PI / 2 + 0.02, Math.PI / 2 - 0.02);
+          down.moved ||= Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6;
+          down.lx = event.clientX; down.ly = event.clientY;
+          controls.target.copy(camera.position).add(new THREE.Vector3(-Math.sin(headYaw) * Math.cos(headPitch), Math.sin(headPitch), -Math.cos(headYaw) * Math.cos(headPitch)));
+          camera.lookAt(controls.target); invalidate();
+        }
         renderer.domElement.style.cursor = hit(event) ? 'pointer' : 'grab';
       }
       function pointerUp(event) {
-        if (!down || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || state.current.phase !== 'room') { down = null; return; }
+        if (!down || down.moved || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || state.current.phase !== 'room') { down = null; return; }
         down = null; const id = hit(event); if (!id) return;
+        if (state.current.seated && !['monitor', 'notebook'].includes(id)) return;
+        if (id === 'chair') { callbacks.current.onSit?.(); return; }
         const marker = markerRefs.current.get(id); marker?.focus();
         if (id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
         else callbacks.current.onAnchorSelect?.(id);
@@ -239,10 +291,21 @@ export default function WorkspaceStage({
       resize(); place(home); render();
       callbacks.current.onProgress?.({ progress: 1 });
       callbacks.current.onReady?.({ splatCount: null });
-      api.current = { fly, refresh };
+      let entryPlayed = false;
+      function startEntryPower() {
+        if (entryPlayed) return;
+        entryPlayed = true;
+        // Two shallow irregular dips, once when the intro reveals the room.
+        if (!state.current.reducedMotion) {
+          for (const [ms, power] of [[0, 0.8], [120, 1], [360, 0.72], [470, 0.92], [900, 1]]) {
+            entryTimers.push(setTimeout(() => { model.setEntryPower(power); invalidate(); }, ms));
+          }
+        }
+      }
+      api.current = { fly, refresh, startEntryPower };
       refresh();
       return () => {
-        disposed = true; cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
+        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
@@ -250,23 +313,28 @@ export default function WorkspaceStage({
         controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); gov.dispose(); api.current = null;
       };
     } catch (error) {
-      disposed = true; cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect(); controls?.dispose(); model?.dispose(); renderer?.dispose(); renderer?.domElement?.remove();
+      disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect(); controls?.dispose(); model?.dispose(); renderer?.dispose(); renderer?.domElement?.remove();
       callbacks.current.onError?.(error);
     }
   }, []);
 
+  useEffect(() => { if (entryVisible) api.current?.startEntryPower(); }, [entryVisible]);
+
   // Restore marker visibility before the parent returns keyboard focus.
-  useLayoutEffect(() => { api.current?.refresh(); }, [paused, phase]);
-  useEffect(() => { api.current?.fly(); }, [activeAnchorId, phase, reducedMotion]);
+  useLayoutEffect(() => { api.current?.refresh(); }, [paused, phase, seated]);
+  useEffect(() => { api.current?.fly(); }, [activeAnchorId, phase, reducedMotion, seated]);
 
   return (
     <div ref={hostRef} className="stage-root workspace-stage" data-scene="workspace">
       <style>{css}</style>
+      <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
+        className="anchor-marker workspace-marker" data-object="chair" aria-label="Sit in the chair"
+        onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT</span></button>
       {anchors.filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
-          onClick={() => callbacks.current.onAnchorSelect?.(anchor.id)}>
+          onClick={() => seated && anchor.id === 'monitor' ? callbacks.current.onEnterScreen?.() : callbacks.current.onAnchorSelect?.(anchor.id)}>
           <span className="workspace-marker-dot" aria-hidden="true" />
           <span className="workspace-marker-label"><small>0{index + 1}</small>{anchor.label}<span aria-hidden="true">↗</span></span>
         </button>

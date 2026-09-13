@@ -35,7 +35,7 @@ export function createRig(camera, controls) {
    */
   function flyTo(view, opts = {}) {
     cancelFlight();
-    const { duration = 1.4, reduced = false, onComplete } = opts;
+    const { duration = 1.4, reduced = false, onComplete, onUpdate } = opts;
 
     const [px, py, pz] = view.position;
     const [tx, ty, tz] = view.target;
@@ -46,6 +46,7 @@ export function createRig(camera, controls) {
       camera.position.set(px, py, pz);
       controls.target.set(tx, ty, tz);
       controls.update();
+      onUpdate?.();
       onComplete?.();
       return;
     }
@@ -64,6 +65,7 @@ export function createRig(camera, controls) {
         camera.position.set(proxy.px, proxy.py, proxy.pz);
         controls.target.set(proxy.tx, proxy.ty, proxy.tz);
         controls.update();
+        onUpdate?.();
       },
       onComplete() {
         flight = null;
@@ -71,6 +73,7 @@ export function createRig(camera, controls) {
         onComplete?.();
       },
     });
+    gsap.ticker.wake();
   }
 
   /** Return to the wide establishing shot. */
