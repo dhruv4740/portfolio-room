@@ -1,0 +1,74 @@
+diff --git a/src/v3/desktop/WorkspaceStage.jsx b/src/v3/desktop/WorkspaceStage.jsx
+index d49eb55..ff45cf2 100644
+--- a/src/v3/desktop/WorkspaceStage.jsx
++++ b/src/v3/desktop/WorkspaceStage.jsx
+@@ -118,7 +118,7 @@ export default function WorkspaceStage({
+         const c = (bl.x - tl.x) / H, d = (bl.y - tl.y) / H;
+         callbacks.current.onScreenRect?.({ matrix: [a, b, c, d, tl.x, tl.y], width: W, height: H });
+       }
+-      function render() { if (!state.current.seated || state.current.phase !== 'room') controls.update(); renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
++      function render() { if (!state.current.seated || state.current.phase !== 'room') controls.update(); model.figure.head.visible = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position)) > 0.24; renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
+       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
+       // Re-arm the render loop from outside tick() itself — used wherever something
+       // animates without going through OrbitControls (camera-travel tween, resize).
+@@ -285,7 +285,7 @@ export default function WorkspaceStage({
+         if (notebookInHand) { returnNotebook(state.current.reducedMotion); return; }
+         if (phoneInHand) { returnPhone(state.current.reducedMotion); return; }
+         action?.kill();
+-        model.setHandsVisible(model.hands.root.visible && state.current.seated && state.current.phase === 'room' && !state.current.activeAnchorId);
++        model.setHandsVisible(true);
+         const { phase: currentPhase, activeAnchorId: selected, reducedMotion: reduced } = state.current;
+         if (currentPhase !== 'entering' && currentPhase !== 'leaving') {
+           callbacks.current.onScreenRect?.(null);
+@@ -316,7 +316,7 @@ export default function WorkspaceStage({
+           }, onComplete() {
+             headYaw = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
+             headPitch = Math.asin((controls.target.y - camera.position.y) / camera.position.distanceTo(controls.target));
+-            model.hands.reset(); model.setHandsVisible(!selected);
++            model.hands.reset(); model.setHandsVisible(true);
+             if (!selected && !reduced) {
+               action?.kill();
+               model.hands.left.fingers[1].rotation.x = -0.12;
+diff --git a/src/v3/desktop/buildWorkspace.js b/src/v3/desktop/buildWorkspace.js
+index 6fac0f2..04de266 100644
+--- a/src/v3/desktop/buildWorkspace.js
++++ b/src/v3/desktop/buildWorkspace.js
+@@ -1,4 +1,5 @@
+ import * as THREE from 'three';
++import { buildSeatedFigure } from './buildSeatedFigure.js';
+ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+ import { identity, education, experience, achievements } from '../content/index.js';
+@@ -258,13 +259,16 @@ function seatedHands() {
+     const sleeve = mesh(new THREE.CylinderGeometry(0.054, 0.082, 1, 24), cloth, root);
+     const arm = mesh(new THREE.CylinderGeometry(0.028, 0.048, 1, 32), skin, root);
+     const wrist = new THREE.Vector3(), elbow = new THREE.Vector3(side * 0.40, 1.13, 1.10);
+-    const shoulder = new THREE.Vector3(side * 0.46, 0.98, 1.85);
++    const shoulder = new THREE.Vector3(0.05 + side * 0.225, 1.40, 1.23);
+     const fit = (m, a, b) => {
+       m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.y = a.distanceTo(b);
+       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
+     };
+     hands.push({ hand, fingers, thumb, arm, sleeve, index: side === 1 ? 0 : 3, update() {
+       wrist.set(0, 0, 0.095).applyEuler(hand.rotation).add(hand.position);
++      const direction = wrist.clone().sub(shoulder), distance = direction.length(); direction.normalize();
++      const pole = new THREE.Vector3(side * 0.25,-1,0.1);pole.addScaledVector(direction,-pole.dot(direction)).normalize();
++      elbow.copy(shoulder).addScaledVector(direction,distance*0.5).addScaledVector(pole,Math.sqrt(Math.max(0,0.40**2-(distance*0.5)**2)));
+       fit(arm, elbow, wrist); fit(sleeve, shoulder, elbow);
+     }});
+   }
+@@ -692,11 +696,12 @@ export function buildWorkspace(scene) {
+     root.add(mesh); tag(mesh, batch.id);
+   }
+   root.add(fx);
+-  const hands = seatedHands(); root.add(hands.root);
++  const hands = seatedHands(); root.add(hands.root); hands.root.visible = true;
++  const figure = buildSeatedFigure(); root.add(figure.root);
+ 
+   return {
+     root, interactive,
+-    hands, phone, phoneGlow, phoneDisplay, notebook,
++    hands, phone, phoneGlow, phoneDisplay, notebook, figure,
+     resetNotebook() { notebook.position.set(...WORKSPACE.anchors.notebook); notebook.rotation.set(0, 0, 0); },
+     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
+     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
