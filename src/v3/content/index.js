@@ -217,13 +217,6 @@ export const anchors = [
     body: 'A live index of browser experiments. Each one runs; each one is playable.',
   },
   {
-    id: 'desk',
-    label: 'Desk',
-    ref: 'focuslock',
-    readout: 'FOCUSLOCK',
-    body: '',
-  },
-  {
     id: 'notebook',
     label: 'Notebook',
     ref: 'about',

@@ -1,4 +1,6 @@
 import * as THREE from 'three';
+import { buildRoomInteractions } from './buildRoomInteractions.js';
+import { buildSeatedFigure } from './buildSeatedFigure.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -10,7 +12,8 @@ export const WORKSPACE = {
   target: [0, 1.1, -0.15],
   anchors: {
     monitor: [0, 1.79, -0.37],
-    desk: [-1.22, 1.18, 0.28],
+    lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-1.36,1.99,-1.43],
+    drawer: [1.10,0.99,0.62], blinds: [2.16,1.75,-1.48], headphones: [0.67,1.24,-0.05], keyboard: [-0.12,1.249,0.29],
     notebook: [1.14, 1.21, 0.30],
     window: [1.4, 2.12, -1.75],
     phone: [-0.80, 1.196, -0.03],
@@ -258,13 +261,16 @@ function seatedHands() {
     const sleeve = mesh(new THREE.CylinderGeometry(0.054, 0.082, 1, 24), cloth, root);
     const arm = mesh(new THREE.CylinderGeometry(0.028, 0.048, 1, 32), skin, root);
     const wrist = new THREE.Vector3(), elbow = new THREE.Vector3(side * 0.40, 1.13, 1.10);
-    const shoulder = new THREE.Vector3(side * 0.46, 0.98, 1.85);
+    const shoulder = new THREE.Vector3(0.05 + side * 0.225, 1.40, 1.23);
     const fit = (m, a, b) => {
       m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.y = a.distanceTo(b);
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
     };
     hands.push({ hand, fingers, thumb, arm, sleeve, index: side === 1 ? 0 : 3, update() {
       wrist.set(0, 0, 0.095).applyEuler(hand.rotation).add(hand.position);
+      const direction = wrist.clone().sub(shoulder), distance = direction.length(); direction.normalize();
+      const pole = new THREE.Vector3(side * 0.25,-1,0.1);pole.addScaledVector(direction,-pole.dot(direction)).normalize();
+      elbow.copy(shoulder).addScaledVector(direction,distance*0.5).addScaledVector(pole,Math.sqrt(Math.max(0,0.40**2-(distance*0.5)**2)));
       fit(arm, elbow, wrist); fit(sleeve, shoulder, elbow);
     }});
   }
@@ -324,7 +330,7 @@ export function buildWorkspace(scene) {
   const wood = mat('oak', '#ffffff', { map: woodTexture(), roughness: 0.52, metalness: 0.02 });
 
   function tag(mesh, id) {
-    if (id) { mesh.userData.anchorId = id; interactive.push(mesh); }
+    if (id && id !== 'desk') { mesh.userData.anchorId = id; interactive.push(mesh); }
     return mesh;
   }
   function box(name, size, position, material, radius = 0, id) {
@@ -359,8 +365,26 @@ export function buildWorkspace(scene) {
   // slats occlude, which is what actually produces the banding cue.
   const backWall = box('Back wall', [5, 3.12, 0.13], [0, 1.58, -1.8], plaster);
   backWall.castShadow = false;
-  box('Left return wall', [0.13, 3.12, 1.55], [-2.43, 1.58, -1.09], plaster);
-  box('Ceiling', [5, 0.08, 3.9], [0, 3.16, 0.1], plaster);
+  const architecture = new THREE.Group(); root.add(architecture);
+  function wall(name,size,position,angle=0) {
+    const material=plaster.clone();const mesh=box(name,size,position,material);mesh.rotation.y=angle;
+    architecture.add(mesh);
+    mesh.onBeforeRender=(_r,_s,camera)=>{const outside=camera.position.z>2.15||Math.abs(camera.position.x)>2.5;material.colorWrite=!outside;material.depthWrite=!outside;};
+    return mesh;
+  }
+  wall('Left wall',[0.13,3.12,3.88],[-2.43,1.58,0.1]);
+  wall('Right wall behind opening',[0.13,3.12,1.85],[2.43,1.58,-0.93]);
+  wall('Right wall front pier',[0.13,3.12,0.62],[2.43,1.58,1.72]);
+  wall('Doorway lintel',[0.13,0.57,1.06],[2.43,2.86,0.89]);
+  wall('Passage end',[0.10,2.50,1.08],[3.12,1.28,0.89]);
+  wall('Passage return',[0.75,2.50,0.10],[2.77,1.28,0.32]);
+  wall('Clipped rear corner',[0.13,3.12,0.90],[-2.14,1.58,-1.49],-Math.PI/4);
+  box('Passage foundation',[0.82,0.18,1.10],[2.80,-0.10,0.88],dark);
+  box('Passage threshold',[0.82,0.04,1.10],[2.80,0.09,0.88],floor);
+
+  const roofLeft=box('Folded ceiling left',[2.55,0.08,3.9],[-1.25,3.21,0.1],plaster);roofLeft.rotation.z=0.04;
+  const roofRight=box('Folded ceiling right',[2.55,0.08,3.9],[1.25,3.21,0.1],plaster);roofRight.rotation.z=-0.04;
+  box('Ceiling beam',[0.14,0.18,3.9],[-0.65,3.16,0.1],wood);
   box('Back skirting', [4.95, 0.065, 0.045], [0, 0.12, -1.708], dark);
   box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
   const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
@@ -387,9 +411,10 @@ export function buildWorkspace(scene) {
   root.add(city);
   const mullion = box('Window mullion', [0.034, 1.92, 0.04], [1.39, 1.99, -1.62], bone);
   mullion.castShadow = false;
+  const blindsGroup=new THREE.Group();root.add(blindsGroup);
   for (let i = 0; i < 11; i++) {
     const slat = box('Venetian blind', [1.47, 0.022, 0.08], [1.39, 2.88 - i * 0.145, -1.56], bone, 0, 'window');
-    slat.rotation.x = -0.22;
+    slat.rotation.x = -0.22;slat.castShadow=true;blindsGroup.add(slat);
   }
   box('Window sill', [1.7, 0.065, 0.32], [1.39, 0.99, -1.54], bone, 0.012);
 
@@ -424,7 +449,7 @@ export function buildWorkspace(scene) {
     transform.position.set(-0.562 + col * 0.077, 1.249, 0.163 + row * 0.059);
     transform.updateMatrix(); keys.setMatrixAt(row * 12 + col, transform.matrix);
   }
-  keys.castShadow = true; root.add(keys); tag(keys, 'desk');
+  keys.castShadow = false; root.add(keys); tag(keys, 'keyboard');
   box('Escape key', [0.063, 0.031, 0.057], [-0.562, 1.251, 0.163], orange, 0.006);
   box('Spacebar', [0.35, 0.032, 0.055], [-0.13, 1.252, 0.4], bone, 0.006);
   box('Mouse', [0.13, 0.057, 0.21], [0.63, 1.22, 0.32], bone, 0.04, 'desk');
@@ -537,9 +562,8 @@ export function buildWorkspace(scene) {
   shade.position.set(-1.03, 1.89, -0.4); shade.rotation.z = -0.3; root.add(shade);
   const bulb = new THREE.PointLight('#ffe4b1', 0.75, 2.2, 2); bulb.position.set(-1.02, 1.82, -0.39); root.add(bulb);
   for (let i = 0; i < 3; i++) box('Book stack', [0.48 - i * 0.025, 0.052, 0.34], [-1.25, 1.197 + i * 0.055, 0.15], [bone, dark, mat('bookTaupe', '#858070')][i], 0.008, 'desk');
-  cylinder('Ceramic mug', 0.074, 0.145, [-0.89, 1.242, 0.46], bone);
-  cylinder('Coffee', 0.061, 0.002, [-0.89, 1.316, 0.46], mat('coffee', '#392a20'));
-  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.047, 0.011, 8, 20), bone); handle.position.set(-0.806, 1.253, 0.46); root.add(handle);
+  /* mug is authored by buildRoomInteractions */
+
 
   // Small speaker pair and vented workstation beneath the desk.
   for (const x of [-0.96, 0.95]) {
@@ -590,6 +614,21 @@ export function buildWorkspace(scene) {
   Object.assign(moon.shadow.camera, { left: -2.6, right: 2.6, top: 3, bottom: -1.6, near: 0.3, far: 9 });
   moon.shadow.bias = -0.00018;
   moon.target.position.set(-0.8, 1.6, -0.7); scene.add(moon, moon.target);
+  // Both endpoint maps are baked by the single initial shadow-map update.
+  // Each blind's depth-only shader supplies the alternate pose for the open map.
+  const moonOpen=moon.clone();moonOpen.intensity=0;moonOpen.position.copy(moon.position);moonOpen.target=moon.target;
+  moonOpen.shadow=moon.shadow.clone();moonOpen.shadow.camera.userData.blindsOpen=true;scene.add(moonOpen);
+  blindsGroup.children.forEach((slat,i)=>{
+    const pose={value:0};const depth=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});
+    depth.onBeforeCompile=shader=>{shader.uniforms.openPose=pose;shader.uniforms.rowOffset={value:i*0.121};shader.vertexShader='uniform float openPose; uniform float rowOffset;\n'+shader.vertexShader;
+      shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>',`#include <begin_vertex>
+        float a=-1.20*openPose;float c=cos(a),s=sin(a);
+        transformed.yz=mat2(c,s,-s,c)*position.yz;
+        transformed.y += openPose*rowOffset*0.975897;
+        transformed.z += openPose*rowOffset*0.218230;`);};
+    slat.customDepthMaterial=depth;slat.onBeforeShadow=(_r,_o,_c,shadowCamera)=>{pose.value=shadowCamera.userData.blindsOpen?1:0;};
+  });
+
   bulb.intensity = 1.85; bulb.distance = 3.0;
   shade.material = dark;
   const lampInterior = new THREE.Mesh(new THREE.CircleGeometry(0.115, 24),
@@ -642,7 +681,7 @@ export function buildWorkspace(scene) {
   }
 
   // Warm lamp pool on the desk surface beneath the shade.
-  glowDecal('Lamp pool', 0.48, [-1.03, 1.167, -0.3], -Math.PI / 2, '#ffb35c', 0.38);
+  const lampPool=glowDecal('Lamp pool', 0.48, [-1.03, 1.167, -0.3], -Math.PI / 2, '#ffb35c', 0.38);
   // Screen spill onto desk/keyboard in front of the monitor.
   glowDecal('Screen spill', 0.67, [0, 1.183, 0.02], -Math.PI / 2, '#b6d8ff', 0.38);
   const screenGlow = new THREE.PointLight('#b6d8ff', 2.4, 1.65, 2);
@@ -692,11 +731,13 @@ export function buildWorkspace(scene) {
     root.add(mesh); tag(mesh, batch.id);
   }
   root.add(fx);
-  const hands = seatedHands(); root.add(hands.root);
+  const roomActions=buildRoomInteractions({root,materials:{bone,dark,wood,paper},canvasTexture,anchors:WORKSPACE.anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys});
+  const hands = seatedHands(); root.add(hands.root); hands.root.visible = true;
+  const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
     root, interactive,
-    hands, phone, phoneGlow, phoneDisplay, notebook,
+    hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     resetNotebook() { notebook.position.set(...WORKSPACE.anchors.notebook); notebook.rotation.set(0, 0, 0); },
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
@@ -706,6 +747,7 @@ export function buildWorkspace(scene) {
       const geometries = new Set(), mats = new Set(), textures = new Set();
       scene.traverse(object => {
         if (object.geometry) geometries.add(object.geometry);
+        if(object.customDepthMaterial)mats.add(object.customDepthMaterial);
         if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(m => mats.add(m));
         if (object.isLight) object.dispose?.();
       });

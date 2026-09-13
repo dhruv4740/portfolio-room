@@ -36,6 +36,7 @@ export default function Scan() {
     gpuMs: undefined,
     cameraPos: undefined,
   });
+  const [liveMonitor,setLiveMonitor]=useState(false);
   const [seated, setSeated] = useState(false);
   const [activeId, setActiveId] = useState(null);
   const [screenPhase, setScreenPhase] = useState('room');
@@ -208,6 +209,8 @@ export default function Scan() {
       <WorkspaceStage
         entryVisible={introDone}
         seated={seated}
+        liveMonitor={liveMonitor && seated && !activeId}
+        onTypeKey={key=>{setLiveMonitor(true);dhruvRef.current?.typeKey(key);}}
         onSit={() => { setActiveId(null); setSeated(true); }}
         anchors={anchors}
         activeAnchorId={activeId}
@@ -228,7 +231,7 @@ export default function Scan() {
         <div className="seat-exit mono">
           <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
           <button onClick={() => handleSelect('phone')}>PHONE</button>
-          <button onClick={() => handleSelect('desk')}>DESK</button>
+          {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id.toUpperCase()}</button>)}
           <button onClick={() => handleSelect('window')}>CONTACT</button>
           {activeId && <button onClick={handleClose}>BACK TO SEAT</button>}
           <button onClick={handleEnterScreen}>MONITOR</button>
@@ -315,7 +318,7 @@ export default function Scan() {
 }
 
 const css = `
-.seat-exit { display:flex; gap:18px; position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:12px 16px; color:var(--bone); background:var(--void); border:1px solid var(--dim); }
+.seat-exit { display:flex; gap:12px; flex-wrap:wrap; max-width:calc(100% - 280px); position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:12px 16px; color:var(--bone); background:var(--void); border:1px solid var(--dim); }
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
 
 .scan-head {

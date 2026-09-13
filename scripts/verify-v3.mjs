@@ -186,7 +186,6 @@ const pinSurface = (page, surface) =>
   await page.waitForTimeout(1600);
   const expectedObjects = [
     ['monitor', 'Monitor'],
-    ['desk', 'Desk'],
     ['notebook', 'Notebook'],
     ['window', 'Window'],
   ];
@@ -216,7 +215,7 @@ const pinSurface = (page, surface) =>
   // can use. This catches markers that merely look like labels but are not
   // wired to the shared anchor-selection callback.
   for (const [id, label] of expectedObjects) {
-    const marker = id === 'monitor' ? monitorMarker : page.getByRole('button', { name: {desk:'DESK',notebook:'NOTEBOOK',window:'CONTACT'}[id], exact:true });
+    const marker = id === 'monitor' ? monitorMarker : page.getByRole('button', { name: {notebook:'NOTEBOOK',window:'CONTACT'}[id], exact:true });
     let activated = false;
     try {
       await marker.focus();

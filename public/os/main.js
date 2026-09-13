@@ -125,6 +125,29 @@ function initEmbeddedBridge() {
     const message = event.data;
     if (!message || message.source !== 'v3-scan') return;
 
+    if (message.type === 'room-key') {
+      const key=message.key;
+      if(typeof key!=='string'||key==='Escape'||key==='Tab'||key.length>16)return;
+      setEmbeddedState('room');
+      const findEditable=root=>{if(!root)return null;const own=root.querySelector('input,textarea,[contenteditable="true"]');if(own)return own;for(const el of root.querySelectorAll('*'))if(el.shadowRoot){const found=findEditable(el.shadowRoot);if(found)return found;}return null;};
+      let target=document.activeElement;
+      while(target?.shadowRoot?.activeElement)target=target.shadowRoot.activeElement;
+      if(!target?.matches('input,textarea,[contenteditable="true"]')) {
+        target=findEditable(document.querySelector('.os-window.focused'));
+      }
+      if(!target){ctx.openApp('terminal');target=findEditable(document.querySelector('#win-body-terminal'));}
+      if(!target)return;
+      const event=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});
+      if(!target.dispatchEvent(event))return;
+      if(target.matches('input,textarea')){
+        let start=target.selectionStart??target.value.length,end=target.selectionEnd??start;
+        if(key==='Backspace'){if(start===end)start=Math.max(0,start-1);target.setRangeText('',start,end,'end');}
+        else if(key.length===1)target.setRangeText(key,start,end,'end');
+        else if(key==='ArrowLeft'||key==='ArrowRight'){const p=Math.max(0,Math.min(target.value.length,start+(key==='ArrowLeft'?-1:1)));target.setSelectionRange(p,p);}
+        target.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+      return;
+    }
     if (message.type === 'host-hello') {
       postToHost({ type: 'ready', state: 'inside' });
       return;

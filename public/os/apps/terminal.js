@@ -287,7 +287,7 @@ export default {
 
     input.addEventListener('keydown', onKeydown);
 
-    function focusInput() { input.focus(); }
+    function focusInput() { if(document.body.dataset.v3State !== 'room') input.focus(); }
     body.addEventListener('click', focusInput);
     body.addEventListener('focus', focusInput, true);
     requestAnimationFrame(focusInput);

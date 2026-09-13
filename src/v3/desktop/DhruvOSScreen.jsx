@@ -31,6 +31,8 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
   onRequestLeave,
 }, ref) {
   const frameRef = useRef(null);
+  const pendingKeys=useRef([]);
+  const lastRect=useRef(null);
   const backRef = useRef(null);
   const rootRef = useRef(null);
   const frameBoxRef = useRef(null);
@@ -45,7 +47,13 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
   // up to 60fps during travel — routing them through refs instead of React
   // state avoids a re-render per frame for what is pure style mutation.
   useImperativeHandle(ref, () => ({
+    typeKey(key) {
+      if(frameRef.current?.contentWindow && frameRef.current?.dataset.ready === "true") {
+        frameRef.current.contentWindow.postMessage({source:"v3-scan",type:"room-key",key},TRUSTED_ORIGIN);
+      } else {pendingKeys.current.push(key);setMounted(true);}
+    },
     setScreenRect(rect) {
+      lastRect.current=rect;
       const root = rootRef.current, box = frameBoxRef.current;
       if (!root || !box) return;
       if (!rect) {
@@ -58,7 +66,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
       root.setAttribute('data-aligning', 'true');
       box.style.width = `${rect.width}px`;
       box.style.height = `${rect.height}px`;
-      box.style.transform = `matrix(${rect.matrix.join(',')})`;
+      box.style.transform = `matrix3d(${rect.matrix.join(',')})`;
     },
     setTravel(t, travelPhase) {
       const vg = vignetteRef.current, fl = flashRef.current;
@@ -120,6 +128,10 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
 
       if (data.type === 'ready') {
         setFrameState('ready');
+        frameRef.current.dataset.ready='true';
+        for(const key of pendingKeys.current.splice(0))frameRef.current.contentWindow.postMessage({source:'v3-scan',type:'room-key',key},TRUSTED_ORIGIN);
+        const rect=lastRect.current,root=rootRef.current,box=frameBoxRef.current;
+        if(rect&&root&&box){root.setAttribute('data-aligning','true');box.style.width=rect.width+'px';box.style.height=rect.height+'px';box.style.transform=`matrix3d(${rect.matrix.join(',')})`;}
         onReady?.(data);
       } else if (data.type === 'load-error') {
         setFrameState('error');
@@ -250,6 +262,7 @@ const css = `
    setScreenRect() above. The bar/foot chrome would not exist on the real
    monitor, so it is hidden for the duration of the alignment. */
 .dhruv-os-screen[data-aligning="true"] {
+  visibility:visible; opacity:1;
   padding: 0;
   background: transparent;
 }
