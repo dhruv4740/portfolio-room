@@ -24,17 +24,21 @@ export default function WorkspaceStage({
     try {
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
-      renderer.setClearColor('#15191b');
+      renderer.setClearColor('#0a0a0b');
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       // Furniture and lights are static: camera moves do not invalidate shadows.
       renderer.shadowMap.autoUpdate = false;
       renderer.shadowMap.needsUpdate = true;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.05;
+      renderer.toneMappingExposure = 1.2;
       host.appendChild(renderer.domElement);
       const scene = new THREE.Scene();
+      // The room stays warm/naturalistic and drops into the --void black at
+      // its edges — that contrast against the app's black chrome is intentional.
+      scene.background = new THREE.Color('#0a0a0b');
+      scene.fog = new THREE.Fog('#0a0a0b', 6, 13);
       model = buildWorkspace(scene);
       const camera = new THREE.PerspectiveCamera(40, 1, 0.025, 60);
       controls = new OrbitControls(camera, renderer.domElement);

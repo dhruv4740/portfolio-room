@@ -73,13 +73,13 @@ export function buildWorkspace(scene) {
   const mat = (name, color, options = {}) => materials[name] ||= new THREE.MeshStandardMaterial({ color, roughness: 0.72, ...options });
   const plaster = mat('plaster', '#b9b5a9');
   const floor = mat('floor', '#969386');
-  const dark = mat('graphite', '#24282a', { roughness: 0.44, metalness: 0.35 });
-  const black = mat('rubber', '#131718', { roughness: 0.84 });
-  const steel = mat('steel', '#858983', { metalness: 0.8, roughness: 0.3 });
-  const bone = mat('bone', '#e4dfce');
+  const dark = mat('graphite', '#24282a', { roughness: 0.38, metalness: 0.42 });
+  const black = mat('rubber', '#131718', { roughness: 0.95, metalness: 0 });
+  const steel = mat('steel', '#8b8f89', { metalness: 0.92, roughness: 0.18 });
+  const bone = mat('bone', '#e4dfce', { roughness: 0.82 });
   const paper = mat('paper', '#e4dfcc', { roughness: 0.98 });
-  const orange = mat('orange', '#df5b29');
-  const wood = mat('oak', '#ffffff', { map: woodTexture(), roughness: 0.68 });
+  const orange = mat('orange', '#df5b29', { roughness: 0.5 });
+  const wood = mat('oak', '#ffffff', { map: woodTexture(), roughness: 0.52, metalness: 0.02 });
 
   function tag(mesh, id) {
     if (id) { mesh.userData.anchorId = id; interactive.push(mesh); }
@@ -110,14 +110,23 @@ export function buildWorkspace(scene) {
   box('Concrete floor', [5, 0.08, 3.9], [0, 0.025, 0.1], floor, 0.01);
   for (let x = -2; x <= 2; x += 1) box('Floor joint', [0.008, 0.003, 3.86], [x, 0.067, 0.1], mat('joint', '#7f7c71'));
   // Solid left portion and an inset luminous window on the right.
-  box('Back wall', [5, 3.12, 0.13], [0, 1.58, -1.8], plaster);
+  // The wall behind the window panel is solid geometry (no real cutout), so it
+  // would fully block a light placed outside to simulate daylight. Since the
+  // window and its frame are a glued-on inset rather than an actual hole, they
+  // (and the wall) are excluded from shadow casting here — only the blind
+  // slats occlude, which is what actually produces the banding cue.
+  const backWall = box('Back wall', [5, 3.12, 0.13], [0, 1.58, -1.8], plaster);
+  backWall.castShadow = false;
   box('Left return wall', [0.13, 3.12, 1.55], [-2.43, 1.58, -1.09], plaster);
   box('Back skirting', [4.95, 0.065, 0.045], [0, 0.12, -1.708], dark);
   box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
-  box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
+  const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
+  windowRecess.castShadow = false;
   const lightPanel = new THREE.MeshBasicMaterial({ color: '#e8e3cc' });
-  box('Daylight', [1.41, 1.91, 0.016], [1.39, 1.99, -1.65], lightPanel, 0, 'window');
-  box('Window mullion', [0.034, 1.92, 0.04], [1.39, 1.99, -1.62], bone);
+  const daylight = box('Daylight', [1.41, 1.91, 0.016], [1.39, 1.99, -1.65], lightPanel, 0, 'window');
+  daylight.castShadow = false;
+  const mullion = box('Window mullion', [0.034, 1.92, 0.04], [1.39, 1.99, -1.62], bone);
+  mullion.castShadow = false;
   for (let i = 0; i < 11; i++) {
     const slat = box('Venetian blind', [1.47, 0.022, 0.08], [1.39, 2.88 - i * 0.145, -1.56], bone, 0, 'window');
     slat.rotation.x = -0.22;
@@ -230,14 +239,76 @@ export function buildWorkspace(scene) {
     leaf.position.set(...tip); leaf.scale.set(0.055, 0.11, 0.016); leaf.rotation.set(0.2, angle, angle * 0.4); root.add(leaf);
   }
 
-  scene.add(new THREE.HemisphereLight('#e8e7d9', '#59564a', 2.1));
-  const sun = new THREE.DirectionalLight('#fff0d2', 3.6);
-  sun.position.set(3.8, 6.5, 4.0); sun.castShadow = true;
+  // Ambient is a trickle, not a floor: the window is the key, everything else
+  // falls away from it. Sun now rakes in through the window opening (behind
+  // it, high, at negative z) instead of from the camera side, so the blinds
+  // it passes through actually cast slatted shadows across desk and floor.
+  scene.add(new THREE.HemisphereLight('#8f97a6', '#2c2a24', 0.55));
+  const sun = new THREE.DirectionalLight('#ffd9a0', 4.4);
+  // Positioned just outside the (non-physical) window opening, aimed across
+  // the desk, so the blind slats sit between light and desk and band it.
+  sun.position.set(2.1, 3.6, -2.7); sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
-  Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 0.5, far: 18 });
-  sun.shadow.normalBias = 0.025; sun.shadow.bias = -0.00015;
-  sun.target.position.set(0, 0.8, -0.3); scene.add(sun, sun.target);
-  const fill = new THREE.DirectionalLight('#cfdbdf', 1.2); fill.position.set(-4, 3, 3); scene.add(fill);
+  Object.assign(sun.shadow.camera, { left: -2.6, right: 2.6, top: 3, bottom: -1.6, near: 0.3, far: 9 });
+  sun.shadow.bias = -0.00018;
+  sun.target.position.set(0.1, 0.9, 0.3); scene.add(sun, sun.target);
+  const fill = new THREE.DirectionalLight('#a9c2d6', 0.4); fill.position.set(-4, 3, 3); scene.add(fill);
+
+  // Lamp: raise the pool intensity and shrink its reach so it reads as a real
+  // local source rather than another ambient wash; emissive shade interior.
+  bulb.intensity = 3.2; bulb.distance = 1.8; bulb.decay = 2;
+  shade.material = new THREE.MeshStandardMaterial({
+    color: '#1c1a17', emissive: '#ffb35c', emissiveIntensity: 1.6,
+    roughness: 0.6, side: THREE.DoubleSide,
+  });
+
+  // A post-batch group for effects that must keep their own transforms and
+  // stay untagged: screen spill, lamp pool decal, and contact shadows under
+  // legs/chair/tower. Added after the merge loop below so batching can't eat them.
+  const fx = new THREE.Group(); fx.name = 'Lighting FX';
+
+  function glowDecal(name, size, position, rotationX, color, opacity) {
+    const decal = new THREE.Mesh(
+      new THREE.CircleGeometry(size, 24),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, toneMapped: false }),
+    );
+    decal.name = name; decal.position.set(...position); decal.rotation.x = rotationX;
+    decal.renderOrder = 2; fx.add(decal); return decal;
+  }
+  function contactShadow(name, size, position) {
+    const tex = canvasTexture((ctx, w, h) => {
+      const gradient = ctx.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2);
+      gradient.addColorStop(0, 'rgba(0,0,0,0.55)'); gradient.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gradient; ctx.fillRect(0, 0, w, h);
+    }, 128, 128);
+    const decal = new THREE.Mesh(
+      new THREE.PlaneGeometry(...size),
+      new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false }),
+    );
+    decal.name = name; decal.rotation.x = -Math.PI / 2; decal.position.set(...position);
+    decal.renderOrder = 1; fx.add(decal); return decal;
+  }
+
+  // Warm lamp pool on the desk surface beneath the shade.
+  glowDecal('Lamp pool', 0.34, [-1.03, 1.176, -0.3], -Math.PI / 2, '#ffb35c', 0.22);
+  // Screen spill onto desk/keyboard in front of the monitor.
+  glowDecal('Screen spill', 0.55, [0, 1.177, 0.05], -Math.PI / 2, '#dfe6ea', 0.1);
+  const screenGlow = new THREE.PointLight('#cfe0ec', 0.5, 1.4, 2);
+  screenGlow.position.set(0, 1.6, -0.15); fx.add(screenGlow);
+
+  // Contact shadows: desk legs, chair feet, tower, monitor foot, wall/floor corner.
+  for (const x of [-1.46, 1.46]) for (const z of [-0.54, 0.49]) contactShadow('Leg contact', [0.22, 0.22], [x, 0.006, z]);
+  contactShadow('Chair contact', [0.7, 0.7], [0.05, 0.006, 1.22]);
+  contactShadow('Tower contact', [0.5, 0.5], [1.0, 0.006, -0.38]);
+  contactShadow('Monitor contact', [0.62, 0.4], [0, 1.116, -0.35]);
+  const cornerShadow = new THREE.Mesh(
+    new THREE.PlaneGeometry(5, 0.5),
+    new THREE.MeshBasicMaterial({
+      color: '#000000', transparent: true, opacity: 0.28, depthWrite: false, toneMapped: false,
+    }),
+  );
+  cornerShadow.rotation.x = -Math.PI / 2; cornerShadow.position.set(0, 0.007, -1.55); cornerShadow.renderOrder = 1;
+  fx.add(cornerShadow);
 
   // Bake static transforms and batch by material + interaction target. A room
   // contains many small pieces, but each key/slat need not cost a draw call.
@@ -265,6 +336,7 @@ export function buildWorkspace(scene) {
     mesh.castShadow = batch.castShadow; mesh.receiveShadow = true;
     root.add(mesh); tag(mesh, batch.id);
   }
+  root.add(fx);
 
   return {
     root, interactive,
