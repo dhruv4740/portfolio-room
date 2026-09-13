@@ -295,11 +295,19 @@ const pinSurface = (page, surface) =>
       await enterCue.focus();
       await page.keyboard.press('Enter');
 
+      // The mesh-click check above already loaded and readied the OS iframe,
+      // so this cue click takes the WARM path: Scan.jsx reads osReady=true and
+      // sets phase straight to 'entering' (or 'inside' under reduced motion),
+      // never visiting 'preparing' at all (Scan.jsx ~line 89). The cold
+      // preparing->entering path is exercised by the earlier mesh-click check
+      // instead. Assert the warm branch here rather than the state this click
+      // can no longer produce.
       const prepared = await page
-        .locator('.scan-root[data-entrance-state="preparing"]')
+        .locator('.scan-root[data-entrance-state="entering"], .scan-root[data-entrance-state="inside"]')
         .count()
         .then((n) => n === 1);
-      record('scan: prepares embedded screen', prepared, prepared ? 'preparing' : 'state changed before sample');
+      record('scan: cue re-entry skips preparing when OS already warm', prepared,
+        prepared ? 'entering/inside directly (osReady was already true)' : 'unexpected state before sample');
 
       const entered = await page
         .waitForFunction(
@@ -376,9 +384,25 @@ const pinSurface = (page, surface) =>
           : 0;
         record('scan: repeated entry retains app state', reentered && retained > 0,
           reentered ? `${retained} decoded card(s)` : 'second entry did not reach inside');
+
+        // Exercise the OTHER exit: Escape, not the Back button. All prior
+        // exits in this suite click [data-testid="back-to-room"]; this is the
+        // only Escape-from-inside coverage, per the task's explicit ask for
+        // "exit via Escape and via any Back affordance".
         if (reentered) {
-          await page.locator('[data-testid="back-to-room"]').click();
-          await page.waitForTimeout(1_300);
+          await page.keyboard.press('Escape');
+          const escReturned = await page
+            .waitForFunction(
+              () => document.querySelector('.scan-root')?.dataset.entranceState === 'room',
+              { timeout: 6_000 },
+            )
+            .then(() => true)
+            .catch(() => false);
+          record('scan: escape from inside returns to room', escReturned,
+            escReturned ? 'room' : `state=${await page.locator('.scan-root').getAttribute('data-entrance-state')}`);
+          const escFocusLabel = await page.evaluate(() => document.activeElement?.getAttribute('aria-label') || '');
+          record('scan: escape exit restores marker focus', escFocusLabel.startsWith('Monitor'),
+            escFocusLabel || 'no labelled focus');
         }
       }
     }
