@@ -123,7 +123,18 @@ export default function WorkspaceStage({
         const a=tr.x-tl.x+g*tr.x,b=bl.x-tl.x+h*bl.x,d=tr.y-tl.y+g*tr.y,e=bl.y-tl.y+h*bl.y;
         callbacks.current.onScreenRect?.({matrix:[a/W,d/W,0,g/W,b/H,e/H,0,h/H,0,0,1,0,tl.x,tl.y,0,1],width:W,height:H});
       }
-      function render() { if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;model.figure.head.visible = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position)) > 0.24; renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
+      function render() { if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
+        // The chair reads as empty until you are in it. The body only exists
+        // once the camera has arrived at the seat, so the approach never shows
+        // someone already sitting there — and the head is dropped at the last
+        // stretch so you are never inside your own skull.
+        const inTheSeat = state.current.seated && seatDistance < 0.9;
+        model.figure.root.visible = inTheSeat;
+        // The hands are a separate group from the body. Left ungated they lie
+        // on the keyboard above an empty chair — the exact disembodied-arms
+        // problem the figure was added to solve.
+        if (!inTheSeat) model.hands.root.visible = false;
+        model.figure.head.visible = seatDistance > 0.24; renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
       // Re-arm the render loop from outside tick() itself — used wherever something
       // animates without going through OrbitControls (camera-travel tween, resize).
