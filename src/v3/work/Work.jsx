@@ -453,6 +453,11 @@ const css = `
 export default function Work() {
   const mainRef = useRef(null);
 
+  // A project with no description yet renders as a bare title and a lone tech
+  // chip, which reads as a broken stub rather than as work. Withhold it until
+  // there is something true to say about it.
+  const listed = projects.filter((p) => p.description || p.tagline);
+
   const hasContact =
     contact.email || contact.github || contact.linkedin || contact.twitter || contact.resume;
 
@@ -565,10 +570,10 @@ export default function Work() {
                 Projects
               </h2>
               <ol className="work-projects">
-                {projects.map((project, index) => {
+                {listed.map((project, index) => {
                   const hasLinks = project.links?.live || project.links?.github;
                   const ordinal = String(index + 1).padStart(2, '0');
-                  const total = String(projects.length).padStart(2, '0');
+                  const total = String(listed.length).padStart(2, '0');
                   return (
                     <li key={project.id} className="work-project">
                       <div className="work-project-meta mono">
@@ -649,9 +654,11 @@ export default function Work() {
                     <li key={skill.id} className="work-skill">
                       <span className="work-skill-label">{skill.label}</span>
                       <span className="work-skill-meta">
-                        <span className="mono work-skill-proof">
-                          Evidence &middot; {proof.length > 0 ? proof.join(', ') : '—'}
-                        </span>
+                        {proof.length > 0 && (
+                          <span className="mono work-skill-proof">
+                            Evidence &middot; {proof.join(', ')}
+                          </span>
+                        )}
                         {skill.note && <span className="mono work-skill-note">{skill.note}</span>}
                       </span>
                     </li>
