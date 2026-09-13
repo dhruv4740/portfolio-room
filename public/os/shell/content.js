@@ -1,69 +1,329 @@
-// os/shell/content.js — single source of truth for all portfolio content
+// GENERATED FILE — DO NOT EDIT BY HAND.
+// Source: src/v3/content/index.js
+// Regenerate: node scripts/gen-os-content.mjs
 export default Object.freeze({
-  identity: {
-    name: 'Dhruv Kothari',
-    role: 'Developer & builder',
-    location: 'Mumbai, India',
-    tagline: 'Interfaces at the edge of code and craft.',
+  "identity": {
+    "name": "Dhruv Kothari",
+    "role": "Full-stack developer",
+    "location": "Mumbai, India",
+    "tagline": "Third-year IT student. Growth intern at Blink.new (YC).",
+    "statement": "I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure."
   },
-  contact: {
-    email: 'dhruvkothari13062006@gmail.com',
-    github: 'https://github.com/dhruv4740',
-    githubLabel: 'github.com/dhruv4740',
-    resume: '', // fill when PDF exists; empty hides button
+  "contact": {
+    "email": "dhruvkothari13062006@gmail.com",
+    "github": "https://github.com/dhruv4740",
+    "githubLabel": "github.com/dhruv4740",
+    "linkedin": "https://linkedin.com/in/dhruv4740",
+    "twitter": "",
+    "resume": ""
   },
-  skills: [
-    { id: 'react',   label: 'React',      level: 0.90, projects: ['reddit', 'portfolio3d'] },
-    { id: 'three',   label: 'Three.js',   level: 0.85, projects: ['portfolio3d', 'dhruvos'] },
-    { id: 'webgl',   label: 'WebGL',      level: 0.80, projects: ['portfolio3d', 'dhruvos'] },
-    { id: 'gsap',    label: 'GSAP',       level: 0.80, projects: ['dhruvos'] },
-    { id: 'ts',      label: 'TypeScript', level: 0.85, projects: ['reddit', 'portfolio3d'] },
-    { id: 'node',    label: 'Node.js',    level: 0.80, projects: ['reddit'] },
-    { id: 'shaders', label: 'Shaders',    level: 0.75, projects: ['portfolio3d', 'dhruvos'] },
-    { id: 'design',  label: 'Design',     level: 0.80, projects: ['dhruvos', 'portfolio3d'] },
-    { id: 'python',  label: 'Python',     level: 0.65, projects: ['reddit'] },
-    { id: 'canvas',  label: 'Canvas 2D',  level: 0.90, projects: ['dhruvos'] },
+  "education": {
+    "school": "KJ Somaiya College of Engineering",
+    "degree": "B.Tech, Information Technology",
+    "year": "Third year"
+  },
+  "experience": [
+    {
+      "id": "blink",
+      "role": "Growth Intern",
+      "org": "Blink.new (1Flow Inc.)",
+      "note": "YC-backed AI app builder",
+      "from": "Jan 2026",
+      "to": "Present",
+      "detail": "Ran organic growth experiments across search and community channels; analysed onboarding and engagement metrics to lift activation."
+    },
+    {
+      "id": "arh",
+      "role": "Web Developer Intern",
+      "org": "ARH Tubes Pvt. Ltd.",
+      "from": "Dec 2025",
+      "to": "Jan 2026",
+      "detail": "UI refactoring and asset handling for page responsiveness; integrated backend APIs and reduced UI inconsistencies."
+    },
+    {
+      "id": "efarm",
+      "role": "IoT Developer Intern",
+      "org": "EFarm, KJSCE",
+      "from": "Feb 2025",
+      "to": "Mar 2025",
+      "detail": "Automated irrigation prototype on Raspberry Pi with threshold-based pump control from live sensor data."
+    }
   ],
-  projects: [
+  "achievements": [
     {
-      id: 'reddit',
-      name: 'Reddit Growth Copilot',
-      year: 2024,
-      type: 'MAIN QUEST',
-      tagline: 'AI finds Reddit threads and drafts on-brand replies.',
-      description: 'Scans Reddit in real-time to surface relevant threads for your product, then drafts contextual, non-spammy replies that drive genuine growth. Processes 1000+ threads per day. Built with Next.js, OpenAI API, and Reddit API.',
-      tech: ['Next.js', 'OpenAI', 'Node.js', 'Reddit API'],
-      links: { live: '', github: '' },
+      "id": "innovathon",
+      "label": "Innovathon 2025 — Data Science track",
+      "result": "Winner",
+      "year": 2025
     },
     {
-      id: 'geosvg',
-      name: 'GeoSVG Maps Demo',
-      year: 2024,
-      type: 'SIDE QUEST',
-      tagline: 'Interactive SVG map generator with live coordinates.',
-      description: 'Map explorer built with Leaflet.js and custom SVG overlays. Live coordinate display, refresh controls, and vector export. Runs entirely in-browser with no backend.',
-      tech: ['Leaflet.js', 'SVG', 'JavaScript'],
-      links: { live: '', github: '' },
+      "id": "realms",
+      "label": "REALMS 2025 — AR Tourism track",
+      "result": "Winner",
+      "year": 2025
     },
     {
-      id: 'portfolio3d',
-      name: '3D Portfolio',
-      year: 2025,
-      type: 'SIDE QUEST',
-      tagline: 'Walkable R3F room with physics, shaders, and a car game.',
-      description: 'Immersive portfolio built with React Three Fiber. A walkable room with real-time physics (Rapier), custom GLSL shaders, postprocessing, and an embedded car game. First-person navigation throughout.',
-      tech: ['React', 'Three.js', 'R3F', 'GLSL', 'Rapier'],
-      links: { live: '', github: '' },
-    },
-    {
-      id: 'dhruvos',
-      name: 'dhruvOS',
-      year: 2026,
-      type: 'SIDE QUEST',
-      tagline: 'A retro-future OS desktop as a portfolio.',
-      description: 'Fake OS shell built as a portfolio. No bundler — pure ES modules. Canvas 2D apps, Web Audio API synthesizer, force-directed neural graph, Powers of Ten zoom, wormhole tunnel. Everything runs in the browser.',
-      tech: ['ES Modules', 'Canvas 2D', 'Web Audio', 'GSAP', 'Three.js'],
-      links: { live: '', github: '' },
-    },
+      "id": "saiss",
+      "label": "Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)",
+      "result": "Finalist",
+      "year": 2025
+    }
   ],
+  "skills": [
+    {
+      "id": "react",
+      "label": "React / Next.js",
+      "note": "",
+      "projects": [
+        "crisiswatch",
+        "reddit"
+      ]
+    },
+    {
+      "id": "ts",
+      "label": "TypeScript",
+      "note": "",
+      "projects": [
+        "expense",
+        "crisiswatch",
+        "reddit"
+      ]
+    },
+    {
+      "id": "node",
+      "label": "Node.js / Express",
+      "note": "",
+      "projects": [
+        "crisiswatch",
+        "reddit"
+      ]
+    },
+    {
+      "id": "python",
+      "label": "Python",
+      "note": "FastAPI, Flask, pandas",
+      "projects": [
+        "darksentinel",
+        "fraud",
+        "basket"
+      ]
+    },
+    {
+      "id": "kotlin",
+      "label": "Kotlin / Android",
+      "note": "native modules, accessibility services",
+      "projects": [
+        "focuslock",
+        "expense"
+      ]
+    },
+    {
+      "id": "firebase",
+      "label": "Firebase / Firestore",
+      "note": "cross-device sync and security rules",
+      "projects": [
+        "focuslock"
+      ]
+    },
+    {
+      "id": "ml",
+      "label": "ML / data",
+      "note": "XGBoost, RoBERTa",
+      "projects": [
+        "fraud",
+        "darksentinel"
+      ]
+    },
+    {
+      "id": "iot",
+      "label": "ESP32 / Raspberry Pi",
+      "note": "sensor integration, control logic",
+      "projects": [
+        "ecowater"
+      ]
+    },
+    {
+      "id": "three",
+      "label": "Three.js / WebGL",
+      "note": "14 verified browser experiments",
+      "projects": []
+    }
+  ],
+  "projects": [
+    {
+      "id": "focuslock",
+      "name": "FocusLock",
+      "year": 2025,
+      "kind": "product",
+      "type": "MAIN QUEST",
+      "tagline": "Screen-time limits that follow you across Android and Windows.",
+      "description": "One Firestore backend enforces the same limits on two very different operating systems. An Android accessibility service detects target apps, a Windows agent enforces on the desktop, and short sync codes pair the devices.",
+      "decision": "It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem — and bought a real tradeoff: Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.",
+      "broke": "The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.",
+      "tech": [
+        "Kotlin",
+        "Android",
+        "Electron",
+        "Firebase",
+        "Firestore"
+      ],
+      "links": {
+        "live": "",
+        "github": "https://github.com/dhruv4740/focuslock"
+      },
+      "note": ""
+    },
+    {
+      "id": "expense",
+      "name": "Expense Tracker",
+      "year": 2025,
+      "kind": "product",
+      "type": "MAIN QUEST",
+      "tagline": "Logs your spending by reading the receipts your phone already gets.",
+      "description": "React Native with native Kotlin modules that parse SMS and notifications to log expenses automatically. Everything stays in local SQLite — no account, no cloud, no sync.",
+      "decision": "The native buffer exposes peek and ack rather than drain. Drain-then-process loses events if processing crashes mid-loop; peek-then-ack only marks them consumed after they have actually been handled. Drain stayed behind as a legacy fallback.",
+      "broke": "The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read — dedup keys bucket by minute, and two clock reads can straddle a boundary.",
+      "tech": [
+        "React Native",
+        "Kotlin",
+        "TypeScript",
+        "SQLite"
+      ],
+      "links": {
+        "live": "",
+        "github": "https://github.com/dhruv4740/expense-tracker"
+      },
+      "note": ""
+    },
+    {
+      "id": "basket",
+      "name": "Basket Price",
+      "year": 2026,
+      "kind": "tool",
+      "type": "MAIN QUEST",
+      "tagline": "Refuses to show you a price it cannot prove.",
+      "description": "A private grocery price comparison and cart-sync tool for one family, across three delivery services. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.",
+      "decision": "We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.",
+      "broke": "A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.",
+      "tech": [
+        "Python"
+      ],
+      "links": {
+        "live": "",
+        "github": ""
+      },
+      "note": ""
+    },
+    {
+      "id": "darksentinel",
+      "name": "DarkSentinel",
+      "year": 2025,
+      "kind": "research",
+      "type": "SIDE QUEST",
+      "tagline": "Darknet threat monitoring. Hackathon finalist.",
+      "description": "Built for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it reached the finals. Captures traffic with CICFlowMeter, classifies anomalies with Random Forest and RoBERTa, scrapes over Tor, and surfaces results through a FastAPI service.",
+      "decision": "",
+      "broke": "",
+      "tech": [
+        "Python",
+        "FastAPI",
+        "RoBERTa",
+        "Random Forest",
+        "Tor",
+        "Streamlit"
+      ],
+      "links": {
+        "live": "",
+        "github": ""
+      },
+      "note": "Contributed to a private team repository."
+    },
+    {
+      "id": "crisiswatch",
+      "name": "CrisisWatch",
+      "year": 2025,
+      "kind": "product",
+      "type": "SIDE QUEST",
+      "tagline": "Claim verification for a misinformation-heavy feed.",
+      "description": "Built at MumbaiHacks. AI-assisted claim checking with structured verdicts and a modular backend. Frontend on Vercel, backend on Render.",
+      "decision": "Built on LangGraph so the verification flow has explicit steps and state rather than one opaque prompt — every verdict comes from a path you can trace and debug. The model was fixed by what a hackathon budget allows, which made the real problem getting reliable structured output from one constrained model rather than shopping for a better one.",
+      "broke": "The WhatsApp bridge took a day of passes: Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.",
+      "tech": [
+        "Next.js",
+        "TypeScript",
+        "Node.js",
+        "Python"
+      ],
+      "links": {
+        "live": "",
+        "github": "https://github.com/dhruv4740/crisiswatch"
+      },
+      "note": ""
+    },
+    {
+      "id": "reddit",
+      "name": "Reddit Growth Copilot",
+      "year": 2026,
+      "kind": "product",
+      "type": "SIDE QUEST",
+      "tagline": "Finds the threads worth replying to, then drafts the reply.",
+      "description": "Surfaces relevant Reddit threads for a product in real time and drafts contextual, non-spammy replies.",
+      "decision": "",
+      "broke": "",
+      "tech": [
+        "TypeScript",
+        "Next.js",
+        "Node.js",
+        "Reddit API"
+      ],
+      "links": {
+        "live": "",
+        "github": ""
+      },
+      "note": ""
+    },
+    {
+      "id": "fraud",
+      "name": "Fraud Detection Dashboard",
+      "year": 2025,
+      "kind": "research",
+      "type": "SIDE QUEST",
+      "tagline": "Innovathon 2025 winner.",
+      "description": "Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Around 85% accuracy on the test set.",
+      "decision": "",
+      "broke": "",
+      "tech": [
+        "Python",
+        "XGBoost",
+        "Flask",
+        "pandas"
+      ],
+      "links": {
+        "live": "",
+        "github": ""
+      },
+      "note": ""
+    },
+    {
+      "id": "ecowater",
+      "name": "Eco Water System",
+      "year": 2025,
+      "kind": "hardware",
+      "type": "SIDE QUEST",
+      "tagline": "Irrigation that waters when the soil says so.",
+      "description": "ESP32 and soil sensors driving threshold-based pump control with live monitoring.",
+      "decision": "",
+      "broke": "",
+      "tech": [
+        "ESP32",
+        "Sensors",
+        "C++"
+      ],
+      "links": {
+        "live": "",
+        "github": ""
+      },
+      "note": ""
+    }
+  ]
 });
