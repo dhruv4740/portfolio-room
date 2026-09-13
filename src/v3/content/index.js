@@ -97,8 +97,10 @@ export const projects = [
     tagline: 'Screen-time limits that follow you across Android and Windows.',
     description:
       'One Firestore backend enforces the same limits on two very different operating systems. An Android accessibility service detects target apps, a Windows agent enforces on the desktop, and short sync codes pair the devices.',
-    decision: '', // pending — see docs/PROJECT-MATERIAL.md
-    broke: '',    // pending
+    decision:
+      'It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem — and bought a real tradeoff: Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.',
+    broke:
+      'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
@@ -110,8 +112,10 @@ export const projects = [
     tagline: 'Logs your spending by reading the receipts your phone already gets.',
     description:
       'React Native with native Kotlin modules that parse SMS and notifications to log expenses automatically. Everything stays in local SQLite — no account, no cloud, no sync.',
-    decision: '',
-    broke: '',
+    decision:
+      'The native buffer exposes peek and ack rather than drain. Drain-then-process loses events if processing crashes mid-loop; peek-then-ack only marks them consumed after they have actually been handled. Drain stayed behind as a legacy fallback.',
+    broke:
+      'The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read — dedup keys bucket by minute, and two clock reads can straddle a boundary.',
     tech: ['React Native', 'Kotlin', 'TypeScript', 'SQLite'],
     links: { live: '', github: 'https://github.com/dhruv4740/expense-tracker' },
   },
@@ -138,7 +142,8 @@ export const projects = [
     description:
       'Built at MumbaiHacks. AI-assisted claim checking with structured verdicts and a modular backend. Frontend on Vercel, backend on Render.',
     decision: '',
-    broke: '',
+    broke:
+      'The WhatsApp bridge took a day of passes: Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.',
     tech: ['Next.js', 'TypeScript', 'Node.js', 'Python'],
     links: { live: '', github: 'https://github.com/dhruv4740/crisiswatch' },
   },
@@ -160,10 +165,13 @@ export const projects = [
     name: 'Basket Price',
     year: 2026,
     kind: 'tool',
-    tagline: '', // TODO: pending scan — see docs/PROJECT-MATERIAL.md
-    description: '',
-    decision: '',
-    broke: '',
+    tagline: 'Refuses to show you a price it cannot prove.', // TODO: pending scan — see docs/PROJECT-MATERIAL.md
+    description: 
+      'A private grocery price comparison and cart-sync tool for one family, across three delivery services. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
+    decision:
+      'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
+    broke:
+      'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
     tech: ['Python'],
     links: { live: '', github: '' },
   },
