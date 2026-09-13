@@ -52,6 +52,9 @@ export default function WorkspaceStage({
       controls.minAzimuthAngle = -0.8; controls.maxAzimuthAngle = 0.85;
       controls.minDistance = 2.2; controls.maxDistance = 11;
       controls.addEventListener('change', () => invalidate());
+      // Camera flights share wall-clock deadlines with Scan. A slow render
+      // must not stretch a one-second flight into many seconds of GPU work.
+      gsap.ticker.lagSmoothing(0);
       gsap.config({ autoSleep: 10 }); // Let the shared ticker sleep promptly after bounded flights.
       rig = createRig(camera, controls); rig.setIdle(false);
       let headYaw = 0, headPitch = 0;
@@ -77,7 +80,7 @@ export default function WorkspaceStage({
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           projected.set(...point).project(camera);
-          const visible = state.current.phase === 'room' && (!state.current.seated || id === 'notebook' || id === 'monitor') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const visible = state.current.phase === 'room' && (id !== 'phone' || (state.current.seated && state.current.activeAnchorId !== 'phone')) && (!state.current.seated || id === 'notebook' || id === 'monitor' || id === 'phone') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
@@ -147,6 +150,7 @@ export default function WorkspaceStage({
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
         tween?.kill(); rig.dispose();
+        model.setHandsVisible(false);
         const { phase: currentPhase, activeAnchorId: selected, reducedMotion: reduced } = state.current;
         if (currentPhase !== 'entering' && currentPhase !== 'leaving') {
           callbacks.current.onScreenRect?.(null);
@@ -157,18 +161,21 @@ export default function WorkspaceStage({
           controls.minDistance = 0.025; controls.maxDistance = 20;
           controls.minPolarAngle = 0.001; controls.maxPolarAngle = Math.PI - 0.001;
           controls.minAzimuthAngle = -Infinity; controls.maxAzimuthAngle = Infinity;
-          const view = selected === 'notebook'
+          const view = selected === 'phone'
+            ? { position: [-0.80, 1.72, 0.10], target: WORKSPACE.anchors.phone }
+            : selected === 'notebook'
             ? { position: [1.10, 1.72, 0.78], target: WORKSPACE.anchors.notebook }
             : { position: [0.05, reduced ? 1.72 : 1.745, 1.16], target: WORKSPACE.seat.target };
           const startFov = camera.fov;
           const started = performance.now();
           rig.flyTo(view, { reduced, duration: 1.05, onUpdate() {
             const t = reduced ? 1 : Math.min(1, (performance.now() - started) / 1050);
-            camera.fov = reduced ? 40 : THREE.MathUtils.lerp(startFov, 46, t);
+            camera.fov = reduced ? (selected ? 46 : 56) : THREE.MathUtils.lerp(startFov, selected ? 46 : 56, t);
             camera.updateProjectionMatrix(); invalidate();
           }, onComplete() {
             headYaw = Math.atan2(camera.position.x - controls.target.x, camera.position.z - controls.target.z);
             headPitch = Math.asin((controls.target.y - camera.position.y) / camera.position.distanceTo(controls.target));
+            model.setHandsVisible(!selected);
             // A small downward landing, then no more frames.
             if (!reduced && !selected) {
               const landing = { y: camera.position.y };
@@ -188,7 +195,7 @@ export default function WorkspaceStage({
         let view = currentPhase === 'leaving' && state.current.seated
           ? { position: new THREE.Vector3(...WORKSPACE.seat.position), target: new THREE.Vector3(...WORKSPACE.seat.target) } : home;
         controls.minDistance = 0.025;
-        controls.minPolarAngle = currentPhase === 'room' ? Math.PI * 0.2 : 0.01;
+        controls.minPolarAngle = currentPhase === 'room' && selected !== 'phone' ? Math.PI * 0.2 : 0.01;
         controls.maxPolarAngle = currentPhase === 'room' ? Math.PI * 0.47 : Math.PI - 0.01;
         if (currentPhase === 'entering' || currentPhase === 'inside') {
           // Move perpendicular to the screen; its known physical size defines
@@ -198,7 +205,7 @@ export default function WorkspaceStage({
           view = { position: screenCenter.clone().add(new THREE.Vector3(0, 0, Math.min(fitHeight, fitWidth) * 0.94)), target: screenCenter.clone() };
         } else if (currentPhase !== 'leaving' && selected && WORKSPACE.anchors[selected]) {
           const target = new THREE.Vector3(...WORKSPACE.anchors[selected]);
-          const offset = selected === 'monitor' ? new THREE.Vector3(0.2, 0.17, 2.1) : new THREE.Vector3(1.15, 0.95, 2.3);
+          const offset = selected === 'phone' ? new THREE.Vector3(0, 0.524, 0.13) : selected === 'monitor' ? new THREE.Vector3(0.2, 0.17, 2.1) : new THREE.Vector3(1.15, 0.95, 2.3);
           view = { position: target.clone().add(offset), target };
         }
         if (reduced) {
@@ -233,7 +240,7 @@ export default function WorkspaceStage({
           },
           onComplete() {
             controls.enabled = state.current.phase === 'room' && !state.current.seated;
-            controls.minDistance = currentPhase === 'room' ? 1.4 : 0.025;
+            controls.minDistance = currentPhase === 'room' && selected !== 'phone' ? 1.4 : 0.025;
             if (currentPhase === 'entering') {
               callbacks.current.onScreenRect?.(null);
               callbacks.current.onTravel?.(1, 'inside');
@@ -277,7 +284,7 @@ export default function WorkspaceStage({
       function pointerUp(event) {
         if (!down || down.moved || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || state.current.phase !== 'room') { down = null; return; }
         down = null; const id = hit(event); if (!id) return;
-        if (state.current.seated && !['monitor', 'notebook'].includes(id)) return;
+        if (state.current.seated && !['monitor', 'notebook', 'phone'].includes(id)) return;
         if (id === 'chair') { callbacks.current.onSit?.(); return; }
         const marker = markerRefs.current.get(id); marker?.focus();
         if (id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
@@ -330,7 +337,7 @@ export default function WorkspaceStage({
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker" data-object="chair" aria-label="Sit in the chair"
         onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT</span></button>
-      {anchors.filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
+      {[...anchors, { id: 'phone', label: 'Phone', readout: 'FocusLock / screen placeholder' }].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}

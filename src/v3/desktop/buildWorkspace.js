@@ -13,8 +13,9 @@ export const WORKSPACE = {
     desk: [-1.22, 1.18, 0.28],
     notebook: [1.12, 1.21, 0.38],
     window: [1.4, 2.12, -1.75],
+    phone: [-0.80, 1.196, -0.03],
   },
-  seat: { position: [0.05, 1.72, 1.16], target: [0, 1.65, -0.37] },
+  seat: { position: [0.05, 1.72, 1.16], target: [0, 1.42, -0.37] },
   chair: [0.05, 1.08, 1.414],
   screen: { center: [0, 1.79, -0.362], width: 1.28, height: 0.79 },
 };
@@ -67,6 +68,98 @@ function screenTexture() {
     });
     ctx.fillStyle = '#666e68'; ctx.font = '16px monospace'; ctx.fillText('DHRUV KOTHARI                                    ENTER ↗', 75, 591);
   }, 1024, 640);
+}
+
+// Replace this function's returned texture with the supplied FocusLock capture.
+// Portrait 9:20, 540 x 1200 pixels; UVs run top-to-bottom with no crop.
+export function phoneScreenTexture() {
+  return canvasTexture((ctx, w, h) => {
+    ctx.fillStyle = '#33444d'; ctx.fillRect(0, 0, w, h);
+    ctx.strokeStyle = '#aebcc2'; ctx.lineWidth = 3;
+    ctx.strokeRect(36, 36, w - 72, h - 72);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#e4eaec';
+    ctx.font = 'bold 46px sans-serif'; ctx.fillText('FocusLock', w / 2, 420);
+    ctx.font = '25px monospace'; ctx.fillText('SCREEN PLACEHOLDER', w / 2, 510);
+    ctx.font = '22px monospace'; ctx.fillText('Actual capture pending', w / 2, 560);
+    ctx.fillText('540 x 1200', w / 2, 940);
+  }, 540, 1200);
+}
+
+// An authored impression, not a claimed photographic view or named landmark.
+// Stable seeded windows avoid texture regeneration or any animation clock.
+function skylineTexture(foreground = false) {
+  return canvasTexture((ctx, w, h) => {
+    let seed = foreground ? 819 : 47;
+    const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    if (!foreground) {
+      const sky = ctx.createLinearGradient(0, 0, 0, h);
+      sky.addColorStop(0, '#18232f'); sky.addColorStop(0.6, '#4d4742'); sky.addColorStop(1, '#625044');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
+    }
+    let x = -30;
+    while (x < w) {
+      const width = 28 + random() * (foreground ? 85 : 44);
+      const tower = !foreground && random() > 0.72;
+      const height = foreground ? 100 + random() * 190 : tower ? 420 + random() * 260 : 180 + random() * 210;
+      const roof = h - height;
+      ctx.fillStyle = foreground ? '#202323' : tower ? '#353634' : '#3a3632';
+      ctx.fillRect(x, roof, width, height);
+      // Roof terraces, water tanks, service cores: irregular low-rise massing.
+      ctx.fillRect(x + width * 0.15, roof - 7, width * 0.7, 7);
+      if (random() > 0.4) ctx.fillRect(x + 9, roof - 20, width * 0.25, 20);
+      if (tower) {
+        ctx.fillStyle = '#44413a';
+        for (let y = roof + 12; y < h; y += 27) ctx.fillRect(x + 1, y, width - 2, 2);
+      }
+      for (let y = roof + 16; y < h - 12; y += foreground ? 25 : 22) {
+        for (let wx = x + 7; wx < x + width - 7; wx += 13) {
+          if (random() > 0.48) continue;
+          ctx.fillStyle = ['#b68b52', '#d3a66a', '#8e775a', '#e0b57b'][Math.floor(random() * 4)];
+          ctx.fillRect(wx, y, 4 + random() * 3, 7);
+        }
+      }
+      x += width + 3 + random() * 10;
+    }
+  }, 768, 1024);
+}
+
+// One vertex-coloured mesh. World-space wrists stay on the keyboard when the
+// head turns. No skeleton, shadows, camera parenting, or per-frame update.
+function seatedHands() {
+  const parts = [];
+  const add = (geometry, position, color, rotation = null) => {
+    const mesh = new THREE.Mesh(geometry); mesh.position.set(...position);
+    if (rotation) mesh.quaternion.copy(rotation);
+    mesh.updateMatrix();
+    const g = geometry.index ? geometry.toNonIndexed() : geometry.clone();
+    g.applyMatrix4(mesh.matrix); geometry.dispose();
+    const c = new THREE.Color(color), values = new Float32Array(g.attributes.position.count * 3);
+    for (let i = 0; i < values.length; i += 3) { values[i] = c.r; values[i + 1] = c.g; values[i + 2] = c.b; }
+    g.setAttribute('color', new THREE.BufferAttribute(values, 3)); parts.push(g);
+  };
+  const limb = (from, to, r1, r2, color) => {
+    const a = new THREE.Vector3(...from), b = new THREE.Vector3(...to);
+    add(new THREE.CylinderGeometry(r2, r1, a.distanceTo(b), 8), a.clone().add(b).multiplyScalar(0.5).toArray(), color,
+      new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.sub(a).normalize()));
+  };
+  for (const side of [-1, 1]) {
+    const x = side * 0.27;
+    limb([side * 0.38, 1.16, 1.06], [x, 1.235, 0.61], 0.077, 0.051, '#46504c');
+    limb([x, 1.235, 0.62], [x, 1.265, 0.43], 0.045, 0.043, '#b98a68');
+    add(new THREE.SphereGeometry(1, 8, 4).scale(0.060, 0.025, 0.072), [x, 1.286, 0.395], '#c99b78');
+    for (let finger = 0; finger < 4; finger++) {
+      const fx = x - 0.04 + finger * 0.027;
+      const end = 0.27 + Math.abs(finger - 1.5) * 0.012;
+      limb([fx, 1.287, 0.35], [fx, 1.279, end], 0.013, 0.009, '#c99b78');
+    }
+    limb([x - side * 0.049, 1.283, 0.416], [x - side * 0.087, 1.278, 0.361], 0.017, 0.011, '#c99b78');
+  }
+  const geometry = mergeGeometries(parts, false); parts.forEach(g => g.dispose());
+  const hands = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.9 }));
+  hands.name = 'Seated hands and forearms'; hands.visible = false;
+  hands.castShadow = false; hands.receiveShadow = true;
+  hands.raycast = () => {}; // Embodiment never blocks content selection.
+  return hands;
 }
 
 export function buildWorkspace(scene) {
@@ -125,9 +218,26 @@ export function buildWorkspace(scene) {
   box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
   const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
   windowRecess.castShadow = false;
-  const lightPanel = new THREE.MeshBasicMaterial({ color: '#253849' });
-  const daylight = box('Daylight', [1.41, 1.91, 0.016], [1.39, 1.99, -1.65], lightPanel, 0, 'window');
-  daylight.castShadow = false;
+  const city = new THREE.Group(); city.name = 'Mumbai night view';
+  const cityMaps = [skylineTexture(), skylineTexture(true)];
+  cityMaps.forEach((map, index) => {
+    map.repeat.set(0.78, 0.88); map.offset.set(0.11, 0.06);
+    const layer = new THREE.Mesh(new THREE.PlaneGeometry(1.41, 1.91), new THREE.MeshBasicMaterial({
+      map, transparent: index === 1, alphaTest: index === 1 ? 0.01 : 0,
+      toneMapped: false, fog: false,
+    }));
+    layer.position.set(1.39, 1.99, -1.65 + index * 0.005);
+    // Camera-driven UV parallax through the existing aperture avoids a large
+    // exterior plane leaking around the cutaway wall. No new frame requests.
+    layer.onBeforeRender = (_renderer, _scene, camera) => {
+      const depth = Math.max(0.5, camera.position.z + 1.65);
+      const amount = index ? 0.065 : 0.025;
+      map.offset.x = 0.11 + THREE.MathUtils.clamp((camera.position.x - 1.39) / depth * amount, -0.1, 0.1);
+      map.offset.y = 0.06 + THREE.MathUtils.clamp((camera.position.y - 1.99) / depth * amount, -0.05, 0.05);
+    };
+    tag(layer, 'window'); city.add(layer);
+  });
+  root.add(city);
   const mullion = box('Window mullion', [0.034, 1.92, 0.04], [1.39, 1.99, -1.62], bone);
   mullion.castShadow = false;
   for (let i = 0; i < 11; i++) {
@@ -172,6 +282,17 @@ export function buildWorkspace(scene) {
   box('Spacebar', [0.35, 0.032, 0.055], [-0.13, 1.252, 0.4], bone, 0.006);
   box('Mouse', [0.13, 0.057, 0.21], [0.63, 1.22, 0.32], bone, 0.04, 'desk');
   box('Mouse wheel', [0.014, 0.011, 0.032], [0.63, 1.252, 0.279], dark, 0.004);
+
+  // Android device: the placeholder is explicitly not a recreation of its UI.
+  box('Phone enclosure', [0.16, 0.023, 0.33], [-0.80, 1.18, -0.03], dark, 0.016, 'phone');
+  const phoneDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.135, 0.30),
+    new THREE.MeshBasicMaterial({ map: phoneScreenTexture(), toneMapped: false }));
+  phoneDisplay.name = 'FocusLock screen placeholder';
+  phoneDisplay.rotation.x = -Math.PI / 2;
+  phoneDisplay.position.set(...WORKSPACE.anchors.phone); root.add(phoneDisplay); tag(phoneDisplay, 'phone');
+  box('Phone earpiece', [0.032, 0.002, 0.003], [-0.80, 1.197, -0.187], black, 0, 'phone');
+  const phoneGlow = new THREE.PointLight('#c6dbe4', 0.09, 0.38, 2);
+  phoneGlow.position.set(-0.80, 1.24, -0.03); root.add(phoneGlow);
 
   // Open notebook: a real document object, pencil and authored page markings.
   const book = box('Notebook cover', [0.57, 0.024, 0.4], [1.14, 1.18, 0.3], mat('cover', '#3e4942'), 0.007, 'notebook');
@@ -388,9 +509,11 @@ export function buildWorkspace(scene) {
     root.add(mesh); tag(mesh, batch.id);
   }
   root.add(fx);
+  const hands = seatedHands(); root.add(hands);
 
   return {
     root, interactive,
+    setHandsVisible(visible) { hands.visible = visible; },
     setEntryPower(value) { pendantLight.intensity = 0.55 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
     dispose() {
       const geometries = new Set(), mats = new Set(), textures = new Set();
