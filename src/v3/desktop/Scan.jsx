@@ -1,18 +1,18 @@
 // ============================================================================
 // Scan — the desktop surface.
 //
-// A photoreal Gaussian-splat capture floating in void, annotated with
-// instrument chrome. Composes SplatStage (3D) with the presentational UI kit.
+// A modeled workspace floating in void, annotated with instrument chrome.
+// Composes WorkspaceStage (3D) with the presentational UI kit.
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import SplatStage from './SplatStage.jsx';
+import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import ScanIntro from '../ui/ScanIntro.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
-import { anchors, projects, capture, identity } from '../content/index.js';
+import { anchors, projects, identity } from '../content/index.js';
 import {
   prefersReducedMotion,
   hasSeenIntro,
@@ -27,14 +27,13 @@ const PREPARE_TIMEOUT_MS = 9000;
 export default function Scan() {
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const [introDone, setIntroDone] = useState(() => hasSeenIntro());
-  const [load, setLoad] = useState({ progress: 0, loadedMB: 0, totalMB: 0 });
+  const [workspaceProgress, setWorkspaceProgress] = useState(0);
   const [stats, setStats] = useState({
     frameMs: undefined,
     cpuMs: undefined,
     gpuMs: undefined,
     cameraPos: undefined,
   });
-  const [splatCount, setSplatCount] = useState(null);
   const [activeId, setActiveId] = useState(null);
   const [screenPhase, setScreenPhase] = useState('room');
   const [osReady, setOsReady] = useState(false);
@@ -49,6 +48,16 @@ export default function Scan() {
     : null;
   // The monitor anchor is the one that opens the embedded OS.
   const monitorIsActive = activeAnchor?.ref === 'lab';
+
+  const handleProgress = useCallback((event) => {
+    const value = typeof event === 'number' ? event : event?.progress;
+    if (typeof value !== 'number' || !Number.isFinite(value)) return;
+    setWorkspaceProgress(Math.max(0, Math.min(1, value)));
+  }, []);
+
+  const handleWorkspaceReady = useCallback(() => {
+    setWorkspaceProgress(1);
+  }, []);
 
   const handleSelect = useCallback((id) => {
     if (screenPhase !== 'room') return;
@@ -65,10 +74,20 @@ export default function Scan() {
   }, [screenPhase]);
 
   const handleEnterScreen = useCallback(() => {
-    if (screenPhase !== 'room' || !monitorIsActive) return;
+    if (screenPhase !== 'room') return;
+    // Marker selection already recorded the marker before the cue moved focus
+    // into the panel. Preserve it for the cue path; direct canvas hits focus
+    // the same marker in WorkspaceStage before calling this handler.
+    if (activeId !== 'monitor' || !lastTrigger.current?.isConnected) {
+      lastTrigger.current = document.querySelector('[data-object="monitor"]');
+    }
     setScreenError(null);
+    // The stage can invoke this directly from the modeled monitor. Set the
+    // anchor in the same transaction so the camera and OS handoff never rely
+    // on a previous marker-selection render.
+    setActiveId('monitor');
     setScreenPhase(osReady ? (reduced ? 'inside' : 'entering') : 'preparing');
-  }, [monitorIsActive, osReady, reduced, screenPhase]);
+  }, [activeId, osReady, reduced, screenPhase]);
 
   const handleLeaveScreen = useCallback(() => {
     if (screenPhase === 'room' || screenPhase === 'leaving') return;
@@ -150,18 +169,18 @@ export default function Scan() {
     <div className="scan-root" data-entrance-state={screenPhase}>
       <style>{css}</style>
 
-      <SplatStage
-        src={capture.source}
-        expectedBytes={capture.bytes}
+      <WorkspaceStage
         anchors={anchors}
         activeAnchorId={activeId}
         onAnchorSelect={handleSelect}
-        onProgress={(p) => setLoad((s) => ({ ...s, ...p }))}
-        onReady={({ splatCount }) => setSplatCount(splatCount)}
+        onEnterScreen={handleEnterScreen}
+        onProgress={handleProgress}
+        onReady={handleWorkspaceReady}
         onStats={setStats}
         onError={setError}
         reducedMotion={reduced}
         paused={screenPhase === 'preparing' || screenPhase === 'inside'}
+        phase={screenPhase}
       />
 
       {/* ---- masthead ---------------------------------------------------- */}
@@ -185,23 +204,16 @@ export default function Scan() {
       {/* ---- error state -------------------------------------------------- */}
       {error && (
         <div className="scan-error" role="alert">
-          <p className="mono signal">SCAN FAILED TO LOAD</p>
-          <p>{error.message}</p>
+          <p className="mono signal">WORKSPACE FAILED TO BUILD</p>
+          <p>{error?.message || String(error)}</p>
           <Link to="/work" className="mono">CONTINUE TO TEXT VERSION →</Link>
         </div>
       )}
 
       {/* ---- instrument chrome -------------------------------------------- */}
         <Telemetry
-        splatCount={splatCount}
         frameMs={stats.frameMs}
-        cpuMs={stats.cpuMs}
-        gpuMs={stats.gpuMs}
-        loadedMB={load.loadedMB}
-        totalMB={load.totalMB}
-        cameraPos={stats.cameraPos}
         anchorId={activeId}
-        capture={capture}
       />
 
       <AnchorPanel
@@ -234,7 +246,7 @@ export default function Scan() {
 
       {!introDone && (
         <ScanIntro
-          progress={load.progress}
+          progress={workspaceProgress}
           active={!introDone}
           onDone={handleIntroDone}
           skipped={false}
@@ -292,6 +304,10 @@ const css = `
   animation: hint-in var(--d-reveal) var(--ease) both;
 }
 @keyframes hint-in { from { opacity: 0 } to { opacity: 0.75 } }
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-hint { animation: none; }
+}
 
 .lab-cue {
   position: absolute;

@@ -1,5 +1,14 @@
 # AGENTS.md
 
+> CURRENT HANDOFF (2026-09-13): Read [docs/HANDOFF.md](docs/HANDOFF.md) first.
+> The user replaced the shoe-scan direction with an authored modeled workspace.
+> Live desktop: `WorkspaceStage.jsx` + `buildWorkspace.js`, not `SplatStage.jsx`.
+> The room changes are uncommitted; HEAD `1912627` is the older prototype.
+> Capture setup and normalized-capture rules below are historical for the
+> unused splat renderer. Do not download/restore the shoe. Claude is explicitly
+> authorized to continue; the old subagent-model preference below is superseded
+> by the user's current instructions. See the handoff for exact test limits.
+
 Operational guide for any coding agent working in this repo. Narrative and
 rationale live in `docs/`; this file is setup, commands, invariants and traps.
 

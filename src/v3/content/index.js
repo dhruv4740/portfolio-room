@@ -93,75 +93,42 @@ export const projects = [
 ];
 
 // ---------------------------------------------------------------------------
-// ANCHORS — points of interest inside the scanned room.
+// ANCHORS — points of interest inside the modeled workspace.
 //
-// `at` is NORMALISED: [x, y, z] each 0..1 within the capture's bounding box,
-// where 0 is the box minimum and 1 the maximum. World positions and camera
-// viewpoints are derived at runtime (see desktop/splatBounds.js).
-//
-// This is deliberate. Captures come out of training at arbitrary scale and
-// origin, so absolute metre coordinates break the moment a scan is retrained
-// or replaced. Normalised coordinates survive that, and tuning an anchor for
-// the real room means nudging three numbers here — nothing else.
-//
-// `dolly` (default 0.55) is how close the camera parks, as a fraction of the
-// capture radius. Smaller = tighter close-up.
-// `ref` links an anchor to a project id, or 'lab' / 'about' / 'contact'.
+// The stage owns object placement and camera viewpoints. This file only holds
+// the content exposed when an object is selected; `ref` links an anchor to a
+// project id, or 'lab' / 'about' / 'contact'.
 // ---------------------------------------------------------------------------
 export const anchors = [
   {
     id: 'monitor',
     label: 'Monitor',
     ref: 'lab',
-    at: [0.5, 0.72, 0.35],
-    dolly: 0.45,
     readout: '17 EXPERIMENTS · LIVE',
-    body: 'Everything I have built that runs in a browser. Each one is playable.',
+    body: 'A live index of things I have built that run in a browser. Each one is playable.',
   },
   {
     id: 'desk',
     label: 'Desk',
     ref: 'reddit',
-    at: [0.28, 0.42, 0.55],
-    dolly: 0.6,
-    readout: 'MAIN PROJECT',
+    readout: 'REDDIT GROWTH COPILOT',
     body: '',
   },
   {
     id: 'notebook',
     label: 'Notebook',
     ref: 'about',
-    at: [0.72, 0.38, 0.6],
-    dolly: 0.5,
-    readout: 'WHO',
+    readout: 'THE BUILDER',
     body: identity.statement,
   },
   {
     id: 'window',
     label: 'Window',
     ref: 'contact',
-    at: [0.85, 0.75, 0.2],
-    dolly: 0.7,
     readout: 'GET IN TOUCH',
-    body: '',
+    body: `Based in ${identity.location}. Reach me at ${contact.email}.`,
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Capture metadata — rendered as instrument telemetry. Update after real scan.
-// ---------------------------------------------------------------------------
-export const capture = {
-  // TODO(dhruv): replace when the real room scan is trained.
-  source: '/splats/dev-room.splat',
-  // Used only as a progress denominator when the host omits Content-Length.
-  // Update alongside `source` when the real capture lands.
-  bytes: 8655712,
-  isPlaceholder: true,
-  label: 'DEV PLACEHOLDER',
-  capturedOn: '',
-  device: '',
-  method: '',
-};
-
-const content = { identity, contact, skills, projects, anchors, capture };
+const content = { identity, contact, skills, projects, anchors };
 export default content;

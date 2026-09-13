@@ -16,38 +16,40 @@ baked into the hero.
 
 ## The concept
 
-A photoreal 3D Gaussian-splat capture of a room, floating in void, annotated
-with instrument chrome — telemetry, readouts, monospace labels. You orbit it.
-Objects in the room are anchors that open real content.
+An authored 3D workspace floats in a quiet void, annotated with instrument
+chrome — telemetry, readouts, and monospace labels. The desk, monitor, notebook,
+and surrounding props are modeled geometry with deliberate materials and
+lighting. You orbit the scene; real objects are anchors that open real content.
 
-The point is that it is **not a render**. It is a photograph that has volume.
-Most "impressive" portfolios are shader toys; this reads as a captured artifact,
-which is a different and rarer kind of impressive.
+The point is that the workspace is a designed place, not a generic landing page
+or a photogrammetry demo. Its geometry makes the portfolio feel like a small
+world while keeping the composition, performance, and interaction under our
+control.
 
-## Direction change (2026-09-12) — current
+## Direction change (2026-09-13) — current
 
-Three things the user decided, which supersede earlier plans:
+Three things now define the hero:
 
-1. **No person in the scene.** Do not build anything that puts the user's
+1. **Use an authored modeled workspace.** Replace the shoe placeholder and the
+   planned downloaded room scan with a real desk, monitor, notebook, and other
+   modeled scene objects. The hero no longer depends on photogrammetry,
+   Gaussian splats, or a capture asset.
+2. **No person in the scene.** Do not build anything that puts the user's
    likeness on the site.
-2. **Use a public/downloaded room scan, not the user's own room.** Their
-   reasoning, verbatim: *"They probably have richer budget and a better table."*
-   The self-capture path in `docs/CAPTURE.md` is now a **fallback**, not the
-   plan.
 3. **New hero sequence.** Verbatim:
 
    > "We use one of those, and then Maybe we also have a laptop or something
    > like that, and then clicking on the laptop, there's, like, a crazy
-   > animation motion of, you know, going at the light of speed and then getting
-   > transported inside the laptop."
+   > animation motion of, you know, going at the light of speed and then
+   > getting transported inside the laptop."
 
-   So: room scan → a laptop/monitor is a clickable object → warp transition →
-   you arrive *inside* the machine. What's inside is undecided; candidates are
+   So: modeled workspace → a monitor is a clickable object → a focused handoff
+   carries you inside the machine. What's inside is undecided; candidates are
    enumerated in `docs/ROADMAP.md`.
 
-The user's closing question — **"What other ideas do you have?"** — has not been
-answered yet. The candidate list in the roadmap exists to answer it. It needs
-the user to pick.
+The modeled workspace resolves the earlier room-capture choice. The candidate
+list in `docs/ROADMAP.md` remains useful for later experiments inside the
+machine, after the core handoff works.
 
 ## What this is not
 

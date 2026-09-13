@@ -1,5 +1,9 @@
 # Roadmap
 
+> Current as of 2026-09-13: [HANDOFF.md](HANDOFF.md) overrides the historical
+> capture-first roadmap below. A modeled workspace is implemented in the
+> uncommitted working tree; final verification and visual refinement remain.
+
 > 2026-09-12: Read [the proposed creative and build plan](PLAN.md) first.
 > It revises the ordering below and records source-verified renderer constraints,
 > the telemetry measurement issue, and current OS integration work. The older

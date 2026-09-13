@@ -1,5 +1,9 @@
 # Proposed direction — a room you can enter, a machine you can use
 
+> Superseded in part by the user's 2026-09-13 request for a generated modeled
+> workspace. Read [HANDOFF.md](HANDOFF.md) for actual implementation, unfinished
+> work, and verification limits. Downloaded capture sourcing is not a gate now.
+
 2026-09-12. Recommendation after reading all 16 repository Markdown files,
 inspecting the v3 source and dhruvOS entry points, and reviewing saved v3
 screenshots/results. This is a proposed build plan, not an approved redesign or

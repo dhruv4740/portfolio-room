@@ -1,34 +1,19 @@
 // ============================================================================
-// Telemetry.jsx — fixed corner instrument readout.
-// Presentational only: receives live numbers via props, owns no 3D logic.
+// Telemetry.jsx — a small, user-facing status readout for the modeled room.
 //
-// Props:
-//   splatCount  number   — total gaussian splat count
-//   frameMs     number   — average rAF callback interval in ms (presentation cadence)
-//   cpuMs       number   — average CPU-side rig update + render submission time
-//   gpuMs       number   — measured GPU duration; null/undefined when unavailable
-//   loadedMB    number   — bytes loaded, in MB
-//   totalMB     number   — total asset size, in MB
-//   cameraPos   {x,y,z} | [x,y,z] — live camera position, splat-space metres
-//   anchorId    string   — id of the currently active/selected anchor
-//   capture     { isPlaceholder, label, ... } — from content/capture
-//   compact     boolean  — collapse to a single line
+// The scan surface no longer downloads or decodes a capture, so this keeps the
+// useful performance signal (measured frame cadence) and names the medium
+// honestly. It intentionally omits renderer internals and asset diagnostics.
 // ============================================================================
 
-const DASH = '—'; // —
+const DASH = '—';
 
-function isNum(n) {
-  return typeof n === 'number' && Number.isFinite(n);
+function isNum(value) {
+  return typeof value === 'number' && Number.isFinite(value);
 }
 
-function fmtInt(n) {
-  if (!isNum(n)) return DASH;
-  return Math.round(n).toLocaleString('en-US');
-}
-
-function fmtFixed(n, digits = 1) {
-  if (!isNum(n)) return DASH;
-  return n.toFixed(digits);
+function fmtFixed(value, digits = 1) {
+  return isNum(value) ? value.toFixed(digits) : DASH;
 }
 
 function fmtFps(frameMs) {
@@ -36,53 +21,11 @@ function fmtFps(frameMs) {
   return Math.round(1000 / frameMs).toString();
 }
 
-function toXYZ(cameraPos) {
-  if (!cameraPos) return null;
-  if (Array.isArray(cameraPos)) {
-    const [x, y, z] = cameraPos;
-    return { x, y, z };
-  }
-  if (isNum(cameraPos.x) || isNum(cameraPos.y) || isNum(cameraPos.z)) {
-    return { x: cameraPos.x, y: cameraPos.y, z: cameraPos.z };
-  }
-  return null;
-}
-
-function fmtCamera(cameraPos) {
-  const xyz = toXYZ(cameraPos);
-  if (!xyz) return DASH;
-  const x = isNum(xyz.x) ? xyz.x.toFixed(2) : DASH;
-  const y = isNum(xyz.y) ? xyz.y.toFixed(2) : DASH;
-  const z = isNum(xyz.z) ? xyz.z.toFixed(2) : DASH;
-  return `${x} ${y} ${z}`;
-}
-
-function fmtLoad(loadedMB, totalMB) {
-  const loaded = isNum(loadedMB) ? fmtFixed(loadedMB, 1) : DASH;
-  const total = isNum(totalMB) ? fmtFixed(totalMB, 1) : DASH;
-  if (loaded === DASH && total === DASH) return DASH;
-  return `${loaded} / ${total} MB`;
-}
-
 function fmtAnchor(anchorId) {
-  if (!anchorId || typeof anchorId !== 'string') return DASH;
-  return anchorId.toUpperCase();
+  return anchorId && typeof anchorId === 'string' ? anchorId.toUpperCase() : DASH;
 }
 
-export default function Telemetry({
-  splatCount,
-  frameMs,
-  cpuMs,
-  gpuMs,
-  loadedMB,
-  totalMB,
-  cameraPos,
-  anchorId,
-  capture,
-  compact = false,
-}) {
-  const showPlaceholderFlag = Boolean(capture && capture.isPlaceholder && capture.label);
-
+export default function Telemetry({ frameMs, anchorId, compact = false }) {
   if (compact) {
     return (
       <>
@@ -90,28 +33,21 @@ export default function Telemetry({
         <div className="telemetry-root telemetry-root--compact" aria-live="off">
           <span className="t-line">
             <span className="t-item">
-              <span className="t-key">SPLATS</span>
-              <span className="t-val">{fmtInt(splatCount)}</span>
+              <span className="t-key">WORKSPACE</span>
+              <span className="t-val">MODELED REALTIME</span>
             </span>
             <span className="t-sep">&middot;</span>
             <span className="t-item">
               <span className="t-key">FPS</span>
               <span className="t-val">{fmtFps(frameMs)}</span>
             </span>
-            <span className="t-sep">&middot;</span>
-            <span className="t-item">
-              <span className="t-key">CPU</span>
-              <span className="t-val">{fmtFixed(cpuMs, 1)} MS</span>
-            </span>
-            <span className="t-sep">&middot;</span>
-            <span className="t-item">
-              <span className="t-key">ANCHOR</span>
-              <span className="t-val">{fmtAnchor(anchorId)}</span>
-            </span>
-            {showPlaceholderFlag && (
+            {anchorId && (
               <>
                 <span className="t-sep">&middot;</span>
-                <span className="t-flag">{capture.label}</span>
+                <span className="t-item">
+                  <span className="t-key">FOCUS</span>
+                  <span className="t-val">{fmtAnchor(anchorId)}</span>
+                </span>
               </>
             )}
           </span>
@@ -124,41 +60,20 @@ export default function Telemetry({
     <>
       <style>{CSS}</style>
       <div className="telemetry-root" aria-live="off">
-        {showPlaceholderFlag && (
-          <div className="t-row t-row--flag">
-            <span className="t-flag">{capture.label}</span>
+        <div className="t-row t-row--flag">
+          <span className="t-key">WORKSPACE</span>
+          <span className="t-flag">MODELED REALTIME</span>
+        </div>
+        <div className="t-row">
+          <span className="t-key">FPS</span>
+          <span className="t-val">{fmtFixed(frameMs, 1)} MS &middot; {fmtFps(frameMs)}</span>
+        </div>
+        {anchorId && (
+          <div className="t-row">
+            <span className="t-key">FOCUS</span>
+            <span className="t-val">{fmtAnchor(anchorId)}</span>
           </div>
         )}
-        <div className="t-row">
-          <span className="t-key">SPLATS</span>
-          <span className="t-val">{fmtInt(splatCount)}</span>
-        </div>
-        <div className="t-row">
-          <span className="t-key">RAF</span>
-          <span className="t-val">
-            {fmtFixed(frameMs, 1)} MS &middot; {fmtFps(frameMs)} FPS
-          </span>
-        </div>
-        <div className="t-row">
-          <span className="t-key">CPU</span>
-          <span className="t-val">{fmtFixed(cpuMs, 1)} MS</span>
-        </div>
-        <div className="t-row">
-          <span className="t-key">GPU</span>
-          <span className="t-val">{fmtFixed(gpuMs, 1)} MS</span>
-        </div>
-        <div className="t-row">
-          <span className="t-key">LOAD</span>
-          <span className="t-val">{fmtLoad(loadedMB, totalMB)}</span>
-        </div>
-        <div className="t-row">
-          <span className="t-key">CAM</span>
-          <span className="t-val">{fmtCamera(cameraPos)}</span>
-        </div>
-        <div className="t-row">
-          <span className="t-key">ANCHOR</span>
-          <span className="t-val">{fmtAnchor(anchorId)}</span>
-        </div>
       </div>
     </>
   );
@@ -167,7 +82,6 @@ export default function Telemetry({
 const CSS = `
 .telemetry-root {
   position: fixed;
-  /* Bottom-left: the masthead owns the top-left corner on the scan surface. */
   bottom: var(--gutter);
   left: var(--gutter);
   z-index: var(--z-hud);
@@ -195,50 +109,17 @@ const CSS = `
   border-bottom: var(--hair) solid var(--faint);
 }
 
-.telemetry-root .t-key {
-  min-width: 4.5em;
-  color: var(--dim);
-}
+.telemetry-root .t-key { color: var(--dim); }
+.telemetry-root .t-val { color: var(--bone); }
+.telemetry-root .t-flag { color: var(--signal); font-weight: 500; }
 
-.telemetry-root .t-val {
-  color: var(--bone);
-}
-
-.telemetry-root .t-flag {
-  color: var(--signal);
-  font-weight: 500;
-}
-
-.telemetry-root--compact {
-  flex-direction: row;
-}
-
+.telemetry-root--compact { flex-direction: row; }
 .telemetry-root--compact .t-line {
   display: flex;
   align-items: baseline;
   gap: 0.6em;
 }
-
-.telemetry-root--compact .t-item {
-  display: inline-flex;
-  gap: 0.4em;
-}
-
-.telemetry-root--compact .t-key {
-  min-width: 0;
-  color: var(--dim);
-}
-
-.telemetry-root--compact .t-val {
-  color: var(--bone);
-}
-
-.telemetry-root--compact .t-sep {
-  color: var(--faint);
-}
-
-.telemetry-root--compact .t-flag {
-  color: var(--signal);
-  font-weight: 500;
-}
+.telemetry-root--compact .t-item { display: inline-flex; gap: 0.4em; }
+.telemetry-root--compact .t-sep { color: var(--faint); }
+.telemetry-root--compact .t-val { color: var(--bone); }
 `;

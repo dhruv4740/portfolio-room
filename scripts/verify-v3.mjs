@@ -2,10 +2,12 @@
 // v3 verification harness.
 //
 // Checks the claims that are easy to assert and easy to get wrong:
-//   1. /work never downloads the Spark renderer (the whole point of the split)
-//   2. the desktop scan actually paints a splat, not just an empty canvas
-//   3. the touch surface serves the deck, not the scan
-//   4. no console errors on any surface
+//   1. /work stays a small static route with no 3D dependencies or capture
+//   2. the desktop scan mounts and paints the authored workspace geometry
+//   3. workspace objects expose real, keyboard-operable anchor buttons
+//   4. the monitor enters dhruvOS, returns, and retains app state
+//   5. the touch surface serves the deck, not the desktop workspace
+//   6. no console errors on any surface
 //
 // Usage: npx vite preview --port 4173   then   node scripts/verify-v3.mjs
 // ============================================================================
@@ -89,7 +91,7 @@ const pinSurface = (page, surface) =>
   }, surface);
 
 // ---------------------------------------------------------------------------
-// 0. capability fallback — software GPU must never get the splat surface
+// 0. capability fallback — software GPU must never get the 3D surface
 // ---------------------------------------------------------------------------
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
@@ -120,14 +122,14 @@ const pinSurface = (page, surface) =>
 
   const pulledSpark = requests.filter((u) => /spark/i.test(u));
   const pulledThree = requests.filter((u) => /\/three-|\/assets\/three/i.test(u));
-  const pulledSplat = requests.filter((u) => /\.splat|\.ply|\.spz/i.test(u));
+  const pulledCapture = requests.filter((u) => /\.splat|\.ply|\.spz/i.test(u));
 
   record('work: does not download Spark', pulledSpark.length === 0,
     pulledSpark.length ? pulledSpark.join(', ') : 'no spark chunk requested');
   record('work: does not download three', pulledThree.length === 0,
     pulledThree.length ? pulledThree.join(', ') : 'no three chunk requested');
-  record('work: does not download the capture', pulledSplat.length === 0,
-    pulledSplat.length ? pulledSplat.join(', ') : 'no splat requested');
+  record('work: does not download the capture', pulledCapture.length === 0,
+    pulledCapture.length ? pulledCapture.join(', ') : 'no capture requested');
 
   const jsBytes = await page.evaluate(() =>
     performance.getEntriesByType('resource')
@@ -148,42 +150,136 @@ const pinSurface = (page, surface) =>
 {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
+  const requests = [];
   const errors = [];
+  page.on('request', (r) => requests.push(r.url()));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
   await pinSurface(page, 'scan');
 
   await page.goto(`${BASE}/#/`, { waitUntil: 'domcontentloaded' });
 
-  // The capture is ~8.6MB; give the loader real time rather than a token wait.
+  // The authored workspace is local geometry, so it should mount promptly and
+  // never wait on a capture decoder or Spark's dynamic import.
   const canvasAppeared = await page
-    .waitForSelector('.stage-root canvas', { timeout: 30_000 })
+    .waitForSelector('.stage-root[data-scene="workspace"] canvas', { timeout: 15_000 })
     .then(() => true).catch(() => false);
-  record('scan: canvas mounts', canvasAppeared);
+  record('scan: authored workspace mounts', canvasAppeared);
 
-  await page.waitForTimeout(12_000); // decode + sort + first frames
+  const pulledSpark = requests.filter((u) => /spark/i.test(u));
+  const pulledCapture = requests.filter((u) => /\.splat|\.ply|\.spz/i.test(u));
+  record('scan: does not download Spark', pulledSpark.length === 0,
+    pulledSpark.length ? pulledSpark.join(', ') : 'no Spark chunk requested');
+  record('scan: does not download a capture', pulledCapture.length === 0,
+    pulledCapture.length ? pulledCapture.join(', ') : 'no splat asset requested');
 
   const cov = await screenCoverage(page);
-  // The instrument chrome alone lights a few percent, so require clearly more.
-  // Chrome alone measured 3.3% on an empty scene; a correctly framed capture
-  // measures well above 10%. 0.08 sits between the two.
-  record('scan: splat actually paints', cov.litRatio > 0.08,
+  // The instrument chrome alone lights a few percent, so require clearly more
+  // than the empty stage. The threshold keeps the old paint signal while
+  // naming the thing it now verifies: modeled workspace geometry.
+  record('scan: workspace actually paints', cov.litRatio > 0.08,
     `${(cov.litRatio * 100).toFixed(1)}% lit, mean luma ${cov.meanLuma.toFixed(1)}`);
 
-  const markers = await page.locator('.anchor-marker').count();
-  record('scan: anchor markers present', markers > 0, `${markers} markers`);
+  const expectedObjects = [
+    ['monitor', 'Monitor'],
+    ['desk', 'Desk'],
+    ['notebook', 'Notebook'],
+    ['window', 'Window'],
+  ];
+  const objectReports = await page.locator('.anchor-marker').evaluateAll((els) =>
+    els.map((el) => ({
+      id: el.getAttribute('data-object') || '',
+      label: el.getAttribute('aria-label') || '',
+      tag: el.tagName.toLowerCase(),
+      enabled: !el.disabled,
+    })));
+  const objectButtons = expectedObjects.every(([id, label]) =>
+    objectReports.some((item) => item.id === id && item.label.startsWith(label) && item.tag === 'button' && item.enabled));
+  record('scan: workspace objects expose anchor buttons', objectButtons,
+    objectButtons ? expectedObjects.map(([, label]) => label).join(', ') : JSON.stringify(objectReports));
 
   // Depth cueing sets fractional opacity, so test for "shown at all", not "1".
   const visibleMarkers = await page.locator('.anchor-marker').evaluateAll(
     (els) => els.filter((e) => parseFloat(e.style.opacity || '0') > 0.05).length);
-  record('scan: markers project on screen', visibleMarkers > 0, `${visibleMarkers} visible`);
+  record('scan: workspace anchors project on screen', visibleMarkers > 0, `${visibleMarkers} visible`);
 
-  await saveScreenshot(page, { path: `${SHOTS}/v3-scan.png` });
+  // First-pass visual artifact for scene iteration at the fixed 1440x900
+  // viewport; keep this before the interaction checks mutate the screen.
+  await saveScreenshot(page, { path: `${SHOTS}/v3-workspace.png` });
+  const monitorMarker = page.locator('.anchor-marker[data-object="monitor"]').first();
 
-  // Open the first anchor and confirm the panel responds. Focus + Enter keeps
-  // this deterministic while the projected marker continues moving every RAF.
-  if (visibleMarkers > 0) {
-    const monitorMarker = page.locator('.anchor-marker[aria-label^="Monitor"]');
+  // Exercise every authored object through the same keyboard path a visitor
+  // can use. This catches markers that merely look like labels but are not
+  // wired to the shared anchor-selection callback.
+  for (const [id, label] of expectedObjects) {
+    const marker = page.locator(`.anchor-marker[data-object="${id}"]`).first();
+    let activated = false;
+    try {
+      await marker.focus();
+      await page.keyboard.press('Enter');
+      activated = await page
+        .locator(`.anchor-marker.is-active[data-object="${id}"]`)
+        .count() === 1;
+    } catch {}
+    record(`scan: ${label.toLowerCase()} anchor activates`, activated,
+      activated ? 'active' : 'button did not activate');
+    if (activated) {
+      // The camera flies toward the selected object. Return through the same
+      // Escape path a visitor has before trying the next object, otherwise a
+      // close-up can legitimately hide the other projected markers.
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(
+        () => !document.querySelector('.anchor-marker.is-active'),
+        { timeout: 3_000 },
+      ).catch(() => {});
+      await page.waitForFunction(
+        () => [...document.querySelectorAll('.anchor-marker')]
+          .filter((el) => el.style.visibility === 'visible' && parseFloat(el.style.opacity || '0') > 0.05).length >= 4,
+        { timeout: 3_000 },
+      ).catch(() => {});
+    }
+  }
+
+  // Verify the modeled monitor itself is clickable, in addition to its DOM
+  // marker. The marker's left edge is the projected screen center; a point a
+  // little to its left lands on the display while avoiding the overlay.
+  const monitorBox = await monitorMarker.boundingBox().catch(() => null);
+  const canvasBox = await page.locator('.workspace-stage canvas').boundingBox().catch(() => null);
+  let meshEntered = false;
+  if (monitorBox && canvasBox) {
+    const x = monitorBox.x - 25;
+    const y = monitorBox.y + 4;
+    if (x >= canvasBox.x && x <= canvasBox.x + canvasBox.width && y >= canvasBox.y && y <= canvasBox.y + canvasBox.height) {
+      await page.mouse.click(x, y);
+      meshEntered = await page.waitForFunction(
+        () => ['preparing', 'entering', 'inside'].includes(document.querySelector('.scan-root')?.dataset.entranceState),
+        { timeout: 3_000 },
+      ).then(() => true).catch(() => false);
+    }
+  }
+  record('scan: monitor mesh click starts entry', meshEntered,
+    meshEntered ? 'canvas raycast entered screen flow' : 'monitor surface did not start entry');
+  if (meshEntered) {
+    const meshInside = await page.waitForFunction(
+      () => document.querySelector('.scan-root')?.dataset.entranceState === 'inside',
+      { timeout: 12_000 },
+    ).then(() => true).catch(() => false);
+    record('scan: monitor mesh click reaches screen', meshInside,
+      meshInside ? 'inside' : `state=${await page.locator('.scan-root').getAttribute('data-entrance-state')}`);
+    const back = page.locator('[data-testid="back-to-room"]');
+    if (await back.count()) {
+      await back.click();
+      await page.waitForFunction(
+        () => document.querySelector('.scan-root')?.dataset.entranceState === 'room',
+        { timeout: 6_000 },
+      ).catch(() => {});
+    }
+  }
+
+  // Open the monitor anchor and confirm the panel responds. Focus + Enter
+  // keeps this deterministic while the projected marker continues moving.
+  const monitorAvailable = visibleMarkers > 0 && await monitorMarker.count() === 1 && await monitorMarker.isEnabled().catch(() => false);
+  if (monitorAvailable) {
     await monitorMarker.focus();
     await page.keyboard.press('Enter');
     await page.waitForTimeout(500);

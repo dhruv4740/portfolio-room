@@ -1,9 +1,9 @@
 // ============================================================================
-// ScanIntro.jsx — boot sequence overlay, driven entirely by real load progress.
+// ScanIntro.jsx — boot sequence overlay, driven entirely by real build progress.
 // Presentational only: never fakes progress, never runs its own timer.
 //
 // Props:
-//   progress  number   — 0..1 real asset-load progress
+//   progress  number   — 0..1 real workspace-build progress
 //   active    boolean  — whether the overlay should currently be shown
 //   onDone    () => void — called once when progress reaches 1, and on SKIP
 //   skipped   boolean  — when true, render nothing at all
@@ -20,9 +20,9 @@ function clamp01(n) {
 
 function statusFor(p) {
   if (p >= 1) return 'READY';
-  if (p >= 0.7) return 'BUILDING SORT ORDER';
-  if (p >= 0.34) return 'DECODING SPLATS';
-  return 'READING CAPTURE';
+  if (p >= 0.7) return 'CALIBRATING MARKERS';
+  if (p >= 0.34) return 'LIGHTING SCENE';
+  return 'ASSEMBLING WORKSPACE';
 }
 
 export default function ScanIntro({ progress, active = true, onDone, skipped }) {
@@ -59,7 +59,7 @@ export default function ScanIntro({ progress, active = true, onDone, skipped }) 
         aria-hidden={!visible}
       >
         <div className="scan-panel">
-          <div className="scan-label mono">SCAN INITIALIZATION</div>
+          <div className="scan-label mono">WORKSPACE INITIALIZATION</div>
           <div className="scan-bar">
             <div className="scan-bar-fill" style={{ width: `${pct}%` }} />
           </div>
@@ -153,5 +153,10 @@ const CSS = `
 .scan-intro-root .scan-skip:hover {
   color: var(--signal);
   border-color: var(--signal);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scan-intro-root { transition: none; }
+  .scan-intro-root .scan-bar-fill { transition: none; }
 }
 `;

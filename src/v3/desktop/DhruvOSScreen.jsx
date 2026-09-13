@@ -180,7 +180,7 @@ export default function DhruvOSScreen({
         </div>
 
         <div className="os-screen-foot mono">
-          <span>EMBEDDED DEV PATH · STATE RETAINED BETWEEN VISITS</span>
+          <span>STATE RETAINED BETWEEN VISITS</span>
           <span>ESC TO RETURN</span>
         </div>
       </div>
@@ -220,6 +220,7 @@ const css = `
 .dhruv-os-screen.is-preparing,
 .dhruv-os-screen.is-entering {
   opacity: 1;
+  background: transparent;
 }
 
 .dhruv-os-screen.is-leaving {
@@ -235,21 +236,17 @@ const css = `
   border: var(--hair) solid var(--faint);
   background: var(--void);
   overflow: hidden;
-  transform-origin: center;
-  will-change: transform, opacity;
+  opacity: 0;
+  will-change: opacity;
 }
 
-.dhruv-os-screen.is-preparing .os-screen-frame {
-  transform: scale(0.06);
-  opacity: 0;
-}
+.dhruv-os-screen.is-preparing .os-screen-frame { opacity: 0; }
 
 .dhruv-os-screen.is-entering .os-screen-frame {
-  animation: os-screen-enter 1.35s var(--ease) both;
+  animation: os-screen-enter 1.4s var(--ease) both;
 }
 
 .dhruv-os-screen.is-inside .os-screen-frame {
-  transform: scale(1);
   opacity: 1;
 }
 
@@ -258,14 +255,19 @@ const css = `
 }
 
 @keyframes os-screen-enter {
-  from { transform: scale(0.06); opacity: 0.15; }
-  65% { transform: scale(0.82); opacity: 1; }
-  to { transform: scale(1); opacity: 1; }
+  from,
+  82% { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes os-screen-leave {
-  from { transform: scale(1); opacity: 1; }
-  to { transform: scale(0.06); opacity: 0; }
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+.dhruv-os-screen.is-reduced .os-screen-frame {
+  animation: none;
+  opacity: 1;
 }
 
 .os-screen-bar,
