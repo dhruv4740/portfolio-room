@@ -51,10 +51,10 @@ function getDefaultFocusLockState() {
     focusDuration: 25,
     focusActive: false,
     focusEndsAt: null,
-    dailyLimitMinutes: 60,
-    extensionMinutes: 5,
-    dailyExtensionLimit: 2,
-    hardBlockAfterLimit: true,
+    dailyLimitMinutes: 0,
+    extensionMinutes: 15,
+    dailyExtensionLimit: 1,
+    hardBlockAfterLimit: false,
     targetApps: {
       'com.instagram.android': true,
       'com.google.android.youtube': true,
@@ -66,8 +66,8 @@ function getDefaultFocusLockState() {
     ],
     reelsMode: 'block', // 'off' | 'block' | 'one_at_a_time'
     shortsMode: 'block',
-    reelsLimit: 15,
-    shortsLimit: 10,
+    reelsLimit: 0,
+    shortsLimit: 0,
     strictMode: true,
     emergencyCooldown: 15,
     friction: {
@@ -81,11 +81,7 @@ function getDefaultFocusLockState() {
       deviceAdmin: true,
       mathDifficulty: 'easy',
     },
-    todos: [
-      { id: '1', text: 'Deep work on thesis', completed: false },
-      { id: '2', text: 'Review PRs', completed: true },
-      { id: '3', text: 'Draft specs', completed: false },
-    ],
+    todos: [],
     syncCode: 'user_default',
   };
 }
@@ -109,7 +105,7 @@ function loadSavedState() {
 
 const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpenApp, onHome }, ref) {
   const rootRef = useRef(null);
-  const [app, setApp] = useState('home'); // 'home' | 'focuslock' | 'locked' | 'instagram_feed'
+  const [app, setApp] = useState('home'); // 'home' | 'focuslock' | 'locked'
   const [flState, setFlState] = useState(loadSavedState);
   const [flTab, setFlTab] = useState('dashboard');
   const [savedBanner, setSavedBanner] = useState('');
@@ -160,21 +156,15 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   }), []);
 
   function handleOpenInstagram() {
-    const isBlocked = Boolean(flState.targetApps['com.instagram.android']);
-    if (isBlocked) {
-      setOpens((n) => n + 1);
-      setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-      setStatsReady(false);
-      setBlockStart(Date.now());
-      setNow(Date.now());
-      setMath(null);
-      setStatus('');
-      setApp('locked');
-      onOpenApp?.();
-    } else {
-      setApp('instagram_feed');
-      onOpenApp?.();
-    }
+    setOpens((n) => n + 1);
+    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+    setStatsReady(false);
+    setBlockStart(Date.now());
+    setNow(Date.now());
+    setMath(null);
+    setStatus('');
+    setApp('locked');
+    onOpenApp?.();
   }
 
   function handleOpenFocusLock() {
@@ -366,43 +356,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
       )}
 
       {/* ==================================================================== */}
-      {/* 3. INSTAGRAM MOCK FEED (When unblocked in FocusLock)                  */}
-      {/* ==================================================================== */}
-      {app === 'instagram_feed' && (
-        <div className="ps-ig-feed">
-          <div className="ps-ig-topbar">
-            <span className="ps-ig-logo">Instagram</span>
-            <button type="button" className="ps-ig-close" onClick={() => goHome()} aria-label="Exit Instagram">
-              ✕
-            </button>
-          </div>
-          <div className="ps-ig-content">
-            <div className="ps-ig-post">
-              <div className="ps-ig-author">
-                <div className="ps-ig-avatar">DK</div>
-                <div className="ps-ig-author-meta">
-                  <span className="ps-ig-username">dhruv4740</span>
-                  <span className="ps-ig-badge">FocusLock Active</span>
-                </div>
-              </div>
-              <div className="ps-ig-card-media">
-                <p className="ps-ig-media-statement">Unblocked by your FocusLock policy</p>
-                <p className="ps-ig-media-sub">Stay mindful of your screen time.</p>
-              </div>
-              <div className="ps-ig-actions">
-                <span>❤️ 1,337 likes</span>
-                <p><b>dhruv4740</b> Building deep work habits and conscious screen time. 📵✨</p>
-              </div>
-            </div>
-          </div>
-          <button type="button" className="ps-btn ps-secondary ps-ig-exit-btn" onClick={() => goHome()}>
-            Close Instagram
-          </button>
-        </div>
-      )}
-
-      {/* ==================================================================== */}
-      {/* 4. REAL FOCUSLOCK NATIVE APP                                         */}
+      {/* 3. REAL FOCUSLOCK NATIVE APP                                         */}
       {/* ==================================================================== */}
       {app === 'focuslock' && (
         <div className="fl-root">
@@ -413,7 +367,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
             </button>
             <div className="fl-header-info">
               <h1 className="fl-app-title">FocusLock</h1>
-              <span className="fl-app-version">v1.0 · Shield Active</span>
+              <span className="fl-app-version">Stay Mindful • Break Habit Loops</span>
             </div>
           </div>
 
@@ -445,13 +399,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                   <p className="fl-status-text">
                     {flState.protectionActive
                       ? '🛡️ FocusLock Active protection enabled.'
-                      : '⚠️ Protection degraded. FocusLock paused.'}
+                      : '⚠️ Protection degraded. Grant missing permissions.'}
                   </p>
                   <div className="fl-badge-grid">
-                    <span className="fl-badge">Usage: ✅ ACTIVE</span>
-                    <span className="fl-badge">Access: ✅ ACTIVE</span>
-                    <span className="fl-badge">Overlay: ✅ ACTIVE</span>
-                    <span className="fl-badge">Notify: ✅ ACTIVE</span>
+                    <span className="fl-badge">Usage access: ✅ ACTIVE</span>
+                    <span className="fl-badge">Accessibility: ✅ ACTIVE</span>
+                    <span className="fl-badge">Overlay draw: ✅ ACTIVE</span>
+                    <span className="fl-badge">Notifications: ✅ ACTIVE</span>
                   </div>
                 </div>
 
@@ -464,37 +418,15 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                       : 'Focus session inactive'}
                   </p>
                   <div className="fl-duration-row">
-                    <button
-                      type="button"
-                      className="fl-btn-mini"
-                      onClick={() => updateFlState({ focusDuration: Math.max(5, flState.focusDuration - 5) })}
-                      aria-label="Decrease focus duration"
-                    >
-                      -5m
-                    </button>
-                    <span className="fl-duration-display">
-                      <strong className="fl-duration-num">{flState.focusDuration}</strong> min
-                    </span>
-                    <button
-                      type="button"
-                      className="fl-btn-mini"
-                      onClick={() => updateFlState({ focusDuration: Math.min(180, flState.focusDuration + 5) })}
-                      aria-label="Increase focus duration"
-                    >
-                      +5m
-                    </button>
-                  </div>
-                  <div className="fl-quick-durations">
-                    {[15, 25, 45, 60].map((m) => (
-                      <button
-                        key={m}
-                        type="button"
-                        className={`fl-pill-btn ${flState.focusDuration === m ? 'is-selected' : ''}`}
-                        onClick={() => updateFlState({ focusDuration: m })}
-                      >
-                        {m}m
-                      </button>
-                    ))}
+                    <label htmlFor="fl-focus-duration" className="fl-duration-label">Duration (min):</label>
+                    <input
+                      id="fl-focus-duration"
+                      type="number"
+                      className="fl-input-number fl-duration-input"
+                      value={flState.focusDuration}
+                      onChange={(e) => updateFlState({ focusDuration: Math.max(1, Number(e.target.value) || 25) })}
+                      aria-label="Focus duration in minutes"
+                    />
                   </div>
                   <button
                     type="button"
@@ -505,12 +437,12 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                       updateFlState({ focusActive: active, focusEndsAt: endsAt });
                     }}
                   >
-                    {flState.focusActive ? 'Stop Focus Session' : 'Start Focus Session'}
+                    {flState.focusActive ? 'Stop' : 'Start Focus'}
                   </button>
 
                   {/* Task Checklist inside Focus Session */}
                   <div className="fl-todo-section">
-                    <span className="fl-subhead">SESSION TASKS</span>
+                    <span className="fl-subhead">PENDING TASK LIST</span>
                     <div className="fl-todo-input-row">
                       <input
                         type="text"
@@ -535,31 +467,35 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                       </button>
                     </div>
                     <div className="fl-todo-list">
-                      {flState.todos.map((todo) => (
-                        <div key={todo.id} className="fl-todo-row">
-                          <label className="fl-checkbox-label">
-                            <input
-                              type="checkbox"
-                              checked={todo.completed}
-                              onChange={(e) => {
-                                const nextTodos = flState.todos.map((t) => (t.id === todo.id ? { ...t, completed: e.target.checked } : t));
-                                updateFlState({ todos: nextTodos });
+                      {flState.todos.length === 0 ? (
+                        <p className="fl-todo-empty">No pending tasks. You are all set!</p>
+                      ) : (
+                        flState.todos.map((todo) => (
+                          <div key={todo.id} className="fl-todo-row">
+                            <label className="fl-checkbox-label">
+                              <input
+                                type="checkbox"
+                                checked={todo.completed}
+                                onChange={(e) => {
+                                  const nextTodos = flState.todos.map((t) => (t.id === todo.id ? { ...t, completed: e.target.checked } : t));
+                                  updateFlState({ todos: nextTodos });
+                                }}
+                              />
+                              <span className={todo.completed ? 'fl-todo-done' : ''}>{todo.text}</span>
+                            </label>
+                            <button
+                              type="button"
+                              className="fl-del-btn"
+                              aria-label={`Delete task ${todo.text}`}
+                              onClick={() => {
+                                updateFlState({ todos: flState.todos.filter((t) => t.id !== todo.id) });
                               }}
-                            />
-                            <span className={todo.completed ? 'fl-todo-done' : ''}>{todo.text}</span>
-                          </label>
-                          <button
-                            type="button"
-                            className="fl-del-btn"
-                            aria-label={`Delete task ${todo.text}`}
-                            onClick={() => {
-                              updateFlState({ todos: flState.todos.filter((t) => t.id !== todo.id) });
-                            }}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ))}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
@@ -568,12 +504,9 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                 <div className="fl-card">
                   <span className="fl-card-title">TODAY&apos;S USAGE</span>
                   <div className="fl-usage-metric">
-                    <span className="fl-usage-val">42.0 / {flState.dailyLimitMinutes} min used</span>
-                    <div className="fl-progress-track">
-                      <div className="fl-progress-bar" style={{ width: `${Math.min(100, (42 / flState.dailyLimitMinutes) * 100)}%` }} />
-                    </div>
+                    <span className="fl-usage-val"><strong className="fl-minutes-val">0</strong> min used</span>
                   </div>
-                  <p className="fl-opens-stat">14 opens today · 3 Reels · 2 Shorts</p>
+                  <p className="fl-opens-stat">{opens} opens today · 0 Reels · 0 Shorts</p>
                 </div>
               </div>
             )}
@@ -629,8 +562,8 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
 
                 {/* Target Apps Selector */}
                 <div className="fl-card">
-                  <span className="fl-card-title">TARGET APPS</span>
-                  <p className="fl-card-desc">Apps governed by strict focus limits and lock barriers.</p>
+                  <span className="fl-card-title">BLOCKED APPS</span>
+                  <p className="fl-card-desc">Daily limit, blocked apps, and scheduled block windows.</p>
                   <div className="fl-apps-list">
                     {Object.entries(flState.targetApps).map(([pkg, isBlocked]) => {
                       const displayName = pkg.split('.').slice(-2, -1)[0] || pkg;
@@ -710,7 +643,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
               <div className="fl-screen" data-screen="modes">
                 <div className="fl-card">
                   <span className="fl-card-title">SHORT-FORM VIDEO CONTROL</span>
-                  <p className="fl-card-desc">Intercept infinite feeds while keeping DMs and notifications open.</p>
+                  <p className="fl-card-desc">Keep the app usable, just neutralize the doomscroll feed.</p>
 
                   <div className="fl-mode-block">
                     <span className="fl-subhead">Instagram Reels</span>
@@ -745,7 +678,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                   </div>
 
                   <div className="fl-intercept-stat">
-                    Today: 3 Reels · 2 Shorts intercepted
+                    Today: 0 Reels · 0 Shorts
                   </div>
 
                   <button
@@ -759,7 +692,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
 
                 <div className="fl-card">
                   <span className="fl-card-title">STRICT MODE (DEVICE ADMIN)</span>
-                  <p className="fl-card-desc">Prevents bypassing rules by disallowing app uninstallation while limits are active.</p>
+                  <p className="fl-card-desc">Prevents the uninstallation of FocusLock while blocking features are active.</p>
                   <div className="fl-toggle-row">
                     <span>Device Admin Protection</span>
                     <button
@@ -782,15 +715,15 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                   <span className="fl-card-title">TODAY&apos;S METRICS</span>
                   <div className="fl-metric-grid">
                     <div className="fl-metric-box">
-                      <span className="fl-metric-num">42m</span>
+                      <span className="fl-metric-num">0m</span>
                       <span className="fl-metric-lbl">Time Spent</span>
                     </div>
                     <div className="fl-metric-box">
-                      <span className="fl-metric-num">18m</span>
+                      <span className="fl-metric-num">0m</span>
                       <span className="fl-metric-lbl">Remaining</span>
                     </div>
                     <div className="fl-metric-box">
-                      <span className="fl-metric-num">14</span>
+                      <span className="fl-metric-num">{opens}</span>
                       <span className="fl-metric-lbl">Blocks Today</span>
                     </div>
                   </div>
@@ -801,13 +734,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                   <span className="fl-card-title">WEEKLY USAGE</span>
                   <div className="fl-chart">
                     {[
-                      { day: 'Mon', mins: 35 },
-                      { day: 'Tue', mins: 45 },
-                      { day: 'Wed', mins: 60 },
-                      { day: 'Thu', mins: 40 },
-                      { day: 'Fri', mins: 55 },
-                      { day: 'Sat', mins: 20 },
-                      { day: 'Sun', mins: 15 },
+                      { day: 'Sun', mins: 0 },
+                      { day: 'Mon', mins: 0 },
+                      { day: 'Tue', mins: 0 },
+                      { day: 'Wed', mins: 0 },
+                      { day: 'Thu', mins: 0 },
+                      { day: 'Fri', mins: 0 },
+                      { day: 'Sat', mins: 0 },
                     ].map((d) => (
                       <div key={d.day} className="fl-chart-row">
                         <span className="fl-chart-day">{d.day}</span>
@@ -824,18 +757,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                 <div className="fl-card">
                   <span className="fl-card-title">RECENT SESSIONS</span>
                   <div className="fl-log-list">
-                    <div className="fl-log-item">
-                      <span className="fl-log-time">14:12</span>
-                      <span className="fl-log-detail">Instagram · Blocked (Daily limit)</span>
-                    </div>
-                    <div className="fl-log-item">
-                      <span className="fl-log-time">12:45</span>
-                      <span className="fl-log-detail">YouTube · Blocked (Focus session)</span>
-                    </div>
-                    <div className="fl-log-item">
-                      <span className="fl-log-time">10:30</span>
-                      <span className="fl-log-detail">Instagram · 5m Extension granted</span>
-                    </div>
+                    <p className="fl-todo-empty">No recent sessions</p>
                   </div>
                 </div>
               </div>
@@ -846,7 +768,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
               <div className="fl-screen" data-screen="settings">
                 <div className="fl-card">
                   <span className="fl-card-title">FRICTION &amp; BLOCKERS</span>
-                  <p className="fl-card-desc">Mindful barriers triggered before granting temporary app access.</p>
+                  <p className="fl-card-desc">Barriers to bypass when opening social apps.</p>
 
                   {[
                     { key: 'breathing', label: 'Breathing Pause (12 seconds)' },
@@ -874,7 +796,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                     </div>
                   ))}
 
-                  <div className="fl-subhead" style={{ marginTop: 18 }}>Math Challenge Difficulty</div>
+                  <div className="fl-subhead" style={{ marginTop: 18 }}>Math Difficulty</div>
                   <div className="fl-mode-pills">
                     {['easy', 'medium', 'hard'].map((diff) => (
                       <button
@@ -896,7 +818,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                 {/* Cloud Sync Code */}
                 <div className="fl-card">
                   <span className="fl-card-title">SYNC CODE</span>
-                  <p className="fl-card-desc">Pairs your phone policy with your desktop focus agent.</p>
+                  <p className="fl-card-desc">Use the same code on your phone and desktop to keep them in sync.</p>
                   <div className="fl-sync-row">
                     <input
                       type="text"
@@ -1133,59 +1055,7 @@ const css = `
   border-radius: 36px;
 }
 
-/* ── Mock Instagram Feed ─────────────────────────────────────────────────── */
-.ps-ig-feed {
-  position: absolute;
-  inset: 0;
-  background: #000;
-  display: flex;
-  flex-direction: column;
-  padding: 24px 20px;
-}
-.ps-ig-topbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #262626;
-}
-.ps-ig-logo { font-size: 30px; font-family: serif; font-weight: bold; color: #fff; }
-.ps-ig-close {
-  background: #262626;
-  border: 0;
-  color: #fff;
-  font-size: 18px;
-  padding: 8px 16px;
-  border-radius: 18px;
-  cursor: pointer;
-}
-.ps-ig-content { flex: 1; padding: 24px 0; overflow-y: auto; }
-.ps-ig-post { background: #121212; border: 1px solid #262626; border-radius: 16px; overflow: hidden; }
-.ps-ig-author { display: flex; align-items: center; gap: 12px; padding: 16px; }
-.ps-ig-avatar {
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: linear-gradient(45deg, #FFD521, #F50000, #B900B4);
-  display: flex; align-items: center; justify-content: center;
-  font-weight: bold; font-size: 16px; color: #fff;
-}
-.ps-ig-author-meta { display: flex; flex-direction: column; }
-.ps-ig-username { font-weight: 700; font-size: 16px; color: #fff; }
-.ps-ig-badge { font-size: 12px; color: #6366F1; }
-.ps-ig-card-media {
-  background: #1c1c1e;
-  height: 280px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 24px;
-}
-.ps-ig-media-statement { font-size: 22px; font-weight: bold; color: #F8FAFC; margin-bottom: 8px; }
-.ps-ig-media-sub { font-size: 15px; color: #94A3B8; }
-.ps-ig-actions { padding: 16px; font-size: 15px; color: #e0e0e0; }
-.ps-ig-exit-btn { margin-top: auto; }
+
 
 /* ── FocusLock Native App UI ─────────────────────────────────────────────── */
 .fl-root {
@@ -1272,20 +1142,12 @@ const css = `
 }
 
 .fl-session-status { font-size: 18px; font-weight: 600; color: #A78BFA; margin-bottom: 16px; }
-.fl-duration-row { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 16px; }
-.fl-duration-display { font-size: 20px; color: #F8FAFC; }
-.fl-duration-num { font-size: 36px; color: #6366F1; }
-.fl-btn-mini {
-  background: #111827;
-  border: 1px solid #334155;
-  color: #F8FAFC;
-  font-size: 16px;
-  font-weight: 700;
-  padding: 8px 16px;
-  border-radius: 12px;
-  cursor: pointer;
-}
-.fl-quick-durations { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.fl-duration-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 16px; background: #111827; padding: 12px 16px; border-radius: 12px; border: 1px solid #334155; }
+.fl-duration-label { font-size: 14px; color: #94A3B8; font-weight: 500; }
+.fl-duration-input { width: 72px; text-align: center; font-size: 16px; font-weight: 600; padding: 8px; background: #0A0E17; border: 1px solid #334155; border-radius: 8px; color: #F8FAFC; }
+.fl-todo-empty { font-size: 14px; color: #94A3B8; padding: 16px 8px; text-align: center; margin: 0; font-style: italic; }
+.fl-minutes-val { font-size: 28px; font-weight: 700; color: #F8FAFC; }
+.fl-usage-val { font-size: 22px; color: #94A3B8; font-weight: 500; display: block; margin-bottom: 8px; }
 .fl-pill-btn {
   flex: 1;
   background: #111827;

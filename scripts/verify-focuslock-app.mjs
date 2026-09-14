@@ -19,7 +19,12 @@ page.on('request', (req) => {
   }
 });
 
+// Start with fresh localStorage on initial load only
 await page.addInitScript(() => {
+  if (!sessionStorage.getItem('harness-init')) {
+    sessionStorage.setItem('harness-init', '1');
+    localStorage.clear();
+  }
   localStorage.setItem('v3:surface-override', 'scan');
   localStorage.setItem('v3:seen-intro', '1');
 });
@@ -67,16 +72,27 @@ async function shootScreen(name) {
   console.log(`[harness] saved phone-fl-${name}.png`);
 }
 
-// 2. Test Dashboard Tab
+// 2. Test Dashboard Tab on clean state (assert no task rows and minutes value is 0)
 assert.ok(await flRoot.locator('[data-screen="dashboard"]').isVisible(), 'Dashboard tab missing');
-await shootScreen('dashboard');
 
-// Change control: increase focus duration
-const initialDuration = await flRoot.locator('.fl-duration-num').innerText();
-await flRoot.getByRole('button', { name: 'Increase focus duration' }).click();
-const newDuration = await flRoot.locator('.fl-duration-num').innerText();
-assert.notEqual(newDuration, initialDuration, 'Focus duration did not change in DOM');
-console.log(`PASS Dashboard: duration updated from ${initialDuration}m to ${newDuration}m`);
+// Assert no task rows and empty text shown
+const initialTaskRows = await flRoot.locator('.fl-todo-row').count();
+assert.equal(initialTaskRows, 0, `Expected 0 task rows after fresh localStorage.clear(), found ${initialTaskRows}`);
+const emptyTaskMsg = await flRoot.locator('.fl-todo-empty').innerText();
+assert.equal(emptyTaskMsg, 'No pending tasks. You are all set!');
+
+// Assert minutes value is 0
+const minutesVal = await flRoot.locator('.fl-minutes-val').innerText();
+assert.equal(minutesVal, '0', `Expected minutes value 0 on fresh state, got ${minutesVal}`);
+console.log('PASS Dashboard: 0 initial task rows and minutes value is 0');
+
+// Test focus duration input (matching editFocusDuration from activity_main.xml)
+const durationInput = flRoot.locator('#fl-focus-duration');
+const initialDuration = await durationInput.inputValue();
+assert.equal(initialDuration, '25', `Expected initial duration 25, got ${initialDuration}`);
+await durationInput.fill('45');
+assert.equal(await durationInput.inputValue(), '45');
+console.log('PASS Dashboard: focus duration input updated to 45m');
 
 // Add a session task
 const todoInput = flRoot.locator('.fl-todo-input-row .fl-input');
@@ -85,6 +101,8 @@ await flRoot.locator('.fl-todo-input-row .fl-btn-small').click();
 const todoItem = flRoot.locator('.fl-todo-row').filter({ hasText: 'Review FocusLock architecture' });
 assert.ok(await todoItem.count() > 0, 'New task not added to DOM');
 console.log('PASS Dashboard: task added to session checklist');
+
+await shootScreen('dashboard');
 
 // 3. Test Block List / Apps Tab
 await flRoot.locator('.fl-nav-item[data-tab="blocklist"]').click();
@@ -168,36 +186,19 @@ const hardBtnAfterReload = flRoot.locator('.fl-pill-btn').filter({ hasText: 'Har
 assert.ok(await hardBtnAfterReload.evaluate((el) => el.classList.contains('is-selected')), 'Hard difficulty not preserved after reload');
 console.log('PASS state correctly restored after page reload');
 
-// 8. Test Coherent Integration with Instagram
-// A. With Instagram unblocked: opening Instagram shows Mock Feed!
+// 8. Test Instagram always locked even with all FocusLock toggles OFF
 await flRoot.locator('.fl-back').click();
 const igAppIcon = phoneScreen.locator('.ps-app');
 await igAppIcon.click();
-const igFeed = phoneScreen.locator('.ps-ig-feed');
-assert.ok(await igFeed.isVisible(), 'Mock Instagram feed should appear when unblocked');
-await shootScreen('instagram-feed');
-console.log('PASS Instagram unblocked: mock feed displayed instead of lock overlay');
 
-// Return to home
-await igFeed.locator('.ps-ig-close').click();
-
-// B. Re-block Instagram in FocusLock:
-await phoneScreen.locator('.ps-app-focuslock').click();
-await flRoot.locator('.fl-nav-item[data-tab="blocklist"]').click();
-const igSwitchAgain = flRoot.locator('.fl-app-item[data-package="com.instagram.android"] .fl-switch');
-await igSwitchAgain.click();
-assert.ok(await igSwitchAgain.evaluate((el) => el.classList.contains('is-on')), 'Instagram not re-blocked');
-
-// Return home and open Instagram
-await flRoot.locator('.fl-back').click();
-await igAppIcon.click();
-
-// Now Lock Overlay MUST appear
+// Lock Overlay MUST appear (no mock feed screen exists)
 const lockOverlay = phoneScreen.locator('.ps-lock');
-assert.ok(await lockOverlay.isVisible(), 'Lock overlay should appear when Instagram is blocked');
+assert.ok(await lockOverlay.isVisible(), 'Lock overlay should appear when tapping Instagram');
 assert.equal(await lockOverlay.locator('.ps-pill').innerText(), 'LOCKED');
+const mockFeed = phoneScreen.locator('.ps-ig-feed');
+assert.equal(await mockFeed.count(), 0, 'Mock Instagram feed should not exist in DOM');
 await shootScreen('instagram-locked');
-console.log('PASS Instagram blocked: lock overlay displayed');
+console.log('PASS tapping Instagram with toggles off still shows lock overlay');
 
 // Assert 0 external requests and 0 errors
 assert.equal(externalRequests.length, 0, `External network requests detected: ${externalRequests.join(', ')}`);
