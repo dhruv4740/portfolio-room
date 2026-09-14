@@ -106,4 +106,13 @@ function getAnalyser() {
   return _analyser;
 }
 
-export default { start, stop, toggle, get analyser() { return getAnalyser(); } };
+export default {
+  start,
+  stop,
+  toggle,
+  init: _init,
+  get context() { _init(); return _ctx; },
+  get masterGain() { _init(); return _masterGain; },
+  get analyser() { _init(); return getAnalyser(); },
+  get running() { return _running; },
+};

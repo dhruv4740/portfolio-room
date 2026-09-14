@@ -14,8 +14,35 @@ export default {
     body.appendChild(canvas);
     const c = canvas.getContext('2d');
 
-    // ── Overlay (shown when audio is off) ──
+    // ── Audio Element & Graph ──
+    const audio = document.createElement('audio');
+    audio.className = 'resonance-audio';
+    audio.src = new URL('../audio/song.mp3', import.meta.url).href;
+    audio.loop = true;
+    audio.preload = 'none';
+    body.appendChild(audio);
+
+    let mediaSource = null;
+    let songGain = null;
+    let volume = 0.6;
+    audio.volume = volume;
+    let mode = 'SONG'; // 'SONG' | 'SYNTH'
+    let wasPlayingBeforeHide = false;
+
+    function ensureAudioGraph() {
+      if (mediaSource) return;
+      const ctx = appCtx.audio.context;
+      if (ctx.state === 'suspended') ctx.resume();
+      mediaSource = ctx.createMediaElementSource(audio);
+      songGain = ctx.createGain();
+      songGain.gain.value = volume;
+      mediaSource.connect(songGain);
+      songGain.connect(appCtx.audio.analyser);
+    }
+
+    // ── Overlay (shown when paused / initial state) ──
     const overlay = document.createElement('div');
+    overlay.className = 'resonance-overlay';
     overlay.style.cssText = [
       'position:absolute', 'inset:0', 'display:flex', 'flex-direction:column',
       'align-items:center', 'justify-content:center', 'gap:14px',
@@ -24,40 +51,150 @@ export default {
     body.appendChild(overlay);
 
     const hint = document.createElement('span');
-    hint.style.cssText = "font:9px 'JetBrains Mono',monospace;color:rgba(92,255,208,0.3);letter-spacing:0.2em;";
-    hint.textContent = 'AUDIO REACTIVE';
-    const playBtn = document.createElement('button');
-    playBtn.textContent = '▶ ENABLE AUDIO';
-    playBtn.style.cssText = [
+    hint.style.cssText = "font:9px 'JetBrains Mono',monospace;color:rgba(92,255,208,0.4);letter-spacing:0.2em;";
+    hint.textContent = 'RESONANCE AUDIO';
+
+    const overlayPlayBtn = document.createElement('button');
+    overlayPlayBtn.className = 'res-overlay-play-btn';
+    overlayPlayBtn.textContent = '▶ PLAY SONG';
+    overlayPlayBtn.style.cssText = [
       "font:10px 'JetBrains Mono',monospace", 'letter-spacing:0.2em',
       'padding:10px 28px', 'border:1px solid rgba(92,255,208,0.4)',
-      'background:rgba(92,255,208,0.04)', 'color:#5cffd0', 'cursor:pointer',
-      'pointer-events:auto', 'transition:all 0.2s',
+      'background:rgba(92,255,208,0.06)', 'color:#5cffd0', 'cursor:pointer',
+      'pointer-events:auto', 'transition:all 0.2s', 'border-radius:4px',
     ].join(';');
-    playBtn.addEventListener('mouseover', () => { playBtn.style.borderColor = '#5cffd0'; playBtn.style.background = 'rgba(92,255,208,0.08)'; });
-    playBtn.addEventListener('mouseout',  () => { playBtn.style.borderColor = 'rgba(92,255,208,0.4)'; playBtn.style.background = 'rgba(92,255,208,0.04)'; });
-    // Audio is deliberately started only by this user-gesture handler. The
-    // mount path and render loop never call appCtx.audio.start().
-    function startFromUserGesture() {
-      appCtx.audio.start();
-      // Update the OS sound toggle label
-      const btn = document.getElementById('sound-toggle');
-      if (btn) { btn.textContent = '♪ ON'; btn.classList.add('on'); }
-      overlay.style.opacity = '0';
-      overlay.style.pointerEvents = 'none';
-    }
-    playBtn.addEventListener('click', startFromUserGesture);
-    overlay.appendChild(hint);
-    overlay.appendChild(playBtn);
+    overlayPlayBtn.addEventListener('mouseover', () => { overlayPlayBtn.style.borderColor = '#5cffd0'; overlayPlayBtn.style.background = 'rgba(92,255,208,0.12)'; });
+    overlayPlayBtn.addEventListener('mouseout',  () => { overlayPlayBtn.style.borderColor = 'rgba(92,255,208,0.4)'; overlayPlayBtn.style.background = 'rgba(92,255,208,0.06)'; });
 
-    // Label
+    overlay.appendChild(hint);
+    overlay.appendChild(overlayPlayBtn);
+
+    // ── Persistent Controls Bar ──
+    const controlsBar = document.createElement('div');
+    controlsBar.className = 'resonance-controls';
+    controlsBar.style.cssText = [
+      'position:absolute', 'bottom:14px', 'left:50%', 'transform:translateX(-50%)',
+      'display:flex', 'align-items:center', 'gap:14px',
+      'background:rgba(5,10,8,0.88)', 'border:1px solid rgba(92,255,208,0.25)',
+      'padding:6px 16px', 'border-radius:20px', 'backdrop-filter:blur(8px)',
+      'z-index:20', 'user-select:none',
+    ].join(';');
+    body.appendChild(controlsBar);
+
+    // Play/Pause button
+    const playPauseBtn = document.createElement('button');
+    playPauseBtn.className = 'res-btn res-play-btn';
+    playPauseBtn.textContent = '▶ PLAY';
+    playPauseBtn.style.cssText = [
+      "font:9px 'JetBrains Mono',monospace", 'letter-spacing:0.15em',
+      'padding:4px 12px', 'border:1px solid rgba(92,255,208,0.4)',
+      'background:rgba(92,255,208,0.06)', 'color:#5cffd0', 'cursor:pointer',
+      'border-radius:4px', 'transition:all 0.2s',
+    ].join(';');
+    controlsBar.appendChild(playPauseBtn);
+
+    // Mode toggle button (SONG / SYNTH)
+    const modeBtn = document.createElement('button');
+    modeBtn.className = 'res-btn res-mode-btn';
+    modeBtn.textContent = 'SRC: SONG';
+    modeBtn.style.cssText = [
+      "font:9px 'JetBrains Mono',monospace", 'letter-spacing:0.1em',
+      'padding:4px 10px', 'border:1px solid rgba(92,255,208,0.25)',
+      'background:transparent', 'color:rgba(92,255,208,0.7)', 'cursor:pointer',
+      'border-radius:4px', 'transition:all 0.2s',
+    ].join(';');
+    controlsBar.appendChild(modeBtn);
+
+    // Volume Slider
+    const volWrap = document.createElement('div');
+    volWrap.style.cssText = 'display:flex;align-items:center;gap:6px;';
+    const volLabel = document.createElement('span');
+    volLabel.style.cssText = "font:8px 'JetBrains Mono',monospace;color:rgba(92,255,208,0.5);letter-spacing:0.1em;";
+    volLabel.textContent = 'VOL';
+    const volSlider = document.createElement('input');
+    volSlider.type = 'range';
+    volSlider.min = '0';
+    volSlider.max = '1';
+    volSlider.step = '0.01';
+    volSlider.value = String(volume);
+    volSlider.style.cssText = 'width:64px;height:4px;cursor:pointer;accent-color:#5cffd0;';
+    volSlider.setAttribute('aria-label', 'Volume');
+    const volVal = document.createElement('span');
+    volVal.style.cssText = "font:8px 'JetBrains Mono',monospace;color:rgba(92,255,208,0.7);width:26px;";
+    volVal.textContent = Math.round(volume * 100) + '%';
+    volWrap.appendChild(volLabel);
+    volWrap.appendChild(volSlider);
+    volWrap.appendChild(volVal);
+    controlsBar.appendChild(volWrap);
+
+    function updateUI() {
+      const isPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
+      playPauseBtn.textContent = isPlaying ? '❚❚ PAUSE' : '▶ PLAY';
+      overlayPlayBtn.textContent = isPlaying ? '❚❚ PAUSE' : (mode === 'SONG' ? '▶ PLAY SONG' : '▶ PLAY SYNTH');
+      modeBtn.textContent = `SRC: ${mode}`;
+      if (isPlaying) {
+        overlay.style.opacity = '0';
+        overlay.style.pointerEvents = 'none';
+      } else {
+        overlay.style.opacity = '1';
+        overlay.style.pointerEvents = 'auto';
+      }
+    }
+
+    function play() {
+      if (mode === 'SONG') {
+        ensureAudioGraph();
+        const ctx = appCtx.audio.context;
+        if (ctx.state === 'suspended') ctx.resume();
+        audio.play().then(() => updateUI()).catch((e) => console.warn('[resonance] play error:', e));
+      } else {
+        appCtx.audio.start();
+        updateUI();
+      }
+    }
+
+    function pause() {
+      if (mode === 'SONG') {
+        audio.pause();
+      } else {
+        appCtx.audio.stop();
+      }
+      updateUI();
+    }
+
+    function togglePlay() {
+      const isPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
+      if (isPlaying) pause(); else play();
+    }
+
+    overlayPlayBtn.addEventListener('click', () => play());
+    playPauseBtn.addEventListener('click', () => togglePlay());
+
+    volSlider.addEventListener('input', (e) => {
+      volume = parseFloat(e.target.value);
+      audio.volume = volume;
+      if (songGain) songGain.gain.value = volume;
+      if (appCtx.audio.masterGain) appCtx.audio.masterGain.gain.value = volume;
+      volVal.textContent = Math.round(volume * 100) + '%';
+    });
+
+    modeBtn.addEventListener('click', () => {
+      const wasPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
+      pause();
+      mode = mode === 'SONG' ? 'SYNTH' : 'SONG';
+      if (wasPlaying) play(); else updateUI();
+    });
+
+    updateUI();
+
+    // Label at bottom-left
     const label = document.createElement('div');
     label.style.cssText = [
-      'position:absolute', 'bottom:14px', 'left:0', 'right:0', 'text-align:center',
-      "font:8px 'JetBrains Mono',monospace", 'color:rgba(92,255,208,0.18)',
-      'letter-spacing:0.22em', 'pointer-events:none', 'z-index:5',
+      'position:absolute', 'bottom:16px', 'left:16px',
+      "font:8px 'JetBrains Mono',monospace", 'color:rgba(92,255,208,0.25)',
+      'letter-spacing:0.2em', 'pointer-events:none', 'z-index:5',
     ].join(';');
-    label.textContent = 'RESONANCE — AUDIO VISUALIZER';
+    label.textContent = 'RESONANCE';
     body.appendChild(label);
 
     // ── Dimensions ──
@@ -89,23 +226,14 @@ export default {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now; t += dt;
 
-      const analyser = appCtx.audio.analyser;
-
-      // Check if audio just started
-      if (analyser && overlay.style.opacity !== '0') {
-        overlay.style.opacity = '0';
-        overlay.style.pointerEvents = 'none';
-      }
-      if (!analyser && overlay.style.opacity === '0') {
-        overlay.style.opacity = '1';
-        overlay.style.pointerEvents = 'auto';
-      }
+      const isPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
 
       // ── Read FFT or idle ──
       let freqData = null;
       let bassEnergy = 0, overallEnergy = 0;
 
-      if (analyser) {
+      const analyser = appCtx.audio.analyser;
+      if (isPlaying && analyser) {
         freqData = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(freqData);
         for (let i = 0; i < 8; i++)  bassEnergy    += freqData[i] / 255;
@@ -204,14 +332,52 @@ export default {
       c.fillStyle = bloom; c.fill();
     }
 
+    function setVisible(v) {
+      if (!v) {
+        if (mode === 'SONG') {
+          if (!audio.paused) {
+            wasPlayingBeforeHide = true;
+            pause();
+          }
+        } else {
+          if (appCtx.audio.running) {
+            wasPlayingBeforeHide = true;
+            pause();
+          }
+        }
+      } else {
+        if (wasPlayingBeforeHide) {
+          wasPlayingBeforeHide = false;
+          play();
+        }
+      }
+    }
+
+    function onV3Visibility(e) {
+      if (e.detail?.state === 'room') {
+        setVisible(false);
+      }
+    }
+    window.addEventListener('v3:visibility', onV3Visibility);
+
     const ro = new ResizeObserver(resize);
     ro.observe(body);
     resize();
     rafId = requestAnimationFrame(loop);
 
-    return function cleanup() {
-      cancelAnimationFrame(rafId);
-      ro.disconnect();
+    return {
+      setVisible,
+      cleanup() {
+        window.removeEventListener('v3:visibility', onV3Visibility);
+        cancelAnimationFrame(rafId);
+        ro.disconnect();
+        pause();
+        if (mediaSource) {
+          try { mediaSource.disconnect(); } catch (_) {}
+          try { songGain.disconnect(); } catch (_) {}
+        }
+        audio.remove();
+      },
     };
   },
 };

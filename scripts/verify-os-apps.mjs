@@ -46,6 +46,22 @@ assert.equal(labels.some((label) => /^(wormhole|lab|c[o]smos)$/i.test(label.trim
   `removed apps are still listed: ${labels.join(', ')}`);
 console.log(`[harness] desktop apps: ${labels.join(', ')}`);
 
+// Check terminal ls does not list cosmos
+const termIcon = page.locator('.desk-icon').filter({ hasText: 'terminal' }).first();
+if (await termIcon.count() > 0) {
+  await termIcon.dblclick();
+  const termWin = await windowFor('terminal');
+  const termInput = termWin.locator('.term-input');
+  await termInput.fill('ls');
+  await termInput.press('Enter');
+  await page.waitForTimeout(300);
+  const termOutput = await termWin.locator('.term-output').innerText();
+  assert.equal(/cosmos/i.test(termOutput), false, `terminal ls output contained cosmos: ${termOutput}`);
+  console.log('PASS terminal ls does not contain cosmos');
+  await termWin.locator('[data-close]').click();
+  await page.waitForTimeout(300);
+}
+
 async function windowFor(title) {
   const win = page.locator('.os-window').filter({ hasText: title }).last();
   await win.waitFor();
@@ -232,7 +248,65 @@ assert.equal(reloadBg, 'none', `reloaded PLN backgroundImage should be none, got
 assert.equal(reloadColor, 'rgb(11, 13, 16)', `reloaded PLN backgroundColor should be rgb(11, 13, 16), got: ${reloadColor}`);
 console.log('PASS reload embed.html persists PLN wallpaper');
 
-// 4. Room at http://localhost:4173/#/?sky=dusk and enter monitor
+for (const close of await page.locator('.os-window [data-close]').all()) await close.click().catch(() => {});
+await page.waitForTimeout(400);
+
+// 4. Resonance audio test (no autoplay, plays/loops song, pauses on minimize, removed on close)
+const resIcon = page.locator('.desk-icon').filter({ hasText: 'resonance' }).first();
+assert.equal(await resIcon.count(), 1, 'resonance desktop icon missing');
+await resIcon.dispatchEvent('dblclick');
+const resWin = await windowFor('resonance');
+await page.waitForTimeout(600);
+
+const audio = resWin.locator('audio.resonance-audio');
+assert.equal(await audio.count(), 1, 'resonance audio element missing');
+const audioHandle = await audio.elementHandle();
+
+// No autoplay: paused and currentTime === 0
+const initialPaused = await audio.evaluate((el) => el.paused);
+const initialTime = await audio.evaluate((el) => el.currentTime);
+assert.equal(initialPaused, true, 'resonance audio should be paused on open');
+assert.equal(initialTime, 0, 'resonance audio currentTime should be 0 on open');
+console.log('PASS resonance audio is paused and currentTime === 0 on open (no autoplay)');
+
+// Click play -> wait >1s -> currentTime > 0.5 and loop === true
+const playBtn = resWin.locator('.res-overlay-play-btn');
+await playBtn.click();
+await page.waitForTimeout(1200);
+
+const playingTime = await audio.evaluate((el) => el.currentTime);
+const isLoop = await audio.evaluate((el) => el.loop);
+const isPausedAfterPlay = await audio.evaluate((el) => el.paused);
+assert.equal(isPausedAfterPlay, false, 'resonance audio should be playing after click');
+assert.ok(playingTime > 0.5, `resonance audio currentTime should be > 0.5s after 1s, got: ${playingTime}`);
+assert.equal(isLoop, true, 'resonance audio loop should be true');
+console.log(`PASS resonance audio playing: currentTime=${playingTime.toFixed(2)}s, loop=${isLoop}`);
+
+await resWin.screenshot({ path: 'scripts/shots/resonance-song.png' });
+console.log('[harness] saved resonance-song.png');
+
+// Minimize -> paused
+await resWin.locator('[data-minimize]').click();
+await page.waitForTimeout(400);
+const minimizedPaused = await audioHandle.evaluate((el) => el.paused);
+assert.equal(minimizedPaused, true, 'resonance audio should be paused when minimized');
+console.log('PASS resonance audio paused when minimized');
+
+// Restore and close -> element removed and paused
+const resTaskbar = page.locator('.taskbar-btn').filter({ hasText: 'resonance' }).first();
+await resTaskbar.click();
+await page.waitForTimeout(400);
+
+await resWin.locator('[data-close]').click();
+await page.waitForTimeout(400);
+
+const audioCountAfterClose = await page.locator('audio.resonance-audio').count();
+assert.equal(audioCountAfterClose, 0, 'resonance audio element should be removed on close');
+const closedPaused = await audioHandle.evaluate((el) => el.paused);
+assert.equal(closedPaused, true, 'resonance audio should be paused after close');
+console.log('PASS resonance audio element removed and paused on close');
+
+// 5. Room at http://localhost:4173/#/?sky=dusk and enter monitor
 const roomPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await roomPage.addInitScript(() => {
   localStorage['v3:surface-override'] = 'scan';
