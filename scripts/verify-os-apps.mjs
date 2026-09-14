@@ -82,7 +82,32 @@ for (const app of promoted) {
   } else if (app.id === 'fluid') {
     // Mouse move already stirred it
   } else if (app.id === 'kinetic') {
-    await win.locator('.app-kinetic').evaluate((el) => el.scrollBy(0, 900));
+    const container = win.locator('.app-kinetic');
+    const scrollHeight = await container.evaluate((el) => el.scrollHeight - el.clientHeight);
+    for (let step = 1; step <= 6; step++) {
+      const targetY = (scrollHeight / 6) * step;
+      await container.evaluate((el, y) => { el.scrollTop = y; }, targetY);
+      await page.waitForTimeout(250);
+    }
+    await page.waitForTimeout(800);
+
+    const titles = await container.locator('.pmeta h3').evaluateAll((els) =>
+      els.map((el) => ({
+        text: el.innerText.trim(),
+        opacity: parseFloat(window.getComputedStyle(el).opacity),
+      }))
+    );
+    for (const t of titles) {
+      assert.ok(t.text.length > 0, `Kinetic project title is empty`);
+      assert.ok(t.opacity >= 0.99, `Kinetic project "${t.text}" opacity ${t.opacity} < 0.99`);
+    }
+    console.log(`PASS Kinetic: all ${titles.length} project titles have opacity >= 0.99 and non-empty text`);
+
+    const proj2Top = await container.locator('.proj').nth(1).evaluate((el) => el.offsetTop);
+    await container.evaluate((el, y) => { el.scrollTop = y - 40; }, proj2Top);
+    await page.waitForTimeout(500);
+    await win.screenshot({ path: 'scripts/shots/port-kinetic-02.png' });
+    console.log('[harness] saved port-kinetic-02.png');
   } else if (app.id === 'tear') {
     await page.mouse.move(scaleX(150), scaleY(320));
     await page.mouse.down();

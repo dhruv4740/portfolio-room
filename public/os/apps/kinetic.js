@@ -617,10 +617,10 @@ export default {
           root.querySelectorAll('.reveal').forEach((el, idx) => {
             const st = window.ScrollTrigger.create({
               id: `kinetic-${idx}`,
-              trigger: el,
+              trigger: el.closest('.proj') || el,
               scroller: root,
               start: 'top 88%',
-              animation: gsap.from(el, { yPercent: 40, opacity: 0, duration: 1, ease: 'power3.out' }),
+              animation: gsap.from(el, { yPercent: 40, opacity: 0, duration: 0.7, ease: 'power3.out' }),
             });
             stInstances.push(st);
           });
