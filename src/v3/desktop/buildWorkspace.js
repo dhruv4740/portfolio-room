@@ -55,7 +55,7 @@ function screenTexture() {
     ctx.fillStyle = '#667e91'; ctx.fillRect(0, 0, w, h);
     ctx.fillStyle = '#354757'; ctx.fillRect(0, 0, w, 42);
     ctx.font = '20px monospace'; ctx.fillStyle = '#ddd9d0';
-    ctx.fillText('dhruvOS', 26, 28); ctx.fillStyle = '#8e918e'; ctx.fillText('WORKSPACE 01', w - 210, 28);
+    ctx.fillStyle = '#8e918e'; ctx.fillText('WORKSPACE 01', w - 210, 28);
     ctx.strokeStyle = '#464845'; ctx.lineWidth = 1;
     ctx.strokeRect(72, 102, 880, 420);
     ctx.fillStyle = '#222426'; ctx.fillRect(73, 103, 878, 44);
@@ -63,7 +63,7 @@ function screenTexture() {
     ctx.fillStyle = '#ff5f1f'; ctx.fillRect(95, 186, 9, 9);
     ctx.fillStyle = '#ece7db'; ctx.font = '48px sans-serif'; ctx.fillText('Things I made.', 95, 256);
     ctx.fillStyle = '#969991'; ctx.font = '20px monospace'; ctx.fillText('Open the machine. Try something.', 97, 302);
-    const labels = ['01   dhruvOS', '02   Experiments', '03   Selected projects'];
+    const labels = ['01   Open the computer', '02   Experiments', '03   Selected projects'];
     labels.forEach((label, i) => {
       const y = 366 + i * 53;
       ctx.strokeStyle = '#363a38'; ctx.beginPath(); ctx.moveTo(96, y - 22); ctx.lineTo(924, y - 22); ctx.stroke();

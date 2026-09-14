@@ -180,7 +180,7 @@ export default function Scan() {
   useEffect(() => {
     if (screenPhase !== 'preparing') return undefined;
     const timer = window.setTimeout(() => {
-      setScreenError('dhruvOS did not respond. The room is still available.');
+      setScreenError('The computer did not respond. The room is still available.');
       setScreenPhase('room');
       setActiveId(null);
     }, PREPARE_TIMEOUT_MS);

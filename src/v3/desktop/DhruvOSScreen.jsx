@@ -17,9 +17,9 @@ const OS_SRC = `${import.meta.env.BASE_URL}os/embed.html?embed=1`;
 const TRUSTED_ORIGIN = window.location.origin;
 
 const PHASE_LABELS = {
-  preparing: 'CONNECTING TO DHruvOS',
+  preparing: 'CONNECTING',
   entering: 'ENTERING SCREEN',
-  inside: 'DHruvOS ONLINE',
+  inside: 'ONLINE',
   leaving: 'RETURNING TO ROOM',
 };
 
@@ -135,7 +135,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
         onReady?.(data);
       } else if (data.type === 'load-error') {
         setFrameState('error');
-        onLoadError?.(data.message || 'dhruvOS failed to initialise.');
+        onLoadError?.(data.message || 'The computer failed to start.');
       } else if (data.type === 'request-leave') {
         onRequestLeave?.();
       }
@@ -186,7 +186,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
 
   const handleError = useCallback(() => {
     setFrameState('error');
-    onLoadError?.('The embedded dhruvOS document could not be loaded.');
+    onLoadError?.('The computer could not be loaded.');
   }, [onLoadError]);
 
   if (!mounted) return null;
@@ -204,7 +204,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
       aria-busy={!error && frameState !== 'ready'}
       role="dialog"
       aria-modal={phase === 'inside' ? 'true' : undefined}
-      aria-label="dhruvOS embedded screen"
+      aria-label="Desk computer screen"
     >
       <style>{css}</style>
       <div ref={vignetteRef} className="os-screen-vignette" aria-hidden="true" />
@@ -228,7 +228,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
           <iframe
             ref={frameRef}
             src={src}
-            title="dhruvOS"
+            title="Desk computer"
             data-testid="dhruv-os-frame"
             loading="eager"
             onLoad={handleLoad}
