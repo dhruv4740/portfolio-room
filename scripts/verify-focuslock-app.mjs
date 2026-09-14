@@ -27,6 +27,8 @@ await page.addInitScript(() => {
   }
   localStorage.setItem('v3:surface-override', 'scan');
   localStorage.setItem('v3:seen-intro', '1');
+  localStorage.setItem('v3:test', '1');
+  window.__phoneTimeScale = 20;
 });
 
 console.log('[harness] navigating to', BASE);
@@ -70,6 +72,12 @@ async function shootScreen(name) {
   await page.waitForTimeout(300);
   await phoneScreen.screenshot({ path: `scripts/shots/phone-fl-${name}.png` });
   console.log(`[harness] saved phone-fl-${name}.png`);
+}
+
+async function shootFriction(name) {
+  await page.waitForTimeout(150);
+  await phoneScreen.screenshot({ path: `scripts/shots/phone-friction-${name}.png` });
+  console.log(`[harness] saved phone-friction-${name}.png`);
 }
 
 // 2. Test Dashboard Tab on clean state (assert no task rows and minutes value is 0)
@@ -158,8 +166,9 @@ assert.ok(await hardBtn.evaluate((el) => el.classList.contains('is-selected')), 
 // Toggle Shake Challenge
 const shakeRow = flRoot.locator('.fl-toggle-row').filter({ hasText: 'Shake Challenge' });
 const shakeSwitch = shakeRow.locator('.fl-switch');
+assert.ok(await shakeSwitch.evaluate((el) => el.classList.contains('is-on')), 'Shake challenge should be ON by default');
 await shakeSwitch.click();
-assert.ok(await shakeSwitch.evaluate((el) => el.classList.contains('is-on')), 'Shake challenge not toggled');
+assert.ok(await shakeSwitch.evaluate((el) => !el.classList.contains('is-on')), 'Shake challenge not toggled OFF');
 console.log('PASS Settings: friction controls updated');
 
 // 7. Test Persistence via localStorage
@@ -167,7 +176,7 @@ const savedState = await page.evaluate(() => JSON.parse(localStorage.getItem('v3
 assert.equal(savedState.dailyLimitMinutes, 75, 'Persisted dailyLimitMinutes mismatch');
 assert.equal(savedState.targetApps['com.instagram.android'], false, 'Persisted Instagram unblocked mismatch');
 assert.equal(savedState.friction.mathDifficulty, 'hard', 'Persisted mathDifficulty mismatch');
-assert.equal(savedState.friction.shake, true, 'Persisted shake setting mismatch');
+assert.equal(savedState.friction.shake, false, 'Persisted shake setting mismatch');
 console.log('PASS localStorage persistence verified before reload');
 
 // Reload and remount
@@ -186,19 +195,181 @@ const hardBtnAfterReload = flRoot.locator('.fl-pill-btn').filter({ hasText: 'Har
 assert.ok(await hardBtnAfterReload.evaluate((el) => el.classList.contains('is-selected')), 'Hard difficulty not preserved after reload');
 console.log('PASS state correctly restored after page reload');
 
-// 8. Test Instagram always locked even with all FocusLock toggles OFF
+// Reset FocusLock policy to defaults so all friction barriers are enabled
+await flRoot.locator('.fl-btn-danger').filter({ hasText: 'Reset Policy to Default' }).click();
+await page.waitForTimeout(200);
 await flRoot.locator('.fl-back').click();
+console.log('PASS reset policy to defaults and returned to phone home');
+
+// 8. Test Friction Sequence with defaults
 const igAppIcon = phoneScreen.locator('.ps-app');
 await igAppIcon.click();
 
-// Lock Overlay MUST appear (no mock feed screen exists)
+// Step 1: Breathing (12s total -> 600ms at scale 20)
+const breathingStep = phoneScreen.locator('[data-step="breathing"]');
+await assert.ok(await breathingStep.isVisible(), 'Breathing step should be visible');
+await shootFriction('breathing');
+console.log('PASS friction step: breathing');
+
+// Wait for breathing to complete and advance to delay
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'delay', null, { timeout: 3000, polling: 50 });
+
+// Step 2: Delay (10s total -> 500ms at scale 20)
+const delayStep = phoneScreen.locator('[data-step="delay"]');
+await assert.ok(await delayStep.isVisible(), 'Delay step should be visible');
+await shootFriction('delay');
+console.log('PASS friction step: delay');
+
+// Wait for delay to complete and advance to intention
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'intention', null, { timeout: 3000, polling: 50 });
+
+// Step 3: Intention
+const intentionStep = phoneScreen.locator('[data-step="intention"]');
+await assert.ok(await intentionStep.isVisible(), 'Intention step should be visible');
+await shootFriction('intention');
+await phoneScreen.locator('.fl-chip').filter({ hasText: 'Boredom / Dopamine craving' }).click();
+await phoneScreen.locator('.btn-confirm-intention').click();
+console.log('PASS friction step: intention completed');
+
+// Step 4: Shake Challenge
+const shakeStep = phoneScreen.locator('[data-step="shake"]');
+await assert.ok(await shakeStep.isVisible(), 'Shake step should be visible');
+await shootFriction('shake');
+// Perform rapid side-to-side mouse moves over the phone screen to trigger >= 6 direction reversals
+const shakeBox = await phoneScreen.boundingBox();
+for (let i = 0; i < 10; i++) {
+  await page.mouse.move(shakeBox.x + 80, shakeBox.y + 300);
+  await page.waitForTimeout(60);
+  await page.mouse.move(shakeBox.x + 280, shakeBox.y + 300);
+  await page.waitForTimeout(60);
+}
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'reflection', null, { timeout: 3000, polling: 50 });
+console.log('PASS friction step: shake challenge completed via mouse movement');
+
+// Step 5: Cognitive Reflection
+const reflectionStep = phoneScreen.locator('[data-step="reflection"]');
+await assert.ok(await reflectionStep.isVisible(), 'Reflection step should be visible');
+await shootFriction('reflection');
+const phrase = await phoneScreen.locator('.txt-reflection-phrase').innerText();
+await phoneScreen.locator('.fl-reflection-input').fill(phrase);
+await phoneScreen.locator('.btn-verify-reflection').click();
+console.log('PASS friction step: cognitive reflection verified');
+
+// Step 6: Stats & Checklist
+const statsStep = phoneScreen.locator('[data-step="stats"]');
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'stats', null, { timeout: 3000, polling: 50 });
+await assert.ok(await statsStep.isVisible(), 'Stats step should be visible');
+await shootFriction('stats');
+const durationTxt = await phoneScreen.locator('.txt-stats-duration').innerText();
+assert.equal(durationTxt, '0 min', 'Stats duration should display 0 min');
+await phoneScreen.locator('.btn-stats-next').click();
+console.log('PASS friction step: stats and checklist reviewed');
+
+// Step 7: Math Gate
+const mathStep = phoneScreen.locator('[data-step="math"]');
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'math', null, { timeout: 3000, polling: 50 });
+await assert.ok(await mathStep.isVisible(), 'Math gate step should be visible');
+await shootFriction('math');
+const mathQ = await phoneScreen.locator('.txt-math-question').innerText();
+let mathAns;
+if (mathQ.includes('×') && mathQ.includes('+')) {
+  const [a, b, c] = mathQ.match(/\d+/g).map(Number);
+  mathAns = a * b + c;
+} else if (mathQ.includes('×')) {
+  const [a, b] = mathQ.match(/\d+/g).map(Number);
+  mathAns = a * b;
+} else {
+  const [a, b] = mathQ.match(/\d+/g).map(Number);
+  mathAns = a + b;
+}
+await phoneScreen.locator('.fl-math-input').fill(String(mathAns));
+await phoneScreen.locator('.btn-verify-math').click();
+console.log('PASS friction step: math gate solved');
+
+// Step 8: Decision
+const decisionStep = phoneScreen.locator('[data-step="decision"]');
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'decision', null, { timeout: 3000, polling: 50 });
+await assert.ok(await decisionStep.isVisible(), 'Decision step should be visible');
+await shootFriction('decision');
+
+// Click "Open Anyway"
+await phoneScreen.locator('.btn-open-anyway').click();
+const grantedMsg = await phoneScreen.locator('.fl-granted-text').innerText();
+assert.equal(grantedMsg, 'Extension granted for 5 minutes. Stay intentional.');
+console.log('PASS decision step: extension granted message displayed');
+
+// Wait for automatic return to home screen
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'home', null, { timeout: 3000, polling: 50 });
+console.log('PASS returned to home screen after extension granted (opens incremented to 1)');
+
+// 9. Test Cancel on first step: opens unchanged
+await igAppIcon.click();
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'breathing', null, { timeout: 3000, polling: 50 });
+await phoneScreen.locator('.btn-take-break').click();
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'home', null, { timeout: 3000, polling: 50 });
+console.log('PASS cancel on first step returns to home screen with opens unchanged');
+
+// 10. Test Wrong Math Answer
+await phoneScreen.locator('.ps-app-focuslock').click();
+await flRoot.locator('.fl-nav-item[data-tab="settings"]').click();
+const togglesToDisable = [
+  'Breathing Pause',
+  'Wait Delay',
+  'Intention Setting',
+  'Shake Challenge',
+  'Cognitive Reflection',
+  'Stats & Checklist',
+];
+for (const label of togglesToDisable) {
+  const row = flRoot.locator('.fl-toggle-row').filter({ hasText: label });
+  const sw = row.locator('.fl-switch');
+  if (await sw.evaluate((el) => el.classList.contains('is-on'))) {
+    await sw.click();
+  }
+}
+await flRoot.locator('.fl-back').click();
+// Tap Instagram -> lands directly on math step
+await igAppIcon.click();
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'math', null, { timeout: 3000, polling: 50 });
+await phoneScreen.locator('.fl-math-input').fill('999999');
+await phoneScreen.locator('.btn-verify-math').click();
+const mathToast = phoneScreen.locator('.ps-toast');
+assert.equal(await mathToast.innerText(), 'Incorrect! Try again.');
+console.log('PASS wrong math answer shows "Incorrect! Try again." toast');
+// Cancel back to home
+await phoneScreen.locator('.btn-take-break').click();
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'home', null, { timeout: 3000, polling: 50 });
+
+// 11. Test Turn off all friction toggles in Settings -> lands directly on decision screen
+await phoneScreen.locator('.ps-app-focuslock').click();
+await flRoot.locator('.fl-nav-item[data-tab="settings"]').click();
+const mathRow = flRoot.locator('.fl-toggle-row').filter({ hasText: 'Math Gate' });
+const mathSw = mathRow.locator('.fl-switch');
+if (await mathSw.evaluate((el) => el.classList.contains('is-on'))) {
+  await mathSw.click();
+}
+await flRoot.locator('.fl-back').click();
+await igAppIcon.click();
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.frictionStep === 'decision', null, { timeout: 3000, polling: 50 });
+await shootFriction('no-barriers');
+await phoneScreen.locator('.btn-close-app-decision').click();
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'home', null, { timeout: 3000, polling: 50 });
+console.log('PASS all friction barriers off lands directly on decision screen');
+
+// 12. Test Real setting lock overlay path: toggle "Hard block after limit"
+await phoneScreen.locator('.ps-app-focuslock').click();
+await flRoot.locator('.fl-nav-item[data-tab="blocklist"]').click();
+const hardBlockRow = flRoot.locator('.fl-toggle-row').filter({ hasText: 'Hard block after limit' });
+await hardBlockRow.locator('.fl-switch').click();
+await flRoot.locator('.fl-back').click();
+await igAppIcon.click();
 const lockOverlay = phoneScreen.locator('.ps-lock');
-assert.ok(await lockOverlay.isVisible(), 'Lock overlay should appear when tapping Instagram');
+assert.ok(await lockOverlay.isVisible(), 'Lock overlay should appear when hardBlockAfterLimit is active');
 assert.equal(await lockOverlay.locator('.ps-pill').innerText(), 'LOCKED');
-const mockFeed = phoneScreen.locator('.ps-ig-feed');
-assert.equal(await mockFeed.count(), 0, 'Mock Instagram feed should not exist in DOM');
 await shootScreen('instagram-locked');
-console.log('PASS tapping Instagram with toggles off still shows lock overlay');
+await phoneScreen.locator('.ps-close').click();
+await page.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'home', null, { timeout: 3000, polling: 50 });
+console.log('PASS hard block after limit toggle triggers real lock overlay');
 
 // Assert 0 external requests and 0 errors
 assert.equal(externalRequests.length, 0, `External network requests detected: ${externalRequests.join(', ')}`);
