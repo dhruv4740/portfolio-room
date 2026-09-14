@@ -36,20 +36,19 @@ export default {
     ].join(';');
     playBtn.addEventListener('mouseover', () => { playBtn.style.borderColor = '#5cffd0'; playBtn.style.background = 'rgba(92,255,208,0.08)'; });
     playBtn.addEventListener('mouseout',  () => { playBtn.style.borderColor = 'rgba(92,255,208,0.4)'; playBtn.style.background = 'rgba(92,255,208,0.04)'; });
-    playBtn.addEventListener('click', () => {
+    // Audio is deliberately started only by this user-gesture handler. The
+    // mount path and render loop never call appCtx.audio.start().
+    function startFromUserGesture() {
       appCtx.audio.start();
       // Update the OS sound toggle label
       const btn = document.getElementById('sound-toggle');
       if (btn) { btn.textContent = '♪ ON'; btn.classList.add('on'); }
       overlay.style.opacity = '0';
       overlay.style.pointerEvents = 'none';
-    });
-    const subHint = document.createElement('span');
-    subHint.style.cssText = "font:8px 'JetBrains Mono',monospace;color:rgba(92,255,208,0.2);letter-spacing:0.12em;";
-    subHint.textContent = 'or toggle ♪ ON in menubar';
+    }
+    playBtn.addEventListener('click', startFromUserGesture);
     overlay.appendChild(hint);
     overlay.appendChild(playBtn);
-    overlay.appendChild(subHint);
 
     // Label
     const label = document.createElement('div');

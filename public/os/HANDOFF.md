@@ -1,11 +1,12 @@
 # dhruvOS — Agent Handoff Document
 
-**Branch:** `feat/dhruvos`  
+**Branch:** `feat/v3`
 **Owner:** Dhruv Kothari (`dhruvkothari13062006@gmail.com`, `github.com/dhruv4740`)  
-**Last updated:** 2026-06-22 (Wave 3 — backbone + overhaul)
+**Last updated:** 2026-09-14 (embedded OS app cleanup)
 
-**Architecture docs:** See `os/docs/` — ROADMAP.md / ARCHITECTURE.md for full spec.  
-**Content:** Edit `os/shell/content.js` to update copy across all apps simultaneously.
+**Architecture docs:** See `public/os/docs/` — ROADMAP.md / ARCHITECTURE.md for full spec.
+**Content:** Edit `src/v3/content/index.js`; `scripts/gen-os-content.mjs` generates
+`public/os/shell/content.js` during `npm run build`.
 
 ---
 
@@ -13,8 +14,10 @@
 
 A fake retro-future OS desktop that serves as Dhruv's portfolio. No build step, no bundler. Pure ES modules served as static files.
 
-**Entry point:** `os/index.html`  
-**Live test command:** `cd os && npx serve` (or `python -m http.server 8000` inside `os/`), then open the printed localhost URL in Chrome.
+**Entry points:** `public/os/index.html` (standalone) and
+`public/os/embed.html?embed=1` (the v3 monitor).
+**Live test command:** serve the production build, then run
+`BASE=http://localhost:4173 node scripts/verify-os-apps.mjs`.
 
 ---
 
@@ -22,7 +25,9 @@ A fake retro-future OS desktop that serves as Dhruv's portfolio. No build step, 
 
 1. **Reality Tear intro** — a flat minimalist landing page is shown. The user drags to "tear" through it, revealing the dark OS beneath. Clicking the "skip →" button in the bottom-right skips directly. (~55% torn triggers auto-complete via GSAP.)
 2. **BIOS boot** — green terminal-style boot lines scroll; the user clicks anywhere to skip.
-3. **Desktop** — 8 app icons on the left column (7 original + `contact`). Single-click or double-click to open. Draggable windows, traffic-light close/minimize, taskbar at the bottom. Menubar has a persistent `✉ contact` button and a `SYS ▸ N%` exploration meter.
+3. **Desktop** — 14 registered app icons. Single-click or double-click to open.
+Draggable windows, traffic-light close/minimize, taskbar at the bottom. Menubar
+has a persistent `✉ contact` button and a `SYS ▸ N%` exploration meter.
 
 ---
 
@@ -34,11 +39,12 @@ A fake retro-future OS desktop that serves as Dhruv's portfolio. No build step, 
 | Three.js | Via importmap (`three@0.169.0` from unpkg). Only `cosmos.js` uses it. |
 | GSAP | CDN global (`gsap` on `window`). Window open/close animations, boot fade, intro tear. |
 | Matter.js | CDN global. Not used by current apps — available for future physics. |
-| Howler.js | CDN global. Used by `shell/audio.js` for the ambient synthesizer. |
+| Web Audio | Native `shell/audio.js` synthesizer; starts only on user gesture. |
 | Fonts | JetBrains Mono via Google Fonts. |
 | Styling | Single `styles.css`. CSS custom properties for the green palette. |
 
-All CDN deps are declared in `os/index.html` before the `<script type="module">` entry point.
+The embedded entry has no CDN dependencies. The standalone legacy entry still
+declares the globals used by its intro and existing Gravity/Cosmos paths.
 
 ---
 
@@ -64,7 +70,10 @@ os/
     ├── terminal.js     — Working shell. Shadow DOM scoped. Commands: help/ls/about/projects/cosmos/whoami/contact/clear/sudo/rm
     ├── projects.js     — Corrupted quest-log. Each project glitch-reveals on hover/click.
     ├── cosmos.js       — Powers of Ten zoom. 6 procedural canvas layers (galaxy→neuron). Wheel/drag inside window.
-    ├── wormhole.js     — Hex-ring hyperspace tunnel. Canvas 2D, mouse-tilt deflection.
+    ├── corrupted.js    — Dependency-free glitch canvas sketch.
+    ├── fluid.js        — Dependency-free cursor-driven flow sketch (Flux).
+    ├── kinetic.js      — Dependency-free motion study.
+    ├── tear.js         — Dependency-free pointer-driven reveal sketch.
     ├── gallery.js      — Kinetic project list. Scroll-velocity skew, scramble-on-hover titles.
     └── wallpaper.js    — Curl-noise flow field. 4 colour palettes, "Set as wallpaper" button.
 ```
@@ -118,7 +127,7 @@ export default {
 
 **To add a new app:**
 1. Create `os/apps/myapp.js` with the above shape.
-2. Add `await load('../apps/myapp.js');` to `os/shell/registry.js`.
+2. Add `await load('../apps/myapp.js');` to `public/os/shell/registry.js`.
 3. Done. The icon appears automatically on the desktop.
 
 ---
@@ -133,8 +142,8 @@ ctx = {
   openProject(projectId),       // emit 'open-project' + open projects app
   openContact(),                // open contact app
 
-  content,   // os/shell/content.js — single source of truth for all copy
-  store,     // os/shell/store.js — event bus + exploration state
+  content,   // public/os/shell/content.js — generated source for app copy
+  store,     // public/os/shell/store.js — event bus + exploration state
 
   audio: {
     start(), stop(), toggle(),  // ambient synth control
@@ -147,11 +156,11 @@ ctx = {
 }
 ```
 
-See `os/docs/ARCHITECTURE.md` for the full store API and canonical event list.
+See `public/os/docs/ARCHITECTURE.md` for the full store API and canonical event list.
 
 ---
 
-## Window Manager API (`os/shell/windowManager.js`)
+## Window Manager API (`public/os/shell/windowManager.js`)
 
 ```js
 openApp(appDef, ctx)   // opens window; focuses if already open
@@ -166,7 +175,7 @@ Windows are draggable via pointer-capture on the titlebar. Traffic lights (red/y
 
 ---
 
-## Audio (`os/shell/audio.js`)
+## Audio (`public/os/shell/audio.js`)
 
 Web Audio API synthesizer — bass sine wave + detuned saw pad + LFO lowpass filter. **Starts only on user gesture** (browser requirement). The `♪ OFF / ON` button in the menubar calls `ctx.audio.toggle()`.
 
@@ -187,11 +196,11 @@ Spins up a local HTTP server on port 4182, launches headless Chromium with Swift
 
 **Expected output (current):**
 ```
-==== dhruvOS INTEGRATION ====
-INFO desk-icons=7
-INFO open-windows=0; labels=["about","terminal","projects","cosmos","wormhole","gallery","wallpaper"]
-NO console errors / warnings / failed requests
-shots: os-01-intro / os-02-desktop / os-03-apps
+==== dhruvOS APPS ====
+BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
+PASS removed apps are not launchable from desktop or terminal
+PASS set as wallpaper changes the desktop
+PASS no page errors or failed network requests
 ```
 
 Screenshots go to `mockups/shots/`. The desktop screenshot shows only the beneath-canvas background (dark green starfield) because `#desktop` GSAP fade-in (700ms) hasn't completed when the shot fires — this is a test timing limitation, NOT a bug. The icon count proves the desktop rendered correctly.
@@ -210,22 +219,22 @@ Screenshots go to `mockups/shots/`. The desktop screenshot shows only the beneat
 
 ## Current App Status (Wave 3)
 
-**8 apps total.** All read content from `os/shell/content.js`. All cross-linked.
+**14 apps total.** Content apps read the generated `public/os/shell/content.js`.
 
 | App | Status | Notes |
 |---|---|---|
 | `about` | ✅ Complete | Green palette. Nodes from content.js (skills + projects). Side-drawer on click. Project nodes → openProject. Contact node → openContact. Contact strip. |
-| `terminal` | ✅ Complete | All 8 apps in `ls`. `open <app>` command. Colorized output. ASCII contact card on `contact` command. All copy from content.js. |
+| `terminal` | ✅ Complete | Registered apps in `ls`. `open <app>` command. Colorized output. ASCII contact card on `contact` command. |
 | `projects` | ✅ Complete | 4 real projects from content.js. Dramatic locked state. Scramble-reveal. Link chips (hidden when empty). Store deep-link support. Contact strip. |
 | `cosmos` | ✅ Complete | Overlay cards from content.js. Amber scale label. Card border treatment. Contact strip. |
-| `wormhole` | ✅ Complete | Repurposed as navigation hub. 6 portal rings (one per app). Labels + icons. Hover glow. Click → openApp. |
+| `corrupted`, `fluid`, `kinetic`, `tear` | ✅ Complete | Native dependency-free sketch apps. Their rAF loops stop on minimize, close, and embedded `leave`. |
 | `gallery` | ✅ Complete | 4 projects from content.js. Amber year label. Hover expands description. Link chips. Cross-links to projects via openProject. Contact strip. |
 | `wallpaper` | ✅ Complete | 260 particles. Swatch palette selector (28×28 color squares). Amber SET button. Palette persisted to store. |
 | `contact` | ✅ Complete | Corner-accent card. Email copy-to-clipboard. GitHub link. Resume button (hidden until `content.contact.resume` filled). |
 
 ## Real Content
 
-All in `os/shell/content.js`. Edit once → changes everywhere.
+Generated from `src/v3/content/index.js` into `public/os/shell/content.js`.
 
 - To add live/github links: fill `projects[n].links.live` and/or `.github`
 - To add resume: fill `contact.resume` with PDF URL
@@ -235,7 +244,7 @@ All in `os/shell/content.js`. Edit once → changes everywhere.
 
 ## Pending / Next Up
 
-See `os/docs/ROADMAP.md` for full checkbox list. Summary:
+See `public/os/docs/ROADMAP.md` for full checkbox list. Summary:
 
 ### Phase 2 — Shell (next priority)
 - Right-click desktop context menu
@@ -253,9 +262,9 @@ Static files — deploy `os/` as-is to Vercel or Netlify. No build step needed.
 
 ## Constraints — Do Not Violate
 
-- **No bundler.** All imports are ES module or CDN globals. Do not introduce Vite/Webpack/Rollup.
+- **No bundler in `public/os`.** All embedded imports are local ES modules. Do not introduce new CDN dependencies.
 - **No heavy GPGPU on the main thread.** The user's laptop is weak. No `GPUComputationRenderer` FBO ping-pong, no multi-pass raymarching at full resolution. Canvas 2D is always safe. Three.js single-pass shaders are OK at ≤512×512.
-- **App listeners go on `body` or canvas, NOT `window`.** Every app receives a `body` element. Attaching listeners to `window` inside an app causes leaks that survive window close. Always remove listeners in `cleanup()`.
+- **App listeners go on `body` or canvas, NOT `window`.** Every app receives a `body` element. Attaching listeners to `window` inside an app causes leaks that survive window close. Always remove listeners in `cleanup()`. Animated apps may return `{ cleanup, setVisible }`; `setVisible(false)` is required before work stops on minimize, close, or embedded `leave`.
 - **`cleanup()` must be complete.** Cancel every `requestAnimationFrame`, disconnect every `ResizeObserver`, remove every event listener. The window manager calls `cleanup()` on close.
 - **CLAUDE.md rules apply.** Conventional commits, no commit to main/master, YAGNI, no placeholder logic.
 
@@ -319,7 +328,7 @@ export default {
 };
 ```
 
-Then in `os/shell/registry.js`, add:
+Then in `public/os/shell/registry.js`, add:
 ```js
 await load('../apps/myapp.js');
 ```

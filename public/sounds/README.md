@@ -1,10 +1,11 @@
-# Required Audio Files
+# Audio files
 
-Place the following MP3 files in this directory. Vite serves `public/` at the web root,
-so each file is accessible at `/sounds/<filename>` in the browser.
+The current v3 room and embedded dhruvOS do not require files in this
+directory. dhruvOS Resonance and the shell ambient control synthesize audio with
+the native Web Audio API and start only after a user gesture.
 
-The audio system degrades gracefully — if any file is absent (HTTP 404), Howler logs a
-console warning and the app continues silently. No crashes, no broken scene.
+The older `src/data/sounds.js` / `src/hooks/useAudio.js` path still documents
+the filenames below, but it is not used by the live v3 entry.
 
 | Filename          | Role                                      | Loop  | Volume |
 |-------------------|-------------------------------------------|-------|--------|

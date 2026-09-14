@@ -68,7 +68,7 @@ export const projects = [
     year: 2026,
     type: 'SIDE QUEST',
     tagline: 'A retro-future OS desktop as a portfolio.',
-    description: 'Fake OS shell built as a portfolio. No bundler — pure ES modules. Canvas 2D apps, Web Audio API synthesizer, force-directed neural graph, Powers of Ten zoom, wormhole tunnel. Everything runs in the browser.',
+    description: 'Fake OS shell built as a portfolio. No bundler — pure ES modules. Canvas 2D apps, Web Audio API synthesizer, and interactive browser sketches. Everything runs in the browser.',
     tech: ['ES Modules', 'Canvas 2D', 'Web Audio', 'GSAP', 'Three.js'],
     links: { live: '', github: '' },
   },

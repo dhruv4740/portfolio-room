@@ -166,7 +166,6 @@ export default {
           '  about         open about app',
           '  projects      open projects',
           '  gallery       open gallery',
-          '  wormhole      open wormhole',
           '  wallpaper     open wallpaper',
           '  cosmos        open cosmos',
           '  contact       show contact info',
@@ -179,7 +178,7 @@ export default {
         );
       },
       ls(_, print) {
-        const appList = ['about', 'terminal', 'projects', 'cosmos', 'wormhole', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'resonance'];
+        const appList = ['about', 'terminal', 'projects', 'cosmos', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'resonance'];
         print('  ' + appList.join('  '));
       },
       about(ctx, print) {
@@ -196,7 +195,6 @@ export default {
         ctx?.openApp?.('projects');
       },
       gallery(ctx) { ctx?.openApp?.('gallery'); },
-      wormhole(ctx) { ctx?.openApp?.('wormhole'); },
       wallpaper(ctx) { ctx?.openApp?.('wallpaper'); },
       cosmos(ctx) { ctx?.openApp?.('cosmos'); },
       contact(_, print) {

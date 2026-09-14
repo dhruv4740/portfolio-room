@@ -19,13 +19,15 @@ await load('../apps/about.js');
 await load('../apps/terminal.js');
 await load('../apps/projects.js');
 await load('../apps/cosmos.js');
-await load('../apps/wormhole.js');
 await load('../apps/gallery.js');
+await load('../apps/corrupted.js');
+await load('../apps/fluid.js');
+await load('../apps/kinetic.js');
+await load('../apps/tear.js');
 await load('../apps/wallpaper.js');
 await load('../apps/contact.js');
 await load('../apps/gravity.js');
 await load('../apps/decoder.js');
 await load('../apps/resonance.js');
-await load('../apps/lab.js');
 
 export default apps;

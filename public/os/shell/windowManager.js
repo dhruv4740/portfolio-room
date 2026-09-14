@@ -10,6 +10,16 @@ const workspace = document.getElementById('workspace');
 let zCounter = 10;
 const openWindows = new Map(); // id → { el, titlebarEl, bodyEl, cleanup, minimized }
 let _taskbarUpdate = null;
+let osVisible = true;
+
+function updateVisibility(entry) {
+  entry.setVisible?.(osVisible && !entry.minimized);
+}
+
+window.addEventListener('v3:visibility', (event) => {
+  osVisible = event.detail?.state !== 'room';
+  openWindows.forEach(updateVisibility);
+});
 
 export function setTaskbarCallback(fn) {
   _taskbarUpdate = fn;
@@ -31,12 +41,14 @@ export function focus(id) {
   entry.el.style.zIndex = zCounter;
   document.querySelectorAll('.os-window').forEach(w => w.classList.remove('focused'));
   entry.el.classList.add('focused');
+  updateVisibility(entry);
   notify();
 }
 
 export function closeApp(id) {
   const entry = openWindows.get(id);
   if (!entry) return;
+  entry.setVisible?.(false);
   if (entry.cleanup) {
     try { entry.cleanup(); } catch (_) {}
   }
@@ -57,6 +69,7 @@ export function minimizeApp(id) {
   if (!entry) return;
   entry.minimized = !entry.minimized;
   entry.el.classList.toggle('minimized', entry.minimized);
+  updateVisibility(entry);
   notify();
 }
 
@@ -121,16 +134,23 @@ export function openApp(appDef, ctx) {
   // Mount app
   const bodyEl = document.getElementById('win-body-' + appDef.id);
   let cleanup = null;
+  let setVisible = null;
   try {
     const result = appDef.mount(bodyEl, ctx);
     if (typeof result === 'function') cleanup = result;
-    else if (result && typeof result.cleanup === 'function') cleanup = result.cleanup;
+    else if (result) {
+      if (typeof result.cleanup === 'function') cleanup = result.cleanup;
+      if (typeof result.setVisible === 'function') setVisible = result.setVisible;
+    }
   } catch (e) {
     console.error(`[windowManager] ${appDef.id} mount error:`, e);
     bodyEl.innerHTML = `<div class="app-error">App failed to mount:<br>${e.message}</div>`;
   }
 
-  openWindows.set(appDef.id, { el: win, titlebarEl: win.querySelector('.win-titlebar'), bodyEl, cleanup, minimized: false });
+  openWindows.set(appDef.id, {
+    el: win, titlebarEl: win.querySelector('.win-titlebar'), bodyEl,
+    cleanup, setVisible, minimized: false,
+  });
 
   focus(appDef.id);
   notify();

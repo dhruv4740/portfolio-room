@@ -145,7 +145,7 @@ export default Object.freeze({
     {
       "id": "three",
       "label": "Three.js / WebGL",
-      "note": "14 verified browser experiments",
+      "note": "four interactive sketches",
       "projects": []
     }
   ],

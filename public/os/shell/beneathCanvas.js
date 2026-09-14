@@ -84,6 +84,17 @@ export function initBeneathCanvas() {
       pal = PALETTES[palette];
       const beneath = document.getElementById('os-beneath');
       if (beneath) beneath.style.background = pal.bg;
+      const desktop = document.getElementById('desktop');
+      const workspace = document.getElementById('workspace');
+      const glow = `rgba(${pal.r},${pal.g},${pal.b},0.08)`;
+      if (desktop) {
+        desktop.style.backgroundColor = pal.bg;
+        desktop.style.backgroundImage = `radial-gradient(ellipse at 30% 60%, ${glow} 0%, transparent 65%)`;
+      }
+      if (workspace) {
+        workspace.style.backgroundColor = pal.bg;
+        workspace.style.backgroundImage = `radial-gradient(ellipse at 30% 40%, ${glow} 0%, transparent 65%)`;
+      }
     }
   });
 

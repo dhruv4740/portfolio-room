@@ -20,6 +20,20 @@ function curlXY(x, y, t) {
   };
 }
 
+function applyShellWallpaper(palette) {
+  const desktop = document.getElementById('desktop');
+  const workspace = document.getElementById('workspace');
+  const glow = `rgba(${palette.r},${palette.g},${palette.b},0.08)`;
+  if (desktop) {
+    desktop.style.backgroundColor = palette.bg;
+    desktop.style.backgroundImage = `radial-gradient(ellipse at 30% 60%, ${glow} 0%, transparent 65%)`;
+  }
+  if (workspace) {
+    workspace.style.backgroundColor = palette.bg;
+    workspace.style.backgroundImage = `radial-gradient(ellipse at 30% 40%, ${glow} 0%, transparent 65%)`;
+  }
+}
+
 export default {
   id: 'wallpaper',
   title: 'wallpaper',
@@ -59,6 +73,7 @@ export default {
     function applyPal(key) {
       activePal = PALETTES[key];
       body.style.background = activePal.bg;
+      applyShellWallpaper(activePal);
       store.set('wallpaper.palette', key);
       Object.entries(btnMap).forEach(([k, btn]) => {
         const isActive = k === key;
@@ -99,12 +114,11 @@ export default {
     setBtn.addEventListener('mouseout',  () => { setBtn.style.borderColor = 'rgba(255,176,0,0.45)'; setBtn.style.background = 'rgba(255,176,0,0.06)'; });
     setBtn.addEventListener('click', () => {
       const beneath   = document.getElementById('os-beneath');
-      const workspace = document.getElementById('workspace');
-      const { r, g, b, bg } = activePal;
+      const { bg } = activePal;
       if (beneath)   beneath.style.background = bg;
       const bc = document.getElementById('beneath-canvas');
       if (bc) bc.style.filter = `hue-rotate(${activePal.key === 'green' ? 0 : activePal.key === 'amber' ? 200 : activePal.key === 'violet' ? 270 : 150}deg)`;
-      if (workspace) workspace.style.background = `radial-gradient(ellipse at 30% 40%, rgba(${r},${g},${b},0.06) 0%, transparent 65%)`;
+      applyShellWallpaper(activePal);
       store.emit('wallpaper:set', { palette: activePal.key });
       const prev = setBtn.textContent;
       setBtn.textContent = '✓ APPLIED';

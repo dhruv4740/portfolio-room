@@ -35,13 +35,15 @@ ctx = {
 
 ## content.js
 
-`os/shell/content.js` — default-exports a frozen object. **Edit this file to update all copy.**
+`os/shell/content.js` — default-exports a frozen generated object. Edit
+`src/v3/content/index.js`, then run `node scripts/gen-os-content.mjs` (also run
+by `npm run build`) to update it.
 
 ```js
 {
   identity: { name, role, location, tagline },
   contact:  { email, github, githubLabel, resume },
-  skills:   [{ id, label, level, projects[] }],
+  skills:   [{ id, label, note, projects[] }],
   projects: [{ id, name, year, type, tagline, description, tech[], links: { live, github } }],
 }
 ```
@@ -97,10 +99,12 @@ export default {
   height: 540,
   mount(body, ctx) {
     // body = .win-body div  |  ctx = above
-    // All listeners on body or child elements — NOT on window/document
+    // All listeners on body or child elements — NOT on window/document.
     return function cleanup() {
       // cancel rAF, disconnect ResizeObserver, remove listeners
     };
+    // Animated apps may instead return { cleanup, setVisible }.
+    // setVisible(false) is called on minimize, close, and embedded leave.
   },
 };
 ```
@@ -120,7 +124,8 @@ export default {
 
 ### Design rules
 
-- Background always `#050a08`. No other darks.
+- The default background is `#050a08`; the wallpaper app may apply a persisted
+  palette to the shell.
 - Borders always derived from `--green` or `--amber`. No blue/purple.
 - Min font sizes: headings ≥13px, body ≥11px, labels ≥10px. No 8px copy.
 - All glows derived from `--green` or `--amber`. No blue-glow halos.

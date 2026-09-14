@@ -27,7 +27,7 @@ const PORT = parseInt(process.env.MOCKUP_PORT ?? '4178', 10);
 const SHOTS = join(ROOT, 'shots');
 mkdirSync(SHOTS, { recursive: true });
 
-const PAGES = ['index.html', 'particles.html', 'os.html', 'raymarch.html', 'kinetic.html', 'fluid.html', 'chromatic.html', 'drift.html', 'decoder.html', 'resonance.html', 'gravity.html', 'tear.html', 'portals.html', 'neural.html', 'singularity.html', 'corrupted.html', 'zoom.html'];
+const PAGES = ['index.html', 'particles.html', 'os.html', 'raymarch.html', 'kinetic.html', 'fluid.html', 'chromatic.html', 'drift.html', 'decoder.html', 'resonance.html', 'gravity.html', 'tear.html', 'neural.html', 'singularity.html', 'corrupted.html', 'zoom.html'];
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
