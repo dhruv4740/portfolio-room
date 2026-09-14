@@ -106,7 +106,7 @@ rather than a strobe, and gate it behind `prefers-reduced-motion`.
 
 ```bash
 npm run build
-node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4174
+node node_modules/vite/bin/vite.js preview --host localhost --port 4173
 node scripts/shot.mjs scripts/shots/night.png
 ```
 
@@ -114,7 +114,7 @@ node scripts/shot.mjs scripts/shots/night.png
 at your screenshots and iterate.** Do not declare the lighting improved without
 looking at it.
 
-Then `node scripts/verify-v3.mjs` (check `BASE` matches your port) to confirm
+Then `BASE=http://localhost:4173 node scripts/verify-v3.mjs` to confirm
 you have not broken interaction. It should stay at 36/36.
 
 Do not commit; report what changed and hand back.

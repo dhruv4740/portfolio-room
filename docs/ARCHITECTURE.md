@@ -34,19 +34,17 @@ room must never be the only place a fact exists.
 **This is where everything deep lives, and the OS metaphor is doing real
 architectural work — not just being cute.**
 
-The problem it solves: the lab demos have violently different visual languages.
-Chromatic's iridescent keynote gloss cannot sit next to Corrupted's glitched RPG
-save file on a single page — they would fight and both would lose. But as
-*applications inside an operating system*, heterogeneity stops being a style
-collision and becomes the point. An OS is supposed to run programs that don't
-match each other. The metaphor licenses the variety.
+The problem it solves: the retained interactive sketches have different visual
+languages. As *applications inside an operating system*, that heterogeneity
+stops being a style collision and becomes the point. An OS is supposed to run
+programs that do not match each other.
 
 Contents:
 
 - **`Projects/`** — the real work. Each project a window: what it is, the
   decision behind it, what broke, live and source links.
-- **`Lab/`** — the 14 verified-working demos, launched as apps in their own
-  windows. Honestly labelled as experiments, not shipped products.
+- **Interactive sketches** — four dependency-free canvas apps in their own
+  windows: Corrupted, Flux, Kinetic, and Reality Tear.
 - **`Terminal`** — `resume`, `contact`, `whoami`, `ls`. The easter-egg surface,
   and a genuinely fast path for anyone who'd rather type.
 - **`About`**, plus the existing toys (`car.exe` and friends).
@@ -66,34 +64,29 @@ specification document that deliberately doesn't need a GPU.
 Condensed spectacle plus the full content set. A phone can't orbit a room
 comfortably, so it gets a different experience rather than a squeezed one.
 
-## Where the lab ideas get reused
+## The retained interactive sketches
 
-The audit found 14 of 17 demos genuinely working (`docs/LAB-AUDIT.md`). They are
-not shipped as a wall of iframes — that would be padding a portfolio with
-experiments. Instead each strong idea is given a **job**:
+The former iframe gallery was removed. The four retained sketches are registered
+directly as dhruvOS apps, so they have the same window lifecycle as the rest of
+the OS and do not carry CDN-backed HTML pages.
 
 | Idea | Reused as |
 |---|---|
-| **Powers of Ten** | the warp mechanic — room → screen → OS is already a scale-zoom; treat it as one continuous rung-by-rung zoom rather than a dolly |
-| **Reality Tear** | the `/work` ↔ room bridge — the flat document tears open to reveal the room, resolving the two-audience split with one gesture |
-| **Corrupted** | the `Projects/` presentation inside dhruvOS — skills as stats, projects as quests. Also gives the empty `decision`/`broke` fields a *format* worth filling |
-| **Drift** | the `Lab/` launcher — an infinite draggable canvas of demos is exactly the right container for a pile of experiments |
-| **Kinetic** | `/work` typography and the deck — editorial kinetic type is the cheapest way to make a GPU-free page not boring |
-| **Neural** | the skills view — a living graph beats a list, and works on both `/work` and inside the OS |
-| **Decoder** | the loading / intro state, and a hold-to-reveal wireframe mode in the room |
+| **Corrupted** | a dependency-free glitch canvas sketch |
+| **Flux** | a dependency-free cursor-driven flow sketch |
+| **Kinetic** | a dependency-free motion study |
+| **Reality Tear** | a dependency-free pointer-driven reveal sketch |
 
-Not reused: Singularity, Flux, Chromatic, Particle Genesis, Resonance, Wormhole.
-They are technique demos — beautiful, but they don't answer a question the site
-is asking, and shader set-pieces for their own sake are the exact "AI slop with
-better shaders" trap this project exists to avoid. They remain available inside
-`Lab/` where they belong.
+The other former lab experiments were dropped. `src/lab/registry.js` is empty so
+it cannot point at deleted files.
 
 ## Fun side and recruiter side
 
 They are not separate sites and must not become two codebases. One content
 source, three surfaces (`src/v3/content/index.js` already enforces this).
 
-- **The fun path**: room → monitor → OS → Lab, terminal easter eggs, toys.
+- **The fun path**: room → monitor → OS → interactive sketches, terminal easter
+  eggs, toys.
 - **The recruiter path**: `/work` → project detail → links → résumé → contact.
 - **The bridges matter more than either path.** The room carries a plain,
   un-embarrassed WORK link. `/work` carries an honest invitation back to the
@@ -120,8 +113,7 @@ content or features. See `src/v3/desktop/perfGovernor.js`.
 ## Consequences to hold to
 
 - Adding a project means editing `src/v3/content/index.js` and nothing else.
-- A lab demo is never the first thing anyone sees. Experiments are labelled as
-  experiments — inflating them into "products" is the fastest way to lose the
-  trust of the exact audience being courted.
+- An interactive sketch is never the first thing anyone sees. It remains a
+  sketch inside the OS rather than being presented as a shipped product.
 - The room is not allowed to be the only home of any fact.
 - If a surface can't be made good, cut it rather than ship it as filler.

@@ -44,12 +44,11 @@ Three things now define the hero:
    > getting transported inside the laptop."
 
    So: modeled workspace → a monitor is a clickable object → a focused handoff
-   carries you inside the machine. What's inside is undecided; candidates are
-   enumerated in `docs/ROADMAP.md`.
+   carries you inside the machine. The embedded destination is dhruvOS, which
+   includes the four retained interactive sketches.
 
-The modeled workspace resolves the earlier room-capture choice. The candidate
-list in `docs/ROADMAP.md` remains useful for later experiments inside the
-machine, after the core handoff works.
+The modeled workspace resolves the earlier room-capture choice. Further
+experiments inside the machine can be considered after the core handoff works.
 
 ## What this is not
 

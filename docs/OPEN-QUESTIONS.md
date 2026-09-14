@@ -19,23 +19,10 @@ empty, which is safe, whereas a fabricated one gets caught in an interview.
    Tracker and Basket Price entirely, and says "second-year" when he is in his
    third. Worth regenerating before publishing it.
 
-3. **Three lab demos need a call** (see `docs/LAB-AUDIT.md`):
-   - `video3d` — renders an SMPTE colour-bar placeholder and does not respond to
-     scroll. Looks like real footage was never added. Recommend pulling it.
-   - `tear` — almost certainly fine; the audit tested it with a mouse *move*
-     when the demo asks for a *drag*. Needs a correct re-test, not a fix.
-   - `singularity` — renders a real shader scene; only its "even the text is
-     GLSL" claim is unconfirmed.
-
-4. **`particles` (Particle Genesis)** — renders a blank white page with no
-   console or network errors. Suspected float-texture path failing under
-   SwiftShader, so it may work fine on a real GPU. Excluded from the OS lab
-   launcher until checked in a real browser on his machine.
-
-5. **Deployment** — no remote, host or domain chosen yet. Nothing has been
+3. **Deployment** — no remote, host or domain chosen yet. Nothing has been
    pushed; `git push` is blocked until he supplies a remote.
 
-6. **`og:image`** — absent, so shared links preview as bare text. Waiting on the
+4. **`og:image`** — absent, so shared links preview as bare text. Waiting on the
    finished night-lit room so the share image is the real thing.
 
 ## Answered — do not re-ask
@@ -45,9 +32,8 @@ empty, which is safe, whereas a fabricated one gets caught in an interview.
 - **Inside the monitor**: dhruvOS, which already exists and retains state.
 - **Basket Price**: ships, with neutral framing. No mention of scraping, terms
   of service, or the specific delivery companies' storefront mechanics.
-- **Lab demo labels**: none. The container is called Lab; per-card "EXPERIMENT"
-  tags were removed — labelling your own work as lesser reads as apologising
-  for it.
+- **Interactive sketches**: four dependency-free OS apps remain; the former
+  iframe gallery and its other experiments were dropped.
 - **Project set**: show all, ranked by depth. FocusLock, Expense Tracker and
   Basket Price lead; hackathon pieces sit below.
 - **CrisisWatch decision**: framed around the constraint (fixed model, so the

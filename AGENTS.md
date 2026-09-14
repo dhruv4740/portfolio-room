@@ -43,16 +43,17 @@ you to `curl` a `.splat` file, they are stale — ignore them.**
 ```bash
 npm run build     # production build
 npm run dev       # dev server
-node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4174
-node scripts/verify-v3.mjs
+node node_modules/vite/bin/vite.js preview --host localhost --port 4173
+BASE=http://localhost:4173 node scripts/verify-v3.mjs
+BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
 ```
 
 Invoke Vite's bin directly for preview — `npm run preview` strips arguments on
 this machine. There is **no lint and no test script**; `npm run build` plus the
 Playwright harness is the entire quality signal.
 
-Check `BASE` in `scripts/verify-v3.mjs` before running — it has defaulted to
-port 4173 while the preview ran on 4174, which silently tests nothing.
+The verification scripts default to `http://localhost:4173`; keep the preview
+and `BASE` on that same origin so a run cannot silently test another server.
 
 ## Invariants
 
@@ -100,7 +101,9 @@ bridge that survives exit and re-entry. Don't remount it on phase change.
 - **Dead v1/v2 code**: `src/App.jsx`, `src/Shell.jsx`, `src/routes/`,
   `src/flagship/`, `src/components/`. Unreferenced. Do not repair or import.
   Precedent: a stale `manualChunks` entry was force-emitting a dead 514KB chunk.
-  Exception: `src/lab/registry.js` and `public/lab/*.html` are **live**.
+  The former lab gallery and its HTML files are removed. The four retained
+  sketches are dependency-free OS apps in `public/os/apps/` and are registered
+  in `public/os/shell/registry.js`.
 - **`SplatStage.jsx`, `splatBounds.js` and `@sparkjsdev/spark` are historical.**
   The Gaussian-splat direction was abandoned — the placeholder was a shoe and
   the user rejected it. Nothing imports them. Do not restore the shoe, do not
@@ -144,7 +147,8 @@ src/v3/
     buildWorkspace.js   geometry, materials, WORKSPACE anchors + screen dims
     DhruvOSScreen.jsx   persistent same-origin iframe bridge to dhruvOS
     cameraRig.js        flyTo (GSAP power3.inOut), idle drift, project()
-    LabScreen.jsx       sandboxed iframe over public/lab/*.html
+    apps/*.js            registered dhruvOS windows, including Corrupted, Flux,
+                        Kinetic, and Reality Tear
     SplatStage.jsx      DEAD — historical splat renderer, unimported
     splatBounds.js      DEAD — supports SplatStage only
   mobile/Deck.jsx       100dvh scroll-snap + gyro

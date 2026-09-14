@@ -1,10 +1,13 @@
-# Current update � 2026-09-14, fifth room pass
+# Current update � 2026-09-14, fifth room pass
 
 The historical handoff below predates the completed night rig and seated interactions.
 Current app changes start from ea0f479 plus its brief-only documentation commit.
 
 - Initial scene offers SIT. Seated DESK and CONTACT controls preserve both anchors.
 - Phone uses the unchanged Instagram UV rectangle; the ready finger waits below/right of it.
+- `PhoneScreen.jsx` owns the 540×1200 DOM phone surface. The room projectively
+  maps it during the zoom; the home Instagram control hands off to FocusLock,
+  and the visible close action/Escape returns to the desk.
 - Continuous tapered skin surfaces replace joint collars. Resting hands are retained per the user's latest request. Both hands/forearms total 19,392 triangles in 16 draw parts, no shadow casting. This is geometry submitted before occlusion, not a count of pixels visible behind an object.
 - Notebook lifts to a held reading pose, returns on Escape, and uses the existing page texture unchanged. Reduced motion places both objects immediately in their held pose.
 - Ceiling and pendant rose join static geometry. Lighting values, fixed light positions, WORKSPACE.screen and CLOSE_READ are preserved.
@@ -13,6 +16,13 @@ Current app changes start from ea0f479 plus its brief-only documentation commit.
 - scripts/verify-held-objects.mjs reproduces normal-motion pickup, tap, idle and return checks at BASE (defaults to 4174).
 - Real AMD GPU performance remains unmeasured. FocusLock is still a labelled placeholder. Hands remain authored procedural geometry, not a scan; their realism needs the owner's judgement.
 - Written room redesign options, estimated costs and ordering: [ROOM-SHAPE-PROPOSAL.md](ROOM-SHAPE-PROPOSAL.md). Reshape options are not implemented.
+- dhruvOS now registers the four dependency-free sketches `corrupted`, `fluid`
+  (`Flux`), `kinetic`, and `tear` as standalone windows. The former Lab and
+  Wormhole launchers, iframe registry, and `public/lab/*.html` pages are gone.
+- Animated sketch apps expose visibility cleanup: their rAF work stops on
+  minimize, close, and the embedded OS `leave` message. The wallpaper action
+  now applies the selected palette to the visible desktop root as well as the
+  intro layer. Resonance starts audio only from its in-app control.
 
 ---
 
@@ -80,10 +90,8 @@ focus restore.**
 - **`screenTexture()` in `buildWorkspace.js` is still a static painting.** It is
   what you see on the monitor *before* travel begins. The live overlay only
   takes over during `entering`. Matching the two would remove the last seam.
-- **The lab is orphaned.** `LabScreen.jsx` is imported by nothing, so
-  `public/lab/*.html` — 17 working demos — is unreachable from the site. The
-  workspace rewrite dropped it. Files are untouched; needs a decision on whether
-  the demos live inside dhruvOS or on their own anchor.
+- The former lab gallery and its iframe pages were removed. Four sketches now
+  live directly in the dhruvOS app registry; the other experiments were dropped.
 - **Content.** All project `links.live` / `links.github`, and every `decision`
   and `broke` field in `src/v3/content/index.js`, are empty strings. Do not
   fabricate these; they come from the user.
@@ -112,12 +120,13 @@ focus restore.**
 ```bash
 npm install
 npm run build
-node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4174
+node node_modules/vite/bin/vite.js preview --host localhost --port 4173
 node scripts/shot.mjs scripts/shots/scene.png     # screenshots the 3D scene
-BASE=http://127.0.0.1:4174 node scripts/verify-v3.mjs
+BASE=http://localhost:4173 node scripts/verify-v3.mjs
+BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
 ```
 
 `npm run preview` strips arguments on this machine — call Vite's bin directly.
-`verify-v3.mjs` defaults to port 4173; set `BASE` or it silently tests nothing.
+Both verification scripts use `http://localhost:4173` when `BASE` is omitted.
 Reuse one preview server; concurrent heavy browser probes have caused
 `spawn EPERM` here.
