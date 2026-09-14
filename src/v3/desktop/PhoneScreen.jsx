@@ -1901,7 +1901,7 @@ const css = `
   width: 110px;
   height: 110px;
   border-radius: 50%;
-  margin: 20px auto;
+  margin: 44px auto;
   animation: fl-breathe-anim var(--breathing-duration, 12s) ease-in-out infinite;
   box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
 }
