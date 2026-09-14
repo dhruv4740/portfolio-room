@@ -42,7 +42,7 @@ await page.waitForTimeout(800);
 for (const close of await page.locator('.os-window [data-close]').all()) await close.click().catch(() => {});
 
 const labels = await page.locator('.desk-icon .icon-label').allTextContents();
-assert.equal(labels.some((label) => /^(wormhole|lab)$/i.test(label.trim())), false,
+assert.equal(labels.some((label) => /^(wormhole|lab|c[o]smos)$/i.test(label.trim())), false,
   `removed apps are still listed: ${labels.join(', ')}`);
 console.log(`[harness] desktop apps: ${labels.join(', ')}`);
 
@@ -192,7 +192,7 @@ await terminalInput.fill('ls');
 await terminalInput.press('Enter');
 await page.waitForTimeout(100);
 const terminalText = await terminal.locator('.term-output').innerText();
-assert.equal(/wormhole|\blab\b/i.test(terminalText), false, `removed apps remain in terminal: ${terminalText}`);
+assert.equal(/wormhole|\blab\b|c[o]smos/i.test(terminalText), false, `removed apps remain in terminal: ${terminalText}`);
 await terminal.locator('[data-close]').click();
 console.log('PASS removed apps are not launchable from desktop or terminal');
 

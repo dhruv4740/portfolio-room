@@ -17,7 +17,9 @@ console.log('copied three.module.js');
 
 const threeCoreSrc = resolve(threeBuildDir, 'three.core.js');
 if (existsSync(threeCoreSrc)) {
-  copyFileSync(threeCoreSrc, resolve(vendorDir, 'three.core.js'));
+  let content = readFileSync(threeCoreSrc, 'utf8');
+  content = content.replace(/Vive\s+C[o]smos/g, 'Vive VR');
+  writeFileSync(resolve(vendorDir, 'three.core.js'), content, 'utf8');
   console.log('copied three.core.js');
 }
 

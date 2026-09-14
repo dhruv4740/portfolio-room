@@ -36,7 +36,7 @@ has a persistent `✉ contact` button and a `SYS ▸ N%` exploration meter.
 | Concern | How |
 |---|---|
 | JS modules | Native ES modules with `type="module"`. No bundler. |
-| Three.js | Via importmap (`three@0.169.0` from unpkg). Only `cosmos.js` uses it. |
+| Three.js | Via importmap (`three@0.169.0` from unpkg). |
 | GSAP | CDN global (`gsap` on `window`). Window open/close animations, boot fade, intro tear. |
 | Matter.js | CDN global. Not used by current apps — available for future physics. |
 | Web Audio | Native `shell/audio.js` synthesizer; starts only on user gesture. |
@@ -44,7 +44,7 @@ has a persistent `✉ contact` button and a `SYS ▸ N%` exploration meter.
 | Styling | Single `styles.css`. CSS custom properties for the green palette. |
 
 The embedded entry has no CDN dependencies. The standalone legacy entry still
-declares the globals used by its intro and existing Gravity/Cosmos paths.
+declares the globals used by its intro and existing Gravity paths.
 
 ---
 
@@ -67,9 +67,8 @@ os/
 │
 └── apps/
     ├── about.js        — Neural graph of Dhruv's identity (Canvas 2D, force-directed)
-    ├── terminal.js     — Working shell. Shadow DOM scoped. Commands: help/ls/about/projects/cosmos/whoami/contact/clear/sudo/rm
+    ├── terminal.js     — Working shell. Shadow DOM scoped. Commands: help/ls/about/projects/whoami/contact/clear/sudo/rm
     ├── projects.js     — Corrupted quest-log. Each project glitch-reveals on hover/click.
-    ├── cosmos.js       — Powers of Ten zoom. 6 procedural canvas layers (galaxy→neuron). Wheel/drag inside window.
     ├── corrupted.js    — Dependency-free glitch canvas sketch.
     ├── fluid.js        — Dependency-free cursor-driven flow sketch (Flux).
     ├── kinetic.js      — Dependency-free motion study.
@@ -226,7 +225,6 @@ Screenshots go to `mockups/shots/`. The desktop screenshot shows only the beneat
 | `about` | ✅ Complete | Green palette. Nodes from content.js (skills + projects). Side-drawer on click. Project nodes → openProject. Contact node → openContact. Contact strip. |
 | `terminal` | ✅ Complete | Registered apps in `ls`. `open <app>` command. Colorized output. ASCII contact card on `contact` command. |
 | `projects` | ✅ Complete | 4 real projects from content.js. Dramatic locked state. Scramble-reveal. Link chips (hidden when empty). Store deep-link support. Contact strip. |
-| `cosmos` | ✅ Complete | Overlay cards from content.js. Amber scale label. Card border treatment. Contact strip. |
 | `corrupted`, `fluid`, `kinetic`, `tear` | ✅ Complete | Native dependency-free sketch apps. Their rAF loops stop on minimize, close, and embedded `leave`. |
 | `gallery` | ✅ Complete | 4 projects from content.js. Amber year label. Hover expands description. Link chips. Cross-links to projects via openProject. Contact strip. |
 | `wallpaper` | ✅ Complete | 260 particles. Swatch palette selector (28×28 color squares). Amber SET button. Palette persisted to store. |

@@ -30,7 +30,6 @@
 | `about.js` | ✅ | ✅ openProject + openContact | ✅ | ✅ green palette + side drawer |
 | `terminal.js` | ✅ | ✅ open <app> + openProject | n/a | ✅ colorized output + ASCII card |
 | `projects.js` | ✅ | ✅ store deep-link | ✅ | ✅ dramatic locked state + link chips |
-| `cosmos.js` | ✅ | n/a | ✅ | ✅ amber scale label + card borders |
 | `gallery.js` | ✅ | ✅ openProject per card | ✅ | ✅ amber year, hover expand, link chips |
 | `wallpaper.js` | n/a | n/a | n/a | ✅ swatch UI + store persistence |
 | `contact.js` | ✅ | n/a | n/a | ✅ corner accents + copy-to-clipboard |

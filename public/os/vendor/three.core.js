@@ -13732,7 +13732,7 @@ class WebXRController {
 
 				inputPose = frame.getPose( inputSource.targetRaySpace, referenceSpace );
 
-				// Some runtimes (namely Vive Cosmos with Vive OpenXR Runtime) have only grip space and ray space is equal to it
+				// Some runtimes (namely Vive VR with Vive OpenXR Runtime) have only grip space and ray space is equal to it
 				if ( inputPose === null && gripPose !== null ) {
 
 					inputPose = gripPose;

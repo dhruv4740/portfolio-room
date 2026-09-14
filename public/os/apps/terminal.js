@@ -167,7 +167,6 @@ export default {
           '  projects      open projects',
           '  gallery       open gallery',
           '  wallpaper     open wallpaper',
-          '  cosmos        open cosmos',
           '  contact       show contact info',
           '  gravity       open gravity (physics)',
           '  decoder       open decoder (bio reveal)',
@@ -178,7 +177,7 @@ export default {
         );
       },
       ls(_, print) {
-        const appList = ['about', 'terminal', 'projects', 'cosmos', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'resonance'];
+        const appList = ['about', 'terminal', 'projects', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'resonance'];
         print('  ' + appList.join('  '));
       },
       about(ctx, print) {
@@ -196,7 +195,6 @@ export default {
       },
       gallery(ctx) { ctx?.openApp?.('gallery'); },
       wallpaper(ctx) { ctx?.openApp?.('wallpaper'); },
-      cosmos(ctx) { ctx?.openApp?.('cosmos'); },
       contact(_, print) {
         contactCard().forEach(l => addLine(l, 'card-line'));
         scrollBottom();
