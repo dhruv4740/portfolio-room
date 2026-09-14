@@ -49,7 +49,7 @@ export default function WorkspaceStage({
 
   useEffect(() => {
     const host = hostRef.current;
-    let renderer, controls, model, resizeObserver, tween, rig, action, windowSway;
+    let renderer, controls, model, resizeObserver, tween, rig, action;
     let extraHeld = null;
     let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
     // null | 'in' | 'held' | 'out'. While set, PhoneScreen tracks the display.
@@ -383,17 +383,19 @@ export default function WorkspaceStage({
           const target=state.current.windowIntent?1:0;
           if(target===r.state.windowOpen){end();return;}
           const opening=target>r.state.windowOpen;
+          const raiseBlindsFirst=opening&&r.state.blinds<0.5;
           rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
-          if(reduced){r.state.windowOpen=target;update();end();return;}
-          action=gsap.timeline({onUpdate:update,onComplete:end});
-          action.to(r.state,{windowOpen:target,duration:0.65,ease:'power2.inOut'});
-          if(opening&&r.blindsGroup){
-            windowSway?.kill();
-            windowSway=gsap.timeline({onUpdate:invalidate});
-            windowSway.to(r.blindsGroup.rotation,{x:0.06,duration:0.4,ease:'sine.inOut'})
-              .to(r.blindsGroup.rotation,{x:-0.035,duration:0.4,ease:'sine.inOut'})
-              .to(r.blindsGroup.rotation,{x:0,duration:0.4,ease:'sine.inOut'});
+          if(reduced){
+            if(raiseBlindsFirst)r.state.blinds=1;
+            r.state.windowOpen=target;update();end();return;
           }
+          action=gsap.timeline({onUpdate:update,onComplete:end});
+          // The sash sits behind the closed blinds — from the seat, sliding it
+          // is invisible until the blinds are out of the way. Opening always
+          // raises them first (same tween shape/duration as the BLINDS
+          // action); closing never lowers them back.
+          if(raiseBlindsFirst)action.to(r.state,{blinds:1,duration:0.65,ease:'power2.inOut'});
+          action.to(r.state,{windowOpen:target,duration:0.65,ease:'power2.inOut'});
           gsap.ticker.wake();return;
         }
         if(['lamp','drawer','blinds'].includes(id)) {
@@ -670,7 +672,7 @@ export default function WorkspaceStage({
       }
       refresh();
       return () => {
-        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); windowSway?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
+        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
         renderer.domElement.removeEventListener('keydown', physicalKey);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);

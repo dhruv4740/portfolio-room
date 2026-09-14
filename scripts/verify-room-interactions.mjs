@@ -22,6 +22,17 @@ assert.equal(await page.locator('.resume-link').isVisible(), false);
 console.log('PASS resume link hidden after closing the drawer');
 await click('BLINDS');assert.equal((await state()).blindsOpen,'1');await idle('blinds open');await click('BLINDS');assert.equal((await state()).blindsOpen,'0');
 
+// The sash is behind the closed blinds, so opening the window with the
+// blinds down must raise them first (round 4 Job 1) — otherwise the sash
+// slide is invisible from the seat. Closing the window does not lower them.
+await click('WINDOW');assert.equal((await state()).windowOpen,'1');await idle('window open (auto-raise)');
+assert.ok(Number((await state()).blindsOpen) > 0.5, `opening the window must raise closed blinds, got blindsOpen=${(await state()).blindsOpen}`);
+console.log('PASS opening the window raises closed blinds');
+await click('WINDOW');assert.equal((await state()).windowOpen,'0');await idle('window closed (blinds stay up)');
+assert.ok(Number((await state()).blindsOpen) > 0.5, 'closing the window must not lower the blinds');
+console.log('PASS closing the window leaves the blinds up');
+await click('BLINDS');assert.equal((await state()).blindsOpen,'0');await idle('blinds reset closed');
+
 // Window visibility: opening must produce a measurable change in the window
 // region of the seated frame, not just a state flag flip. Markers/labels are
 // hidden via an injected !important stylesheet rule (an inline style would be
@@ -67,7 +78,24 @@ async function regionDiffShareOn(onPage, beforeB64, afterB64, region) {
     });
   }), { before: beforeB64, after: afterB64, region });
 }
+async function cropRegion(pngPath, region, outPath) {
+  const buf = (await import('node:fs/promises')).readFile(pngPath);
+  const b64 = (await buf).toString('base64');
+  const cropped = await page.evaluate(({ dataUrl, region }) => new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const c = document.createElement('canvas'); c.width = region.xMax - region.xMin; c.height = region.yMax - region.yMin;
+      c.getContext('2d').drawImage(img, region.xMin, region.yMin, c.width, c.height, 0, 0, c.width, c.height);
+      resolve(c.toDataURL('image/png').split(',')[1]);
+    };
+    img.src = dataUrl;
+  }), { dataUrl: `data:image/png;base64,${b64}`, region });
+  await (await import('node:fs/promises')).writeFile(outPath, Buffer.from(cropped, 'base64'));
+}
 async function windowVisibilityCheck(label, suffix) {
+  // Isolate the sash: raise the blinds first so both shots share the same
+  // blinds state and only the sash slide can move pixels in the region.
+  await click('BLINDS');assert.equal((await state()).blindsOpen,'1');await idle(`blinds raised for isolation (${label})`);
   const anchor = await page.evaluate(() => window.__v3test.projectAnchor('windowOpen'));
   const vp = page.viewportSize();
   const marginX = vp.width * 0.12, marginY = vp.height * 0.12;
@@ -84,7 +112,12 @@ async function windowVisibilityCheck(label, suffix) {
   const diffShare = await regionDiffShare(closedB64, openB64, region);
   assert.ok(diffShare >= 0.03, `window open/closed pixel diff share ${diffShare} < 0.03 (${label})`);
   console.log(`PASS window visibility diff share (${label})`, diffShare);
+  if (suffix === 'night') {
+    await cropRegion(`scripts/shots/window-closed-${suffix}.png`, region, `scripts/shots/window-crop-closed-${suffix}.png`);
+    await cropRegion(`scripts/shots/window-open-${suffix}.png`, region, `scripts/shots/window-crop-open-${suffix}.png`);
+  }
   await click('WINDOW');assert.equal((await state()).windowOpen,'0');await idle(`window closed (${label})`);
+  await click('BLINDS');assert.equal((await state()).blindsOpen,'0');await idle(`blinds reset closed (${label})`);
 }
 await windowVisibilityCheck('night', 'night');
 
@@ -144,6 +177,7 @@ await page.close();
   await dayPage.addStyleTag({content:'.v3-hide-overlay .anchor-marker{visibility:hidden!important}'});
   const dayClick=async name=>{await dayPage.getByRole('button',{name,exact:true}).click();await dayPage.waitForTimeout(100);};
   const dayState=()=>dayPage.locator('.workspace-stage').evaluate(e=>({...e.dataset}));
+  await dayClick('BLINDS');assert.equal((await dayState()).blindsOpen,'1');await dayPage.waitForTimeout(900);
   const anchor=await dayPage.evaluate(()=>window.__v3test.projectAnchor('windowOpen'));
   const vp=dayPage.viewportSize();const marginX=vp.width*0.12,marginY=vp.height*0.12;
   const region={xMin:anchor.x-marginX,xMax:anchor.x+marginX,yMin:anchor.y-marginY,yMax:anchor.y+marginY};

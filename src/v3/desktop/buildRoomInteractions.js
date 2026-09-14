@@ -58,12 +58,17 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   // front of the blinds from the seated camera, without moving the group's
   // own anchor (used for the slide animation and the camera framing target).
   const sashZ = 0.09;
-  box(sash,[0.68,0.035,0.025],[0,0.94,sashZ],m.bone);
-  box(sash,[0.68,0.035,0.025],[0,-0.94,sashZ],m.bone);
-  box(sash,[0.035,1.88,0.025],[-0.32,0,sashZ],m.bone);
-  box(sash,[0.035,1.88,0.025],[0.32,0,sashZ],m.bone);
+  // A dark 3cm frame so the moving sash reads as an edge against the sky,
+  // rather than blending into the (also light) blind slats behind it.
+  const sashFrame=new THREE.MeshStandardMaterial({color:'#20242a',roughness:0.5,metalness:0.3});
+  box(sash,[0.68,0.035,0.03],[0,0.94,sashZ],sashFrame);
+  box(sash,[0.68,0.035,0.03],[0,-0.94,sashZ],sashFrame);
+  box(sash,[0.035,1.88,0.03],[-0.32,0,sashZ],sashFrame);
+  box(sash,[0.035,1.88,0.03],[0.32,0,sashZ],sashFrame);
   box(sash,[0.02,0.09,0.03],[-0.30,0,sashZ+0.02],m.dark);
-  const glassMat=new THREE.MeshStandardMaterial({color:'#b9d3e8',roughness:0.05,metalness:0.2,opacity:0.28,transparent:true,depthWrite:false});
+  // Round 2's glass material — the round-3 MeshPhysicalMaterial attempt
+  // regressed the window-visibility measurement and is not used.
+  const glassMat=new THREE.MeshStandardMaterial({color:'#c5d9eb',roughness:0.1,metalness:0.2,transparent:true,opacity:0.22,depthWrite:false});
   mesh(sash,new THREE.PlaneGeometry(0.64,1.85),glassMat,[0,0,sashZ]);
   const state={lamp:1,blinds:0,drawer:0,headphones:0,coffeeLevel:1,windowOpen:0};
   const homes=Object.fromEntries(Object.entries(objects).map(([id,g])=>[id,g.position.clone()]));
