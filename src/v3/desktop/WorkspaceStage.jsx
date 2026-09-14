@@ -35,6 +35,7 @@ export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
   onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
   paused = false, phase = 'room', seated = false, onSit, entryVisible = true, onTypeKey, liveMonitor = false,
+  windowIntent = false,
 }) {
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
@@ -43,12 +44,12 @@ export default function WorkspaceStage({
   const [phoneLive, setPhoneLive] = useState(false);
   const callbacks = useRef({});
   callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onTypeKey };
-  const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor });
-  state.current = { paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor };
+  const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent });
+  state.current = { paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent };
 
   useEffect(() => {
     const host = hostRef.current;
-    let renderer, controls, model, resizeObserver, tween, rig, action;
+    let renderer, controls, model, resizeObserver, tween, rig, action, windowSway;
     let extraHeld = null;
     let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
     // null | 'in' | 'held' | 'out'. While set, PhoneScreen tracks the display.
@@ -376,11 +377,20 @@ export default function WorkspaceStage({
         const follow=()=>{h.hand.position.copy(o.position).add(new THREE.Vector3(id==='coffee'?-0.085:0.12,-0.075,id==='award'?-0.075:id==='coffee'?-0.09:0.055));h.hand.rotation.copy(o.rotation);if(id==='coffee')h.hand.rotation.x+=1.15;update();};
         const end=()=>{if(id==='drawer'&&r.state.drawer>0.5){extraHeld=null;model.hands.reset();host.dataset.actionState='drawer-open';invalidate();}else finishExtra(id);};
         if(id==='windowOpen') {
+          const target=state.current.windowIntent?1:0;
+          if(target===r.state.windowOpen){end();return;}
+          const opening=target>r.state.windowOpen;
           rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
-          const target=1-r.state.windowOpen;
           if(reduced){r.state.windowOpen=target;update();end();return;}
           action=gsap.timeline({onUpdate:update,onComplete:end});
           action.to(r.state,{windowOpen:target,duration:0.65,ease:'power2.inOut'});
+          if(opening&&r.blindsGroup){
+            windowSway?.kill();
+            windowSway=gsap.timeline({onUpdate:invalidate});
+            windowSway.to(r.blindsGroup.rotation,{x:0.06,duration:0.4,ease:'sine.inOut'})
+              .to(r.blindsGroup.rotation,{x:-0.035,duration:0.4,ease:'sine.inOut'})
+              .to(r.blindsGroup.rotation,{x:0,duration:0.4,ease:'sine.inOut'});
+          }
           gsap.ticker.wake();return;
         }
         if(['lamp','drawer','blinds'].includes(id)) {
@@ -627,7 +637,7 @@ export default function WorkspaceStage({
       api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome, setSky: (s) => model.setSky(s) };
       refresh();
       return () => {
-        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
+        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); windowSway?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
         renderer.domElement.removeEventListener('keydown', physicalKey);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);

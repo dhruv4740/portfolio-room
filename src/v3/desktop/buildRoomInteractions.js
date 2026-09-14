@@ -45,13 +45,18 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   const headphones=group('headphones');const band=mesh(headphones,new THREE.TorusGeometry(0.115,0.012,10,40,Math.PI),m.dark);band.rotation.x=-Math.PI/2;
   for(const x of [-0.115,0.115])box(headphones,[0.055,0.085,0.09],[x,0,0],m.dark);
   const sash=group('windowOpen');
-  box(sash,[0.68,0.035,0.025],[0,0.94,0],m.bone);
-  box(sash,[0.68,0.035,0.025],[0,-0.94,0],m.bone);
-  box(sash,[0.035,1.88,0.025],[-0.32,0,0],m.bone);
-  box(sash,[0.035,1.88,0.025],[0.32,0,0],m.bone);
-  box(sash,[0.02,0.09,0.03],[-0.30,0,0.02],m.dark);
+  // The blind slats sit at world z=-1.56 (0.07 in front of this group's
+  // z=-1.63 anchor). Bias the sash meshes forward so the sash renders in
+  // front of the blinds from the seated camera, without moving the group's
+  // own anchor (used for the slide animation and the camera framing target).
+  const sashZ = 0.09;
+  box(sash,[0.68,0.035,0.025],[0,0.94,sashZ],m.bone);
+  box(sash,[0.68,0.035,0.025],[0,-0.94,sashZ],m.bone);
+  box(sash,[0.035,1.88,0.025],[-0.32,0,sashZ],m.bone);
+  box(sash,[0.035,1.88,0.025],[0.32,0,sashZ],m.bone);
+  box(sash,[0.02,0.09,0.03],[-0.30,0,sashZ+0.02],m.dark);
   const glassMat=new THREE.MeshStandardMaterial({color:'#c5d9eb',roughness:0.1,metalness:0.2,transparent:true,opacity:0.22,depthWrite:false});
-  mesh(sash,new THREE.PlaneGeometry(0.64,1.85),glassMat,[0,0,0]);
+  mesh(sash,new THREE.PlaneGeometry(0.64,1.85),glassMat,[0,0,sashZ]);
   const state={lamp:1,blinds:0,drawer:0,headphones:0,coffeeLevel:1,windowOpen:0};
   const homes=Object.fromEntries(Object.entries(objects).map(([id,g])=>[id,g.position.clone()]));
   const labels=canvasTexture((ctx,w,h)=>{ctx.fillStyle='#d3d0c3';ctx.fillRect(0,0,w,h);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#353936';ctx.font='36px sans-serif';for(let row=0;row<5;row++)for(let col=0;col<12;col++)ctx.fillText(KEY_ROWS[row][col].toUpperCase(),(col+0.5)*w/12,(4-row+0.5)*h/5);},1536,640);
@@ -69,7 +74,7 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
     const closed=keyConfig?.closed??1.15;const open=keyConfig?.open??1.60;
     moon.intensity=closed*(1-state.blinds);moonOpen.intensity=open*state.blinds;drawer.position.z=homes.drawer.z+state.drawer*0.46;
     if(objects.windowOpen)objects.windowOpen.position.x=homes.windowOpen.x-state.windowOpen*0.58;
-    if(windowLight)windowLight.intensity=0.55*state.windowOpen;
+    if(windowLight)windowLight.intensity=(keyConfig?.windowLight??0.55)*state.windowOpen;
   }
-  return {objects,homes,state,cord,apply,updateLiquid,setKey,liquid,liquidUniforms};
+  return {objects,homes,state,cord,apply,updateLiquid,setKey,liquid,liquidUniforms,blindsGroup};
 }
