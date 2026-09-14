@@ -2,8 +2,11 @@
  * desktop.js — Builds icons, clock, sound toggle, contact button, exploration meter, taskbar.
  */
 import { openApp, setTaskbarCallback, focus, minimizeApp } from './windowManager.js';
+import { applyWallpaper } from '../apps/wallpaper.js';
 
 export function initDesktop(apps, ctx) {
+  const savedWallpaper = ctx.store.get('wallpaper.palette') || 'green';
+  applyWallpaper(savedWallpaper);
   // ── Clock ──
   const clockEl = document.getElementById('clock');
   function tick() {

@@ -1,5 +1,5 @@
-// os/shell/beneathCanvas.js — animated flow-field for the #os-beneath intro backdrop
 import store from './store.js';
+import { applyWallpaper } from '../apps/wallpaper.js';
 
 const PALETTES = {
   green:  { bg: '#040c09', r: 92,  g: 255, b: 208 },
@@ -80,21 +80,11 @@ export function initBeneathCanvas() {
   }
 
   store.on('wallpaper:set', ({ palette }) => {
+    applyWallpaper(palette);
     if (PALETTES[palette]) {
       pal = PALETTES[palette];
       const beneath = document.getElementById('os-beneath');
       if (beneath) beneath.style.background = pal.bg;
-      const desktop = document.getElementById('desktop');
-      const workspace = document.getElementById('workspace');
-      const glow = `rgba(${pal.r},${pal.g},${pal.b},0.08)`;
-      if (desktop) {
-        desktop.style.backgroundColor = pal.bg;
-        desktop.style.backgroundImage = `radial-gradient(ellipse at 30% 60%, ${glow} 0%, transparent 65%)`;
-      }
-      if (workspace) {
-        workspace.style.backgroundColor = pal.bg;
-        workspace.style.backgroundImage = `radial-gradient(ellipse at 30% 40%, ${glow} 0%, transparent 65%)`;
-      }
     }
   });
 

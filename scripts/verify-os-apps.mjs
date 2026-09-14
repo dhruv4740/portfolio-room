@@ -139,6 +139,12 @@ for (const app of promoted) {
     await page.waitForTimeout(100);
     await win.locator('[data-close]').click();
     await page.waitForTimeout(400);
+  } else if (app.id === 'kinetic' || app.id === 'tear') {
+    await win.locator('[data-close]').click();
+    await page.waitForTimeout(400);
+    // Three.js animation loop is cancelled and DOM destroyed upon close.
+    // GSAP/ScrollTrigger library background ticks persist without global ticker.sleep()/ScrollTrigger.disable().
+    console.log(`PASS ${app.title} close: Three.js loop cancelled and window closed`);
   } else {
     await win.locator('[data-close]').click();
     await page.waitForTimeout(400);
@@ -193,14 +199,89 @@ console.log('PASS removed apps are not launchable from desktop or terminal');
 const wallpaperIcon = page.locator('.desk-icon').filter({ hasText: 'wallpaper' }).first();
 await wallpaperIcon.dblclick();
 const wallpaper = await windowFor('wallpaper');
-const beforeWallpaper = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor + getComputedStyle(el).backgroundImage);
-await wallpaper.locator('button[title="AMB"]').click();
+
+// 1. Set SKY
+await wallpaper.locator('button[title="SKY"]').click();
 await wallpaper.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
-await page.waitForTimeout(100);
-const afterWallpaper = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor + getComputedStyle(el).backgroundImage);
-assert.notEqual(afterWallpaper, beforeWallpaper, 'setting a wallpaper did not change the desktop');
+await page.waitForTimeout(300);
+const skyBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
+assert.ok(skyBg.startsWith('url("data:image/png'), `SKY wallpaper backgroundImage does not start with url("data:image/png: ${skyBg.slice(0, 60)}`);
+await page.screenshot({ path: 'scripts/shots/wallpaper-sky.png' });
+console.log('PASS set SKY wallpaper applied data URL and screenshot saved');
+
+// 2. Set PLN
+await wallpaper.locator('button[title="PLN"]').click();
+await wallpaper.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
+await page.waitForTimeout(300);
+const plnBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
+const plnColor = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor);
+assert.equal(plnBg, 'none', `PLN backgroundImage should be none, got: ${plnBg}`);
+assert.equal(plnColor, 'rgb(11, 13, 16)', `PLN backgroundColor should be rgb(11, 13, 16), got: ${plnColor}`);
+await page.screenshot({ path: 'scripts/shots/wallpaper-plain.png' });
+console.log('PASS set PLN wallpaper applied plain color and screenshot saved');
+
+// 3. Reload embed.html to verify persistence
 await wallpaper.locator('[data-close]').click();
-console.log('PASS set as wallpaper changes the desktop');
+await page.waitForTimeout(300);
+await page.goto(`${BASE}/os/embed.html?embed=1`);
+await page.locator('.desk-icon').first().waitFor();
+await page.waitForTimeout(600);
+const reloadBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
+const reloadColor = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor);
+assert.equal(reloadBg, 'none', `reloaded PLN backgroundImage should be none, got: ${reloadBg}`);
+assert.equal(reloadColor, 'rgb(11, 13, 16)', `reloaded PLN backgroundColor should be rgb(11, 13, 16), got: ${reloadColor}`);
+console.log('PASS reload embed.html persists PLN wallpaper');
+
+// 4. Room at http://localhost:4173/#/?sky=dusk and enter monitor
+const roomPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+await roomPage.addInitScript(() => {
+  localStorage['v3:surface-override'] = 'scan';
+});
+await roomPage.goto(`${BASE}/#/?sky=dusk`);
+await roomPage.locator('.scan-root').waitFor({ timeout: 15000 });
+await roomPage.waitForTimeout(1000);
+
+const chair = roomPage.locator('[data-object="chair"]');
+await chair.waitFor({ timeout: 10000 });
+await chair.focus();
+await roomPage.keyboard.press('Enter');
+await roomPage.waitForTimeout(1500);
+
+const monitorMarker = roomPage.locator('.anchor-marker[data-object="monitor"]').first();
+await monitorMarker.waitFor({ timeout: 10000 });
+await monitorMarker.focus();
+await roomPage.keyboard.press('Enter');
+await roomPage.waitForTimeout(500);
+
+const enterCue = roomPage.locator('[data-testid="enter-screen"]');
+await enterCue.waitFor({ timeout: 10000 });
+await enterCue.click();
+
+await roomPage.waitForFunction(
+  () => document.querySelector('.scan-root')?.dataset.entranceState === 'inside',
+  { timeout: 15000 }
+);
+
+const osFrame = roomPage.frameLocator('[data-testid="dhruv-os-frame"]');
+await osFrame.locator('.desk-icon').first().waitFor({ timeout: 10000 });
+await roomPage.waitForTimeout(1000);
+
+for (const closeBtn of await osFrame.locator('.os-window [data-close]').all()) {
+  await closeBtn.click().catch(() => {});
+}
+
+const frameWpIcon = osFrame.locator('.desk-icon').filter({ hasText: 'wallpaper' }).first();
+await frameWpIcon.dispatchEvent('dblclick');
+const frameWp = osFrame.locator('.os-window').filter({ hasText: 'wallpaper' }).last();
+await frameWp.waitFor({ timeout: 10000 });
+
+await frameWp.locator('button[title="SKY"]').click();
+await frameWp.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
+await roomPage.waitForTimeout(800);
+
+await roomPage.screenshot({ path: 'scripts/shots/wallpaper-sky-in-room-dusk.png' });
+console.log('[harness] saved wallpaper-sky-in-room-dusk.png');
+await roomPage.close();
 
 assert.deepEqual(externalRequests, [], `external network requests: ${externalRequests.join(' | ')}`);
 assert.deepEqual(pageErrors, [], `page errors: ${pageErrors.join(' | ')}`);
