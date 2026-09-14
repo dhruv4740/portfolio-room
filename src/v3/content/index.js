@@ -139,16 +139,18 @@ export const projects = [
   {
     id: 'darksentinel',
     name: 'DarkSentinel',
-    year: 2025,
+    year: 2026,
     kind: 'research',
     tagline: 'Darknet threat monitoring. Hackathon finalist.',
     description:
-      'Built for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it reached the finals. Captures traffic with CICFlowMeter, classifies anomalies with Random Forest and RoBERTa, scrapes over Tor, and surfaces results through a FastAPI service.',
-    decision: '',
-    broke: '',
-    tech: ['Python', 'FastAPI', 'RoBERTa', 'Random Forest', 'Tor', 'Streamlit'],
+      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it reached the finals. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
+    decision:
+      'I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
+    broke:
+      'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
+    tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
     links: { live: '', github: '' },
-    note: 'Contributed to a private team repository.',
+    note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture; I built the dashboards, the API features and the uncertain-zone Claude call.',
   },
   {
     id: 'crisiswatch',
