@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 const b=await chromium.launch();const p=await b.newPage({viewport:{width:1200,height:900}});let errors=[];p.on('pageerror',e=>errors.push(e.message));
-await p.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','low');const r=window.requestAnimationFrame;window.framesCount=0;window.lastFrame=0;window.requestAnimationFrame=f=>r.call(window,t=>{window.framesCount++;window.lastFrame=performance.now();f(t);});});
+await p.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','low');localStorage.setItem('v3:focuslock',JSON.stringify({hardBlockAfterLimit:true}));const r=window.requestAnimationFrame;window.framesCount=0;window.lastFrame=0;window.requestAnimationFrame=f=>r.call(window,t=>{window.framesCount++;window.lastFrame=performance.now();f(t);});});
 await p.goto(process.env.BASE || 'http://127.0.0.1:4174');await p.locator('[data-object="chair"]').click();await p.waitForTimeout(1800);await p.screenshot({path:'scripts/shots/fifth-rest.png'});
 const phoneState=s=>p.waitForFunction(s=>document.querySelector('.workspace-stage')?.dataset.phoneState===s,s,{polling:100});
 await p.getByRole('button',{name:'PHONE',exact:true}).click();await phoneState('zoomed');await p.screenshot({path:'scripts/shots/phone-home.png'});
