@@ -87,7 +87,7 @@ export const skills = [
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
   { id: 'ml',       label: 'ML / data',            proof: ['fraud', 'darksentinel'],            note: 'XGBoost, RoBERTa' },
   { id: 'iot',      label: 'ESP32 / Raspberry Pi', proof: ['ecowater'],                         note: 'sensor integration, control logic' },
-  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches inside dhruvOS: Flux, Kinetic, Reality Tear' },
+  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: Flux, Kinetic, Reality Tear' },
 ];
 
 export const projects = [
@@ -215,8 +215,8 @@ export const anchors = [
     id: 'monitor',
     label: 'Monitor',
     ref: 'lab',
-    readout: 'FOUR SKETCHES · READY',
-    body: 'Four interactive sketches are available inside dhruvOS.',
+    readout: 'READY',
+    body: 'Apps, sketches and projects, running live on the desk computer.',
   },
   {
     id: 'notebook',

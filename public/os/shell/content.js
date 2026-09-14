@@ -66,7 +66,7 @@ export default Object.freeze({
       "id": "saiss",
       "label": "Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)",
       "result": "Finalist",
-      "year": 2025
+      "year": 2026
     }
   ],
   "skills": [
@@ -145,7 +145,7 @@ export default Object.freeze({
     {
       "id": "three",
       "label": "Three.js / WebGL",
-      "note": "Three.js sketches inside dhruvOS: Flux, Kinetic, Reality Tear",
+      "note": "Three.js sketches on the desk computer: Flux, Kinetic, Reality Tear",
       "projects": []
     }
   ],

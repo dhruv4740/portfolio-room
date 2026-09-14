@@ -46,7 +46,7 @@ const ctx = {
 
 // ── Boot sequence ─────────────────────────────────────────────────────────────
 const BOOT_LINES = [
-  'dhruvOS v2.0 — BIOS POST',
+  'BIOS POST',
   'Copyright (c) 2026 Dhruv Kothari',
   ' ',
   '[ OK ] CPU check ............ 4 cores detected',
@@ -57,7 +57,7 @@ const BOOT_LINES = [
   '[ OK ] Content manifest ..... loaded',
   '[ .. ] Spawning shell session',
   ' ',
-  'Starting dhruvOS desktop environment...',
+  'Starting desktop environment...',
 ];
 
 function runBoot(onDone) {

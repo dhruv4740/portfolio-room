@@ -108,7 +108,7 @@ export default {
 
     const promptLabel = document.createElement('span');
     promptLabel.className = 'term-prompt-label';
-    promptLabel.innerHTML = '<span class="p-user">dhruv@dhruvOS</span><span class="p-sep"> ─ $ </span>';
+    promptLabel.innerHTML = '<span class="p-user">dhruv@desk</span><span class="p-sep"> ─ $ </span>';
     inputRow.appendChild(promptLabel);
 
     const input = document.createElement('input');
@@ -140,7 +140,7 @@ export default {
     function addPromptEcho(cmd) {
       const div = document.createElement('div');
       div.className = 'line prompt-echo';
-      div.innerHTML = '<span class="prompt-user">dhruv@dhruvOS</span><span class="prompt-sep"> ─ $ </span>' + escHTML(cmd);
+      div.innerHTML = '<span class="prompt-user">dhruv@desk</span><span class="prompt-sep"> ─ $ </span>' + escHTML(cmd);
       output.appendChild(div);
     }
 
@@ -153,7 +153,7 @@ export default {
     function clearOutput()   { output.innerHTML = ''; }
 
     // ── boot banner ──
-    addLine(`dhruvOS terminal v2.0 — type 'help' for commands`, 'info-line');
+    addLine(`terminal — type 'help' for commands`, 'info-line');
     addLine('', '');
     scrollBottom();
 
