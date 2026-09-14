@@ -145,7 +145,7 @@ export default Object.freeze({
     {
       "id": "three",
       "label": "Three.js / WebGL",
-      "note": "four interactive sketches",
+      "note": "Three.js sketches inside dhruvOS: Flux, Kinetic, Reality Tear",
       "projects": []
     }
   ],

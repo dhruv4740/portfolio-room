@@ -87,7 +87,7 @@ export const skills = [
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
   { id: 'ml',       label: 'ML / data',            proof: ['fraud', 'darksentinel'],            note: 'XGBoost, RoBERTa' },
   { id: 'iot',      label: 'ESP32 / Raspberry Pi', proof: ['ecowater'],                         note: 'sensor integration, control logic' },
-  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'four interactive sketches' },
+  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches inside dhruvOS: Flux, Kinetic, Reality Tear' },
 ];
 
 export const projects = [
