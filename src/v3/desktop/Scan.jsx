@@ -266,9 +266,10 @@ export default function Scan() {
         <div className="seat-exit mono">
           <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
           <button onClick={() => handleSelect('phone')}>PHONE</button>
-          {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id.toUpperCase()}</button>)}
+          {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id.toUpperCase()}</button>)}
           <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
           <button onClick={() => handleSelect('window')}>CONTACT</button>
+          <a className="resume-link" href="/resume.pdf" target="_blank" rel="noopener">OPEN RESUME (PDF)</a>
           {activeId && <button className="seat-exit-back" onClick={handleClose}>BACK TO SEAT</button>}
           <button onClick={handleEnterScreen}>MONITOR</button>
           <button className="seat-exit-back" onClick={() => { setActiveId(null); setSeated(false); }}>STAND UP / ESC</button>
@@ -365,6 +366,20 @@ const css = `
 .workspace-stage[data-phone-state="focuslock"] ~ .seat-exit button:not(.seat-exit-back) {
   display: none;
 }
+.resume-link {
+  display: none;
+  align-items: center;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--signal);
+  color: var(--signal);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.resume-link:hover { background: var(--signal); color: var(--void); }
+.workspace-stage[data-action-state="drawer-open"] ~ .seat-exit .resume-link { display: inline-flex; }
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
 
 .scan-head {

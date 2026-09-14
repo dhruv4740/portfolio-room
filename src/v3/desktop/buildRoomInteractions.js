@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export const DRAWER_CONTENT = { title: 'CONTENTS TO COME', body: 'A detail chosen by Dhruv. Placeholder.' };
+export const DRAWER_CONTENT = { title: 'RESUME', body: 'Dhruv Kothari — open the PDF' };
 export const KEY_ROWS = ['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvbnm,./   ', '            '];
 
 export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys,keyConfig,windowLight}) {
@@ -39,8 +39,16 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   const drawer=group('drawer');box(drawer,[0.61,0.14,0.045],[0,0,0],m.wood);box(drawer,[0.60,0.025,0.48],[0,-0.065,-0.23],m.wood);
   for(const x of [-0.285,0.285])box(drawer,[0.025,0.13,0.48],[x,0,-0.23],m.wood);
   box(drawer,[0.15,0.018,0.025],[0,0,0.038]);
-  const card=canvasTexture((ctx,w,h)=>{ctx.fillStyle='#e5dfca';ctx.fillRect(0,0,w,h);ctx.fillStyle='#383c36';ctx.textAlign='center';ctx.font='bold 38px sans-serif';ctx.fillText(DRAWER_CONTENT.title,w/2,100);ctx.font='24px sans-serif';ctx.fillText(DRAWER_CONTENT.body,w/2,165);},750,280);
-  const cardPlane=mesh(drawer,new THREE.PlaneGeometry(0.48,0.20),new THREE.MeshBasicMaterial({map:card}),[0,-0.047,-0.23]);cardPlane.rotation.x=-Math.PI/2;
+  // A4 ratio (0.21 x 0.297 m), scaled down to fit the drawer's footprint.
+  const card=canvasTexture((ctx,w,h)=>{
+    ctx.fillStyle='#f4f1ea';ctx.fillRect(0,0,w,h);
+    ctx.fillStyle='#383c36';ctx.textAlign='left';ctx.font='bold 42px sans-serif';ctx.fillText(DRAWER_CONTENT.title,50,90);
+    ctx.font='22px sans-serif';ctx.fillStyle='#5a5648';ctx.fillText(DRAWER_CONTENT.body,50,132);
+    ctx.fillStyle='#c9c4b8';
+    for(let i=0;i<6;i++)ctx.fillRect(50,190+i*58,w-100-(i%2?90:0),14);
+  },630,891);
+  const cardWidth=0.28,cardHeight=cardWidth*(891/630);
+  const cardPlane=mesh(drawer,new THREE.PlaneGeometry(cardWidth,cardHeight),new THREE.MeshBasicMaterial({map:card}),[0,-0.047,-0.23]);cardPlane.rotation.x=-Math.PI/2;
   const blinds=group('blinds');mesh(blinds,new THREE.CylinderGeometry(0.004,0.004,0.85,8),m.bone,[0,0.2,0]);const cord=mesh(blinds,new THREE.CapsuleGeometry(0.016,0.055,4,12),m.dark,[0,-0.25,0]);
   const headphones=group('headphones');const band=mesh(headphones,new THREE.TorusGeometry(0.115,0.012,10,40,Math.PI),m.dark);band.rotation.x=-Math.PI/2;
   for(const x of [-0.115,0.115])box(headphones,[0.055,0.085,0.09],[x,0,0],m.dark);
