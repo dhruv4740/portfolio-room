@@ -85,7 +85,7 @@ export const skills = [
   { id: 'python',   label: 'Python',               proof: ['darksentinel', 'fraud', 'basket'],  note: 'FastAPI, Flask, pandas' },
   { id: 'kotlin',   label: 'Kotlin / Android',     proof: ['focuslock', 'expense'],             note: 'native modules, accessibility services' },
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
-  { id: 'ml',       label: 'ML / data',            proof: ['fraud', 'darksentinel'],            note: 'XGBoost, RoBERTa' },
+  { id: 'ml',       label: 'ML / data',            proof: ['fraud'],                            note: 'XGBoost, pandas' },
   { id: 'iot',      label: 'ESP32 / Raspberry Pi', proof: ['ecowater'],                         note: 'sensor integration, control logic' },
   { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: Flux, Kinetic, Reality Tear' },
 ];

@@ -128,10 +128,9 @@ export default Object.freeze({
     {
       "id": "ml",
       "label": "ML / data",
-      "note": "XGBoost, RoBERTa",
+      "note": "XGBoost, pandas",
       "projects": [
-        "fraud",
-        "darksentinel"
+        "fraud"
       ]
     },
     {
