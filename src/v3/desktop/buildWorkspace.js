@@ -154,14 +154,17 @@ export const SKY_CONFIGS = {
   night: {
     hemi: { sky: '#8294b2', ground: '#21160e', intensity: 0.42 },
     key: { color: '#8eadd8', closed: 1.15, open: 1.60, position: [2.1, 3.6, -2.7] },
+    windowLight: 0.55,
   },
   dusk: {
-    hemi: { sky: '#7d6a7d', ground: '#2d1c14', intensity: 0.45 },
-    key: { color: '#e48652', closed: 1.22, open: 1.68, position: [2.1, 3.3, -2.7] },
+    hemi: { sky: '#8d7a8d', ground: '#3a271c', intensity: 2.2 },
+    key: { color: '#e48652', closed: 1.75, open: 2.2, position: [2.1, 3.3, -2.7] },
+    windowLight: 0.7,
   },
   day: {
-    hemi: { sky: '#96b6d8', ground: '#3a362c', intensity: 0.52 },
-    key: { color: '#fff2db', closed: 1.38, open: 1.85, position: [2.3, 4.1, -2.6] },
+    hemi: { sky: '#a8c8e8', ground: '#4a453a', intensity: 3.6 },
+    key: { color: '#fff4e0', closed: 2.3, open: 2.9, position: [2.3, 4.1, -2.6] },
+    windowLight: 0.9,
   },
 };
 
@@ -676,7 +679,7 @@ export function buildWorkspace(scene, options = {}) {
   moonOpen.shadow=moon.shadow.clone();moonOpen.shadow.camera.userData.blindsOpen=true;scene.add(moonOpen);
   const windowLight = new THREE.PointLight('#9ab8d6', 0, 3.5, 2);
   windowLight.position.set(1.74, 2.1, -1.55); root.add(windowLight);
-  const keyConfig = { closed: 1.15, open: 1.60 };
+  const keyConfig = { closed: 1.15, open: 1.60, windowLight: 0.55 };
   blindsGroup.children.forEach((slat,i)=>{
     const pose={value:0};const depth=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});
     depth.onBeforeCompile=shader=>{shader.uniforms.openPose=pose;shader.uniforms.rowOffset={value:i*0.121};shader.vertexShader='uniform float openPose; uniform float rowOffset;\n'+shader.vertexShader;
@@ -814,6 +817,7 @@ export function buildWorkspace(scene, options = {}) {
       moonOpen.position.set(...cfg.key.position);
       keyConfig.closed = cfg.key.closed;
       keyConfig.open = cfg.key.open;
+      keyConfig.windowLight = cfg.windowLight;
       cityLayers[0].material.map = cityTextures[skyState][0];
       cityLayers[1].material.map = cityTextures[skyState][1];
       cityLayers[0].material.needsUpdate = true;
