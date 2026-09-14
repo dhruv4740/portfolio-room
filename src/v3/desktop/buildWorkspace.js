@@ -17,6 +17,7 @@ export const WORKSPACE = {
     notebook: [1.14, 1.21, 0.30],
     window: [1.4, 2.12, -1.75],
     phone: [-0.80, 1.196, -0.03],
+    windowOpen: [1.74, 1.99, -1.63],
   },
   seat: { position: [0.05, 1.72, 1.16], target: [0, 1.42, -0.37] },
   chair: [0.05, 1.08, 1.414],
@@ -149,15 +150,36 @@ export function phoneHomeTexture(highlighted = false) {
   }, 540, 1200);
 }
 
+export const SKY_CONFIGS = {
+  night: {
+    hemi: { sky: '#8294b2', ground: '#21160e', intensity: 0.42 },
+    key: { color: '#8eadd8', closed: 1.15, open: 1.60, position: [2.1, 3.6, -2.7] },
+  },
+  dusk: {
+    hemi: { sky: '#7d6a7d', ground: '#2d1c14', intensity: 0.45 },
+    key: { color: '#e48652', closed: 1.22, open: 1.68, position: [2.1, 3.3, -2.7] },
+  },
+  day: {
+    hemi: { sky: '#96b6d8', ground: '#3a362c', intensity: 0.52 },
+    key: { color: '#fff2db', closed: 1.38, open: 1.85, position: [2.3, 4.1, -2.6] },
+  },
+};
+
 // An authored impression, not a claimed photographic view or named landmark.
 // Stable seeded windows avoid texture regeneration or any animation clock.
-function skylineTexture(foreground = false) {
+function skylineTexture(foreground = false, state = 'night') {
   return canvasTexture((ctx, w, h) => {
     let seed = foreground ? 819 : 47;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
     if (!foreground) {
       const sky = ctx.createLinearGradient(0, 0, 0, h);
-      sky.addColorStop(0, '#18232f'); sky.addColorStop(0.6, '#4d4742'); sky.addColorStop(1, '#625044');
+      if (state === 'day') {
+        sky.addColorStop(0, '#4a78a6'); sky.addColorStop(0.6, '#89acc7'); sky.addColorStop(1, '#c5d8e2');
+      } else if (state === 'dusk') {
+        sky.addColorStop(0, '#23253b'); sky.addColorStop(0.55, '#9c4935'); sky.addColorStop(1, '#c97746');
+      } else {
+        sky.addColorStop(0, '#18232f'); sky.addColorStop(0.6, '#4d4742'); sky.addColorStop(1, '#625044');
+      }
       ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
     }
     let x = -30;
@@ -166,19 +188,31 @@ function skylineTexture(foreground = false) {
       const tower = !foreground && random() > 0.72;
       const height = foreground ? 100 + random() * 190 : tower ? 420 + random() * 260 : 180 + random() * 210;
       const roof = h - height;
-      ctx.fillStyle = foreground ? '#202323' : tower ? '#353634' : '#3a3632';
+      if (state === 'day') {
+        ctx.fillStyle = foreground ? '#545c60' : tower ? '#636e73' : '#5c676b';
+      } else if (state === 'dusk') {
+        ctx.fillStyle = foreground ? '#262125' : tower ? '#393339' : '#40363a';
+      } else {
+        ctx.fillStyle = foreground ? '#202323' : tower ? '#353634' : '#3a3632';
+      }
       ctx.fillRect(x, roof, width, height);
       // Roof terraces, water tanks, service cores: irregular low-rise massing.
       ctx.fillRect(x + width * 0.15, roof - 7, width * 0.7, 7);
       if (random() > 0.4) ctx.fillRect(x + 9, roof - 20, width * 0.25, 20);
       if (tower) {
-        ctx.fillStyle = '#44413a';
+        ctx.fillStyle = state === 'day' ? '#4b5559' : state === 'dusk' ? '#4c4046' : '#44413a';
         for (let y = roof + 12; y < h; y += 27) ctx.fillRect(x + 1, y, width - 2, 2);
       }
       for (let y = roof + 16; y < h - 12; y += foreground ? 25 : 22) {
         for (let wx = x + 7; wx < x + width - 7; wx += 13) {
           if (random() > 0.48) continue;
-          ctx.fillStyle = ['#b68b52', '#d3a66a', '#8e775a', '#e0b57b'][Math.floor(random() * 4)];
+          if (state === 'day') {
+            ctx.fillStyle = ['#9abacf', '#b4cee0', '#7d9cb3', '#8eaebf'][Math.floor(random() * 4)];
+          } else if (state === 'dusk') {
+            ctx.fillStyle = ['#e8a855', '#d68b3e', '#f2c16b', '#c47333'][Math.floor(random() * 4)];
+          } else {
+            ctx.fillStyle = ['#b68b52', '#d3a66a', '#8e775a', '#e0b57b'][Math.floor(random() * 4)];
+          }
           ctx.fillRect(wx, y, 4 + random() * 3, 7);
         }
       }
@@ -324,7 +358,7 @@ function seatedHands() {
   return { root, left: hands[0], right: hands[1], update, reset: rest, grip };
 }
 
-export function buildWorkspace(scene) {
+export function buildWorkspace(scene, options = {}) {
   const root = new THREE.Group(); root.name = 'Dhruv workspace'; scene.add(root);
   const interactive = [];
   const materials = {};
@@ -399,10 +433,18 @@ export function buildWorkspace(scene) {
   box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
   const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
   windowRecess.castShadow = false;
-  const city = new THREE.Group(); city.name = 'Mumbai night view';
-  const cityMaps = [skylineTexture(), skylineTexture(true)];
-  cityMaps.forEach((map, index) => {
-    map.repeat.set(0.78, 0.88); map.offset.set(0.11, 0.06);
+  const city = new THREE.Group(); city.name = 'Mumbai view';
+  const cityTextures = {
+    night: [skylineTexture(false, 'night'), skylineTexture(true, 'night')],
+    dusk: [skylineTexture(false, 'dusk'), skylineTexture(true, 'dusk')],
+    day: [skylineTexture(false, 'day'), skylineTexture(true, 'day')],
+  };
+  Object.values(cityTextures).forEach(pair => {
+    pair[0].repeat.set(0.78, 0.88); pair[0].offset.set(0.11, 0.06);
+    pair[1].repeat.set(0.78, 0.88); pair[1].offset.set(0.11, 0.06);
+  });
+  const cityLayers = [0, 1].map((index) => {
+    const map = cityTextures.night[index];
     const layer = new THREE.Mesh(new THREE.PlaneGeometry(1.41, 1.91), new THREE.MeshBasicMaterial({
       map, transparent: index === 1, alphaTest: index === 1 ? 0.01 : 0,
       toneMapped: false, fog: false,
@@ -411,12 +453,15 @@ export function buildWorkspace(scene) {
     // Camera-driven UV parallax through the existing aperture avoids a large
     // exterior plane leaking around the cutaway wall. No new frame requests.
     layer.onBeforeRender = (_renderer, _scene, camera) => {
+      const activeMap = layer.material.map;
+      if (!activeMap) return;
       const depth = Math.max(0.5, camera.position.z + 1.65);
       const amount = index ? 0.065 : 0.025;
-      map.offset.x = 0.11 + THREE.MathUtils.clamp((camera.position.x - 1.39) / depth * amount, -0.1, 0.1);
-      map.offset.y = 0.06 + THREE.MathUtils.clamp((camera.position.y - 1.99) / depth * amount, -0.05, 0.05);
+      activeMap.offset.x = 0.11 + THREE.MathUtils.clamp((camera.position.x - 1.39) / depth * amount, -0.1, 0.1);
+      activeMap.offset.y = 0.06 + THREE.MathUtils.clamp((camera.position.y - 1.99) / depth * amount, -0.05, 0.05);
     };
     tag(layer, 'window'); city.add(layer);
+    return layer;
   });
   root.add(city);
   const mullion = box('Window mullion', [0.034, 1.92, 0.04], [1.39, 1.99, -1.62], bone);
@@ -617,7 +662,8 @@ export function buildWorkspace(scene) {
   }
 
   // A faint cool rim is the only shadow-casting source. Depth is baked once.
-  scene.add(new THREE.HemisphereLight('#8294b2', '#21160e', 0.42));
+  const hemiLight = new THREE.HemisphereLight('#8294b2', '#21160e', 0.42);
+  scene.add(hemiLight);
   const moon = new THREE.DirectionalLight('#8eadd8', 1.15);
   moon.position.set(2.1, 3.6, -2.7); moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
@@ -753,6 +799,23 @@ export function buildWorkspace(scene) {
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
     setHandsVisible(visible) { hands.root.visible = visible; },
     setEntryPower(value) { pendantLight.intensity = 0.85 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
+    setSky(skyState) {
+      if (!SKY_CONFIGS[skyState]) return;
+      const cfg = SKY_CONFIGS[skyState];
+      hemiLight.color.set(cfg.hemi.sky);
+      hemiLight.groundColor.set(cfg.hemi.ground);
+      hemiLight.intensity = cfg.hemi.intensity;
+      moon.color.set(cfg.key.color);
+      moonOpen.color.set(cfg.key.color);
+      moon.position.set(...cfg.key.position);
+      moonOpen.position.set(...cfg.key.position);
+      moon.intensity = cfg.key.closed;
+      cityLayers[0].material.map = cityTextures[skyState][0];
+      cityLayers[1].material.map = cityTextures[skyState][1];
+      cityLayers[0].material.needsUpdate = true;
+      cityLayers[1].material.needsUpdate = true;
+      options.onShadowNeedsUpdate?.();
+    },
     dispose() {
       const geometries = new Set(), mats = new Set(), textures = new Set();
       scene.traverse(object => {
@@ -763,6 +826,7 @@ export function buildWorkspace(scene) {
       });
       for (const h of [hands.left,hands.right]) for (const f of h.fingers) { geometries.add(f.userData.relaxed); geometries.add(f.userData.curled); }
       Object.values(phoneTextures).forEach(t => textures.add(t));
+      Object.values(cityTextures).forEach(pair => pair.forEach(t => textures.add(t)));
       mats.forEach(m => { for (const value of Object.values(m)) if (value?.isTexture) textures.add(value); m.dispose(); });
       geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose());
     },

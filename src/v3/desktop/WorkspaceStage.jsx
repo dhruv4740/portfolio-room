@@ -8,6 +8,29 @@ import PhoneScreen, { PHONE_SCREEN } from './PhoneScreen.jsx';
 import { KEY_ROWS } from './buildRoomInteractions.js';
 import { createPerfGovernor } from './perfGovernor.js';
 
+export function resolveSkyState() {
+  const parseSky = (str) => {
+    if (!str) return null;
+    const val = new URLSearchParams(str).get('sky');
+    if (val && ['night', 'dusk', 'day'].includes(val.toLowerCase())) {
+      return val.toLowerCase();
+    }
+    return null;
+  };
+  const fromSearch = parseSky(typeof window !== 'undefined' ? window.location.search : '');
+  if (fromSearch) return fromSearch;
+  const hash = (typeof window !== 'undefined' ? window.location.hash : '') || '';
+  const qIdx = hash.indexOf('?');
+  if (qIdx !== -1) {
+    const fromHash = parseSky(hash.slice(qIdx));
+    if (fromHash) return fromHash;
+  }
+  const hour = new Date().getHours();
+  if (hour >= 7 && hour < 17) return 'day';
+  if ((hour >= 5 && hour < 7) || (hour >= 17 && hour < 19)) return 'dusk';
+  return 'night';
+}
+
 export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
   onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
@@ -51,7 +74,20 @@ export default function WorkspaceStage({
       // its edges — that contrast against the app's black chrome is intentional.
       scene.background = new THREE.Color('#0a0a0b');
       scene.fog = new THREE.Fog('#0a0a0b', 6, 13);
-      model = buildWorkspace(scene);
+      model = buildWorkspace(scene, {
+        onShadowNeedsUpdate: () => {
+          renderer.shadowMap.needsUpdate = true;
+          invalidate();
+        },
+      });
+      const originalSetSky = model.setSky;
+      model.setSky = (skyState) => {
+        originalSetSky(skyState);
+        host.dataset.skyState = skyState;
+      };
+      const initialSky = resolveSkyState();
+      model.setSky(initialSky);
+      host.dataset.skyState = initialSky;
       const camera = new THREE.PerspectiveCamera(40, 1, 0.025, 60);
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true; controls.dampingFactor = 0.075;
@@ -578,7 +614,7 @@ export default function WorkspaceStage({
           }
         }
       }
-      api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome };
+      api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome, setSky: (s) => model.setSky(s) };
       refresh();
       return () => {
         disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
