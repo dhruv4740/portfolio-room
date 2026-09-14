@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
 import { createRig } from './cameraRig.js';
-import { buildWorkspace, WORKSPACE, INSTAGRAM_ICON_UV_RECT } from './buildWorkspace.js';
+import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
+import PhoneScreen, { PHONE_SCREEN } from './PhoneScreen.jsx';
 import { KEY_ROWS } from './buildRoomInteractions.js';
 import { createPerfGovernor } from './perfGovernor.js';
 
@@ -15,7 +16,8 @@ export default function WorkspaceStage({
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
   const api = useRef(null);
-  const [phoneBeat, setPhoneBeat] = useState('desk');
+  const phoneScreenRef = useRef(null);
+  const [phoneLive, setPhoneLive] = useState(false);
   const callbacks = useRef({});
   callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onTypeKey };
   const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor });
@@ -26,6 +28,8 @@ export default function WorkspaceStage({
     let renderer, controls, model, resizeObserver, tween, rig, action;
     let extraHeld = null;
     let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
+    // null | 'in' | 'held' | 'out'. While set, PhoneScreen tracks the display.
+    let phoneZoom = null;
     const entryTimers = [];
     let raf = 0, disposed = false, last = null, cadenceSum = 0, cpuSum = 0, count = 0, emitted = 0;
     try {
@@ -116,12 +120,29 @@ export default function WorkspaceStage({
           return { x: (projected.x * 0.5 + 0.5) * W, y: (-projected.y * 0.5 + 0.5) * H, z: projected.z };
         });
         if (pts.some((pt) => pt.z > 1)) { callbacks.current.onScreenRect?.(null); return; }
-        const [tl,tr,bl,br]=pts;
+        callbacks.current.onScreenRect?.({matrix:quadMatrix(pts,W,H),width:W,height:H});
+      }
+      // Maps a W x H box onto four projected corners. g and h make it a full
+      // projective map, so it also fits the held phone, which is tilted.
+      function quadMatrix([tl,tr,bl,br], W, H) {
         const dx1=tr.x-br.x,dx2=bl.x-br.x,dy1=tr.y-br.y,dy2=bl.y-br.y;
         const sx=tl.x-tr.x+br.x-bl.x,sy=tl.y-tr.y+br.y-bl.y,det=dx1*dy2-dx2*dy1;
         const g=(sx*dy2-dx2*sy)/det,h=(dx1*sy-sx*dy1)/det;
         const a=tr.x-tl.x+g*tr.x,b=bl.x-tl.x+h*bl.x,d=tr.y-tl.y+g*tr.y,e=bl.y-tl.y+h*bl.y;
-        callbacks.current.onScreenRect?.({matrix:[a/W,d/W,0,g/W,b/H,e/H,0,h/H,0,0,1,0,tl.x,tl.y,0,1],width:W,height:H});
+        return [a/W,d/W,0,g/W,b/H,e/H,0,h/H,0,0,1,0,tl.x,tl.y,0,1];
+      }
+      const phoneCorner = new THREE.Vector3();
+      function updatePhoneAlign() {
+        if (!phoneZoom) return;
+        const rect = host.getBoundingClientRect();
+        const W = rect.width || 1, H = rect.height || 1;
+        const { width: w, height: h } = model.phoneDisplay.geometry.parameters;
+        model.phone.updateMatrixWorld();
+        const pts = [[-w / 2, h / 2], [w / 2, h / 2], [-w / 2, -h / 2], [w / 2, -h / 2]].map(([x, y]) => {
+          model.phoneDisplay.localToWorld(phoneCorner.set(x, y, 0)).project(camera);
+          return { x: (phoneCorner.x * 0.5 + 0.5) * W, y: (-phoneCorner.y * 0.5 + 0.5) * H, z: phoneCorner.z };
+        });
+        phoneScreenRef.current?.setRect(pts.some((pt) => pt.z > 1) ? null : quadMatrix(pts, PHONE_SCREEN.width, PHONE_SCREEN.height));
       }
       function render() { if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
         // The chair reads as empty until you are in it. The body only exists
@@ -134,7 +155,7 @@ export default function WorkspaceStage({
         // on the keyboard above an empty chair — the exact disembodied-arms
         // problem the figure was added to solve.
         if (!inTheSeat) model.hands.root.visible = false;
-        model.figure.head.visible = seatDistance > 0.24; renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); }
+        model.figure.head.visible = seatDistance > 0.24; renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); updatePhoneAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
       // Re-arm the render loop from outside tick() itself — used wherever something
       // animates without going through OrbitControls (camera-travel tween, resize).
@@ -165,67 +186,59 @@ export default function WorkspaceStage({
         if (!state.current.paused && !document.hidden) raf = requestAnimationFrame(tick);
         else callbacks.current.onStats?.({ frameMs: null, cpuMs: null, gpuMs: null, cameraPos: camera.position.toArray() });
       }
-      function markPhone(beat) { host.dataset.phoneState = beat; setPhoneBeat(beat); }
-      let iconHovered = false;
-      function hoverIcon(hovered) {
-        hovered = hovered && host.dataset.phoneState === 'waiting';
-        if (hovered === iconHovered) return;
-        iconHovered = hovered;
-        if (host.dataset.phoneState === 'waiting') model.setPhoneScreen(hovered ? 'hover' : 'home');
-        invalidate();
-      }
+      function markPhone(beat) { host.dataset.phoneState = beat; }
       function followPhone() {
         const holding = model.hands.left;
         holding.hand.position.set(-0.035, -0.061, 0.025).applyEuler(model.phone.rotation).add(model.phone.position);
         holding.hand.rotation.copy(model.phone.rotation);
         holding.thumb.scale.set(0.65, 0.8, 0.8);
       }
-      const tapRotation = new THREE.Euler(1.15, 0, 0.65);
-      const tapPosition = new THREE.Vector3(), readyPosition = new THREE.Vector3();
-      function finishPhoneTap() {
+      // PhoneScreen drives these. The texture under the DOM screen follows it,
+      // so pulling back out of the zoom never pops to a different screen.
+      function showFocusLock() {
         model.setPhoneScreen('focuslock'); model.phoneGlow.color.set('#b6d8ff'); model.phoneGlow.intensity = 0.14;
         markPhone('focuslock'); invalidate();
       }
-      function tapPhone() {
-        if (!phoneInHand || returningPhone || host.dataset.phoneState !== 'waiting' || state.current.phase !== 'room' || state.current.activeAnchorId !== 'phone') return;
-        hoverIcon(false); markPhone('tap');
-        if (state.current.reducedMotion) { finishPhoneTap(); return; }
-        const tapping = model.hands.right.hand;
-        action = gsap.timeline({ onUpdate() { model.hands.update(); invalidate(); }, onComplete: finishPhoneTap });
-        action.to(tapping.position, { x: tapPosition.x, y: tapPosition.y - 0.009, z: tapPosition.z - 0.020, duration: 0.24, ease: 'power2.in' }, 0)
-          .to(tapping.position, { x: readyPosition.x, y: readyPosition.y, z: readyPosition.z, duration: 0.24, ease: 'power2.out' }, 0.24)
-          .call(() => markPhone('hesitation'), [], 0.48)
-          .to(tapping.position, { x: readyPosition.x, y: readyPosition.y, z: readyPosition.z, duration: 0.3, ease: 'power2.out' }, 0.48)
-          .call(() => { model.setPhoneScreen('focuslock'); markPhone('takeover'); }, [], 0.70)
-          .to(model.phoneGlow.color, { r: new THREE.Color('#b6d8ff').r, g: new THREE.Color('#b6d8ff').g, b: new THREE.Color('#b6d8ff').b, duration: 0.3 }, 0.70)
-          .to(model.phoneGlow, { intensity: 0.14, duration: 0.3 }, 0.70);
-        gsap.ticker.wake();
+      function phoneHome() {
+        model.setPhoneScreen('home'); model.phoneGlow.color.set('#d4d5d8'); model.phoneGlow.intensity = 0.07;
+        markPhone('zoomed'); invalidate();
+      }
+      // Hands lift the phone, then the camera closes on its screen the way the
+      // monitor entry does, and PhoneScreen takes over as a real surface.
+      function zoomPhone(reduced) {
+        model.phone.updateMatrixWorld();
+        const { width: w, height: h } = model.phoneDisplay.geometry.parameters;
+        const center = model.phoneDisplay.getWorldPosition(new THREE.Vector3());
+        // Along the display's own normal: the held phone is tilted, and pushing
+        // in along the eye ray would keystone the screen.
+        const normal = new THREE.Vector3(0, 0, 1).transformDirection(model.phoneDisplay.matrixWorld);
+        const tan = Math.tan(THREE.MathUtils.degToRad(56 / 2));
+        // Contain, not cover: the screen is portrait, so height usually decides.
+        const distance = Math.max(h / (2 * tan), w / (2 * tan * camera.aspect)) * 1.06;
+        phoneZoom = 'in'; markPhone('zooming');
+        rig.flyTo({ position: center.clone().addScaledVector(normal, distance).toArray(), target: center.toArray() }, {
+          reduced, duration: 0.9,
+          onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
+          onComplete() { phoneZoom = 'held'; markPhone('zoomed'); setPhoneLive(true); invalidate(); },
+        });
       }
       function animatePhone(reduced) {
-        action?.kill(); phoneInHand = true; iconHovered = false;
+        action?.kill(); phoneInHand = true;
         model.resetPhone(); model.hands.reset(); model.hands.grip(model.hands.left); model.hands.grip(model.hands.right, true); model.setHandsVisible(true);
-        const holding = model.hands.left.hand, tapping = model.hands.right.hand;
+        const holding = model.hands.left.hand;
         rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, {
           reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
         });
         const held = new THREE.Vector3(0.08, 1.53, 0.59);
-        const r = INSTAGRAM_ICON_UV_RECT;
-        const screen = model.phoneDisplay.geometry.parameters;
-        const iconCenter = new THREE.Vector3(((r.uMin + r.uMax) / 2 - 0.5) * screen.width, 0.03,
-          (0.5 - (r.vMin + r.vMax) / 2) * screen.height).applyEuler(new THREE.Euler(1.15, 0, 0)).add(held);
-        const index = model.hands.right.index;
-        const tip = model.hands.right.fingers[index].userData.tip.clone().applyEuler(tapRotation);
-        tapPosition.copy(iconCenter).sub(tip);
-        readyPosition.copy(tapPosition).add(new THREE.Vector3(0.15, -0.10, 0.015));
         let gripping = false;
         const update = () => { if (gripping) followPhone(); model.hands.update(); invalidate(); };
         if (reduced) {
           model.phone.position.copy(held); model.phone.rotation.x = 1.15;
-          followPhone(); tapping.position.copy(readyPosition); tapping.rotation.copy(tapRotation);
+          followPhone();
 
-          model.hands.update(); markPhone('waiting'); invalidate(); return;
+          model.hands.update(); zoomPhone(true); return;
         }
-        action = gsap.timeline({ onUpdate: update, onComplete() { markPhone('waiting'); invalidate(); } });
+        action = gsap.timeline({ onUpdate: update, onComplete() { zoomPhone(false); } });
         markPhone('reaching');
         action.to(holding.position, { x: -0.55, y: 1.44, z: 0.25, duration: 0.4, ease: 'power2.inOut' }, 0)
           .to(holding.position, { x: -0.90, y: 1.23, z: -0.005, duration: 0.4, ease: 'power2.inOut' }, 0.4)
@@ -233,18 +246,27 @@ export default function WorkspaceStage({
           .to(model.phone.position, { y:1.58,duration:0.35,ease:'power2.out' },0.8)
           .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 0.85, ease: 'power2.inOut' }, 1.15)
           .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 1.15)
-          .call(() => markPhone('home'), [], 2.0)
-          .to(tapping.position, { x: readyPosition.x, y: readyPosition.y, z: readyPosition.z, duration: 0.55, ease: 'power2.inOut' }, 2.0)
-          .to(tapping.rotation, { x: tapRotation.x, z: tapRotation.z, duration: 0.55 }, 2.0);
+          .call(() => markPhone('home'), [], 2.0);
 
         gsap.ticker.wake();
       }
       function returnPhone(reduced) {
-        action?.kill(); rig.dispose(); returningPhone = true; hoverIcon(false); markPhone('returning');
+        action?.kill(); rig.dispose(); returningPhone = true; markPhone('returning'); setPhoneLive(false);
         const finish = () => {
           phoneInHand = false; returningPhone = false; model.resetPhone(); model.hands.reset();
-          markPhone('desk'); fly(); invalidate();
+          phoneScreenRef.current?.reset(); markPhone('desk'); fly(); invalidate();
         };
+        if (phoneZoom) {
+          // Pull back out of the screen first. PhoneScreen rides the quad until
+          // the seat view, then the matching texture underneath takes over.
+          phoneZoom = 'out';
+          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, {
+            reduced, duration: 0.7,
+            onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
+            onComplete() { phoneZoom = null; phoneScreenRef.current?.setRect(null); returnPhone(reduced); },
+          });
+          return;
+        }
         if (reduced) { finish(); return; }
         if (model.phone.position.distanceTo(new THREE.Vector3(...WORKSPACE.anchors.phone)) < 0.002) {
           action = gsap.to(model.hands.left.hand.position, { x: -0.27, y: 1.28, z: 0.405, duration: 0.5,
@@ -508,22 +530,10 @@ export default function WorkspaceStage({
         host.dataset.hitKey = result?.object === model.keys ? String(result.instanceId) : '';
         return result?.object.userData.anchorId || null;
       }
-      function hitPhoneIcon(event) {
-        const rect = renderer.domElement.getBoundingClientRect();
-        pointer.set((event.clientX - rect.left) / rect.width * 2 - 1, -(event.clientY - rect.top) / rect.height * 2 + 1);
-        raycaster.setFromCamera(pointer, camera);
-        const hit = raycaster.intersectObject(model.phoneDisplay, false)[0];
-        const uv = hit?.uv, r = INSTAGRAM_ICON_UV_RECT;
-        return !!uv && uv.x >= r.uMin && uv.x <= r.uMax && uv.y >= r.vMin && uv.y <= r.vMax;
-      }
-      function pointerLeave() { hoverIcon(false); }
       function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); }
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
-        if (phoneInHand) {
-          const over = host.dataset.phoneState === 'waiting' && hitPhoneIcon(event);
-          hoverIcon(over); renderer.domElement.style.cursor = over ? 'pointer' : 'default'; return;
-        }
+        if (phoneInHand) { renderer.domElement.style.cursor = 'default'; return; }
         if (notebookInHand || extraHeld) return;
         if (down && !phoneInHand && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
           headYaw -= (event.clientX - down.lx) * 0.005;
@@ -538,7 +548,7 @@ export default function WorkspaceStage({
       function pointerUp(event) {
         if (!down || down.moved || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || state.current.phase !== 'room') { down = null; return; }
         down = null;
-        if (phoneInHand) { if (hitPhoneIcon(event)) tapPhone(); return; }
+        if (phoneInHand) return;
         const id = hit(event); if (!id) return;
         if (!state.current.seated && id !== 'chair') return;
         if (id === 'keyboard') { const index=Number(host.dataset.hitKey); pressKey(KEY_ROWS[Math.floor(index/12)]?.[index%12] || ' ',index);renderer.domElement.focus();return; }
@@ -552,7 +562,6 @@ export default function WorkspaceStage({
       renderer.domElement.addEventListener('pointerdown', pointerDown);
       renderer.domElement.addEventListener('pointermove', pointerMove);
       renderer.domElement.addEventListener('pointerup', pointerUp);
-      renderer.domElement.addEventListener('pointerleave', pointerLeave);
       document.addEventListener('visibilitychange', refresh);
       resizeObserver = new ResizeObserver(resize); resizeObserver.observe(host);
       resize(); place(home); render();
@@ -569,7 +578,7 @@ export default function WorkspaceStage({
           }
         }
       }
-      api.current = { fly, refresh, startEntryPower, tapPhone, hoverIcon };
+      api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome };
       refresh();
       return () => {
         disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
@@ -578,7 +587,6 @@ export default function WorkspaceStage({
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
         renderer.domElement.removeEventListener('pointerup', pointerUp);
-        renderer.domElement.removeEventListener('pointerleave', pointerLeave);
         controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); gov.dispose(); api.current = null;
       };
     } catch (error) {
@@ -596,12 +604,8 @@ export default function WorkspaceStage({
   return (
     <div ref={hostRef} className="stage-root workspace-stage" data-scene="workspace">
       <style>{css}</style>
-      {phoneBeat === 'waiting' && seated && activeAnchorId === 'phone' && phase === 'room' && (
-        <button className="phone-app-control mono" onClick={() => api.current?.tapPhone()}
-          onFocus={() => api.current?.hoverIcon(true)} onBlur={() => api.current?.hoverIcon(false)}>
-          TAP INSTAGRAM
-        </button>
-      )}
+      <PhoneScreen ref={phoneScreenRef} interactive={phoneLive}
+        onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker" data-object="chair" aria-label="Sit in the chair"
         onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT</span></button>
@@ -619,7 +623,6 @@ export default function WorkspaceStage({
 }
 
 const css = `
-.phone-app-control { position:absolute; right:var(--gutter); bottom:calc(var(--gutter) + 48px); z-index:3; padding:12px 16px; color:var(--bone); background:var(--void); border:1px solid var(--dim); }
 .workspace-stage { position:absolute; inset:0; overflow:hidden; background:#15191b; }
 .workspace-stage canvas { display:block; width:100%; height:100%; touch-action:none; }
 .workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
