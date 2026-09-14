@@ -100,19 +100,23 @@ for (const app of promoted) {
 
   if (app.mode === 'minimize') {
     await win.locator('[data-minimize]').click();
+    await page.waitForTimeout(400);
     const before = await page.evaluate(() => window.__rafCallbacks);
     await stopDelta(`${app.title} minimize`, before);
 
     await page.locator('.taskbar-btn').filter({ hasText: app.title }).click();
     await page.waitForTimeout(150);
     await page.evaluate(() => window.postMessage({ source: 'v3-scan', type: 'leave' }, location.origin));
+    await page.waitForTimeout(400);
     const leftBefore = await page.evaluate(() => window.__rafCallbacks);
     await stopDelta(`${app.title} parent leave`, leftBefore);
     await page.evaluate(() => window.postMessage({ source: 'v3-scan', type: 'enter' }, location.origin));
     await page.waitForTimeout(100);
     await win.locator('[data-close]').click();
+    await page.waitForTimeout(400);
   } else {
     await win.locator('[data-close]').click();
+    await page.waitForTimeout(400);
     const before = await page.evaluate(() => window.__rafCallbacks);
     await stopDelta(`${app.title} close`, before);
   }
@@ -125,6 +129,29 @@ for (const app of promoted) {
     console.log(`PASS ${app.title}: .app-${app.id} fully removed from DOM`);
   }
 }
+
+// Assert other sketches keep animating after Kinetic closes
+const fluxDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Flux' }).first();
+await fluxDeskIcon.dispatchEvent('dblclick');
+const fluxWindow = await windowFor('Flux');
+await page.waitForTimeout(500);
+
+const kineticDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Kinetic' }).first();
+await kineticDeskIcon.dispatchEvent('dblclick');
+const kineticWindow = await windowFor('Kinetic');
+await page.waitForTimeout(500);
+
+await kineticWindow.locator('[data-close]').click();
+await page.waitForTimeout(400);
+
+const fluxRunningBefore = await page.evaluate(() => window.__rafCallbacks);
+await page.waitForTimeout(250);
+const fluxRunningAfter = await page.evaluate(() => window.__rafCallbacks);
+assert.ok(fluxRunningAfter > fluxRunningBefore, `Flux stopped animating after Kinetic closed (${fluxRunningBefore} -> ${fluxRunningAfter})`);
+console.log('PASS other sketches keep animating after Kinetic closes');
+
+await fluxWindow.locator('[data-close]').click();
+await page.waitForTimeout(400);
 
 const terminalIcon = page.locator('.desk-icon').filter({ hasText: 'terminal' }).first();
 await terminalIcon.dblclick();

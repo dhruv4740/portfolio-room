@@ -614,8 +614,9 @@ export default {
           });
           gsapTweens.push(heroTween1, heroTween2, heroTween3);
 
-          root.querySelectorAll('.reveal').forEach((el) => {
+          root.querySelectorAll('.reveal').forEach((el, idx) => {
             const st = window.ScrollTrigger.create({
+              id: `kinetic-${idx}`,
               trigger: el,
               scroller: root,
               start: 'top 88%',
@@ -670,15 +671,11 @@ export default {
       visible = Boolean(next);
       if (visible && !rafId && !cleanedUp) {
         rafId = requestAnimationFrame(loop);
-        if (window.ScrollTrigger) window.ScrollTrigger.enable();
-        if (window.gsap) window.gsap.ticker.wake();
         gsapTweens.forEach((t) => t && t.resume && t.resume());
       }
       if (!visible && rafId) {
         cancelAnimationFrame(rafId);
         rafId = 0;
-        if (window.ScrollTrigger) window.ScrollTrigger.disable();
-        if (window.gsap) window.gsap.ticker.sleep();
         gsapTweens.forEach((t) => t && t.pause && t.pause());
       }
     }
@@ -698,21 +695,15 @@ export default {
         });
         if (window.ScrollTrigger) {
           window.ScrollTrigger.getAll().forEach((st) => {
-            try { st.kill(); } catch (_) {}
+            if (st.vars?.id && typeof st.vars.id === 'string' && st.vars.id.startsWith('kinetic-')) {
+              try { st.kill(); } catch (_) {}
+            }
           });
-          window.ScrollTrigger.disable(true, true);
         }
 
         gsapTweens.forEach((t) => {
           try { t.kill(); } catch (_) {}
         });
-
-        const g = window.gsap;
-        if (g) {
-          g.ticker.sleep();
-          window.gsap = undefined;
-          setTimeout(() => { window.gsap = g; }, 50);
-        }
 
         planes.forEach((rec) => {
           if (rec.cleanupListeners) rec.cleanupListeners();
