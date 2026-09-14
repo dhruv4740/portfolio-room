@@ -26,7 +26,9 @@ You deferred jobs 3a–3h in round 3 and again in round 4. This round contains
 - **Commit only your paths, scoped on the command line:**
   `git commit -m "<msg>" -- <path1> <path2>`. In round 4 a plain `git commit`
   swept Gemini's staged deletion into your report commit. Never run `git commit`
-  without `-- <paths>`. No `add -A`, `add .`, `commit -a`, `stash`, `reset`,
+  without `-- <paths>`. A brand-new (untracked) file must be added first:
+  `git add <newfile>` then `git commit -m "<msg>" -- <newfile> <other paths>`
+  (the `--` form alone fails with "pathspec did not match" for untracked files). No `add -A`, `add .`, `commit -a`, `stash`, `reset`,
   `checkout --`, `--amend`. Git lock: wait 10 s, retry up to 6 times.
 - Build `npx vite build --outDir dist-sonnet`, serve
   `npx vite preview --outDir dist-sonnet --port 4174 --strictPort`, run scripts

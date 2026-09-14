@@ -23,7 +23,8 @@ Sonnet is changing the 3D room at the same time (hands, walls, lighting).
 
 - **Commit scoped on the command line:** `git commit -m "<msg>" -- <paths>`.
   Never a bare `git commit`: in round 4 a bare commit by one agent swept in the
-  other's staged files. No `add -A`, `add .`, `commit -a`, `stash`, `reset`,
+  other's staged files. A brand-new (untracked) file must be added first:
+  `git add <newfile>` then `git commit -m "<msg>" -- <newfile> <other paths>`. No `add -A`, `add .`, `commit -a`, `stash`, `reset`,
   `checkout --`, `--amend`. Git lock: wait 10 s, retry up to 6 times.
 - Build `npm run build`, test on `http://localhost:4173`.
 
