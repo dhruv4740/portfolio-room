@@ -5,6 +5,9 @@ let masterGain = null;
 let noiseSource = null;
 let humOsc1 = null;
 let humOsc2 = null;
+// Tracks intent (last start/stop call), not the mid-ramp gain value — a fade
+// in progress still counts as "playing" for sync-checking purposes.
+let playing = false;
 
 function createNoiseBuffer(ctx, duration = 3) {
   const bufferSize = ctx.sampleRate * duration;
@@ -71,6 +74,7 @@ function initAudio() {
 }
 
 export function startCityAmbience() {
+  playing = true;
   try {
     initAudio();
     if (!audioCtx) return;
@@ -87,6 +91,7 @@ export function startCityAmbience() {
 }
 
 export function stopCityAmbience() {
+  playing = false;
   try {
     if (!audioCtx || !masterGain) return;
     const t = audioCtx.currentTime;
@@ -98,7 +103,12 @@ export function stopCityAmbience() {
   }
 }
 
+export function isCityAmbiencePlaying() {
+  return playing;
+}
+
 export function disposeCityAmbience() {
+  playing = false;
   try {
     if (audioCtx) {
       audioCtx.close();
@@ -109,4 +119,14 @@ export function disposeCityAmbience() {
       humOsc2 = null;
     }
   } catch {}
+}
+
+// Test/dev hook only — never used to drive production behavior.
+if (
+  (typeof import.meta !== 'undefined' && import.meta.env?.DEV) ||
+  (typeof localStorage !== 'undefined' && localStorage.getItem('v3:test') === '1')
+) {
+  if (typeof window !== 'undefined') {
+    window.__cityAmbience = { playing: () => isCityAmbiencePlaying() };
+  }
 }

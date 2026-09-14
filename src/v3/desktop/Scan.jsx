@@ -12,7 +12,7 @@ import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import ScanIntro from '../ui/ScanIntro.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
-import { startCityAmbience, stopCityAmbience, disposeCityAmbience } from './cityAudio.js';
+import { startCityAmbience, stopCityAmbience, disposeCityAmbience, isCityAmbiencePlaying } from './cityAudio.js';
 import { anchors, projects, identity } from '../content/index.js';
 import {
   prefersReducedMotion,
@@ -51,6 +51,7 @@ export default function Scan() {
   // deferred focus loses that race.
   const pendingFocus = useRef(false);
   const dhruvRef = useRef(null);
+  const windowIntent = useRef(false);
 
   const handleScreenRect = useCallback((rect) => {
     dhruvRef.current?.setScreenRect(rect);
@@ -83,16 +84,30 @@ export default function Scan() {
   const handleSelect = useCallback((id) => {
     if (screenPhase !== 'room') return;
     if (id === 'windowOpen') {
-      const isCurrentlyOpen = document.querySelector('.workspace-stage')?.dataset.windowOpen === '1';
-      if (!isCurrentlyOpen) {
-        startCityAmbience();
+      const stage = document.querySelector('.workspace-stage');
+      const actionState = stage?.dataset.actionState;
+      // Mid-animation: a second click (or the completion echo below racing
+      // it) must not re-enter — ignore outright rather than re-toggle.
+      if (actionState && actionState !== 'idle') return;
+      if (activeId !== id) {
+        // A real trigger: activeId is only equal to id here for the
+        // completion echo fired by WorkspaceStage's finishExtra once the
+        // action settles, which must not flip intent again.
+        windowIntent.current = !windowIntent.current;
+        if (windowIntent.current) startCityAmbience(); else stopCityAmbience();
       } else {
-        stopCityAmbience();
+        // Completion echo: verify audio actually matches where the window
+        // ended up. Never start here — there is no user gesture.
+        const isOpen = stage?.dataset.windowOpen === '1';
+        if (isOpen !== isCityAmbiencePlaying()) {
+          stopCityAmbience();
+          console.warn('[window] audio desync corrected');
+        }
       }
     }
     lastTrigger.current = document.activeElement;
     setActiveId((cur) => (cur === id ? null : id));
-  }, [screenPhase]);
+  }, [screenPhase, activeId]);
 
   useEffect(() => {
     if (!seated || screenPhase !== 'room') {
@@ -230,7 +245,8 @@ export default function Scan() {
         seated={seated}
         liveMonitor={liveMonitor && seated && !activeId}
         onTypeKey={key=>{setLiveMonitor(true);dhruvRef.current?.typeKey(key);}}
-        onSit={() => { setActiveId(null); setSeated(true); }}
+        onSit={() => { setActiveId(null); setSeated(true); if (windowIntent.current) startCityAmbience(); }}
+        windowIntent={windowIntent.current}
         anchors={anchors}
         activeAnchorId={activeId}
         onAnchorSelect={handleSelect}
