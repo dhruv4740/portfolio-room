@@ -37,8 +37,48 @@ const QUOTES = [
   'Stay intentional, stay present.',
 ];
 
+const REFLECTION_PHRASES = [
+  'I am choosing to use this app mindfully',
+  'This will not distract me from my priorities',
+  'I will close this app after what I need to do',
+  'My time and attention are valuable',
+];
+
+const INTENTION_PRESETS = [
+  'Just checking notifications (quick)',
+  'Need to post/message someone specific',
+  'Boredom / Dopamine craving',
+];
+
+function getTimeScale() {
+  try {
+    if (typeof window !== 'undefined' && localStorage.getItem('v3:test') === '1') {
+      const scale = window.__phoneTimeScale;
+      if (typeof scale === 'number' && scale > 0) return scale;
+    }
+  } catch (_) {}
+  return 1;
+}
+
 function mathQuestion() {
   const a = 10 + Math.floor(Math.random() * 35), b = 10 + Math.floor(Math.random() * 35);
+  return { text: `${a} + ${b} = ?`, answer: a + b };
+}
+
+function generateFrictionMath(difficulty = 'easy') {
+  if (difficulty === 'hard') {
+    const a = 3 + Math.floor(Math.random() * 13);
+    const b = 3 + Math.floor(Math.random() * 13);
+    const c = 1 + Math.floor(Math.random() * 50);
+    return { text: `${a} × ${b} + ${c} = ?`, answer: a * b + c };
+  }
+  if (difficulty === 'medium') {
+    const a = 2 + Math.floor(Math.random() * 11);
+    const b = 2 + Math.floor(Math.random() * 11);
+    return { text: `${a} × ${b} = ?`, answer: a * b };
+  }
+  const a = 1 + Math.floor(Math.random() * 20);
+  const b = 1 + Math.floor(Math.random() * 20);
   return { text: `${a} + ${b} = ?`, answer: a + b };
 }
 
@@ -74,7 +114,7 @@ function getDefaultFocusLockState() {
       breathing: true,
       delay: true,
       intention: true,
-      shake: false,
+      shake: true,
       reflection: true,
       stats: true,
       math: true,
@@ -105,7 +145,7 @@ function loadSavedState() {
 
 const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpenApp, onHome }, ref) {
   const rootRef = useRef(null);
-  const [app, setApp] = useState('home'); // 'home' | 'focuslock' | 'locked'
+  const [app, setApp] = useState('home'); // 'home' | 'focuslock' | 'locked' | 'friction'
   const [flState, setFlState] = useState(loadSavedState);
   const [flTab, setFlTab] = useState('dashboard');
   const [savedBanner, setSavedBanner] = useState('');
@@ -124,6 +164,84 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   const [toast, setToast] = useState('');
   const [time, setTime] = useState(clock);
 
+  // Friction Sequence State
+  const [frictionSteps, setFrictionSteps] = useState(['decision']);
+  const [frictionStepIndex, setFrictionStepIndex] = useState(0);
+  const [breathingSec, setBreathingSec] = useState(12);
+  const [delayRemaining, setDelayRemaining] = useState(10);
+  const [delayProgress, setDelayProgress] = useState(0);
+  const [intentionSelected, setIntentionSelected] = useState('');
+  const [intentionInput, setIntentionInput] = useState('');
+  const [shakeProgress, setShakeProgress] = useState(0);
+  const [reflectionPhrase, setReflectionPhrase] = useState(REFLECTION_PHRASES[0]);
+  const [reflectionInput, setReflectionInput] = useState('');
+  const [frictionMath, setFrictionMath] = useState(null);
+  const [frictionMathAnswer, setFrictionMathAnswer] = useState('');
+  const [decisionGranted, setDecisionGranted] = useState(false);
+
+  const frictionTimers = useRef([]);
+  const frictionStepsRef = useRef(frictionSteps);
+  frictionStepsRef.current = frictionSteps;
+  const lastShakeX = useRef(null);
+  const lastDirection = useRef(0);
+  const shakeReversals = useRef([]);
+
+  function clearFrictionTimers() {
+    frictionTimers.current.forEach((id) => {
+      clearTimeout(id);
+      clearInterval(id);
+    });
+    frictionTimers.current = [];
+  }
+
+  function advanceFrictionStep() {
+    clearFrictionTimers();
+    setFrictionStepIndex((prev) => {
+      if (prev + 1 < frictionStepsRef.current.length) {
+        return prev + 1;
+      }
+      return prev;
+    });
+  }
+
+  const currentStep = frictionSteps[frictionStepIndex] || 'decision';
+
+  function handleShakeMove(e) {
+    if (app !== 'friction' || currentStep !== 'shake') return;
+    const currentX = e.clientX;
+    if (lastShakeX.current === null) {
+      lastShakeX.current = currentX;
+      return;
+    }
+    const dx = currentX - lastShakeX.current;
+    if (Math.abs(dx) > 8) {
+      const dir = dx > 0 ? 1 : -1;
+      if (lastDirection.current !== 0 && dir !== lastDirection.current) {
+        const timestamp = Date.now();
+        shakeReversals.current.push(timestamp);
+        shakeReversals.current = shakeReversals.current.filter((t) => timestamp - t <= 2000);
+        const count = shakeReversals.current.length;
+        const progress = Math.min(100, Math.round((count / 6) * 100));
+        setShakeProgress(progress);
+        if (count >= 6) {
+          advanceFrictionStep();
+        }
+      }
+      lastDirection.current = dir;
+      lastShakeX.current = currentX;
+    }
+  }
+
+  function handleOpenAnyway() {
+    setDecisionGranted(true);
+    const scale = getTimeScale();
+    const timer = setTimeout(() => {
+      setOpens((n) => n + 1);
+      goHome();
+    }, 2000 / scale);
+    frictionTimers.current.push(timer);
+  }
+
   // Sync state changes to localStorage
   function updateFlState(updater) {
     setFlState((prev) => {
@@ -136,12 +254,14 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   }
 
   function goHome(notify = true) {
+    clearFrictionTimers();
     setApp('home');
     setMath(null);
     setAnswer('');
     setStatus('');
     setToast('');
     setTime(clock());
+    setDecisionGranted(false);
     if (notify) onHome?.();
   }
 
@@ -156,15 +276,34 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   }), []);
 
   function handleOpenInstagram() {
-    setOpens((n) => n + 1);
-    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-    setStatsReady(false);
-    setBlockStart(Date.now());
-    setNow(Date.now());
-    setMath(null);
-    setStatus('');
-    setApp('locked');
-    onOpenApp?.();
+    const isHardBlocked = flState.hardBlockAfterLimit || flState.focusActive;
+    if (isHardBlocked) {
+      setOpens((n) => n + 1);
+      setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+      setStatsReady(false);
+      setBlockStart(Date.now());
+      setNow(Date.now());
+      setMath(null);
+      setStatus('');
+      setApp('locked');
+      onOpenApp?.();
+    } else {
+      const steps = [];
+      if (flState.friction.breathing) steps.push('breathing');
+      if (flState.friction.delay) steps.push('delay');
+      if (flState.friction.intention) steps.push('intention');
+      if (flState.friction.shake) steps.push('shake');
+      if (flState.friction.reflection) steps.push('reflection');
+      if (flState.friction.stats) steps.push('stats');
+      if (flState.friction.math) steps.push('math');
+      steps.push('decision');
+
+      setFrictionSteps(steps);
+      setFrictionStepIndex(0);
+      setDecisionGranted(false);
+      setApp('friction');
+      onOpenApp?.();
+    }
   }
 
   function handleOpenFocusLock() {
@@ -185,6 +324,63 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
       setMath(mathQuestion());
     }
   }
+
+  useEffect(() => {
+    if (app !== 'friction') return undefined;
+    clearFrictionTimers();
+    const step = frictionSteps[frictionStepIndex] || 'decision';
+    const scale = getTimeScale();
+
+    if (step === 'breathing') {
+      setBreathingSec(12);
+      const interval = setInterval(() => {
+        setBreathingSec((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            advanceFrictionStep();
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000 / scale);
+      frictionTimers.current.push(interval);
+    } else if (step === 'delay') {
+      setDelayRemaining(10);
+      setDelayProgress(0);
+      const totalMs = 10000 / scale;
+      const start = Date.now();
+      const interval = setInterval(() => {
+        const elapsed = Date.now() - start;
+        const progress = Math.min(100, Math.round((elapsed / totalMs) * 100));
+        const remainingSec = Math.max(0, Math.ceil((totalMs - elapsed) / (1000 / scale)));
+        setDelayProgress(progress);
+        setDelayRemaining(remainingSec);
+        if (elapsed >= totalMs) {
+          clearInterval(interval);
+          advanceFrictionStep();
+        }
+      }, 50);
+      frictionTimers.current.push(interval);
+    } else if (step === 'intention') {
+      setIntentionSelected('');
+      setIntentionInput('');
+    } else if (step === 'shake') {
+      setShakeProgress(0);
+      shakeReversals.current = [];
+      lastShakeX.current = null;
+      lastDirection.current = 0;
+    } else if (step === 'reflection') {
+      setReflectionPhrase(REFLECTION_PHRASES[Math.floor(Math.random() * REFLECTION_PHRASES.length)]);
+      setReflectionInput('');
+    } else if (step === 'math') {
+      setFrictionMath(generateFrictionMath(flState.friction.mathDifficulty));
+      setFrictionMathAnswer('');
+    } else if (step === 'decision') {
+      setDecisionGranted(false);
+    }
+
+    return () => clearFrictionTimers();
+  }, [app, frictionStepIndex, frictionSteps, flState.friction.mathDifficulty]);
 
   useEffect(() => {
     if (!interactive) return undefined;
@@ -256,8 +452,10 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
       aria-label="Phone screen"
       data-app={app}
       data-fl-tab={flTab}
+      data-friction-step={app === 'friction' ? currentStep : undefined}
       inert={!interactive}
       style={{ pointerEvents: interactive ? 'auto' : 'none' }}
+      onPointerMove={handleShakeMove}
     >
       <style>{css}</style>
 
@@ -905,6 +1103,276 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
           </nav>
         </div>
       )}
+
+      {/* ==================================================================== */}
+      {/* 4. FOCUSLOCK FRICTION SEQUENCE (Before Instagram)                    */}
+      {/* ==================================================================== */}
+      {app === 'friction' && (
+        <div className="fl-friction-root" data-step={currentStep}>
+          <div className="ps-statusbar">
+            <span className="ps-clock">{time}</span>
+            <div className="ps-status-icons">
+              <span className="ps-stat-icon">5G</span>
+              <span className="ps-stat-icon">100%</span>
+            </div>
+          </div>
+
+          <div className="fl-friction-content">
+            {currentStep === 'breathing' && (
+              <div className="fl-step fl-step-breathing" data-step="breathing">
+                <span className="fl-step-badge">BREATHE</span>
+                <h2 className="fl-step-title">Take a Breath</h2>
+                <p className="fl-step-desc">Take a deep breath before you continue</p>
+                <div
+                  className="fl-circle-breathing"
+                  style={{
+                    '--breathing-duration': `${12 / getTimeScale()}s`,
+                    backgroundColor: breathingSec > 8 ? '#2ECC71' : breathingSec > 4 ? '#F1C40F' : '#E67E22',
+                  }}
+                />
+                <span className="txt-breathing-instruction fl-breathe-text">
+                  {breathingSec > 8 ? 'Inhale...' : breathingSec > 4 ? 'Hold...' : 'Exhale...'}
+                </span>
+                <span className="txt-breathing-timer fl-breathe-timer">{breathingSec}s</span>
+                <button type="button" className="ps-btn ps-secondary btn-take-break" onClick={() => goHome()}>
+                  I will take a break now
+                </button>
+              </div>
+            )}
+
+            {currentStep === 'delay' && (
+              <div className="fl-step fl-step-delay" data-step="delay">
+                <span className="fl-step-badge">WAIT</span>
+                <h2 className="fl-step-title">Pause and Reflect</h2>
+                <p className="fl-step-desc">&quot;Disconnect to reconnect with what matters.&quot;</p>
+                <div className="fl-progress-track">
+                  <div className="fl-progress-fill" style={{ width: `${delayProgress}%` }} />
+                </div>
+                <p className="fl-delay-sec txt-delay-seconds">{delayRemaining} seconds remaining</p>
+                <button type="button" className="ps-btn ps-secondary btn-take-break" onClick={() => goHome()}>
+                  I will take a break now
+                </button>
+              </div>
+            )}
+
+            {currentStep === 'intention' && (
+              <div className="fl-step fl-step-intention" data-step="intention">
+                <span className="fl-step-badge">INTENTION</span>
+                <h2 className="fl-step-title">What is your intention?</h2>
+                <p className="fl-step-desc">Be intentional about opening this app</p>
+                <div className="fl-chip-group">
+                  {INTENTION_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      className={`fl-chip ${intentionSelected === preset ? 'is-selected' : ''}`}
+                      onClick={() => {
+                        setIntentionSelected(preset);
+                        setIntentionInput(preset);
+                      }}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  className="fl-input fl-intention-input"
+                  placeholder="Or type a custom reason..."
+                  value={intentionInput}
+                  onChange={(e) => {
+                    setIntentionInput(e.target.value);
+                    if (intentionSelected && e.target.value !== intentionSelected) {
+                      setIntentionSelected('');
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  className="ps-btn ps-primary btn-confirm-intention"
+                  onClick={() => {
+                    const reason = intentionInput.trim() || intentionSelected;
+                    if (!reason) {
+                      setToast('Please select or type your intention');
+                      return;
+                    }
+                    advanceFrictionStep();
+                  }}
+                >
+                  Confirm Intention
+                </button>
+                <button type="button" className="ps-btn ps-secondary btn-take-break" onClick={() => goHome()}>
+                  I will take a break now
+                </button>
+              </div>
+            )}
+
+            {currentStep === 'shake' && (
+              <div className="fl-step fl-step-shake" data-step="shake">
+                <span className="fl-step-badge">SHAKE</span>
+                <h2 className="fl-step-title">Shake Challenge</h2>
+                <p className="fl-step-desc">Shake your phone to continue</p>
+                <p className="fl-shake-hint">Move your mouse side to side quickly</p>
+                <div className="fl-shake-box">
+                  <div className="fl-progress-track">
+                    <div className="fl-progress-fill" style={{ width: `${shakeProgress}%` }} />
+                  </div>
+                  <span className="txt-shake-count">Shake meter: {shakeProgress}%</span>
+                </div>
+                <button type="button" className="ps-btn ps-secondary btn-take-break" onClick={() => goHome()}>
+                  I will take a break now
+                </button>
+              </div>
+            )}
+
+            {currentStep === 'reflection' && (
+              <div className="fl-step fl-step-reflection" data-step="reflection">
+                <span className="fl-step-badge">REFLECTION</span>
+                <h2 className="fl-step-title">Cognitive Reflection</h2>
+                <p className="fl-step-desc">Type the phrase below to continue:</p>
+                <div className="fl-phrase-card">
+                  <p className="txt-reflection-phrase">{reflectionPhrase}</p>
+                </div>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (reflectionInput.trim().toLowerCase() === reflectionPhrase.toLowerCase()) {
+                      advanceFrictionStep();
+                    } else {
+                      setToast("Text doesn't match! Try again.");
+                    }
+                  }}
+                >
+                  <input
+                    type="text"
+                    className="fl-input fl-reflection-input"
+                    placeholder="Type the phrase here..."
+                    value={reflectionInput}
+                    onChange={(e) => setReflectionInput(e.target.value)}
+                  />
+                  <button type="submit" className="ps-btn ps-primary btn-verify-reflection">
+                    Verify &amp; Continue
+                  </button>
+                </form>
+                <button type="button" className="ps-btn ps-secondary btn-take-break" onClick={() => goHome()}>
+                  I will take a break now
+                </button>
+              </div>
+            )}
+
+            {currentStep === 'stats' && (
+              <div className="fl-step fl-step-stats" data-step="stats">
+                <span className="fl-step-badge">TODAY&apos;S USAGE</span>
+                <h2 className="fl-step-title">Mindful Check</h2>
+                <div className="fl-stats-grid">
+                  <div className="fl-card fl-stat-box">
+                    <span className="fl-stat-lbl">Opened Today</span>
+                    <span className="fl-stat-val txt-stats-opens">{opens} times</span>
+                  </div>
+                  <div className="fl-card fl-stat-box">
+                    <span className="fl-stat-lbl">Time Spent</span>
+                    <span className="fl-stat-val txt-stats-duration">0 min</span>
+                  </div>
+                </div>
+                <div className="fl-card fl-stats-todos">
+                  <span className="fl-card-title">PENDING TASKS</span>
+                  {flState.todos.length > 0 ? (
+                    <div className="fl-todo-list">
+                      {flState.todos.map((t) => (
+                        <div key={t.id} className="fl-todo-row">
+                          <span className="fl-todo-text">{t.text}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="fl-todo-empty">All caught up! No pending tasks.</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  className="ps-btn ps-primary btn-stats-next"
+                  onClick={() => advanceFrictionStep()}
+                >
+                  I Understand, Next
+                </button>
+                <button type="button" className="ps-btn ps-secondary btn-take-break" onClick={() => goHome()}>
+                  I will take a break now
+                </button>
+              </div>
+            )}
+
+            {currentStep === 'math' && (
+              <div className="fl-step fl-step-math" data-step="math">
+                <span className="fl-step-badge">MATH GATE</span>
+                <h2 className="fl-step-title">Verify Intention</h2>
+                <p className="fl-step-desc">Solve the math problem to proceed</p>
+                {frictionMath && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (Number(frictionMathAnswer.trim()) === frictionMath.answer) {
+                        advanceFrictionStep();
+                      } else {
+                        setToast('Incorrect! Try again.');
+                        setFrictionMathAnswer('');
+                        setFrictionMath(generateFrictionMath(flState.friction.mathDifficulty));
+                      }
+                    }}
+                  >
+                    <div className="fl-math-problem txt-math-question">{frictionMath.text}</div>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      className="fl-input fl-math-input"
+                      placeholder="Enter answer"
+                      value={frictionMathAnswer}
+                      onChange={(e) => setFrictionMathAnswer(e.target.value)}
+                    />
+                    <button type="submit" className="ps-btn ps-primary btn-verify-math">
+                      Verify Answer
+                    </button>
+                  </form>
+                )}
+                <button type="button" className="ps-btn ps-secondary btn-take-break" onClick={() => goHome()}>
+                  I will take a break now
+                </button>
+              </div>
+            )}
+
+            {currentStep === 'decision' && (
+              <div className="fl-step fl-step-decision" data-step="decision">
+                <span className="fl-step-badge">DECISION</span>
+                <h2 className="fl-step-title txt-decision-title">Do you still want to proceed?</h2>
+                <p className="fl-step-desc txt-decision-subtitle">Taking a break now will help you focus on your goals.</p>
+                {decisionGranted ? (
+                  <div className="fl-granted-box" role="status">
+                    <p className="fl-granted-text">{GRANTED}</p>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="ps-btn ps-primary btn-close-app-decision"
+                      onClick={() => goHome()}
+                    >
+                      Yes, Close App &amp; Focus (Recommended)
+                    </button>
+                    <button
+                      type="button"
+                      className="ps-btn ps-secondary btn-open-anyway"
+                      onClick={handleOpenAnyway}
+                    >
+                      Open Anyway
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
+          </div>
+
+          {toast && <span className="ps-toast" role="status">{toast}</span>}
+        </div>
+      )}
     </div>
   );
 });
@@ -1377,4 +1845,206 @@ const css = `
 .fl-nav-item:hover, .fl-nav-item.is-active { color: #6366F1; }
 .fl-nav-icon { font-size: 20px; line-height: 1; }
 .fl-nav-label { font-size: 11px; font-weight: 600; letter-spacing: .02em; }
+
+/* ── Friction Sequence ─────────────────────────────────────────────────── */
+.fl-friction-root {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: #0A0E17;
+  color: #F8FAFC;
+  overflow: hidden;
+  z-index: 5;
+}
+.fl-friction-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 24px 36px 40px;
+  overflow-y: auto;
+}
+.fl-step {
+  width: 100%;
+  max-width: 440px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+.fl-step-badge {
+  padding: 4px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  color: #A78BFA;
+  background: #1E293B;
+  border-radius: 999px;
+  border: 1px solid #334155;
+}
+.fl-step-title {
+  font-size: 26px;
+  font-weight: 700;
+  margin: 0;
+  color: #F8FAFC;
+}
+.fl-step-desc {
+  font-size: 14px;
+  color: #94A3B8;
+  margin: 0;
+  line-height: 1.4;
+}
+.fl-circle-breathing {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  margin: 20px auto;
+  animation: fl-breathe-anim var(--breathing-duration, 12s) ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+}
+@keyframes fl-breathe-anim {
+  0% { transform: scale(1); }
+  33.3% { transform: scale(1.6); }
+  66.6% { transform: scale(1.6); }
+  100% { transform: scale(1); }
+}
+.fl-breathe-text {
+  font-size: 22px;
+  font-weight: 600;
+  color: #F8FAFC;
+}
+.fl-breathe-timer {
+  font-size: 16px;
+  color: #94A3B8;
+  font-family: monospace;
+}
+.fl-progress-track {
+  width: 100%;
+  height: 12px;
+  background: #1E293B;
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+.fl-progress-fill {
+  height: 100%;
+  background: #6366F1;
+  border-radius: 6px;
+  transition: width 0.1s linear;
+}
+.fl-delay-sec {
+  font-size: 16px;
+  color: #A78BFA;
+  font-weight: 600;
+}
+.fl-chip-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  margin: 8px 0;
+}
+.fl-chip {
+  background: #1E293B;
+  color: #F8FAFC;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+.fl-chip:hover, .fl-chip.is-selected {
+  background: #2E3856;
+  border-color: #6366F1;
+  color: #A78BFA;
+}
+.fl-shake-hint {
+  font-size: 13px;
+  color: #6366F1;
+  font-weight: 600;
+  margin: 0;
+}
+.fl-shake-box {
+  width: 100%;
+  margin: 16px 0;
+}
+.txt-shake-count {
+  font-size: 16px;
+  font-weight: 600;
+  color: #F8FAFC;
+}
+.fl-phrase-card {
+  background: #1E293B;
+  border: 1px solid #334155;
+  border-radius: 12px;
+  padding: 16px;
+  width: 100%;
+  margin: 8px 0;
+}
+.txt-reflection-phrase {
+  font-size: 16px;
+  font-weight: 600;
+  color: #A78BFA;
+  font-style: italic;
+  margin: 0;
+}
+.fl-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  width: 100%;
+}
+.fl-stat-box {
+  padding: 14px;
+  text-align: center;
+}
+.fl-stat-lbl {
+  display: block;
+  font-size: 12px;
+  color: #94A3B8;
+  margin-bottom: 4px;
+}
+.fl-stat-val {
+  display: block;
+  font-size: 18px;
+  font-weight: 700;
+  color: #6366F1;
+}
+.fl-stats-todos {
+  width: 100%;
+  padding: 14px;
+  text-align: left;
+}
+.fl-math-problem {
+  font-size: 32px;
+  font-weight: 700;
+  color: #6366F1;
+  margin: 16px 0;
+  letter-spacing: 2px;
+}
+.fl-granted-box {
+  background: #064E3B;
+  border: 1px solid #059669;
+  border-radius: 14px;
+  padding: 20px;
+  margin-top: 16px;
+}
+.fl-granted-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #A7F3D0;
+  margin: 0;
+}
+.fl-step form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 `;
