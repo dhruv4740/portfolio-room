@@ -13,7 +13,8 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   const coffee=group('coffee');
   const profile=[[0,-0.07],[0.063,-0.07],[0.074,-0.052],[0.074,0.074],[0.064,0.074],[0.061,-0.052],[0,-0.052]];
   mesh(coffee,new THREE.LatheGeometry(profile.map(p=>new THREE.Vector2(...p)),48),m.bone);
-  const handle=mesh(coffee,new THREE.TorusGeometry(0.044,0.011,12,32),m.bone,[0.077,0.008,0]);
+  // Handle turned toward the sitter's left hand (back-left of the mug is unreachable).
+  const handle=mesh(coffee,new THREE.TorusGeometry(0.044,0.011,12,32),m.bone,[-0.054,0.008,0.054]);handle.rotation.y=Math.PI/4;
   const liquidUniforms={time:{value:0},amplitude:{value:0}};
   const liquidMaterial=new THREE.MeshStandardMaterial({color:'#281307',roughness:0.23,metalness:0});
   liquidMaterial.onBeforeCompile=shader=>{

@@ -280,6 +280,8 @@ function seatedHands() {
     g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
   }
   const hands = [];
+  // Leaning in moves both shoulders (the camera moves with them in WorkspaceStage).
+  const lean = new THREE.Vector3();
   for (const side of [-1, 1]) {
     const hand = new THREE.Group(); root.add(hand);
     hand.position.set(side * 0.27, 1.28, 0.405);
@@ -315,14 +317,16 @@ function seatedHands() {
     };
     hands.push({ hand, fingers, thumb, arm, sleeve, index: side === 1 ? 0 : 3, update() {
       wrist.set(0, 0, 0.095).applyEuler(hand.rotation).add(hand.position);
-      const direction = wrist.clone().sub(shoulder), distance = direction.length(); direction.normalize();
+      const s = shoulder.clone().add(lean);
+      const direction = wrist.clone().sub(s), distance = direction.length(); direction.normalize();
       const pole = new THREE.Vector3(side * 0.25,-1,0.1);pole.addScaledVector(direction,-pole.dot(direction)).normalize();
-      elbow.copy(shoulder).addScaledVector(direction,distance*0.5).addScaledVector(pole,Math.sqrt(Math.max(0,0.40**2-(distance*0.5)**2)));
-      fit(arm, elbow, wrist); fit(sleeve, shoulder, elbow);
+      elbow.copy(s).addScaledVector(direction,distance*0.5).addScaledVector(pole,Math.sqrt(Math.max(0,0.40**2-(distance*0.5)**2)));
+      fit(arm, elbow, wrist); fit(sleeve, s, elbow);
     }});
   }
   function update() { hands.forEach(h => h.update()); }
   function reset() {
+    lean.set(0, 0, 0);
     hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.28, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); h.hand.visible = h.arm.visible = h.sleeve.visible = true; }); update();
   }
   const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82 });
@@ -358,7 +362,7 @@ function seatedHands() {
   }); }
 
   reset();
-  return { root, left: hands[0], right: hands[1], update, reset: rest, grip };
+  return { root, left: hands[0], right: hands[1], lean, update, reset: rest, grip };
 }
 
 export function buildWorkspace(scene, options = {}) {

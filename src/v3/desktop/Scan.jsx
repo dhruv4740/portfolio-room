@@ -119,6 +119,21 @@ export default function Scan() {
     return () => disposeCityAmbience();
   }, []);
 
+  // Wearing the headphones loops the song; taking them off stops it. The event
+  // fires from a click, so playback has a user gesture.
+  useEffect(() => {
+    let song = null;
+    const onHeadphones = (event) => {
+      if (event.detail?.on) {
+        song ||= Object.assign(new Audio('/os/audio/song.mp3'), { loop: true, volume: 0.6 });
+        song.currentTime = 0;
+        song.play().catch(() => {});
+      } else song?.pause();
+    };
+    window.addEventListener('workspace:headphones', onHeadphones);
+    return () => { window.removeEventListener('workspace:headphones', onHeadphones); song?.pause(); song = null; };
+  }, []);
+
   const handleClose = useCallback(() => {
     if (screenPhase !== 'room') return;
     setActiveId(null);

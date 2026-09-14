@@ -324,12 +324,8 @@ await roomPage.waitForTimeout(1500);
 const monitorMarker = roomPage.locator('.anchor-marker[data-object="monitor"]').first();
 await monitorMarker.waitFor({ timeout: 10000 });
 await monitorMarker.focus();
+// The monitor marker enters the screen directly (no panel, no cue).
 await roomPage.keyboard.press('Enter');
-await roomPage.waitForTimeout(500);
-
-const enterCue = roomPage.locator('[data-testid="enter-screen"]');
-await enterCue.waitFor({ timeout: 10000 });
-await enterCue.click();
 
 await roomPage.waitForFunction(
   () => document.querySelector('.scan-root')?.dataset.entranceState === 'inside',

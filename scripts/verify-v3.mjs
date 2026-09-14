@@ -281,18 +281,12 @@ const pinSurface = (page, surface) =>
   if (monitorAvailable) {
     await monitorMarker.focus();
     await page.keyboard.press('Enter');
-    await page.waitForTimeout(500);
     await saveScreenshot(page, { path: `${SHOTS}/v3-scan-anchor.png` });
+    // The monitor marker enters the screen directly: no side panel, no cue.
     const panel = await page.locator('.anchor-panel-root.is-open').count();
-    record('scan: anchor opens a panel', panel > 0, `${panel} dialog(s)`);
+    record('scan: monitor marker opens no panel', panel === 0, `${panel} dialog(s)`);
 
-    const enterCue = page.locator('[data-testid="enter-screen"]');
-    const cueVisible = await enterCue.count();
-    record('scan: monitor exposes screen entry', cueVisible === 1, `${cueVisible} entry control(s)`);
-
-    if (cueVisible === 1) {
-      await enterCue.focus();
-      await page.keyboard.press('Enter');
+    {
 
       // The mesh-click check above already loaded and readied the OS iframe,
       // so this cue click takes the WARM path: Scan.jsx reads osReady=true and
@@ -362,14 +356,6 @@ const pinSurface = (page, surface) =>
         // Re-enter through the same keyboard path and verify the decoded card
         // survived the round trip.
         await monitorMarker.focus();
-        await page.keyboard.press('Enter');
-        // The room resumes its render loop during the return flight. Wait for
-        // React to commit the reopened panel before looking for its cue; the
-        // first entry has a 500 ms settle above, but this path follows a
-        // heavier iframe round trip and can take longer on software Chromium.
-        await page.locator('.anchor-panel-root.is-open').waitFor({ timeout: 10_000 });
-        await page.locator('[data-testid="enter-screen"]').waitFor({ timeout: 10_000 });
-        await page.locator('[data-testid="enter-screen"]').focus();
         await page.keyboard.press('Enter');
         const reentered = await page
           .waitForFunction(

@@ -225,12 +225,47 @@ export default function WorkspaceStage({
         else callbacks.current.onStats?.({ frameMs: null, cpuMs: null, gpuMs: null, cameraPos: camera.position.toArray() });
       }
       function markPhone(beat) { host.dataset.phoneState = beat; }
-      function followPhone() {
-        const holding = model.hands.left;
-        holding.hand.position.set(-0.035, -0.061, 0.025).applyEuler(model.phone.rotation).add(model.phone.position);
-        holding.hand.rotation.copy(model.phone.rotation);
-        holding.thumb.scale.set(0.65, 0.8, 0.8);
+      // Grips are authored in each object's own frame, so a hand stays on the
+      // handle or edge however the object turns. Desk props sit beyond arm's
+      // length from an upright seat, so reaching leans the body in (camera and
+      // shoulders together) instead of stretching the arm.
+      const SEAT = new THREE.Vector3(...WORKSPACE.seat.position), look = new THREE.Vector3();
+      const REST = [-0.27, 0.27].map(x => ({ p: new THREE.Vector3(x, 1.28, 0.405), q: new THREE.Quaternion() }));
+      const restOf = h => REST[h === model.hands.left ? 0 : 1];
+      const poseA = { p: new THREE.Vector3(), q: new THREE.Quaternion() }, poseB = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
+      function gripPose(g, out) {
+        if (g.q) { out.p.copy(g.p); out.q.copy(g.q); return out; }
+        g.obj.updateMatrix();
+        out.p.set(...g.p).applyMatrix4(g.obj.matrix);
+        out.q.setFromEuler(new THREE.Euler(...g.r)).premultiply(g.obj.quaternion);
+        return out;
       }
+      // `via` routes the hand around an edge instead of through the object.
+      function hold(h, a, b = a, w = 0, via = null) {
+        if (via) { if (w < 0.5) { b = via; w *= 2; } else { a = via; w = (w - 0.5) * 2; } }
+        gripPose(a, poseA); gripPose(b, poseB);
+        h.hand.position.lerpVectors(poseA.p, poseB.p, w);
+        h.hand.quaternion.slerpQuaternions(poseA.q, poseB.q, w);
+      }
+      const snapshot = h => ({ p: h.hand.position.clone(), q: h.hand.quaternion.clone() });
+      function startLean() {
+        rig.dispose(); look.copy(controls.target);
+        model.hands.lean.copy(camera.position).sub(SEAT); if (model.hands.lean.length() > 0.7) model.hands.lean.set(0, 0, 0);
+      }
+      function leanCamera() {
+        camera.position.copy(SEAT).add(model.hands.lean); camera.lookAt(look); controls.target.copy(look);
+        camera.fov = 56; camera.updateProjectionMatrix();
+      }
+      const SEAT_LOOK = { x: WORKSPACE.seat.target[0], y: WORKSPACE.seat.target[1], z: WORKSPACE.seat.target[2] };
+      const ZERO = { x: 0, y: 0, z: 0 };
+      // Phone: palm down on the glass, thumb on the edge, then the hand rolls
+      // under to hold it from behind while the screen turns to face you.
+      const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.07], r: [0, 0, 0] };
+      const PHONE_SIDE = { obj: model.phone, p: [-0.10, -0.005, 0.05], r: [0, 0, Math.PI / 2] };
+      const PHONE_BACK = { obj: model.phone, p: [0, -0.045, 0.045], r: [0, 0, Math.PI * 0.999] };
+      const PHONE_LEAN = { x: -0.28, y: -0.08, z: -0.42 };
+      let phoneGrip = 1;
+      function followPhone() { hold(model.hands.left, PHONE_TOP, PHONE_BACK, phoneGrip, PHONE_SIDE); }
       // PhoneScreen drives these. The texture under the DOM screen follows it,
       // so pulling back out of the zoom never pops to a different screen.
       function showFocusLock() {
@@ -262,30 +297,32 @@ export default function WorkspaceStage({
       }
       function animatePhone(reduced) {
         action?.kill(); phoneInHand = true;
-        model.resetPhone(); model.hands.reset(); model.hands.grip(model.hands.left); model.hands.grip(model.hands.right, true); model.setHandsVisible(true);
-        const holding = model.hands.left.hand;
-        rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, {
-          reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
-        });
-        const held = new THREE.Vector3(0.08, 1.53, 0.59);
-        let gripping = false;
-        const update = () => { if (gripping) followPhone(); model.hands.update(); invalidate(); };
+        model.resetPhone(); model.hands.reset(); model.hands.grip(model.hands.right, true); model.setHandsVisible(true);
+        const left = model.hands.left, held = new THREE.Vector3(0.08, 1.53, 0.59);
         if (reduced) {
-          model.phone.position.copy(held); model.phone.rotation.x = 1.15;
-          followPhone();
-
-          model.hands.update(); zoomPhone(true); return;
+          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, { reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); } });
+          model.phone.position.copy(held); model.phone.rotation.x = 1.15; phoneGrip = 1;
+          followPhone(); model.hands.update(); zoomPhone(true); return;
         }
-        action = gsap.timeline({ onUpdate: update, onComplete() { zoomPhone(false); } });
+        startLean();
+        const [px, py, pz] = WORKSPACE.anchors.phone, from = snapshot(left), k = { reach: 0, grip: 0 };
+        phoneGrip = 0;
+        action = gsap.timeline({
+          onUpdate() { if (k.reach < 1) hold(left, from, PHONE_TOP, k.reach); else { phoneGrip = k.grip; followPhone(); } model.hands.update(); leanCamera(); invalidate(); },
+          onComplete() { zoomPhone(false); },
+        });
         markPhone('reaching');
-        action.to(holding.position, { x: -0.55, y: 1.44, z: 0.25, duration: 0.4, ease: 'power2.inOut' }, 0)
-          .to(holding.position, { x: -0.90, y: 1.23, z: -0.005, duration: 0.4, ease: 'power2.inOut' }, 0.4)
-          .call(() => { gripping = true; markPhone('lifting'); }, [], 0.8)
-          .to(model.phone.position, { y:1.58,duration:0.35,ease:'power2.out' },0.8)
-          .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 0.85, ease: 'power2.inOut' }, 1.15)
-          .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 1.15)
-          .call(() => markPhone('home'), [], 2.0);
-
+        action.to(model.hands.lean, { ...PHONE_LEAN, duration: 0.7, ease: 'power2.inOut' }, 0)
+          .to(look, { x: px, y: py, z: pz + 0.15, duration: 0.7, ease: 'power2.inOut' }, 0)
+          .to(k, { reach: 1, duration: 0.7, ease: 'power2.inOut' }, 0)
+          .call(() => markPhone('lifting'), [], 0.7)
+          .to(model.phone.position, { y: py + 0.12, duration: 0.35, ease: 'power2.out' }, 0.7)
+          .to(model.hands.lean, { ...ZERO, duration: 0.85, ease: 'power2.inOut' }, 1.05)
+          .to(look, { x: 0.08, y: 1.51, z: 0.58, duration: 0.85, ease: 'power2.inOut' }, 1.05)
+          .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 0.85, ease: 'power2.inOut' }, 1.05)
+          .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 1.05)
+          .to(k, { grip: 1, duration: 0.85, ease: 'power2.inOut' }, 1.05)
+          .call(() => markPhone('home'), [], 1.9);
         gsap.ticker.wake();
       }
       function returnPhone(reduced) {
@@ -306,50 +343,89 @@ export default function WorkspaceStage({
           return;
         }
         if (reduced) { finish(); return; }
-        if (model.phone.position.distanceTo(new THREE.Vector3(...WORKSPACE.anchors.phone)) < 0.002) {
-          action = gsap.to(model.hands.left.hand.position, { x: -0.27, y: 1.28, z: 0.405, duration: 0.5,
-            onUpdate() { model.hands.update(); invalidate(); }, onComplete: finish });
-          gsap.ticker.wake(); return;
-        }
-        action = gsap.timeline({onUpdate(){followPhone();model.hands.update();invalidate();},onComplete:finish});
-        action.to(model.phone.position,{y:1.60,duration:0.25,ease:'power2.out'},0)
-          .to(model.phone.position,{x:WORKSPACE.anchors.phone[0],z:WORKSPACE.anchors.phone[2],duration:0.60,ease:'power2.inOut'},0.25)
-          .to(model.phone.rotation,{x:0,y:0,z:0,duration:0.55},0.25)
-          .to(model.phone.position,{y:WORKSPACE.anchors.phone[1],duration:0.4,ease:'power2.inOut'},0.85);
+        const left = model.hands.left, [px, py, pz] = WORKSPACE.anchors.phone, k = { grip: phoneGrip, release: 0 };
+        const atDesk = model.phone.position.distanceTo(new THREE.Vector3(px, py, pz)) < 0.002;
+        let from = snapshot(left);
+        startLean();
+        action = gsap.timeline({ onUpdate() {
+          if (k.release > 0) hold(left, from, restOf(left), k.release); else { phoneGrip = k.grip; followPhone(); }
+          model.hands.update(); leanCamera(); invalidate();
+        }, onComplete: finish });
+        if (!atDesk) action.to(model.hands.lean, { ...PHONE_LEAN, duration: 0.8, ease: 'power2.inOut' }, 0)
+          .to(look, { x: px, y: py, z: pz + 0.15, duration: 0.8, ease: 'power2.inOut' }, 0)
+          .to(model.phone.position, { x: px, y: py + 0.12, z: pz, duration: 0.8, ease: 'power2.inOut' }, 0)
+          .to(model.phone.rotation, { x: 0, y: 0, z: 0, duration: 0.8, ease: 'power2.inOut' }, 0)
+          .to(k, { grip: 0, duration: 0.8, ease: 'power2.inOut' }, 0)
+          .to(model.phone.position, { y: py, duration: 0.3, ease: 'power2.inOut' }, 0.8);
+        const t = atDesk ? 0 : 1.1;
+        action.call(() => { from = snapshot(left); }, [], t)
+          .to(k, { release: 1, duration: 0.5, ease: 'power2.inOut' }, t)
+          .to(model.hands.lean, { ...ZERO, duration: 0.5, ease: 'power2.inOut' }, t)
+          .to(look, { ...SEAT_LOOK, duration: 0.5, ease: 'power2.inOut' }, t);
         gsap.ticker.wake();
       }
+      // Notebook: the right hand takes the near corner from above; once lifted
+      // both hands hold the side edges, fingers behind the cover.
+      const NB_PICK = { obj: model.notebook, p: [0.17, 0.035, 0.2], r: [0, 0, 0] };
+      const NB_SIDE = { obj: model.notebook, p: [0.29, -0.01, 0.12], r: [0, 0, -Math.PI / 2] };
+      const NB_RIGHT = { obj: model.notebook, p: [0.25, -0.06, 0.18], r: [0, Math.PI / 2, Math.PI] };
+      const NB_LEFT = { obj: model.notebook, p: [-0.25, -0.06, 0.18], r: [0, -Math.PI / 2, Math.PI] };
+      const NB_LEAN = { x: 0.45, y: -0.06, z: -0.2 };
+      const nb = { right: 1, left: 1 };
       function followNotebook() {
-        const h = model.hands.right;
-        h.hand.position.set(0.12,-0.075,0.15).applyEuler(model.notebook.rotation).add(model.notebook.position);
-        h.hand.rotation.copy(model.notebook.rotation); model.hands.update();
+        hold(model.hands.right, NB_PICK, NB_RIGHT, nb.right, NB_SIDE);
+        hold(model.hands.left, restOf(model.hands.left), NB_LEFT, nb.left);
+        model.hands.update();
       }
       function animateNotebook(reduced) {
-        action?.kill(); notebookInHand = true; model.resetNotebook(); model.hands.reset();
-        model.hands.grip(model.hands.right); model.setHandsVisible(true);
-
+        action?.kill(); notebookInHand = true; model.resetNotebook(); model.hands.reset(); model.setHandsVisible(true);
         const held = { x:0.05,y:1.60,z:0.61 };
-        rig.flyTo({position:WORKSPACE.seat.position,target:[0.05,1.60,0.61]}, {
-          reduced,duration:0.8,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}
-        });
-        const finish=()=>{host.dataset.notebookState='reading';followNotebook();invalidate();};
-        if(reduced){ model.notebook.position.set(held.x,held.y,held.z);model.notebook.rotation.x=1.39;finish();return; }
-        host.dataset.notebookState='lifting';
-        action=gsap.timeline({onUpdate(){followNotebook();invalidate();},onComplete:finish});
-        action.to(model.notebook.position,{y:1.72,duration:0.40,ease:'power2.out'},0)
-          .to(model.notebook.position,{...held,duration:0.85,ease:'power2.inOut'},0.40)
-          .to(model.notebook.rotation,{x:1.39,duration:0.85,ease:'power2.inOut'},0.40);
+        const finish=()=>{host.dataset.notebookState='reading';nb.right=nb.left=1;followNotebook();invalidate();};
+        if(reduced){
+          rig.flyTo({position:WORKSPACE.seat.position,target:[0.05,1.60,0.61]},{reduced,duration:0.8,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+          model.notebook.position.set(held.x,held.y,held.z);model.notebook.rotation.x=1.39;finish();return;
+        }
+        startLean(); host.dataset.notebookState='lifting';
+        const right=model.hands.right,from=snapshot(right),k={reach:0},[nx,ny,nz]=WORKSPACE.anchors.notebook;
+        nb.right=0; nb.left=0;
+        action=gsap.timeline({onUpdate(){
+          if(k.reach<1){hold(right,from,NB_PICK,k.reach);model.hands.update();}else followNotebook();
+          leanCamera();invalidate();
+        },onComplete:finish});
+        action.to(model.hands.lean,{...NB_LEAN,duration:0.65,ease:'power2.inOut'},0)
+          .to(look,{x:nx+0.1,y:ny,z:nz+0.1,duration:0.65,ease:'power2.inOut'},0)
+          .to(k,{reach:1,duration:0.65,ease:'power2.inOut'},0)
+          .to(model.notebook.position,{y:ny+0.14,duration:0.35,ease:'power2.out'},0.65)
+          .to(model.hands.lean,{...ZERO,duration:0.85,ease:'power2.inOut'},1.0)
+          .to(look,{...held,duration:0.85,ease:'power2.inOut'},1.0)
+          .to(model.notebook.position,{...held,duration:0.85,ease:'power2.inOut'},1.0)
+          .to(model.notebook.rotation,{x:1.39,duration:0.85,ease:'power2.inOut'},1.0)
+          .to(nb,{right:1,duration:0.85,ease:'power2.inOut'},1.0)
+          .to(nb,{left:1,duration:0.6,ease:'power2.inOut'},1.25);
         gsap.ticker.wake();
       }
       function returnNotebook(reduced) {
         action?.kill();rig.dispose();returningNotebook=true;host.dataset.notebookState='returning';
         const finish=()=>{notebookInHand=false;returningNotebook=false;model.resetNotebook();model.hands.reset();host.dataset.notebookState='desk';fly();invalidate();};
         if(reduced){finish();return;}
-        const [x,y,z]=WORKSPACE.anchors.notebook;
-        action=gsap.timeline({onUpdate(){followNotebook();invalidate();},onComplete:finish});
-        action.to(model.notebook.position,{y:1.75,duration:0.25},0)
-          .to(model.notebook.position,{x,z,duration:0.6,ease:'power2.inOut'},0.25)
-          .to(model.notebook.rotation,{x:0,y:0,z:0,duration:0.55},0.25)
-          .to(model.notebook.position,{y,duration:0.4,ease:'power2.inOut'},0.85);
+        const [x,y,z]=WORKSPACE.anchors.notebook,right=model.hands.right,k={release:0};
+        let from=snapshot(right);
+        startLean();
+        action=gsap.timeline({onUpdate(){
+          if(k.release>0){hold(right,from,restOf(right),k.release);hold(model.hands.left,restOf(model.hands.left));model.hands.update();}else followNotebook();
+          leanCamera();invalidate();
+        },onComplete:finish});
+        action.to(nb,{left:0,duration:0.45,ease:'power2.inOut'},0)
+          .to(model.notebook.position,{x,y:y+0.14,z,duration:0.8,ease:'power2.inOut'},0)
+          .to(model.notebook.rotation,{x:0,y:0,z:0,duration:0.8,ease:'power2.inOut'},0)
+          .to(nb,{right:0,duration:0.8,ease:'power2.inOut'},0)
+          .to(model.hands.lean,{...NB_LEAN,duration:0.8,ease:'power2.inOut'},0)
+          .to(look,{x:x+0.1,y,z:z+0.1,duration:0.8,ease:'power2.inOut'},0)
+          .to(model.notebook.position,{y,duration:0.3,ease:'power2.inOut'},0.8)
+          .call(()=>{from=snapshot(right);},[],1.1)
+          .to(k,{release:1,duration:0.5,ease:'power2.inOut'},1.1)
+          .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},1.1)
+          .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},1.1);
         gsap.ticker.wake();
       }
       function pressKey(key,index) {
@@ -371,7 +447,7 @@ export default function WorkspaceStage({
       }
       function roomAction(id,reduced) {
         const r=model.roomActions,o=r.objects[id],h=model.hands[id==='coffee'||id==='lamp'?'left':'right'];
-        action?.kill();model.hands.reset();model.setHandsVisible(true);model.hands.grip(h,id==='lamp');extraHeld=id;host.dataset.actionState=id;
+        action?.kill();model.hands.reset();model.setHandsVisible(true);if(!['headphones','award'].includes(id))model.hands.grip(h,id==='lamp');extraHeld=id;host.dataset.actionState=id;
         controls.enabled=false;
         const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);host.dataset.drawerOpen=String(r.state.drawer);host.dataset.windowOpen=String(r.state.windowOpen);model.hands.update();invalidate();};
         const follow=()=>{h.hand.position.copy(o.position).add(new THREE.Vector3(id==='coffee'?-0.085:0.12,-0.075,id==='award'?-0.075:id==='coffee'?-0.09:0.055));h.hand.rotation.copy(o.rotation);if(id==='coffee')h.hand.rotation.x+=1.15;update();};
@@ -409,37 +485,96 @@ export default function WorkspaceStage({
           gsap.ticker.wake();return;
         }
         if(id==='award') {
-          rig.flyTo({position:WORKSPACE.seat.position,target:[0.05,1.60,0.59]},{reduced,duration:0.7,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
-          if(reduced){o.position.set(0.05,1.60,0.59);follow();host.dataset.actionState='award-reading';return;}
-          action=gsap.timeline({onUpdate:follow,onComplete(){host.dataset.actionState='award-reading';invalidate();}});
-          action.to(o.position,{y:2.20,z:-1.0,duration:0.35}).to(o.position,{x:0.05,y:1.60,z:0.59,duration:0.9,ease:'power2.inOut'});gsap.ticker.wake();return;
+          // The awards hang on the far wall, out of reach from the chair: the
+          // camera turns and narrows to read them, the hands stay on the desk.
+          const reading=()=>{host.dataset.actionState='award-reading';invalidate();};
+          rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.8,onUpdate(){camera.updateProjectionMatrix();invalidate();}});
+          if(reduced){camera.fov=24;camera.updateProjectionMatrix();reading();return;}
+          action=gsap.to(camera,{fov:24,duration:0.8,ease:'power2.inOut',onUpdate(){camera.updateProjectionMatrix();invalidate();},onComplete:reading});
+          gsap.ticker.wake();return;
         }
         if(id==='headphones') {
           const wear=!r.state.headphones; r.state.headphones=Number(wear);host.dataset.headphonesOn=String(wear);
-          window.dispatchEvent(new CustomEvent('workspace:headphones',{detail:{on:wear}}));o.visible=true;o.rotation.x=wear?Math.PI/2:0;
-          const target=wear?new THREE.Vector3(0.05,1.76,1.16):r.homes.headphones;
-          if(reduced){o.position.copy(target);o.visible=!wear;end();return;}
-          action=gsap.timeline({onUpdate:follow,onComplete(){o.visible=!wear;end();}});
-          action.to(o.position,{y:1.6,duration:0.4}).to(o.position,{x:target.x,y:target.y,z:target.z,duration:0.65,ease:'power2.inOut'});gsap.ticker.wake();return;
+          window.dispatchEvent(new CustomEvent('workspace:headphones',{detail:{on:wear}}));
+          const home=r.homes.headphones,HEAD=SEAT;
+          if(reduced){o.position.copy(wear?HEAD:home);o.rotation.x=wear?Math.PI/2:0;o.visible=!wear;end();return;}
+          // Both hands take the ear cups, palms in, and carry them up past the camera.
+          const L=model.hands.left,R=model.hands.right,k={w:0};
+          const CUP_L={obj:o,p:[-0.16,0.02,0.06],r:[0,0,Math.PI/2]},CUP_R={obj:o,p:[0.16,0.02,0.06],r:[0,0,-Math.PI/2]};
+          const LEAN={x:0.35,y:-0.08,z:-0.5},HOME_LOOK={x:home.x,y:home.y,z:home.z+0.1};
+          let fromL=snapshot(L),fromR=snapshot(R),releasing=false;
+          const release=()=>{releasing=true;fromL=snapshot(L);fromR=snapshot(R);k.w=0;};
+          startLean();
+          action=gsap.timeline({onUpdate(){
+            if(releasing){hold(L,fromL,restOf(L),k.w);hold(R,fromR,restOf(R),k.w);}else{hold(L,fromL,CUP_L,k.w);hold(R,fromR,CUP_R,k.w);}
+            update();leanCamera();
+          },onComplete(){o.visible=!wear;end();}});
+          if(wear){
+            o.visible=true;
+            action.to(model.hands.lean,{...LEAN,duration:0.7,ease:'power2.inOut'},0)
+              .to(look,{...HOME_LOOK,duration:0.7,ease:'power2.inOut'},0)
+              .to(k,{w:1,duration:0.7,ease:'power2.inOut'},0)
+              .to(o.position,{y:home.y+0.15,duration:0.35,ease:'power2.out'},0.7)
+              .to(model.hands.lean,{...ZERO,duration:0.8,ease:'power2.inOut'},1.05)
+              .to(look,{...SEAT_LOOK,duration:0.8,ease:'power2.inOut'},1.05)
+              .to(o.position,{x:HEAD.x,y:HEAD.y,z:HEAD.z,duration:0.8,ease:'power2.inOut'},1.05)
+              .to(o.rotation,{x:Math.PI/2,duration:0.8,ease:'power2.inOut'},1.05)
+              .call(()=>{o.visible=false;release();},[],1.85)
+              .to(k,{w:1,duration:0.5,ease:'power2.inOut'},1.85);
+          } else {
+            o.visible=false;o.position.copy(HEAD);o.rotation.x=Math.PI/2;
+            action.to(k,{w:1,duration:0.45,ease:'power2.inOut'},0)
+              .to(model.hands.lean,{...LEAN,duration:0.8,ease:'power2.inOut'},0.45)
+              .to(look,{...HOME_LOOK,duration:0.8,ease:'power2.inOut'},0.45)
+              .to(o.position,{x:home.x,y:home.y+0.15,z:home.z,duration:0.8,ease:'power2.inOut'},0.45)
+              .to(o.rotation,{x:0,duration:0.8,ease:'power2.inOut'},0.45)
+              .call(()=>{o.visible=true;},[],0.65)
+              .to(o.position,{y:home.y,duration:0.3,ease:'power2.inOut'},1.25)
+              .call(release,[],1.55)
+              .to(k,{w:1,duration:0.5,ease:'power2.inOut'},1.55)
+              .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},1.55)
+              .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},1.55);
+          }
+          gsap.ticker.wake();return;
         }
         if(id==='coffee') {
-          const level=Math.max(0,r.state.coffeeLevel-0.25),clock={t:0,energy:1};
-          const finish=()=>{r.state.coffeeLevel=level;o.position.copy(r.homes.coffee);o.rotation.set(0,0,0);r.updateLiquid(0,0);host.dataset.coffeeLevel=String(level);end();};
+          const level=Math.max(0,r.state.coffeeLevel-0.25),clock={t:0,energy:1},home=r.homes.coffee;
+          const finish=()=>{r.state.coffeeLevel=level;o.position.copy(home);o.rotation.set(0,0,0);r.updateLiquid(0,0);host.dataset.coffeeLevel=String(level);end();};
           if(reduced){finish();return;}
-          action=gsap.timeline({onUpdate(){r.updateLiquid(clock.t,clock.energy);follow();},onComplete:finish});
-          action.to(o.position,{y:1.55,duration:0.45,ease:'power2.out'},0)
-            .to(o.position,{x:-0.10,y:1.52,z:0.78,duration:0.65,ease:'power2.inOut'},0.45)
-            .to(o.rotation,{x:0.35,duration:0.55},1.1).to(r.state,{coffeeLevel:level,duration:0.5},1.2)
-            .to(o.rotation,{x:0,duration:0.4},1.8)
-            .to(o.position,{x:r.homes.coffee.x,y:1.55,z:r.homes.coffee.z,duration:0.6},2.2)
-            .to(o.position,{y:r.homes.coffee.y,duration:0.45},2.8)
-            .to(clock,{t:3.25,duration:3.25,ease:'none'},0).to(clock,{energy:0,duration:0.75},2.5);
+          // Left hand: fingers through the handle, thumb on top, palm toward the mug.
+          const left=model.hands.left,MUG={obj:o,p:[-0.033,0.012,0.125],r:[0,Math.PI/4,Math.PI/2]};
+          const LEAN={x:-0.2,y:-0.05,z:-0.2},HOME_LOOK={x:home.x,y:home.y,z:home.z},k={reach:0,release:0};
+          let from=snapshot(left);
+          startLean();
+          action=gsap.timeline({onUpdate(){
+            r.updateLiquid(clock.t,clock.energy);
+            if(k.release>0)hold(left,from,restOf(left),k.release);else hold(left,from,MUG,k.reach);
+            update();leanCamera();
+          },onComplete:finish});
+          action.to(model.hands.lean,{...LEAN,duration:0.6,ease:'power2.inOut'},0)
+            .to(look,{...HOME_LOOK,duration:0.6,ease:'power2.inOut'},0)
+            .to(k,{reach:1,duration:0.6,ease:'power2.inOut'},0)
+            .to(o.position,{y:home.y+0.1,duration:0.35,ease:'power2.out'},0.6)
+            .to(model.hands.lean,{...ZERO,duration:0.7,ease:'power2.inOut'},0.95)
+            .to(look,{x:-0.08,y:1.50,z:0.6,duration:0.7,ease:'power2.inOut'},0.95)
+            .to(o.position,{x:-0.10,y:1.52,z:0.78,duration:0.7,ease:'power2.inOut'},0.95)
+            .to(o.rotation,{x:0.35,duration:0.55},1.65).to(r.state,{coffeeLevel:level,duration:0.5},1.75)
+            .to(o.rotation,{x:0,duration:0.4},2.3)
+            .to(model.hands.lean,{...LEAN,duration:0.65,ease:'power2.inOut'},2.7)
+            .to(look,{...HOME_LOOK,duration:0.65,ease:'power2.inOut'},2.7)
+            .to(o.position,{x:home.x,y:home.y+0.1,z:home.z,duration:0.65,ease:'power2.inOut'},2.7)
+            .to(o.position,{y:home.y,duration:0.35,ease:'power2.inOut'},3.35)
+            .call(()=>{from=snapshot(left);},[],3.7)
+            .to(k,{release:1,duration:0.5,ease:'power2.inOut'},3.7)
+            .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},3.7)
+            .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},3.7)
+            .to(clock,{t:4.2,duration:4.2,ease:'none'},0).to(clock,{energy:0,duration:0.75},3.2);
           gsap.ticker.wake();return;
         }
       }
       function returnExtra(reduced) {
         const id=extraHeld,r=model.roomActions,o=r.objects[id];action?.kill();rig.dispose();
-        if(id==='windowOpen'){finishExtra(id);return;}
+        if(id==='windowOpen'||id==='award'){finishExtra(id);return;}
         if(id!=='award'){o.position.copy(r.homes[id]);o.rotation.set(0,0,0);r.updateLiquid(0,0);finishExtra(id);return;}
         const finish=()=>{o.position.copy(r.homes[id]);finishExtra(id);};
         if(reduced){finish();return;}
@@ -616,7 +751,7 @@ export default function WorkspaceStage({
         if (id === 'chair') { callbacks.current.onSit?.(); return; }
         const marker = markerRefs.current.get(id); marker?.focus();
         if (id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
-        else callbacks.current.onAnchorSelect?.(id);
+        else callbacks.current.onAnchorSelect?.(id === 'window' ? 'windowOpen' : id);
       }
       renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','Room keyboard — type while focused');
       renderer.domElement.addEventListener('keydown', physicalKey);
@@ -704,7 +839,13 @@ export default function WorkspaceStage({
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
-          onClick={() => seated && callbacks.current.onAnchorSelect?.(anchor.id)}>
+          onClick={() => {
+            if (!seated) return;
+            // The monitor goes straight in; the window only opens/closes (contact
+            // info lives on the CONTACT button).
+            if (anchor.id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
+            else callbacks.current.onAnchorSelect?.(anchor.id === 'window' ? 'windowOpen' : anchor.id);
+          }}>
           <span className="workspace-marker-dot" aria-hidden="true" />
           <span className="workspace-marker-label"><small>0{index + 1}</small>{anchor.label}<span aria-hidden="true">↗</span></span>
         </button>
