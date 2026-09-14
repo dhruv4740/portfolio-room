@@ -635,6 +635,36 @@ export default function WorkspaceStage({
         }
       }
       api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome, setSky: (s) => model.setSky(s) };
+      if (typeof localStorage !== 'undefined' && localStorage.getItem('v3:test') === '1') {
+        const box3 = new THREE.Box3();
+        const boxToPlain = (b) => ({ min: b.min.toArray(), max: b.max.toArray() });
+        window.__v3test = {
+          projectAnchor(id) {
+            const point = id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id];
+            if (!point) return null;
+            const rect = host.getBoundingClientRect();
+            projected.set(...point).project(camera);
+            return { x: (projected.x * 0.5 + 0.5) * rect.width, y: (-projected.y * 0.5 + 0.5) * rect.height };
+          },
+          boxOf(name) {
+            if (name === 'monitorScreen' || name === 'monitorBezel' || name === 'desk') return boxToPlain(model.staticBoxes[name]);
+            if (name === 'phone') return boxToPlain(box3.setFromObject(model.phone));
+            if (name === 'coffeeMug') return boxToPlain(box3.setFromObject(model.roomActions.objects.coffee));
+            if (name === 'handL') return boxToPlain(box3.setFromObject(model.hands.left.hand));
+            if (name === 'handR') return boxToPlain(box3.setFromObject(model.hands.right.hand));
+            if (name === 'armL') return boxToPlain(box3.setFromObject(model.hands.left.arm));
+            if (name === 'armR') return boxToPlain(box3.setFromObject(model.hands.right.arm));
+            if (name === 'held') {
+              const held = extraHeld ? model.roomActions.objects[extraHeld]
+                : notebookInHand ? model.notebook
+                : phoneInHand ? model.phone : null;
+              return held ? boxToPlain(box3.setFromObject(held)) : null;
+            }
+            return null;
+          },
+          timeline() { return action || null; },
+        };
+      }
       refresh();
       return () => {
         disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); windowSway?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();

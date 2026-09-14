@@ -477,7 +477,8 @@ export function buildWorkspace(scene, options = {}) {
   box('Window sill', [1.7, 0.065, 0.32], [1.39, 0.99, -1.54], bone, 0.012);
 
   // Desk: solid oak, a thin edge, and a black steel trestle.
-  box('Oak desktop', [3.52, 0.12, 1.45], [0, 1.105, -0.04], wood, 0.028, 'desk');
+  const oakDesktop = box('Oak desktop', [3.52, 0.12, 1.45], [0, 1.105, -0.04], wood, 0.028, 'desk');
+  const deskBox = new THREE.Box3().setFromObject(oakDesktop);
   box('Desk edge inlay', [3.42, 0.012, 0.012], [0, 1.071, 0.687], dark);
   for (const x of [-1.46, 1.46]) {
     for (const z of [-0.54, 0.49]) box('Steel desk leg', [0.052, 1.0, 0.052], [x, 0.565, z], dark, 0.008);
@@ -489,10 +490,15 @@ export function buildWorkspace(scene, options = {}) {
   // Real screen geometry gives the entrance a destination and a known plane.
   box('Monitor foot', [0.5, 0.035, 0.29], [0, 1.18, -0.35], steel, 0.02, 'monitor');
   box('Monitor stand', [0.08, 0.31, 0.06], [0, 1.34, -0.43], steel, 0.014, 'monitor');
-  box('Monitor enclosure', [1.4, 0.93, 0.085], [0, 1.79, -0.418], dark, 0.04, 'monitor');
+  const monitorEnclosure = box('Monitor enclosure', [1.4, 0.93, 0.085], [0, 1.79, -0.418], dark, 0.04, 'monitor');
   const displayMaterial = new THREE.MeshBasicMaterial({ map: screenTexture(), toneMapped: false });
   const display = new THREE.Mesh(new THREE.PlaneGeometry(WORKSPACE.screen.width, WORKSPACE.screen.height), displayMaterial);
   display.name = 'Interactive monitor screen'; display.position.set(...WORKSPACE.screen.center); root.add(display); tag(display, 'monitor');
+  // Static architecture never moves after this point, so a Box3 captured now
+  // (before the batching pass below disposes these individual meshes) stays
+  // valid for the lifetime of the scene — used by the test hook's boxOf().
+  const monitorScreenBox = new THREE.Box3().setFromObject(display);
+  const monitorBezelBox = new THREE.Box3().setFromObject(monitorEnclosure);
   box('Monitor chin', [1.29, 0.035, 0.018], [0, 1.35, -0.362], dark, 0.006, 'monitor');
   const led = new THREE.Mesh(new THREE.SphereGeometry(0.004, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5f1f' }));
   led.position.set(0.58, 1.35, -0.345); root.add(led);
@@ -800,6 +806,7 @@ export function buildWorkspace(scene, options = {}) {
   return {
     root, interactive,
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
+    staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
     resetNotebook() { notebook.position.set(...WORKSPACE.anchors.notebook); notebook.rotation.set(0, 0, 0); },
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },

@@ -5,16 +5,31 @@ await page.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan')
 const state=()=>page.locator('.workspace-stage').evaluate(e=>({...e.dataset}));
 const click=async name=>{await page.getByRole('button',{name,exact:true}).click();await page.waitForTimeout(100);};
 async function idle(label){await page.waitForFunction(()=>performance.now()-last>700,null,{polling:100});const a=await page.evaluate(()=>count);await page.waitForTimeout(1500);assert.equal(await page.evaluate(()=>count),a,label);console.log('PASS idle',label);}
-await page.goto(process.env.BASE||'http://127.0.0.1:4174');await page.locator('[data-object="chair"]').click();
+await page.goto((process.env.BASE||'http://127.0.0.1:4174')+'/?sky=night');await page.locator('[data-object="chair"]').click();
 await click('LAMP');assert.equal((await state()).lampOn,'0');await idle('lamp off');await page.screenshot({path:'scripts/shots/seven-lamp-off.png'});await click('LAMP');assert.equal((await state()).lampOn,'1');await page.screenshot({path:'scripts/shots/seven-lamp-on.png'});
 await click('DRAWER');assert.equal((await state()).drawerOpen,'1');await idle('drawer open');await page.keyboard.press('Escape');
 await click('BLINDS');assert.equal((await state()).blindsOpen,'1');await idle('blinds open');await click('BLINDS');assert.equal((await state()).blindsOpen,'0');
 
 // Window visibility: opening must produce a measurable change in the window
-// region of the seated frame, not just a state flag flip.
+// region of the seated frame, not just a state flag flip. Markers/labels are
+// hidden via an injected !important stylesheet rule (an inline style would be
+// overwritten by updateMarkers() on the next render frame).
+// .anchor-marker's visibility is reassigned every render frame by
+// updateMarkers() via a plain (non-important) inline style, so only a
+// stylesheet !important rule survives across frames; .seat-exit is a static
+// React panel untouched by the render loop, so a direct toggle is enough —
+// but it must be shown again before the next WINDOW click or the button is
+// unclickable.
+await page.addStyleTag({ content: '.v3-hide-overlay .anchor-marker{visibility:hidden!important}' });
+// A style/layout recalc lag was observed: getComputedStyle can still report
+// the pre-change value for one frame after the assignment, so a short wait
+// is required before the screenshot actually reflects the hidden state.
+async function hideSeatExit(onPage) { await onPage.evaluate(() => { document.documentElement.classList.add('v3-hide-overlay'); const e = document.querySelector('.seat-exit'); if (e) e.style.visibility = 'hidden'; }); await onPage.waitForTimeout(80); }
+async function showSeatExit(onPage) { await onPage.evaluate(() => { document.documentElement.classList.remove('v3-hide-overlay'); const e = document.querySelector('.seat-exit'); if (e) e.style.visibility = ''; }); await onPage.waitForTimeout(80); }
 async function screenshotBase64() { return (await page.screenshot()).toString('base64'); }
-async function regionDiffShare(beforeB64, afterB64) {
-  return page.evaluate(({ before, after }) => new Promise((resolve) => {
+async function regionDiffShare(beforeB64, afterB64, region) { return regionDiffShareOn(page, beforeB64, afterB64, region); }
+async function regionDiffShareOn(onPage, beforeB64, afterB64, region) {
+  return onPage.evaluate(({ before, after, region }) => new Promise((resolve) => {
     const load = (src) => new Promise((res) => { const img = new Image(); img.onload = () => res(img); img.src = src; });
     Promise.all([load(`data:image/png;base64,${before}`), load(`data:image/png;base64,${after}`)]).then(([imgA, imgB]) => {
       const w = imgA.naturalWidth, h = imgA.naturalHeight;
@@ -22,9 +37,8 @@ async function regionDiffShare(beforeB64, afterB64) {
       const canvasB = document.createElement('canvas'); canvasB.width = w; canvasB.height = h;
       const ctxA = canvasA.getContext('2d'); const ctxB = canvasB.getContext('2d');
       ctxA.drawImage(imgA, 0, 0); ctxB.drawImage(imgB, 0, 0);
-      // Window/blind region in the default seated frame, right side of the desk.
-      const xMin = Math.floor(w * 0.78), xMax = Math.floor(w * 1.0);
-      const yMin = Math.floor(h * 0.0), yMax = Math.floor(h * 0.62);
+      const xMin = Math.max(0, Math.floor(region.xMin)), xMax = Math.min(w, Math.ceil(region.xMax));
+      const yMin = Math.max(0, Math.floor(region.yMin)), yMax = Math.min(h, Math.ceil(region.yMax));
       const dataA = ctxA.getImageData(xMin, yMin, xMax - xMin, yMax - yMin).data;
       const dataB = ctxB.getImageData(xMin, yMin, xMax - xMin, yMax - yMin).data;
       let changed = 0, total = 0;
@@ -39,17 +53,28 @@ async function regionDiffShare(beforeB64, afterB64) {
       }
       resolve(changed / total);
     });
-  }), { before: beforeB64, after: afterB64 });
+  }), { before: beforeB64, after: afterB64, region });
 }
-await page.screenshot({path:'scripts/shots/window-closed-night.png'});
-const windowClosedB64 = await screenshotBase64();
-await click('WINDOW');assert.equal((await state()).windowOpen,'1');await idle('window open');
-await page.screenshot({path:'scripts/shots/window-open-night.png'});
-const windowOpenB64 = await screenshotBase64();
-const windowDiffShare = await regionDiffShare(windowClosedB64, windowOpenB64);
-assert.ok(windowDiffShare >= 0.03, `window open/closed pixel diff share ${windowDiffShare} < 0.03`);
-console.log('PASS window visibility diff share', windowDiffShare);
-await click('WINDOW');assert.equal((await state()).windowOpen,'0');await idle('window closed');
+async function windowVisibilityCheck(label, suffix) {
+  const anchor = await page.evaluate(() => window.__v3test.projectAnchor('windowOpen'));
+  const vp = page.viewportSize();
+  const marginX = vp.width * 0.12, marginY = vp.height * 0.12;
+  const region = { xMin: anchor.x - marginX, xMax: anchor.x + marginX, yMin: anchor.y - marginY, yMax: anchor.y + marginY };
+  await hideSeatExit(page);
+  await page.screenshot({path:`scripts/shots/window-closed-${suffix}.png`});
+  const closedB64 = await screenshotBase64();
+  await showSeatExit(page);
+  await click('WINDOW');assert.equal((await state()).windowOpen,'1');await idle(`window open (${label})`);
+  await hideSeatExit(page);
+  await page.screenshot({path:`scripts/shots/window-open-${suffix}.png`});
+  const openB64 = await screenshotBase64();
+  await showSeatExit(page);
+  const diffShare = await regionDiffShare(closedB64, openB64, region);
+  assert.ok(diffShare >= 0.03, `window open/closed pixel diff share ${diffShare} < 0.03 (${label})`);
+  console.log(`PASS window visibility diff share (${label})`, diffShare);
+  await click('WINDOW');assert.equal((await state()).windowOpen,'0');await idle(`window closed (${label})`);
+}
+await windowVisibilityCheck('night', 'night');
 
 // Audio sync (Job 3): city ambience must always match the window's state.
 const playing = () => page.evaluate(() => window.__cityAmbience?.playing());
@@ -94,6 +119,37 @@ await click('KEYBOARD');await page.waitForTimeout(300);await page.keyboard.type(
 await click('MONITOR');await page.waitForFunction(()=>document.querySelector('.scan-root').dataset.entranceState==='inside',null,{polling:100});assert.equal(await input.inputValue(),'hell');await page.locator('[data-testid="back-to-room"]').click();await page.waitForFunction(()=>document.querySelector('.scan-root').dataset.entranceState==='room',null,{polling:100});await click('KEYBOARD');await page.waitForTimeout(200);await page.keyboard.type('o');await page.waitForTimeout(100);assert.equal(await input.inputValue(),'hello');
 assert.deepEqual(errors,[]);console.log('PASS all room controls, depletion, cold/warm keyboard, no page errors');
 await page.close();
+
+// Window visibility must also hold in daytime, where the skyline-through-the-
+// gap contrast against the closed glass is smaller than at night.
+{
+  const dayPage = await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
+  const dayErrors=[];dayPage.on('pageerror',e=>dayErrors.push(e.message));
+  await dayPage.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','low');localStorage.setItem('v3:test','1');});
+  await dayPage.goto((process.env.BASE||'http://127.0.0.1:4174')+'/?sky=day');
+  await dayPage.locator('[data-object="chair"]').click();
+  await dayPage.waitForTimeout(600);
+  await dayPage.addStyleTag({content:'.v3-hide-overlay .anchor-marker{visibility:hidden!important}'});
+  const dayClick=async name=>{await dayPage.getByRole('button',{name,exact:true}).click();await dayPage.waitForTimeout(100);};
+  const dayState=()=>dayPage.locator('.workspace-stage').evaluate(e=>({...e.dataset}));
+  const anchor=await dayPage.evaluate(()=>window.__v3test.projectAnchor('windowOpen'));
+  const vp=dayPage.viewportSize();const marginX=vp.width*0.12,marginY=vp.height*0.12;
+  const region={xMin:anchor.x-marginX,xMax:anchor.x+marginX,yMin:anchor.y-marginY,yMax:anchor.y+marginY};
+  await hideSeatExit(dayPage);
+  await dayPage.screenshot({path:'scripts/shots/window-closed-day.png'});
+  const closedB64=(await dayPage.screenshot()).toString('base64');
+  await showSeatExit(dayPage);
+  await dayClick('WINDOW');assert.equal((await dayState()).windowOpen,'1');await dayPage.waitForTimeout(900);
+  await hideSeatExit(dayPage);
+  await dayPage.screenshot({path:'scripts/shots/window-open-day.png'});
+  const openB64=(await dayPage.screenshot()).toString('base64');
+  await showSeatExit(dayPage);
+  const diffShare=await regionDiffShareOn(dayPage,closedB64,openB64,region);
+  assert.ok(diffShare>=0.03,`window open/closed pixel diff share ${diffShare} < 0.03 (day)`);
+  console.log('PASS window visibility diff share (day)',diffShare);
+  assert.deepEqual(dayErrors,[]);
+  await dayPage.close();
+}
 
 for (const sky of ['day', 'dusk', 'night']) {
   const skyPage = await browser.newPage({ viewport: { width: 1440, height: 1000 } });

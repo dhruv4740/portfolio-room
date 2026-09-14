@@ -55,7 +55,7 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   box(sash,[0.035,1.88,0.025],[-0.32,0,sashZ],m.bone);
   box(sash,[0.035,1.88,0.025],[0.32,0,sashZ],m.bone);
   box(sash,[0.02,0.09,0.03],[-0.30,0,sashZ+0.02],m.dark);
-  const glassMat=new THREE.MeshStandardMaterial({color:'#c5d9eb',roughness:0.1,metalness:0.2,transparent:true,opacity:0.22,depthWrite:false});
+  const glassMat=new THREE.MeshStandardMaterial({color:'#b9d3e8',roughness:0.05,metalness:0.2,opacity:0.28,transparent:true,depthWrite:false});
   mesh(sash,new THREE.PlaneGeometry(0.64,1.85),glassMat,[0,0,sashZ]);
   const state={lamp:1,blinds:0,drawer:0,headphones:0,coffeeLevel:1,windowOpen:0};
   const homes=Object.fromEntries(Object.entries(objects).map(([id,g])=>[id,g.position.clone()]));
