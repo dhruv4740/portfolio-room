@@ -1,4 +1,4 @@
-# Prompt for Gemini — dhruvOS app cleanup
+# Prompt for Luna — dhruvOS app cleanup and docs tidy
 
 Copy everything below the rule.
 
@@ -12,7 +12,7 @@ something you did not check.
 dhruvOS is dependency-free ES modules in `public/os/`, loaded in a same-origin
 iframe at `os/embed.html?embed=1`. Lab experiments live in `public/lab/` with a
 registry at `src/lab/registry.js`.
-**Another agent works in parallel** on `src/v3/desktop/`. Do not touch it, and
+**Another agent works in parallel** on `src/v3/desktop/` and `src/v3/desktop/Scan.jsx`. Do not touch those, and
 stage only your own files when committing.
 
 ## Step 0 — map before changing
@@ -55,6 +55,21 @@ report. Do **not** add new wallpaper options yet; that needs a design decision.
 Make sure no audio starts without a user gesture (click or keypress inside the
 app). Do not redesign the app.
 
+## Job 5 — tidy the docs
+
+- Delete the obsolete Astra prompts: `docs/ASTRA-PROMPT.md` through
+  `docs/ASTRA-PROMPT-7.md` (git history keeps them).
+- Find every other `.md` file in the repo (excluding `node_modules/`, `dist/`).
+  Delete ones that are superseded, duplicated or describe code that no longer
+  exists. **Keep** `AGENTS.md`, `CLAUDE.md`, `README*`,
+  `docs/PROMPT-GEMINI-WINDOW.md`, this file, and `docs/ROOM-SHAPE-PROPOSAL.md`.
+- Update what remains so it matches the code as it is now (removed apps, the
+  phone zoom in `src/v3/desktop/PhoneScreen.jsx`, test commands with
+  `BASE=http://localhost:4173`). Correct stale facts only; do not rewrite style
+  or invent history.
+- Do this job **last**, after Jobs 1–4, so the docs describe the final state.
+- In your report, list every file deleted with a one-line reason.
+
 ## Do not touch
 
 Cosmos and Decoder (both waiting on design decisions), `public/os/shell/content.js`
@@ -65,7 +80,7 @@ and only if a removal requires it), and anything under `src/v3/desktop/`.
 
 - No new dependencies.
 - Conventional Commits, subject under 72 chars, no trailing period, no
-  attribution or co-author lines. One commit per job. Never push, never commit
+  attribution or co-author lines. one commit per job (Job 5 may be one commit). Never push, never commit
   to `main`.
 
 ## Verify before reporting

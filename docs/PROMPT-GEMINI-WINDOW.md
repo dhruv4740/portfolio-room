@@ -1,4 +1,4 @@
-# Prompt for Luna — the window: sky states and opening it
+# Prompt for Gemini — the window: sky states and opening it
 
 Copy everything below the rule.
 
@@ -10,7 +10,7 @@ something you did not check.
 
 **Repo:** `C:\Users\hp\OneDrive\Desktop\random sites\portfolio`, branch `feat/v3`.
 Vanilla three.js room (no r3f), Vite 8, React 19, GSAP, Playwright.
-**Another agent works in parallel** on `public/os/`, `public/lab/` and `src/lab/`.
+**Another agent works in parallel** on `public/os/`, `public/lab/`, `src/lab/` and all `.md` docs.
 Do not touch those paths, and stage only your own files when committing.
 
 ## Read first
@@ -57,6 +57,14 @@ on load. Defaults (the owner may change them): day 07:00–16:59, dusk
   synthesize it with Web Audio (filtered noise plus a low hum is enough). Never
   start audio from load, state restore or any path without a user gesture.
 - Add a `WINDOW` button to the seated bar in `Scan.jsx`, and `host.dataset.windowOpen`.
+
+## Job 3 — the seated button bar covers the zoomed phone
+
+When the phone is zoomed in (`.workspace-stage` has `data-phone-state` of
+`zoomed` or `focuslock`), the `.seat-exit` bar in `Scan.jsx` overlaps the bottom
+of the phone screen (see `scripts/shots/phone-focuslock.png`). Fix the overlap
+without hiding the way back: Escape and a visible back control must still work.
+Screenshot it afterwards.
 
 ## Constraints
 
