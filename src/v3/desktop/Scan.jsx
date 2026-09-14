@@ -253,9 +253,9 @@ export default function Scan() {
           {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id.toUpperCase()}</button>)}
           <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
           <button onClick={() => handleSelect('window')}>CONTACT</button>
-          {activeId && <button onClick={handleClose}>BACK TO SEAT</button>}
+          {activeId && <button className="seat-exit-back" onClick={handleClose}>BACK TO SEAT</button>}
           <button onClick={handleEnterScreen}>MONITOR</button>
-          <button onClick={() => { setActiveId(null); setSeated(false); }}>STAND UP / ESC</button>
+          <button className="seat-exit-back" onClick={() => { setActiveId(null); setSeated(false); }}>STAND UP / ESC</button>
         </div>
       )}
       {/* ---- masthead ---------------------------------------------------- */}
@@ -339,6 +339,16 @@ export default function Scan() {
 
 const css = `
 .seat-exit { display:flex; gap:12px; flex-wrap:wrap; max-width:calc(100% - 280px); position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:12px 16px; color:var(--bone); background:var(--void); border:1px solid var(--dim); }
+.workspace-stage[data-phone-state="zoomed"] ~ .seat-exit,
+.workspace-stage[data-phone-state="focuslock"] ~ .seat-exit {
+  max-width: 260px;
+  padding: 8px 12px;
+  gap: 8px;
+}
+.workspace-stage[data-phone-state="zoomed"] ~ .seat-exit button:not(.seat-exit-back),
+.workspace-stage[data-phone-state="focuslock"] ~ .seat-exit button:not(.seat-exit-back) {
+  display: none;
+}
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
 
 .scan-head {
