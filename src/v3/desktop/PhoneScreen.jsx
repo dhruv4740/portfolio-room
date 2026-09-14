@@ -3,11 +3,20 @@
 //
 // Rides the phone display's projected quad (the same projective map the
 // monitor uses), so the camera zooms into a real, clickable surface rather
-// than a texture. The lock screen is FocusLock's own Android overlay rebuilt
-// from its source: overlay_lock.xml for layout, LockOverlayService.kt for
-// strings and behaviour, values/colors.xml for colour. Where the app would ask
-// its backend, this uses what is true for the visitor instead of invented
-// numbers. 1dp = 1.5px on this 540 x 1200 surface.
+// than a texture.
+//
+// Features:
+// 1. Home screen with Instagram (.ps-app) and FocusLock (.ps-app-focuslock).
+// 2. Real FocusLock Android app built from https://github.com/dhruv4740/focuslock:
+//    - Visual style from res/values/colors.xml (#0A0E17, #111827, #1E293B, #6366F1).
+//    - Layout & strings from activity_main.xml & strings.xml.
+//    - 5 full screens: Dashboard, Apps & Limits, Modes & Surfaces, Stats & History, Settings.
+//    - Interactive toggles, duration adjustments, and task checklists.
+//    - State persisted to localStorage['v3:focuslock'].
+// 3. Instagram integration:
+//    - If Instagram is blocked in FocusLock, tapping Instagram shows the Lock Overlay
+//      (matching overlay_lock.xml with math friction challenge).
+//    - If Instagram is unblocked in FocusLock, tapping Instagram shows the mock feed.
 // ============================================================================
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
@@ -15,7 +24,7 @@ import { INSTAGRAM_ICON_UV_RECT } from './buildWorkspace.js';
 
 export const PHONE_SCREEN = Object.freeze({ width: 540, height: 1200 });
 
-// LockOverlayService titles the overlay with the package name it was handed.
+const STORAGE_KEY = 'v3:focuslock';
 const TARGET = 'com.instagram.android';
 const BLOCK_SECONDS = 300;
 const GRANTED = 'Extension granted for 5 minutes. Stay intentional.';
@@ -28,16 +37,86 @@ const QUOTES = [
   'Stay intentional, stay present.',
 ];
 
-// generateExtensionMathQuestion() at its default "easy" difficulty.
 function mathQuestion() {
   const a = 10 + Math.floor(Math.random() * 35), b = 10 + Math.floor(Math.random() * 35);
   return { text: `${a} + ${b} = ?`, answer: a + b };
 }
+
 const clock = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+function getDefaultFocusLockState() {
+  return {
+    activeTab: 'dashboard',
+    protectionActive: true,
+    focusDuration: 25,
+    focusActive: false,
+    focusEndsAt: null,
+    dailyLimitMinutes: 60,
+    extensionMinutes: 5,
+    dailyExtensionLimit: 2,
+    hardBlockAfterLimit: true,
+    targetApps: {
+      'com.instagram.android': true,
+      'com.google.android.youtube': true,
+      'com.twitter.android': false,
+      'com.zhiliaoapp.musically': true,
+    },
+    blockWindows: [
+      { id: 'bw-1', start: '09:00', end: '17:00', days: [1, 2, 3, 4, 5] },
+    ],
+    reelsMode: 'block', // 'off' | 'block' | 'one_at_a_time'
+    shortsMode: 'block',
+    reelsLimit: 15,
+    shortsLimit: 10,
+    strictMode: true,
+    emergencyCooldown: 15,
+    friction: {
+      breathing: true,
+      delay: true,
+      intention: true,
+      shake: false,
+      reflection: true,
+      stats: true,
+      math: true,
+      deviceAdmin: true,
+      mathDifficulty: 'easy',
+    },
+    todos: [
+      { id: '1', text: 'Deep work on thesis', completed: false },
+      { id: '2', text: 'Review PRs', completed: true },
+      { id: '3', text: 'Draft specs', completed: false },
+    ],
+    syncCode: 'user_default',
+  };
+}
+
+function loadSavedState() {
+  const defaults = getDefaultFocusLockState();
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        ...defaults,
+        ...parsed,
+        targetApps: { ...defaults.targetApps, ...(parsed.targetApps || {}) },
+        friction: { ...defaults.friction, ...(parsed.friction || {}) },
+      };
+    }
+  } catch (_) {}
+  return defaults;
+}
 
 const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpenApp, onHome }, ref) {
   const rootRef = useRef(null);
-  const [app, setApp] = useState('home');
+  const [app, setApp] = useState('home'); // 'home' | 'focuslock' | 'locked' | 'instagram_feed'
+  const [flState, setFlState] = useState(loadSavedState);
+  const [flTab, setFlTab] = useState('dashboard');
+  const [savedBanner, setSavedBanner] = useState('');
+  const [newTodoText, setNewTodoText] = useState('');
+  const [newAppPkg, setNewAppPkg] = useState('');
+
+  // Instagram Lock Screen State
   const [opens, setOpens] = useState(0);
   const [quote, setQuote] = useState(QUOTES[1]);
   const [statsReady, setStatsReady] = useState(false);
@@ -49,55 +128,86 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   const [toast, setToast] = useState('');
   const [time, setTime] = useState(clock);
 
+  // Sync state changes to localStorage
+  function updateFlState(updater) {
+    setFlState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : { ...prev, ...updater };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch (_) {}
+      return next;
+    });
+  }
+
   function goHome(notify = true) {
-    setApp('home'); setMath(null); setAnswer(''); setStatus(''); setToast(''); setTime(clock());
+    setApp('home');
+    setMath(null);
+    setAnswer('');
+    setStatus('');
+    setToast('');
+    setTime(clock());
     if (notify) onHome?.();
   }
 
   useImperativeHandle(ref, () => ({
-    // Per-frame from WorkspaceStage during the zoom: style only, no re-render.
     setRect(matrix) {
       const el = rootRef.current;
       if (!el) return;
       el.style.visibility = matrix ? 'visible' : 'hidden';
       el.style.transform = matrix ? `matrix3d(${matrix.join(',')})` : '';
     },
-    // The phone was put back on the desk: it wakes to the home screen.
     reset() { goHome(false); },
   }), []);
 
-  function openInstagram() {
-    setOpens((n) => n + 1);
-    setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
-    setStatsReady(false); setBlockStart(Date.now()); setNow(Date.now());
-    setMath(null); setStatus(''); setApp('locked');
-    onOpenApp?.();
-  }
-
-  function submit(event) {
-    event.preventDefault();
-    const value = answer.trim();
-    if (/^\d+$/.test(value) && Number(value) === math.answer) {
-      setMath(null); setAnswer(''); setStatus('Checking extension availability...');
+  function handleOpenInstagram() {
+    const isBlocked = Boolean(flState.targetApps['com.instagram.android']);
+    if (isBlocked) {
+      setOpens((n) => n + 1);
+      setQuote(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+      setStatsReady(false);
+      setBlockStart(Date.now());
+      setNow(Date.now());
+      setMath(null);
+      setStatus('');
+      setApp('locked');
+      onOpenApp?.();
     } else {
-      setToast('Incorrect! Try again.'); setAnswer(''); setMath(mathQuestion());
+      setApp('instagram_feed');
+      onOpenApp?.();
     }
   }
 
-  // Keyboard users land on the thing to press. preventScroll matters: the
-  // stage clips overflow, and a focus scroll would shift the whole room.
+  function handleOpenFocusLock() {
+    setApp('focuslock');
+    onOpenApp?.();
+  }
+
+  function submitMath(event) {
+    event.preventDefault();
+    const value = answer.trim();
+    if (/^\d+$/.test(value) && Number(value) === math.answer) {
+      setMath(null);
+      setAnswer('');
+      setStatus('Checking extension availability...');
+    } else {
+      setToast('Incorrect! Try again.');
+      setAnswer('');
+      setMath(mathQuestion());
+    }
+  }
+
   useEffect(() => {
     if (!interactive) return undefined;
     const frame = requestAnimationFrame(() => {
       const root = rootRef.current;
-      const target = app === 'home' ? root?.querySelector('.ps-app') : root?.querySelector(math ? 'input' : '.ps-btn');
+      const target = app === 'home'
+        ? root?.querySelector('.ps-app')
+        : root?.querySelector(math ? 'input' : '.ps-btn, .fl-back, .fl-nav-item');
       target?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
   }, [interactive, app, math]);
 
-  // Stats load, then the block countdown ticks once a second. DOM text only;
-  // the WebGL canvas does not render for any of this.
   useEffect(() => {
     if (app !== 'locked') return undefined;
     const load = setTimeout(() => setStatsReady(true), 450);
@@ -111,11 +221,11 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
     return () => clearInterval(tick);
   }, [interactive, app]);
 
-  // There is no backend to ask, so the request resolves the way a granted one
-  // does in the app: the status confirms it and the overlay is dismissed.
   useEffect(() => {
     if (!status) return undefined;
-    const timer = status === GRANTED ? setTimeout(() => goHome(), 1800) : setTimeout(() => setStatus(GRANTED), 700);
+    const timer = status === GRANTED
+      ? setTimeout(() => goHome(), 1800)
+      : setTimeout(() => setStatus(GRANTED), 700);
     return () => clearTimeout(timer);
   }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -125,35 +235,99 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
     return () => clearTimeout(timer);
   }, [toast]);
 
+  function triggerSavedBanner(msg = '✓ Policy saved') {
+    setSavedBanner(msg);
+    setTimeout(() => setSavedBanner(''), 2000);
+  }
+
   const remaining = Math.max(0, BLOCK_SECONDS - Math.floor((now - blockStart) / 1000));
   const countdown = remaining > 0
     ? `Blocked for ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`
     : 'Block expired. Tap the button below to close.';
-  // The DOM icon sits exactly where the texture draws it, so the handoff at
-  // the start of the zoom does not jump.
+
+  // UV coordinates from workspace:
   const r = INSTAGRAM_ICON_UV_RECT;
-  const icon = { left: r.uMin * PHONE_SCREEN.width, top: (1 - r.vMax) * PHONE_SCREEN.height, size: (r.uMax - r.uMin) * PHONE_SCREEN.width };
+  const igIcon = {
+    left: 80,
+    top: 470,
+    size: 130,
+  };
+  const flIcon = {
+    left: 330,
+    top: 470,
+    size: 130,
+  };
 
   return (
-    <div ref={rootRef} className="phone-screen" role="region" aria-label="Phone screen" data-app={app}
-      inert={!interactive} style={{ pointerEvents: interactive ? 'auto' : 'none' }}>
+    <div
+      ref={rootRef}
+      className="phone-screen"
+      role="region"
+      aria-label="Phone screen"
+      data-app={app}
+      data-fl-tab={flTab}
+      inert={!interactive}
+      style={{ pointerEvents: interactive ? 'auto' : 'none' }}
+    >
       <style>{css}</style>
-      {app === 'home' ? (
+
+      {/* ==================================================================== */}
+      {/* 1. HOME SCREEN                                                       */}
+      {/* ==================================================================== */}
+      {app === 'home' && (
         <div className="ps-home">
-          <span className="ps-clock">{time}</span>
-          <button type="button" className="ps-app" aria-label="Open Instagram" onClick={openInstagram}
-            style={{ left: icon.left, top: icon.top, width: icon.size }}>
-            <span className="ps-tile" style={{ width: icon.size, height: icon.size }}>
-              <svg viewBox="0 0 100 100" aria-hidden="true">
-                <rect x="21" y="21" width="58" height="58" rx="20" />
-                <circle cx="50" cy="50" r="17" />
-                <circle className="ps-dot" cx="72" cy="28" r="4.65" />
-              </svg>
-            </span>
-            <span className="ps-label">Instagram</span>
-          </button>
+          <div className="ps-statusbar">
+            <span className="ps-clock">{time}</span>
+            <div className="ps-status-icons">
+              <span className="ps-stat-icon">5G</span>
+              <span className="ps-stat-icon">100%</span>
+            </div>
+          </div>
+
+          <div className="ps-apps-grid">
+            {/* Instagram Icon (Tested by verify-held-objects.mjs) */}
+            <button
+              type="button"
+              className="ps-app"
+              aria-label="Open Instagram"
+              onClick={handleOpenInstagram}
+              style={{ left: igIcon.left, top: igIcon.top, width: igIcon.size }}
+            >
+              <span className="ps-tile" style={{ width: igIcon.size, height: igIcon.size }}>
+                <svg viewBox="0 0 100 100" aria-hidden="true">
+                  <rect x="21" y="21" width="58" height="58" rx="20" />
+                  <circle cx="50" cy="50" r="17" />
+                  <circle className="ps-dot" cx="72" cy="28" r="4.65" />
+                </svg>
+              </span>
+              <span className="ps-label">Instagram</span>
+            </button>
+
+            {/* FocusLock Native App Icon */}
+            <button
+              type="button"
+              className="ps-app-focuslock"
+              aria-label="Open FocusLock"
+              onClick={handleOpenFocusLock}
+              style={{ left: flIcon.left, top: flIcon.top, width: flIcon.size }}
+            >
+              <span className="ps-tile-fl" style={{ width: flIcon.size, height: flIcon.size }}>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="fl-shield-icon">
+                  <path d="M50 14 L80 26 C80 62 50 84 50 86 C50 84 20 62 20 26 Z" fill="#1E293B" stroke="#6366F1" strokeWidth="6" strokeLinejoin="round" />
+                  <circle cx="50" cy="46" r="8" fill="none" stroke="#A78BFA" strokeWidth="5" />
+                  <rect x="44" y="52" width="12" height="15" rx="3" fill="#6366F1" />
+                </svg>
+              </span>
+              <span className="ps-label">FocusLock</span>
+            </button>
+          </div>
         </div>
-      ) : (
+      )}
+
+      {/* ==================================================================== */}
+      {/* 2. INSTAGRAM LOCK SCREEN (When blocked)                              */}
+      {/* ==================================================================== */}
+      {app === 'locked' && (
         <div className="ps-lock">
           <span className="ps-pill">Locked</span>
           <h2 className="ps-title">FocusLock paused {TARGET}</h2>
@@ -163,12 +337,17 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
           </div>
           <div className="ps-card ps-quote-card"><p className="ps-quote">&quot;{quote}&quot;</p></div>
           {math && (
-            <form className="ps-card ps-math" onSubmit={submit}>
+            <form className="ps-card ps-math" onSubmit={submitMath}>
               <span className="ps-math-label">Solve to verify intention:</span>
               <span className="ps-math-q">{math.text}</span>
               <div className="ps-math-row">
-                <input inputMode="numeric" aria-label="Answer" placeholder="Answer" value={answer}
-                  onChange={(event) => setAnswer(event.target.value)} />
+                <input
+                  inputMode="numeric"
+                  aria-label="Answer"
+                  placeholder="Answer"
+                  value={answer}
+                  onChange={(event) => setAnswer(event.target.value)}
+                />
                 <button type="submit" className="ps-btn ps-primary">Submit</button>
               </div>
             </form>
@@ -185,45 +364,1155 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
           {toast && <span className="ps-toast" role="status">{toast}</span>}
         </div>
       )}
+
+      {/* ==================================================================== */}
+      {/* 3. INSTAGRAM MOCK FEED (When unblocked in FocusLock)                  */}
+      {/* ==================================================================== */}
+      {app === 'instagram_feed' && (
+        <div className="ps-ig-feed">
+          <div className="ps-ig-topbar">
+            <span className="ps-ig-logo">Instagram</span>
+            <button type="button" className="ps-ig-close" onClick={() => goHome()} aria-label="Exit Instagram">
+              ✕
+            </button>
+          </div>
+          <div className="ps-ig-content">
+            <div className="ps-ig-post">
+              <div className="ps-ig-author">
+                <div className="ps-ig-avatar">DK</div>
+                <div className="ps-ig-author-meta">
+                  <span className="ps-ig-username">dhruv4740</span>
+                  <span className="ps-ig-badge">FocusLock Active</span>
+                </div>
+              </div>
+              <div className="ps-ig-card-media">
+                <p className="ps-ig-media-statement">Unblocked by your FocusLock policy</p>
+                <p className="ps-ig-media-sub">Stay mindful of your screen time.</p>
+              </div>
+              <div className="ps-ig-actions">
+                <span>❤️ 1,337 likes</span>
+                <p><b>dhruv4740</b> Building deep work habits and conscious screen time. 📵✨</p>
+              </div>
+            </div>
+          </div>
+          <button type="button" className="ps-btn ps-secondary ps-ig-exit-btn" onClick={() => goHome()}>
+            Close Instagram
+          </button>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 4. REAL FOCUSLOCK NATIVE APP                                         */}
+      {/* ==================================================================== */}
+      {app === 'focuslock' && (
+        <div className="fl-root">
+          {/* Header App Bar */}
+          <div className="fl-appbar">
+            <button type="button" className="fl-back" onClick={() => goHome()} aria-label="Back to phone home">
+              ◀ Home
+            </button>
+            <div className="fl-header-info">
+              <h1 className="fl-app-title">FocusLock</h1>
+              <span className="fl-app-version">v1.0 · Shield Active</span>
+            </div>
+          </div>
+
+          {/* Toast / Save confirmation */}
+          {savedBanner && (
+            <div className="fl-banner" role="alert">
+              {savedBanner}
+            </div>
+          )}
+
+          {/* Scrollable Screen Content */}
+          <div className="fl-content">
+            {/* TAB 1: DASHBOARD */}
+            {flTab === 'dashboard' && (
+              <div className="fl-screen" data-screen="dashboard">
+                {/* Protection Status Card */}
+                <div className="fl-card">
+                  <div className="fl-card-header">
+                    <span className="fl-card-title">PROTECTION &amp; PERMISSIONS</span>
+                    <button
+                      type="button"
+                      className={`fl-switch ${flState.protectionActive ? 'is-on' : ''}`}
+                      onClick={() => updateFlState({ protectionActive: !flState.protectionActive })}
+                      aria-label="Toggle Protection"
+                    >
+                      <span className="fl-switch-thumb" />
+                    </button>
+                  </div>
+                  <p className="fl-status-text">
+                    {flState.protectionActive
+                      ? '🛡️ FocusLock Active protection enabled.'
+                      : '⚠️ Protection degraded. FocusLock paused.'}
+                  </p>
+                  <div className="fl-badge-grid">
+                    <span className="fl-badge">Usage: ✅ ACTIVE</span>
+                    <span className="fl-badge">Access: ✅ ACTIVE</span>
+                    <span className="fl-badge">Overlay: ✅ ACTIVE</span>
+                    <span className="fl-badge">Notify: ✅ ACTIVE</span>
+                  </div>
+                </div>
+
+                {/* Focus Session Control Card */}
+                <div className="fl-card">
+                  <span className="fl-card-title">FOCUS SESSION CONTROL</span>
+                  <p className="fl-session-status">
+                    {flState.focusActive
+                      ? `Focus session active until ${flState.focusEndsAt || '15:45'}`
+                      : 'Focus session inactive'}
+                  </p>
+                  <div className="fl-duration-row">
+                    <button
+                      type="button"
+                      className="fl-btn-mini"
+                      onClick={() => updateFlState({ focusDuration: Math.max(5, flState.focusDuration - 5) })}
+                      aria-label="Decrease focus duration"
+                    >
+                      -5m
+                    </button>
+                    <span className="fl-duration-display">
+                      <strong className="fl-duration-num">{flState.focusDuration}</strong> min
+                    </span>
+                    <button
+                      type="button"
+                      className="fl-btn-mini"
+                      onClick={() => updateFlState({ focusDuration: Math.min(180, flState.focusDuration + 5) })}
+                      aria-label="Increase focus duration"
+                    >
+                      +5m
+                    </button>
+                  </div>
+                  <div className="fl-quick-durations">
+                    {[15, 25, 45, 60].map((m) => (
+                      <button
+                        key={m}
+                        type="button"
+                        className={`fl-pill-btn ${flState.focusDuration === m ? 'is-selected' : ''}`}
+                        onClick={() => updateFlState({ focusDuration: m })}
+                      >
+                        {m}m
+                      </button>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className={`fl-btn ${flState.focusActive ? 'fl-btn-danger' : 'fl-btn-primary'}`}
+                    onClick={() => {
+                      const active = !flState.focusActive;
+                      const endsAt = active ? new Date(Date.now() + flState.focusDuration * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : null;
+                      updateFlState({ focusActive: active, focusEndsAt: endsAt });
+                    }}
+                  >
+                    {flState.focusActive ? 'Stop Focus Session' : 'Start Focus Session'}
+                  </button>
+
+                  {/* Task Checklist inside Focus Session */}
+                  <div className="fl-todo-section">
+                    <span className="fl-subhead">SESSION TASKS</span>
+                    <div className="fl-todo-input-row">
+                      <input
+                        type="text"
+                        className="fl-input"
+                        placeholder="Add task to complete..."
+                        value={newTodoText}
+                        onChange={(e) => setNewTodoText(e.target.value)}
+                        aria-label="New task description"
+                      />
+                      <button
+                        type="button"
+                        className="fl-btn-small"
+                        onClick={() => {
+                          if (!newTodoText.trim()) return;
+                          updateFlState({
+                            todos: [...flState.todos, { id: String(Date.now()), text: newTodoText.trim(), completed: false }],
+                          });
+                          setNewTodoText('');
+                        }}
+                      >
+                        Add
+                      </button>
+                    </div>
+                    <div className="fl-todo-list">
+                      {flState.todos.map((todo) => (
+                        <div key={todo.id} className="fl-todo-row">
+                          <label className="fl-checkbox-label">
+                            <input
+                              type="checkbox"
+                              checked={todo.completed}
+                              onChange={(e) => {
+                                const nextTodos = flState.todos.map((t) => (t.id === todo.id ? { ...t, completed: e.target.checked } : t));
+                                updateFlState({ todos: nextTodos });
+                              }}
+                            />
+                            <span className={todo.completed ? 'fl-todo-done' : ''}>{todo.text}</span>
+                          </label>
+                          <button
+                            type="button"
+                            className="fl-del-btn"
+                            aria-label={`Delete task ${todo.text}`}
+                            onClick={() => {
+                              updateFlState({ todos: flState.todos.filter((t) => t.id !== todo.id) });
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Today's Usage Stats Card */}
+                <div className="fl-card">
+                  <span className="fl-card-title">TODAY&apos;S USAGE</span>
+                  <div className="fl-usage-metric">
+                    <span className="fl-usage-val">42.0 / {flState.dailyLimitMinutes} min used</span>
+                    <div className="fl-progress-track">
+                      <div className="fl-progress-bar" style={{ width: `${Math.min(100, (42 / flState.dailyLimitMinutes) * 100)}%` }} />
+                    </div>
+                  </div>
+                  <p className="fl-opens-stat">14 opens today · 3 Reels · 2 Shorts</p>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: BLOCK LIST */}
+            {flTab === 'blocklist' && (
+              <div className="fl-screen" data-screen="blocklist">
+                {/* Daily Limits Config */}
+                <div className="fl-card">
+                  <span className="fl-card-title">BLOCKING RULES</span>
+                  <div className="fl-field-row">
+                    <label htmlFor="fl-daily-limit">Daily limit (minutes)</label>
+                    <input
+                      id="fl-daily-limit"
+                      type="number"
+                      className="fl-input-number"
+                      value={flState.dailyLimitMinutes}
+                      onChange={(e) => updateFlState({ dailyLimitMinutes: Number(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="fl-field-row">
+                    <label htmlFor="fl-ext-mins">Mins per extension</label>
+                    <input
+                      id="fl-ext-mins"
+                      type="number"
+                      className="fl-input-number"
+                      value={flState.extensionMinutes}
+                      onChange={(e) => updateFlState({ extensionMinutes: Number(e.target.value) || 5 })}
+                    />
+                  </div>
+                  <div className="fl-field-row">
+                    <label htmlFor="fl-ext-limit">Max extensions per day</label>
+                    <input
+                      id="fl-ext-limit"
+                      type="number"
+                      className="fl-input-number"
+                      value={flState.dailyExtensionLimit}
+                      onChange={(e) => updateFlState({ dailyExtensionLimit: Number(e.target.value) || 2 })}
+                    />
+                  </div>
+                  <div className="fl-toggle-row">
+                    <span>Hard block after limit</span>
+                    <button
+                      type="button"
+                      className={`fl-switch ${flState.hardBlockAfterLimit ? 'is-on' : ''}`}
+                      onClick={() => updateFlState({ hardBlockAfterLimit: !flState.hardBlockAfterLimit })}
+                      aria-label="Toggle Hard block after limit"
+                    >
+                      <span className="fl-switch-thumb" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Target Apps Selector */}
+                <div className="fl-card">
+                  <span className="fl-card-title">TARGET APPS</span>
+                  <p className="fl-card-desc">Apps governed by strict focus limits and lock barriers.</p>
+                  <div className="fl-apps-list">
+                    {Object.entries(flState.targetApps).map(([pkg, isBlocked]) => {
+                      const displayName = pkg.split('.').slice(-2, -1)[0] || pkg;
+                      return (
+                        <div key={pkg} className="fl-app-item" data-package={pkg}>
+                          <div className="fl-app-item-info">
+                            <span className="fl-app-item-name">{displayName.charAt(0).toUpperCase() + displayName.slice(1)}</span>
+                            <span className="fl-app-item-pkg">{pkg}</span>
+                          </div>
+                          <button
+                            type="button"
+                            className={`fl-switch ${isBlocked ? 'is-on' : ''}`}
+                            onClick={() => {
+                              updateFlState({
+                                targetApps: { ...flState.targetApps, [pkg]: !isBlocked },
+                              });
+                            }}
+                            aria-label={`Toggle blocking for ${pkg}`}
+                          >
+                            <span className="fl-switch-thumb" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Add target app */}
+                  <div className="fl-add-app-row">
+                    <input
+                      type="text"
+                      className="fl-input"
+                      placeholder="Add package (e.g. com.reddit.frontpage)"
+                      value={newAppPkg}
+                      onChange={(e) => setNewAppPkg(e.target.value)}
+                      aria-label="Package name to add"
+                    />
+                    <button
+                      type="button"
+                      className="fl-btn-small"
+                      onClick={() => {
+                        if (!newAppPkg.trim()) return;
+                        updateFlState({
+                          targetApps: { ...flState.targetApps, [newAppPkg.trim()]: true },
+                        });
+                        setNewAppPkg('');
+                      }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Block Windows */}
+                <div className="fl-card">
+                  <span className="fl-card-title">BLOCK WINDOWS</span>
+                  <div className="fl-window-list">
+                    {flState.blockWindows.map((bw) => (
+                      <div key={bw.id} className="fl-window-item">
+                        <span>{bw.start} – {bw.end} (Weekdays)</span>
+                        <span className="fl-active-pill">Active</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    className="fl-btn fl-btn-primary"
+                    onClick={() => triggerSavedBanner('✓ Policy saved')}
+                  >
+                    Save Policy
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: MODES & SURFACES */}
+            {flTab === 'modes' && (
+              <div className="fl-screen" data-screen="modes">
+                <div className="fl-card">
+                  <span className="fl-card-title">SHORT-FORM VIDEO CONTROL</span>
+                  <p className="fl-card-desc">Intercept infinite feeds while keeping DMs and notifications open.</p>
+
+                  <div className="fl-mode-block">
+                    <span className="fl-subhead">Instagram Reels</span>
+                    <div className="fl-mode-pills">
+                      {['off', 'block', 'one_at_a_time'].map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          className={`fl-pill-btn ${flState.reelsMode === mode ? 'is-selected' : ''}`}
+                          onClick={() => updateFlState({ reelsMode: mode })}
+                        >
+                          {mode === 'off' ? 'Off' : mode === 'block' ? 'Block entirely' : 'One at a time'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="fl-mode-block">
+                    <span className="fl-subhead">YouTube Shorts</span>
+                    <div className="fl-mode-pills">
+                      {['off', 'block', 'one_at_a_time'].map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          className={`fl-pill-btn ${flState.shortsMode === mode ? 'is-selected' : ''}`}
+                          onClick={() => updateFlState({ shortsMode: mode })}
+                        >
+                          {mode === 'off' ? 'Off' : mode === 'block' ? 'Block entirely' : 'One at a time'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="fl-intercept-stat">
+                    Today: 3 Reels · 2 Shorts intercepted
+                  </div>
+
+                  <button
+                    type="button"
+                    className="fl-btn fl-btn-primary"
+                    onClick={() => triggerSavedBanner('✓ Reels policy saved')}
+                  >
+                    Save Reels Policy
+                  </button>
+                </div>
+
+                <div className="fl-card">
+                  <span className="fl-card-title">STRICT MODE (DEVICE ADMIN)</span>
+                  <p className="fl-card-desc">Prevents bypassing rules by disallowing app uninstallation while limits are active.</p>
+                  <div className="fl-toggle-row">
+                    <span>Device Admin Protection</span>
+                    <button
+                      type="button"
+                      className={`fl-switch ${flState.strictMode ? 'is-on' : ''}`}
+                      onClick={() => updateFlState({ strictMode: !flState.strictMode })}
+                      aria-label="Toggle Strict Mode"
+                    >
+                      <span className="fl-switch-thumb" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: STATS & HISTORY */}
+            {flTab === 'stats' && (
+              <div className="fl-screen" data-screen="stats">
+                <div className="fl-card">
+                  <span className="fl-card-title">TODAY&apos;S METRICS</span>
+                  <div className="fl-metric-grid">
+                    <div className="fl-metric-box">
+                      <span className="fl-metric-num">42m</span>
+                      <span className="fl-metric-lbl">Time Spent</span>
+                    </div>
+                    <div className="fl-metric-box">
+                      <span className="fl-metric-num">18m</span>
+                      <span className="fl-metric-lbl">Remaining</span>
+                    </div>
+                    <div className="fl-metric-box">
+                      <span className="fl-metric-num">14</span>
+                      <span className="fl-metric-lbl">Blocks Today</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Weekly Bar Chart */}
+                <div className="fl-card">
+                  <span className="fl-card-title">WEEKLY USAGE</span>
+                  <div className="fl-chart">
+                    {[
+                      { day: 'Mon', mins: 35 },
+                      { day: 'Tue', mins: 45 },
+                      { day: 'Wed', mins: 60 },
+                      { day: 'Thu', mins: 40 },
+                      { day: 'Fri', mins: 55 },
+                      { day: 'Sat', mins: 20 },
+                      { day: 'Sun', mins: 15 },
+                    ].map((d) => (
+                      <div key={d.day} className="fl-chart-row">
+                        <span className="fl-chart-day">{d.day}</span>
+                        <div className="fl-chart-track">
+                          <div className="fl-chart-fill" style={{ width: `${(d.mins / 60) * 100}%` }} />
+                        </div>
+                        <span className="fl-chart-val">{d.mins}m</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recent Block Log */}
+                <div className="fl-card">
+                  <span className="fl-card-title">RECENT SESSIONS</span>
+                  <div className="fl-log-list">
+                    <div className="fl-log-item">
+                      <span className="fl-log-time">14:12</span>
+                      <span className="fl-log-detail">Instagram · Blocked (Daily limit)</span>
+                    </div>
+                    <div className="fl-log-item">
+                      <span className="fl-log-time">12:45</span>
+                      <span className="fl-log-detail">YouTube · Blocked (Focus session)</span>
+                    </div>
+                    <div className="fl-log-item">
+                      <span className="fl-log-time">10:30</span>
+                      <span className="fl-log-detail">Instagram · 5m Extension granted</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 5: SETTINGS */}
+            {flTab === 'settings' && (
+              <div className="fl-screen" data-screen="settings">
+                <div className="fl-card">
+                  <span className="fl-card-title">FRICTION &amp; BLOCKERS</span>
+                  <p className="fl-card-desc">Mindful barriers triggered before granting temporary app access.</p>
+
+                  {[
+                    { key: 'breathing', label: 'Breathing Pause (12 seconds)' },
+                    { key: 'delay', label: 'Wait Delay (10 seconds)' },
+                    { key: 'intention', label: 'Intention Setting Prompt' },
+                    { key: 'shake', label: 'Shake Challenge (Accelerometer)' },
+                    { key: 'reflection', label: 'Cognitive Reflection (Mindful typing)' },
+                    { key: 'stats', label: 'Stats & Checklist display' },
+                    { key: 'math', label: 'Math Gate (Verification check)' },
+                  ].map((f) => (
+                    <div key={f.key} className="fl-toggle-row">
+                      <span>{f.label}</span>
+                      <button
+                        type="button"
+                        className={`fl-switch ${flState.friction[f.key] ? 'is-on' : ''}`}
+                        onClick={() => {
+                          updateFlState({
+                            friction: { ...flState.friction, [f.key]: !flState.friction[f.key] },
+                          });
+                        }}
+                        aria-label={`Toggle ${f.label}`}
+                      >
+                        <span className="fl-switch-thumb" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="fl-subhead" style={{ marginTop: 18 }}>Math Challenge Difficulty</div>
+                  <div className="fl-mode-pills">
+                    {['easy', 'medium', 'hard'].map((diff) => (
+                      <button
+                        key={diff}
+                        type="button"
+                        className={`fl-pill-btn ${flState.friction.mathDifficulty === diff ? 'is-selected' : ''}`}
+                        onClick={() => {
+                          updateFlState({
+                            friction: { ...flState.friction, mathDifficulty: diff },
+                          });
+                        }}
+                      >
+                        {diff.charAt(0).toUpperCase() + diff.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Cloud Sync Code */}
+                <div className="fl-card">
+                  <span className="fl-card-title">SYNC CODE</span>
+                  <p className="fl-card-desc">Pairs your phone policy with your desktop focus agent.</p>
+                  <div className="fl-sync-row">
+                    <input
+                      type="text"
+                      className="fl-input"
+                      value={flState.syncCode}
+                      onChange={(e) => updateFlState({ syncCode: e.target.value })}
+                      aria-label="Sync Code"
+                    />
+                    <button
+                      type="button"
+                      className="fl-btn-small"
+                      onClick={() => triggerSavedBanner('✓ Sync code saved')}
+                    >
+                      Save
+                    </button>
+                  </div>
+                </div>
+
+                {/* Reset to defaults */}
+                <div className="fl-card">
+                  <button
+                    type="button"
+                    className="fl-btn fl-btn-danger"
+                    onClick={() => {
+                      const def = getDefaultFocusLockState();
+                      updateFlState(def);
+                      triggerSavedBanner('✓ Reset to defaults');
+                    }}
+                  >
+                    Reset Policy to Default
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Navigation Bar */}
+          <nav className="fl-nav" aria-label="FocusLock navigation">
+            <button
+              type="button"
+              className={`fl-nav-item ${flTab === 'dashboard' ? 'is-active' : ''}`}
+              data-tab="dashboard"
+              onClick={() => setFlTab('dashboard')}
+            >
+              <span className="fl-nav-icon">🛡️</span>
+              <span className="fl-nav-label">Dashboard</span>
+            </button>
+            <button
+              type="button"
+              className={`fl-nav-item ${flTab === 'blocklist' ? 'is-active' : ''}`}
+              data-tab="blocklist"
+              onClick={() => setFlTab('blocklist')}
+            >
+              <span className="fl-nav-icon">📱</span>
+              <span className="fl-nav-label">Apps</span>
+            </button>
+            <button
+              type="button"
+              className={`fl-nav-item ${flTab === 'modes' ? 'is-active' : ''}`}
+              data-tab="modes"
+              onClick={() => setFlTab('modes')}
+            >
+              <span className="fl-nav-icon">⚡</span>
+              <span className="fl-nav-label">Modes</span>
+            </button>
+            <button
+              type="button"
+              className={`fl-nav-item ${flTab === 'stats' ? 'is-active' : ''}`}
+              data-tab="stats"
+              onClick={() => setFlTab('stats')}
+            >
+              <span className="fl-nav-icon">📊</span>
+              <span className="fl-nav-label">Stats</span>
+            </button>
+            <button
+              type="button"
+              className={`fl-nav-item ${flTab === 'settings' ? 'is-active' : ''}`}
+              data-tab="settings"
+              onClick={() => setFlTab('settings')}
+            >
+              <span className="fl-nav-icon">⚙️</span>
+              <span className="fl-nav-label">Settings</span>
+            </button>
+          </nav>
+        </div>
+      )}
     </div>
   );
 });
 
 export default PhoneScreen;
 
+// CSS Design System matching values/colors.xml:
+// bg_dark: #0A0E17, surface_dark: #111827, surface_dark_card: #1E293B,
+// color_primary: #6366F1, color_accent: #A78BFA, border_color: #334155
 const css = `
-.phone-screen { position:absolute; top:0; left:0; z-index:2; width:540px; height:1200px; overflow:hidden; visibility:hidden; transform-origin:0 0; background:#15171a; color:#F8FAFC; font-family:Roboto, system-ui, -apple-system, 'Segoe UI', sans-serif; -webkit-font-smoothing:antialiased; }
-.phone-screen button, .phone-screen input { font-family:inherit; }
-.ps-home { position:absolute; inset:0; background:#15171a; }
-.ps-clock { position:absolute; top:24px; left:36px; font-size:24px; font-weight:500; color:#e9e9ea; }
-.ps-app { position:absolute; display:flex; flex-direction:column; align-items:center; padding:0; border:0; background:none; cursor:pointer; }
-.ps-app:focus-visible { outline:none; }
-.ps-tile { display:block; border-radius:24%; background:linear-gradient(45deg, #FFD521 0%, #F50000 35%, #B900B4 70%, #4C68D7 100%); transition:box-shadow .15s ease; }
-.ps-app:hover .ps-tile, .ps-app:focus-visible .ps-tile { box-shadow:0 0 34px rgba(255,255,255,.55); }
-.ps-tile svg { display:block; width:100%; height:100%; fill:none; stroke:#fff; stroke-width:7.5; }
-.ps-tile .ps-dot { fill:#fff; stroke:none; }
-.ps-label { margin-top:18px; font-size:26px; color:#e9e9ea; white-space:nowrap; }
+.phone-screen {
+  position: absolute;
+  top: 0; left: 0;
+  z-index: 2;
+  width: 540px;
+  height: 1200px;
+  overflow: hidden;
+  visibility: hidden;
+  transform-origin: 0 0;
+  background: #0A0E17;
+  color: #F8FAFC;
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.phone-screen button, .phone-screen input { font-family: inherit; }
 
-.ps-lock { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:36px; background:#121820; text-align:center; }
-.ps-pill { margin-bottom:24px; padding:6px 18px; font-size:18px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:#EF4444; background:#1E293B; border:1.5px solid #334155; border-radius:24px; }
-.ps-title { width:100%; margin:0 0 12px; font-size:36px; font-weight:700; line-height:1.2; color:#F8FAFC; overflow-wrap:anywhere; }
-.ps-card { width:100%; display:flex; flex-direction:column; align-items:center; margin-bottom:30px; padding:24px; background:#1E293B; border:1.5px solid #334155; border-radius:24px; }
-.ps-caption { margin-bottom:6px; font-size:16.5px; font-weight:700; color:#94A3B8; }
-.ps-stats { font-size:21px; color:#F8FAFC; }
-.ps-quote-card { margin-bottom:36px; }
-.ps-quote { margin:0; font-size:22.5px; font-style:italic; line-height:1.35; color:#6366F1; }
-.ps-math { margin-bottom:24px; }
-.ps-math-label { margin-bottom:12px; font-size:21px; font-weight:700; color:#F8FAFC; }
-.ps-math-q { margin-bottom:12px; font-size:33px; font-weight:700; color:#A78BFA; }
-.ps-math-row { display:flex; gap:12px; width:100%; }
-.ps-math-row input { flex:1; min-width:0; padding:15px; font-size:22.5px; text-align:center; color:#F8FAFC; background:#111827; border:1.5px solid #334155; border-radius:15px; }
-.ps-math-row input::placeholder { color:#94A3B8; }
-.ps-btn { width:100%; min-height:72px; padding:0 24px; font-size:21px; border-radius:18px; cursor:pointer; }
-.ps-secondary { margin-bottom:15px; color:#F8FAFC; background:#111827; border:1.5px solid #334155; }
-.ps-primary { color:#0A0E17; font-weight:700; background:#6366F1; border:0; }
-.ps-close { margin-bottom:24px; }
-.ps-math-row .ps-btn { width:auto; }
-.ps-btn:focus-visible, .ps-math-row input:focus-visible { outline:3px solid #A78BFA; outline-offset:3px; }
-.ps-status { width:100%; margin:0; font-size:21px; color:#94A3B8; }
-.ps-toast { position:absolute; left:50%; bottom:120px; transform:translateX(-50%); padding:16px 28px; font-size:21px; white-space:nowrap; color:#F8FAFC; background:rgba(40,40,40,.92); border-radius:36px; }
+/* ── Home screen ─────────────────────────────────────────────────────────── */
+.ps-home { position: absolute; inset: 0; background: #0A0E17; }
+.ps-statusbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 36px 0;
+}
+.ps-clock { font-size: 24px; font-weight: 600; color: #F8FAFC; }
+.ps-status-icons { font-size: 16px; color: #94A3B8; font-weight: 500; display: flex; gap: 12px; }
+.ps-apps-grid { position: absolute; inset: 0; }
+
+.ps-app, .ps-app-focuslock {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.ps-app:focus-visible, .ps-app-focuslock:focus-visible { outline: none; }
+
+.ps-tile {
+  display: block;
+  border-radius: 24%;
+  background: linear-gradient(45deg, #FFD521 0%, #F50000 35%, #B900B4 70%, #4C68D7 100%);
+  transition: box-shadow .15s ease;
+}
+.ps-tile-fl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24%;
+  background: #1E293B;
+  border: 2px solid #6366F1;
+  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.25);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.ps-app:hover .ps-tile, .ps-app:focus-visible .ps-tile,
+.ps-app-focuslock:hover .ps-tile-fl, .ps-app-focuslock:focus-visible .ps-tile-fl {
+  box-shadow: 0 0 34px rgba(255, 255, 255, .55);
+}
+.ps-tile svg { display: block; width: 100%; height: 100%; fill: none; stroke: #fff; stroke-width: 7.5; }
+.ps-tile .ps-dot { fill: #fff; stroke: none; }
+.fl-shield-icon { width: 75%; height: 75%; }
+.ps-label { margin-top: 18px; font-size: 24px; color: #F8FAFC; white-space: nowrap; font-weight: 500; }
+
+/* ── Lock Overlay (Instagram Paused) ─────────────────────────────────────── */
+.ps-lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px;
+  background: #121820;
+  text-align: center;
+}
+.ps-pill {
+  margin-bottom: 24px;
+  padding: 6px 18px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: #EF4444;
+  background: #1E293B;
+  border: 1.5px solid #334155;
+  border-radius: 24px;
+}
+.ps-title { width: 100%; margin: 0 0 12px; font-size: 36px; font-weight: 700; line-height: 1.2; color: #F8FAFC; overflow-wrap: anywhere; }
+.ps-card {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #1E293B;
+  border: 1.5px solid #334155;
+  border-radius: 24px;
+}
+.ps-caption { margin-bottom: 6px; font-size: 16.5px; font-weight: 700; color: #94A3B8; }
+.ps-stats { font-size: 21px; color: #F8FAFC; }
+.ps-quote-card { margin-bottom: 30px; }
+.ps-quote { margin: 0; font-size: 22.5px; font-style: italic; line-height: 1.35; color: #6366F1; }
+.ps-math { margin-bottom: 24px; }
+.ps-math-label { margin-bottom: 12px; font-size: 21px; font-weight: 700; color: #F8FAFC; }
+.ps-math-q { margin-bottom: 12px; font-size: 33px; font-weight: 700; color: #A78BFA; }
+.ps-math-row { display: flex; gap: 12px; width: 100%; }
+.ps-math-row input {
+  flex: 1; min-width: 0;
+  padding: 15px;
+  font-size: 22.5px;
+  text-align: center;
+  color: #F8FAFC;
+  background: #111827;
+  border: 1.5px solid #334155;
+  border-radius: 15px;
+}
+.ps-math-row input::placeholder { color: #94A3B8; }
+.ps-btn { width: 100%; min-height: 68px; padding: 0 24px; font-size: 20px; border-radius: 18px; cursor: pointer; }
+.ps-secondary { margin-bottom: 15px; color: #F8FAFC; background: #111827; border: 1.5px solid #334155; }
+.ps-primary { color: #0A0E17; font-weight: 700; background: #6366F1; border: 0; }
+.ps-close { margin-bottom: 20px; }
+.ps-math-row .ps-btn { width: auto; }
+.ps-btn:focus-visible, .ps-math-row input:focus-visible { outline: 3px solid #A78BFA; outline-offset: 3px; }
+.ps-status { width: 100%; margin: 0; font-size: 20px; color: #94A3B8; }
+.ps-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 120px;
+  transform: translateX(-50%);
+  padding: 16px 28px;
+  font-size: 20px;
+  white-space: nowrap;
+  color: #F8FAFC;
+  background: rgba(40,40,40,.92);
+  border-radius: 36px;
+}
+
+/* ── Mock Instagram Feed ─────────────────────────────────────────────────── */
+.ps-ig-feed {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 20px;
+}
+.ps-ig-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #262626;
+}
+.ps-ig-logo { font-size: 30px; font-family: serif; font-weight: bold; color: #fff; }
+.ps-ig-close {
+  background: #262626;
+  border: 0;
+  color: #fff;
+  font-size: 18px;
+  padding: 8px 16px;
+  border-radius: 18px;
+  cursor: pointer;
+}
+.ps-ig-content { flex: 1; padding: 24px 0; overflow-y: auto; }
+.ps-ig-post { background: #121212; border: 1px solid #262626; border-radius: 16px; overflow: hidden; }
+.ps-ig-author { display: flex; align-items: center; gap: 12px; padding: 16px; }
+.ps-ig-avatar {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(45deg, #FFD521, #F50000, #B900B4);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; font-size: 16px; color: #fff;
+}
+.ps-ig-author-meta { display: flex; flex-direction: column; }
+.ps-ig-username { font-weight: 700; font-size: 16px; color: #fff; }
+.ps-ig-badge { font-size: 12px; color: #6366F1; }
+.ps-ig-card-media {
+  background: #1c1c1e;
+  height: 280px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+.ps-ig-media-statement { font-size: 22px; font-weight: bold; color: #F8FAFC; margin-bottom: 8px; }
+.ps-ig-media-sub { font-size: 15px; color: #94A3B8; }
+.ps-ig-actions { padding: 16px; font-size: 15px; color: #e0e0e0; }
+.ps-ig-exit-btn { margin-top: auto; }
+
+/* ── FocusLock Native App UI ─────────────────────────────────────────────── */
+.fl-root {
+  position: absolute;
+  inset: 0;
+  background: #0A0E17;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.fl-appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 76px;
+  padding: 0 24px;
+  background: #111827;
+  border-bottom: 1.5px solid #334155;
+  flex-shrink: 0;
+}
+.fl-back {
+  background: #1E293B;
+  border: 1px solid #334155;
+  color: #F8FAFC;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.fl-back:hover { background: #334155; }
+.fl-header-info { text-align: right; }
+.fl-app-title { margin: 0; font-size: 22px; font-weight: 700; color: #F8FAFC; }
+.fl-app-version { font-size: 12px; color: #6366F1; font-weight: 500; }
+
+.fl-banner {
+  background: #4F46E5;
+  color: #fff;
+  text-align: center;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  animation: flFadeIn .2s ease;
+}
+@keyframes flFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.fl-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  padding-bottom: 90px;
+}
+
+.fl-card {
+  background: #1E293B;
+  border: 1.5px solid #334155;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.fl-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.fl-card-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: #94A3B8;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+}
+.fl-card-desc { font-size: 13px; color: #94A3B8; margin-top: -4px; margin-bottom: 16px; line-height: 1.4; }
+.fl-subhead { display: block; font-size: 14px; font-weight: 600; color: #F8FAFC; margin-bottom: 10px; }
+
+.fl-status-text { font-size: 16px; font-weight: 600; color: #F8FAFC; margin-bottom: 14px; }
+.fl-badge-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fl-badge {
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #F8FAFC;
+  font-weight: 500;
+}
+
+.fl-session-status { font-size: 18px; font-weight: 600; color: #A78BFA; margin-bottom: 16px; }
+.fl-duration-row { display: flex; align-items: center; justify-content: center; gap: 20px; margin-bottom: 16px; }
+.fl-duration-display { font-size: 20px; color: #F8FAFC; }
+.fl-duration-num { font-size: 36px; color: #6366F1; }
+.fl-btn-mini {
+  background: #111827;
+  border: 1px solid #334155;
+  color: #F8FAFC;
+  font-size: 16px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.fl-quick-durations { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.fl-pill-btn {
+  flex: 1;
+  background: #111827;
+  border: 1px solid #334155;
+  color: #94A3B8;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: center;
+}
+.fl-pill-btn.is-selected {
+  background: #6366F1;
+  color: #0A0E17;
+  border-color: #6366F1;
+}
+
+.fl-btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 14px;
+  cursor: pointer;
+  border: 0;
+}
+.fl-btn-primary { background: #6366F1; color: #0A0E17; }
+.fl-btn-danger { background: #EF4444; color: #fff; }
+
+.fl-todo-section { margin-top: 24px; border-top: 1px solid #334155; padding-top: 18px; }
+.fl-todo-input-row { display: flex; gap: 8px; margin-bottom: 14px; }
+.fl-input {
+  flex: 1;
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #F8FAFC;
+  font-size: 14px;
+}
+.fl-input::placeholder { color: #94A3B8; }
+.fl-btn-small {
+  background: #4F46E5;
+  color: #fff;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.fl-todo-list { display: flex; flex-direction: column; gap: 10px; }
+.fl-todo-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #111827;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid #334155;
+}
+.fl-checkbox-label { display: flex; align-items: center; gap: 10px; font-size: 14px; cursor: pointer; }
+.fl-checkbox-label input { width: 18px; height: 18px; accent-color: #6366F1; cursor: pointer; }
+.fl-todo-done { text-decoration: line-through; color: #94A3B8; }
+.fl-del-btn { background: none; border: 0; color: #EF4444; font-size: 14px; cursor: pointer; padding: 4px 8px; }
+
+.fl-usage-metric { margin-bottom: 12px; }
+.fl-usage-val { font-size: 20px; font-weight: 700; color: #F8FAFC; display: block; margin-bottom: 8px; }
+.fl-progress-track { height: 12px; background: #111827; border-radius: 6px; overflow: hidden; border: 1px solid #334155; }
+.fl-progress-bar { height: 100%; background: #6366F1; border-radius: 6px; }
+.fl-opens-stat { font-size: 14px; color: #94A3B8; margin: 0; }
+
+/* ── Form Controls & Switches ────────────────────────────────────────────── */
+.fl-field-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(51,65,85,.5);
+}
+.fl-field-row label { font-size: 14px; color: #F8FAFC; }
+.fl-input-number {
+  width: 70px;
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 8px;
+  color: #F8FAFC;
+  font-size: 15px;
+  text-align: center;
+}
+
+.fl-toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(51,65,85,.5);
+}
+.fl-toggle-row span { font-size: 14px; color: #F8FAFC; }
+
+.fl-switch {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  background: #334155;
+  border-radius: 14px;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+.fl-switch.is-on { background: #6366F1; }
+.fl-switch-thumb {
+  position: absolute;
+  top: 3px; left: 3px;
+  width: 22px; height: 22px;
+  background: #F8FAFC;
+  border-radius: 50%;
+  transition: transform .2s ease;
+}
+.fl-switch.is-on .fl-switch-thumb { transform: translateX(24px); }
+
+/* ── Apps list in blocklist tab ──────────────────────────────────────────── */
+.fl-apps-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.fl-app-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #111827;
+  padding: 12px 16px;
+  border-radius: 14px;
+  border: 1px solid #334155;
+}
+.fl-app-item-info { display: flex; flex-direction: column; gap: 2px; }
+.fl-app-item-name { font-size: 15px; font-weight: 600; color: #F8FAFC; }
+.fl-app-item-pkg { font-size: 11px; color: #94A3B8; font-family: monospace; }
+.fl-add-app-row { display: flex; gap: 8px; }
+
+.fl-window-list { margin-bottom: 16px; }
+.fl-window-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #111827;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+}
+.fl-active-pill {
+  background: #1E293B;
+  color: #6366F1;
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.fl-mode-block { margin-bottom: 18px; }
+.fl-mode-pills { display: flex; gap: 8px; margin-top: 8px; }
+.fl-intercept-stat {
+  font-size: 13px;
+  color: #A78BFA;
+  margin-bottom: 16px;
+  background: #111827;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+
+/* ── Stats & History ─────────────────────────────────────────────────────── */
+.fl-metric-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.fl-metric-box {
+  background: #111827;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 14px 10px;
+  text-align: center;
+}
+.fl-metric-num { display: block; font-size: 24px; font-weight: 700; color: #6366F1; }
+.fl-metric-lbl { font-size: 11px; color: #94A3B8; margin-top: 4px; display: block; }
+
+.fl-chart { display: flex; flex-direction: column; gap: 10px; }
+.fl-chart-row { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+.fl-chart-day { width: 32px; color: #94A3B8; font-weight: 600; }
+.fl-chart-track { flex: 1; height: 10px; background: #111827; border-radius: 5px; overflow: hidden; }
+.fl-chart-fill { height: 100%; background: #6366F1; border-radius: 5px; }
+.fl-chart-val { width: 35px; text-align: right; color: #94A3B8; }
+
+.fl-log-list { display: flex; flex-direction: column; gap: 10px; }
+.fl-log-item {
+  display: flex;
+  gap: 12px;
+  font-size: 13px;
+  background: #111827;
+  padding: 10px 14px;
+  border-radius: 10px;
+}
+.fl-log-time { color: #6366F1; font-weight: 600; font-family: monospace; }
+.fl-log-detail { color: #F8FAFC; }
+
+.fl-sync-row { display: flex; gap: 8px; margin-top: 8px; }
+
+/* ── Bottom Navigation Bar ───────────────────────────────────────────────── */
+.fl-nav {
+  position: absolute;
+  bottom: 0; left: 0;
+  width: 100%;
+  height: 76px;
+  background: #111827;
+  border-top: 1.5px solid #334155;
+  display: flex;
+  z-index: 10;
+}
+.fl-nav-item {
+  flex: 1;
+  background: none;
+  border: 0;
+  color: #94A3B8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: color .15s ease;
+}
+.fl-nav-item:hover, .fl-nav-item.is-active { color: #6366F1; }
+.fl-nav-icon { font-size: 20px; line-height: 1; }
+.fl-nav-label { font-size: 11px; font-weight: 600; letter-spacing: .02em; }
 `;
