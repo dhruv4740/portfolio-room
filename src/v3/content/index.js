@@ -72,7 +72,7 @@ export const achievements = [
     id: 'saiss',
     label: 'Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)',
     result: 'Finalist',
-    year: 2025,
+    year: 2026,
   },
 ];
 
