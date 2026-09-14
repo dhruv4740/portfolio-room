@@ -12,6 +12,7 @@ import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import ScanIntro from '../ui/ScanIntro.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
+import { startCityAmbience, stopCityAmbience, disposeCityAmbience } from './cityAudio.js';
 import { anchors, projects, identity } from '../content/index.js';
 import {
   prefersReducedMotion,
@@ -81,9 +82,27 @@ export default function Scan() {
 
   const handleSelect = useCallback((id) => {
     if (screenPhase !== 'room') return;
+    if (id === 'windowOpen') {
+      const isCurrentlyOpen = document.querySelector('.workspace-stage')?.dataset.windowOpen === '1';
+      if (!isCurrentlyOpen) {
+        startCityAmbience();
+      } else {
+        stopCityAmbience();
+      }
+    }
     lastTrigger.current = document.activeElement;
     setActiveId((cur) => (cur === id ? null : id));
   }, [screenPhase]);
+
+  useEffect(() => {
+    if (!seated || screenPhase !== 'room') {
+      stopCityAmbience();
+    }
+  }, [seated, screenPhase]);
+
+  useEffect(() => {
+    return () => disposeCityAmbience();
+  }, []);
 
   const handleClose = useCallback(() => {
     if (screenPhase !== 'room') return;
@@ -232,6 +251,7 @@ export default function Scan() {
           <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
           <button onClick={() => handleSelect('phone')}>PHONE</button>
           {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id.toUpperCase()}</button>)}
+          <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
           <button onClick={() => handleSelect('window')}>CONTACT</button>
           {activeId && <button onClick={handleClose}>BACK TO SEAT</button>}
           <button onClick={handleEnterScreen}>MONITOR</button>

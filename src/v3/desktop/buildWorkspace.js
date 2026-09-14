@@ -674,6 +674,9 @@ export function buildWorkspace(scene, options = {}) {
   // Each blind's depth-only shader supplies the alternate pose for the open map.
   const moonOpen=moon.clone();moonOpen.intensity=0;moonOpen.position.copy(moon.position);moonOpen.target=moon.target;
   moonOpen.shadow=moon.shadow.clone();moonOpen.shadow.camera.userData.blindsOpen=true;scene.add(moonOpen);
+  const windowLight = new THREE.PointLight('#9ab8d6', 0, 3.5, 2);
+  windowLight.position.set(1.74, 2.1, -1.55); root.add(windowLight);
+  const keyConfig = { closed: 1.15, open: 1.60 };
   blindsGroup.children.forEach((slat,i)=>{
     const pose={value:0};const depth=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking});
     depth.onBeforeCompile=shader=>{shader.uniforms.openPose=pose;shader.uniforms.rowOffset={value:i*0.121};shader.vertexShader='uniform float openPose; uniform float rowOffset;\n'+shader.vertexShader;
@@ -787,7 +790,7 @@ export function buildWorkspace(scene, options = {}) {
     root.add(mesh); tag(mesh, batch.id);
   }
   root.add(fx);
-  const roomActions=buildRoomInteractions({root,materials:{bone,dark,wood,paper},canvasTexture,anchors:WORKSPACE.anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys});
+  const roomActions=buildRoomInteractions({root,materials:{bone,dark,wood,paper},canvasTexture,anchors:WORKSPACE.anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys,keyConfig,windowLight});
   const hands = seatedHands(); root.add(hands.root); hands.root.visible = true;
   const figure = buildSeatedFigure(); root.add(figure.root);
 
@@ -809,11 +812,13 @@ export function buildWorkspace(scene, options = {}) {
       moonOpen.color.set(cfg.key.color);
       moon.position.set(...cfg.key.position);
       moonOpen.position.set(...cfg.key.position);
-      moon.intensity = cfg.key.closed;
+      keyConfig.closed = cfg.key.closed;
+      keyConfig.open = cfg.key.open;
       cityLayers[0].material.map = cityTextures[skyState][0];
       cityLayers[1].material.map = cityTextures[skyState][1];
       cityLayers[0].material.needsUpdate = true;
       cityLayers[1].material.needsUpdate = true;
+      roomActions.apply();
       options.onShadowNeedsUpdate?.();
     },
     dispose() {

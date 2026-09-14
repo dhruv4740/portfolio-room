@@ -88,6 +88,7 @@ export default function WorkspaceStage({
       const initialSky = resolveSkyState();
       model.setSky(initialSky);
       host.dataset.skyState = initialSky;
+      host.dataset.windowOpen = String(model.roomActions.state.windowOpen);
       const camera = new THREE.PerspectiveCamera(40, 1, 0.025, 60);
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true; controls.dampingFactor = 0.075;
@@ -371,9 +372,17 @@ export default function WorkspaceStage({
         const r=model.roomActions,o=r.objects[id],h=model.hands[id==='coffee'||id==='lamp'?'left':'right'];
         action?.kill();model.hands.reset();model.setHandsVisible(true);model.hands.grip(h,id==='lamp');extraHeld=id;host.dataset.actionState=id;
         controls.enabled=false;
-        const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);host.dataset.drawerOpen=String(r.state.drawer);model.hands.update();invalidate();};
+        const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);host.dataset.drawerOpen=String(r.state.drawer);host.dataset.windowOpen=String(r.state.windowOpen);model.hands.update();invalidate();};
         const follow=()=>{h.hand.position.copy(o.position).add(new THREE.Vector3(id==='coffee'?-0.085:0.12,-0.075,id==='award'?-0.075:id==='coffee'?-0.09:0.055));h.hand.rotation.copy(o.rotation);if(id==='coffee')h.hand.rotation.x+=1.15;update();};
         const end=()=>{if(id==='drawer'&&r.state.drawer>0.5){extraHeld=null;model.hands.reset();host.dataset.actionState='drawer-open';invalidate();}else finishExtra(id);};
+        if(id==='windowOpen') {
+          rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+          const target=1-r.state.windowOpen;
+          if(reduced){r.state.windowOpen=target;update();end();return;}
+          action=gsap.timeline({onUpdate:update,onComplete:end});
+          action.to(r.state,{windowOpen:target,duration:0.65,ease:'power2.inOut'});
+          gsap.ticker.wake();return;
+        }
         if(['lamp','drawer','blinds'].includes(id)) {
           rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           const target=1-r.state[id];
@@ -415,6 +424,7 @@ export default function WorkspaceStage({
       }
       function returnExtra(reduced) {
         const id=extraHeld,r=model.roomActions,o=r.objects[id];action?.kill();rig.dispose();
+        if(id==='windowOpen'){finishExtra(id);return;}
         if(id!=='award'){o.position.copy(r.homes[id]);o.rotation.set(0,0,0);r.updateLiquid(0,0);finishExtra(id);return;}
         const finish=()=>{o.position.copy(r.homes[id]);finishExtra(id);};
         if(reduced){finish();return;}
