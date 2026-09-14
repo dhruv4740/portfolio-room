@@ -1108,7 +1108,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
       {/* 4. FOCUSLOCK FRICTION SEQUENCE (Before Instagram)                    */}
       {/* ==================================================================== */}
       {app === 'friction' && (
-        <div className="fl-friction-root" data-step={currentStep}>
+        <div className="fl-friction-root">
           <div className="ps-statusbar">
             <span className="ps-clock">{time}</span>
             <div className="ps-status-icons">
