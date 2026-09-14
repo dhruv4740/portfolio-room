@@ -2,19 +2,29 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE || 'http://localhost:4173';
+const baseOrigin = new URL(BASE).origin;
+
 const promoted = [
-  { id: 'corrupted', title: 'Corrupted', mode: 'minimize' },
-  { id: 'fluid', title: 'Flux', mode: 'close' },
-  { id: 'kinetic', title: 'Kinetic', mode: 'close' },
-  { id: 'tear', title: 'Reality Tear', mode: 'close' },
+  { id: 'corrupted', title: 'Corrupted', mode: 'minimize', webgl: false },
+  { id: 'fluid', title: 'Flux', mode: 'close', webgl: true },
+  { id: 'kinetic', title: 'Kinetic', mode: 'close', webgl: true },
+  { id: 'tear', title: 'Reality Tear', mode: 'close', webgl: true },
 ];
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
 const pageErrors = [];
 const failedRequests = [];
+const externalRequests = [];
+
 page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('requestfailed', (request) => failedRequests.push(`${request.method()} ${request.url()} — ${request.failure()?.errorText || 'failed'}`));
+page.on('request', (request) => {
+  const url = request.url();
+  if (!url.startsWith('data:') && !url.startsWith(baseOrigin)) {
+    externalRequests.push(url);
+  }
+});
 
 await page.addInitScript(() => {
   const nativeRaf = window.requestAnimationFrame.bind(window);
@@ -54,7 +64,36 @@ for (const app of promoted) {
   assert.equal(await icon.count(), 1, `${app.title} desktop icon missing`);
   await icon.dblclick();
   const win = await windowFor(app.title);
-  await page.waitForTimeout(350);
+
+  // Wait 1500ms
+  await page.waitForTimeout(1500);
+
+  // Perform interaction scaled into window's body rect
+  const bodyBox = await win.locator('.win-body').boundingBox();
+  assert.ok(bodyBox, `${app.title} body rect missing`);
+  const scaleX = (x) => bodyBox.x + (x / 900) * bodyBox.width;
+  const scaleY = (y) => bodyBox.y + (y / 640) * bodyBox.height;
+
+  await page.mouse.move(scaleX(200), scaleY(200));
+  await page.mouse.move(scaleX(700), scaleY(450), { steps: 20 });
+
+  if (app.id === 'corrupted') {
+    await win.locator('#save-header').click();
+  } else if (app.id === 'fluid') {
+    // Mouse move already stirred it
+  } else if (app.id === 'kinetic') {
+    await win.locator('.app-kinetic').evaluate((el) => el.scrollBy(0, 900));
+  } else if (app.id === 'tear') {
+    await page.mouse.move(scaleX(150), scaleY(320));
+    await page.mouse.down();
+    await page.mouse.move(scaleX(750), scaleY(320), { steps: 25 });
+    await page.mouse.up();
+  }
+
+  await page.waitForTimeout(800);
+  await win.screenshot({ path: `scripts/shots/port-${app.id}.png` });
+  console.log(`[harness] saved port-${app.id}.png`);
+
   const running = await page.evaluate(() => window.__rafCallbacks);
   await page.waitForTimeout(250);
   assert.ok((await page.evaluate(() => window.__rafCallbacks)) > running, `${app.title}: rAF did not start while visible`);
@@ -76,6 +115,14 @@ for (const app of promoted) {
     await win.locator('[data-close]').click();
     const before = await page.evaluate(() => window.__rafCallbacks);
     await stopDelta(`${app.title} close`, before);
+  }
+
+  // Allow close animation to complete, then assert DOM cleanup for WebGL apps
+  await page.waitForTimeout(300);
+  if (app.webgl) {
+    const remaining = await page.evaluate((id) => document.querySelectorAll(`.app-${id}`).length, app.id);
+    assert.equal(remaining, 0, `after closing ${app.title}, .app-${app.id} still exists in DOM`);
+    console.log(`PASS ${app.title}: .app-${app.id} fully removed from DOM`);
   }
 }
 
@@ -103,8 +150,9 @@ assert.notEqual(afterWallpaper, beforeWallpaper, 'setting a wallpaper did not ch
 await wallpaper.locator('[data-close]').click();
 console.log('PASS set as wallpaper changes the desktop');
 
+assert.deepEqual(externalRequests, [], `external network requests: ${externalRequests.join(' | ')}`);
 assert.deepEqual(pageErrors, [], `page errors: ${pageErrors.join(' | ')}`);
 assert.deepEqual(failedRequests, [], `failed requests: ${failedRequests.join(' | ')}`);
-console.log('PASS no page errors or failed network requests');
+console.log('PASS no external requests, page errors, or failed network requests');
 console.log(`[harness] ${promoted.length}/4 promoted apps verified`);
 await browser.close();

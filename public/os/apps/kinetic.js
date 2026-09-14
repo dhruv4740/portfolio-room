@@ -398,6 +398,9 @@ export default {
       scrollVel = ((st - lastScrollTop) / dt) * 16;
       lastScrollTop = st;
       lastScrollTime = now;
+      canvas.style.transform = `translateY(${st}px)`;
+      const grain = root.querySelector('#grain');
+      if (grain) grain.style.transform = `translateY(${st}px)`;
       if (window.ScrollTrigger) window.ScrollTrigger.update();
     };
     root.addEventListener('scroll', onScroll, { passive: true });
@@ -548,6 +551,11 @@ export default {
       const W = root.clientWidth || 900;
       const H = root.clientHeight || 640;
 
+      const st = root.scrollTop;
+      canvas.style.transform = `translateY(${st}px)`;
+      const grain = root.querySelector('#grain');
+      if (grain) grain.style.transform = `translateY(${st}px)`;
+
       for (const { el, mesh } of planes) {
         const r = el.getBoundingClientRect();
         mesh.scale.set(r.width, r.height, 1);
@@ -662,11 +670,15 @@ export default {
       visible = Boolean(next);
       if (visible && !rafId && !cleanedUp) {
         rafId = requestAnimationFrame(loop);
+        if (window.ScrollTrigger) window.ScrollTrigger.enable();
+        if (window.gsap) window.gsap.ticker.wake();
         gsapTweens.forEach((t) => t && t.resume && t.resume());
       }
       if (!visible && rafId) {
         cancelAnimationFrame(rafId);
         rafId = 0;
+        if (window.ScrollTrigger) window.ScrollTrigger.disable();
+        if (window.gsap) window.gsap.ticker.sleep();
         gsapTweens.forEach((t) => t && t.pause && t.pause());
       }
     }
@@ -684,9 +696,23 @@ export default {
         stInstances.forEach((st) => {
           try { st.kill(); } catch (_) {}
         });
+        if (window.ScrollTrigger) {
+          window.ScrollTrigger.getAll().forEach((st) => {
+            try { st.kill(); } catch (_) {}
+          });
+          window.ScrollTrigger.disable(true, true);
+        }
+
         gsapTweens.forEach((t) => {
           try { t.kill(); } catch (_) {}
         });
+
+        const g = window.gsap;
+        if (g) {
+          g.ticker.sleep();
+          window.gsap = undefined;
+          setTimeout(() => { window.gsap = g; }, 50);
+        }
 
         planes.forEach((rec) => {
           if (rec.cleanupListeners) rec.cleanupListeners();

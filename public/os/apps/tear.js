@@ -733,11 +733,13 @@ export default {
       visible = Boolean(next);
       if (visible && !rafId && !cleanedUp) {
         rafId = requestAnimationFrame(animate);
+        if (window.gsap) window.gsap.ticker.wake();
         gsapTweens.forEach((tw) => tw && tw.resume && tw.resume());
       }
       if (!visible && rafId) {
         cancelAnimationFrame(rafId);
         rafId = 0;
+        if (window.gsap) window.gsap.ticker.sleep();
         gsapTweens.forEach((tw) => tw && tw.pause && tw.pause());
       }
     }
@@ -760,6 +762,13 @@ export default {
         gsapTweens.forEach((tw) => {
           try { tw.kill(); } catch (_) {}
         });
+
+        const g = window.gsap;
+        if (g) {
+          g.ticker.sleep();
+          window.gsap = undefined;
+          setTimeout(() => { window.gsap = g; }, 50);
+        }
 
         if (renderer) {
           if (tunnelGeo) tunnelGeo.dispose();
