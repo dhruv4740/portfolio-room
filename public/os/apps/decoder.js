@@ -8,55 +8,78 @@ function rndGlyph() { return GLYPHS[Math.floor(Math.random() * GLYPHS.length)]; 
 
 // Build flat content stages from content.js
 function buildStages() {
-  const topSkills = content.skills.slice(0, 6).map(s => s.label).join(' · ');
-  const restSkills = content.skills.slice(6).map(s => s.label).join(' · ');
+  const bp = content.projects.find((p) => p.id === 'basket') || {
+    name: 'BasketProof',
+    tagline: 'Refuses to show you a price it cannot prove.',
+    decision: 'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
+    broke: 'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
+  };
 
   return [
     {
-      header: 'RECORD_00 — IDENTITY',
+      header: 'BATCH_01 — GROCERY LINE VERIFICATION',
       lines: [
         '',
-        '  ' + content.identity.name,
-        '  ' + content.identity.role,
-        '  ' + content.identity.location,
+        '  ▸ Whole Milk (1L) ................. [VERIFIED]',
+        '  ▸ Farm Eggs (12pk) ................ [VERIFIED]',
+        '  ▸ Sourdough Bread ................. [UNKNOWN]',
+        '  ▸ Olive Oil (500ml) ............... [VERIFIED]',
+        '  ▸ Unlabeled Bulk Grain ............ [UNKNOWN]',
+        '',
+        '  BASKET TOTAL: [UNKNOWN — 2 UNVERIFIED LINES]',
         '',
       ],
     },
     {
-      header: 'RECORD_01 — TAGLINE',
+      header: 'BATCH_02 — CORE INVARIANT',
       lines: [
         '',
-        '  "' + content.identity.tagline + '"',
+        '  RULE: UNKNOWN is better than WRONG.',
+        '  Declines to state a total unless it has verified',
+        '  evidence for every line item.',
+        '',
+        '  Verified Lines: 3/5',
+        '  Unverified Lines: 2/5',
+        '  Total State: WITHHELD (No fabricated totals)',
         '',
       ],
     },
     {
-      header: 'RECORD_02 — SKILLS',
+      header: 'BATCH_03 — ARCHITECTURAL DECISION',
       lines: [
         '',
-        '  ' + topSkills,
-        '  ' + restSkills,
+        '  "We built cart snapshot and undo, then deleted it.',
+        '  For a private tool the extra state and failure modes',
+        '  cost more than the feature returned, so cart writes',
+        '  now overwrite with no recovery path.',
+        '  Choosing to remove working code is the part',
+        '  I would defend."',
         '',
       ],
     },
     {
-      header: 'RECORD_03 — SELECTED WORK',
+      header: 'BATCH_04 — FAILURE CLASSIFICATION',
       lines: [
         '',
-        ...content.projects.map(p =>
-          `  ▸ ${p.name.padEnd(30, ' ')}[${p.year}]`
-        ),
+        '  "A bot-mitigation 403 was indistinguishable from an',
+        '  expired session, and the recovery path deleted the',
+        '  stored credential on either — so a temporary block',
+        '  became a permanent lockout loop.',
+        '  Fixed by classifying the two failures separately',
+        '  and leaving the session intact on a block."',
         '',
       ],
     },
     {
-      header: 'RECORD_04 — CONTACT',
+      header: 'BATCH_05 — ENGINE SUMMARY',
       lines: [
         '',
-        '  ✉  ' + content.contact.email,
-        '  ⌥  ' + content.contact.githubLabel,
+        '  Stack: Python · FastAPI · PostgreSQL · Kotlin',
+        '  Ingestion: Direct separate platform insertion',
+        '  Cart-sync: Explicitly eliminated',
+        '  Result: 100% Provenance Guarantee',
         '',
-        '  [ OPEN CONTACT CARD ]',
+        '  [ VERIFICATION COMPLETE ]',
       ],
       finale: true,
     },
@@ -64,18 +87,35 @@ function buildStages() {
 }
 
 export default {
-  id: 'decoder',
-  title: 'decoder',
+  id: 'basketproof',
+  title: 'BasketProof',
   icon: '▓',
   width: 620,
   height: 440,
 
   mount(body, ctx) {
+    const bp = content.projects.find((p) => p.id === 'basket') || {
+      name: 'BasketProof',
+      tagline: 'Refuses to show you a price it cannot prove.',
+    };
+
     body.style.cssText = [
       'position:relative', 'overflow:hidden', 'background:#050a08',
       "font-family:'JetBrains Mono','Courier New',monospace",
       'display:flex', 'flex-direction:column',
     ].join(';');
+
+    // One-line project header
+    const projHeader = document.createElement('div');
+    projHeader.className = 'app-project-header';
+    projHeader.style.cssText = [
+      'height:28px', 'display:flex', 'align-items:center', 'padding:0 16px',
+      'background:#0c1610', 'border-bottom:1px solid rgba(92,255,208,0.22)',
+      'color:#5cffd0', "font:11px/1 'JetBrains Mono',monospace",
+      'letter-spacing:0.05em', 'flex-shrink:0', 'user-select:none',
+    ].join(';');
+    projHeader.textContent = `${bp.name} — ${bp.tagline}`;
+    body.appendChild(projHeader);
 
     // Scanline overlay
     const scan = document.createElement('div');
@@ -145,10 +185,8 @@ export default {
     // ── State ──
     const STAGES = buildStages();
     let stageIdx = 0;
-    let intervalId = null;
     let spanItems = [];  // { span, real }
     let decodeIdx = 0;
-    let scrambleIntervalId = null;
     let done = false;
 
     function showStage(idx) {
@@ -195,35 +233,43 @@ export default {
       });
 
       // Decode animation
-      clearInterval(intervalId);
-      clearInterval(scrambleIntervalId);
+      lastScramble = 0;
+      lastAdvance = 0;
+    }
 
-      // Scramble undecoded chars
-      scrambleIntervalId = setInterval(() => {
-        spanItems.slice(decodeIdx).forEach(span => {
-          if (span.dataset.real !== ' ') span.textContent = rndGlyph();
-        });
-      }, 45);
+    let rafId = null;
+    let visible = true;
+    let lastScramble = 0;
+    let lastAdvance = 0;
 
-      // Advance decode cursor
-      intervalId = setInterval(() => {
-        const end = Math.min(decodeIdx + SPEED, spanItems.length);
-        for (let i = decodeIdx; i < end; i++) {
-          const span = spanItems[i];
-          const real = span.dataset.real;
-          span.textContent = real === ' ' ? ' ' : real;
-          span.style.color = '#5cffd0';
-          span.style.fontSize = '12px';
+    function loop(now) {
+      if (!visible) { rafId = null; return; }
+      if (!done) {
+        if (now - lastScramble > 45) {
+          lastScramble = now;
+          spanItems.slice(decodeIdx).forEach(span => {
+            if (span.dataset.real !== ' ') span.textContent = rndGlyph();
+          });
         }
-        decodeIdx = end;
-        progressBar.style.width = `${(decodeIdx / spanItems.length) * 100}%`;
+        if (now - lastAdvance > 38) {
+          lastAdvance = now;
+          const end = Math.min(decodeIdx + SPEED, spanItems.length);
+          for (let i = decodeIdx; i < end; i++) {
+            const span = spanItems[i];
+            const real = span.dataset.real;
+            span.textContent = real === ' ' ? ' ' : real;
+            span.style.color = '#5cffd0';
+            span.style.fontSize = '12px';
+          }
+          decodeIdx = end;
+          progressBar.style.width = `${(decodeIdx / spanItems.length) * 100}%`;
 
-        if (decodeIdx >= spanItems.length) {
-          clearInterval(intervalId);
-          clearInterval(scrambleIntervalId);
-          onDecoded(stage);
+          if (decodeIdx >= spanItems.length) {
+            onDecoded(STAGES[stageIdx]);
+          }
         }
-      }, 38);
+      }
+      rafId = requestAnimationFrame(loop);
     }
 
     function onDecoded(stage) {
@@ -264,8 +310,6 @@ export default {
       if (e.target === footerAction) return;
       if (!done && decodeIdx < spanItems.length) {
         // Complete immediately
-        clearInterval(intervalId);
-        clearInterval(scrambleIntervalId);
         spanItems.slice(decodeIdx).forEach(span => {
           const real = span.dataset.real;
           span.textContent = real === ' ' ? ' ' : real;
@@ -279,10 +323,24 @@ export default {
     });
 
     showStage(0);
+    rafId = requestAnimationFrame(loop);
 
-    return function cleanup() {
-      clearInterval(intervalId);
-      clearInterval(scrambleIntervalId);
+    return {
+      setVisible(next) {
+        visible = Boolean(next);
+        if (visible && !rafId) rafId = requestAnimationFrame(loop);
+        if (!visible && rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      },
+      cleanup() {
+        visible = false;
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = null;
+        }
+      },
     };
   },
 };

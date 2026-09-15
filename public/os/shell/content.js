@@ -144,7 +144,7 @@ export default Object.freeze({
     {
       "id": "three",
       "label": "Three.js / WebGL",
-      "note": "Three.js sketches on the desk computer: Flux, Kinetic, Reality Tear",
+      "note": "Three.js sketches on the desk computer: DarkSentinel, Expense Tracker",
       "projects": []
     }
   ],
@@ -152,7 +152,7 @@ export default Object.freeze({
     {
       "id": "focuslock",
       "name": "FocusLock",
-      "year": 2025,
+      "year": 2026,
       "kind": "product",
       "type": "MAIN QUEST",
       "tagline": "Screen-time limits that follow you across Android and Windows.",
@@ -179,7 +179,7 @@ export default Object.freeze({
       "kind": "product",
       "type": "MAIN QUEST",
       "tagline": "Logs your spending by reading the receipts your phone already gets.",
-      "description": "React Native with native Kotlin modules that parse SMS and notifications to log expenses automatically. Everything stays in local SQLite — no account, no cloud, no sync.",
+      "description": "React Native app where Kotlin captures SMS and notifications into a peek/ack buffer, and a TypeScript parser logs expenses automatically into local SQLite — no account, no cloud, no sync.",
       "decision": "The native buffer exposes peek and ack rather than drain. Drain-then-process loses events if processing crashes mid-loop; peek-then-ack only marks them consumed after they have actually been handled. Drain stayed behind as a legacy fallback.",
       "broke": "The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read — dedup keys bucket by minute, and two clock reads can straddle a boundary.",
       "tech": [
@@ -196,16 +196,19 @@ export default Object.freeze({
     },
     {
       "id": "basket",
-      "name": "Basket Price",
+      "name": "BasketProof",
       "year": 2026,
       "kind": "tool",
       "type": "MAIN QUEST",
       "tagline": "Refuses to show you a price it cannot prove.",
-      "description": "A private grocery price comparison and cart-sync tool for one family, across three delivery services. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.",
+      "description": "A private grocery price comparison tool for one family, adding items across three delivery services separately. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.",
       "decision": "We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.",
       "broke": "A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.",
       "tech": [
-        "Python"
+        "Python",
+        "FastAPI",
+        "PostgreSQL",
+        "Kotlin"
       ],
       "links": {
         "live": "",

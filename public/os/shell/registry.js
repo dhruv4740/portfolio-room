@@ -20,7 +20,6 @@ await load('../apps/terminal.js');
 await load('../apps/projects.js');
 await load('../apps/gallery.js');
 await load('../apps/corrupted.js');
-await load('../apps/fluid.js');
 await load('../apps/kinetic.js');
 await load('../apps/tear.js');
 await load('../apps/wallpaper.js');

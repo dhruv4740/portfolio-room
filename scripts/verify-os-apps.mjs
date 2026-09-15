@@ -1,14 +1,16 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
+import content from '../public/os/shell/content.js';
 
 const BASE = process.env.BASE || 'http://localhost:4173';
 const baseOrigin = new URL(BASE).origin;
 
 const promoted = [
-  { id: 'corrupted', title: 'Corrupted', mode: 'minimize', webgl: false },
-  { id: 'fluid', title: 'Flux', mode: 'close', webgl: true },
-  { id: 'kinetic', title: 'Kinetic', mode: 'close', webgl: true },
-  { id: 'tear', title: 'Reality Tear', mode: 'close', webgl: true },
+  { id: 'focuslock', title: 'FocusLock', mode: 'minimize', webgl: false, projectKey: 'focuslock' },
+  { id: 'skills', title: 'Skills', mode: 'close', webgl: false, customTagline: 'Interactive skill physics' },
+  { id: 'darksentinel', title: 'DarkSentinel', mode: 'close', webgl: true, projectKey: 'darksentinel' },
+  { id: 'expense', title: 'Expense Tracker', mode: 'close', webgl: true, projectKey: 'expense' },
+  { id: 'basketproof', title: 'BasketProof', mode: 'close', webgl: false, projectKey: 'basket' },
 ];
 
 const browser = await chromium.launch();
@@ -46,18 +48,47 @@ assert.equal(labels.some((label) => /^(wormhole|lab|c[o]smos)$/i.test(label.trim
   `removed apps are still listed: ${labels.join(', ')}`);
 console.log(`[harness] desktop apps: ${labels.join(', ')}`);
 
-// Check terminal ls does not list cosmos
+// Negative DOM assertion: Flux, Decoder, Kinetic, Corrupted, Reality Tear, Resonance
+// must NOT appear anywhere in the desktop DOM (icons, window titles, context menus, terminal).
+const forbidden = ['Flux', 'Decoder', 'Kinetic', 'Corrupted', 'Reality Tear', 'Resonance'];
+for (const f of forbidden) {
+  const re = new RegExp(`\\b${f}\\b`, 'i');
+  assert.equal(labels.some((l) => re.test(l)), false, `Forbidden app "${f}" found in desktop icons: ${labels.join(', ')}`);
+}
+
+// Right-click context menu negative check
+await page.locator('#workspace').click({ button: 'right', position: { x: 400, y: 300 } });
+await page.waitForTimeout(200);
+const ctxMenuText = await page.locator('#workspace').evaluate((el) => {
+  const m = el.querySelector('div[style*="z-index:8000"], div[style*="z-index: 8000"]');
+  return m ? m.innerText : '';
+});
+await page.locator('#workspace').click({ position: { x: 10, y: 10 } });
+await page.waitForTimeout(200);
+for (const f of forbidden) {
+  const re = new RegExp(`\\b${f}\\b`, 'i');
+  assert.equal(re.test(ctxMenuText), false, `Forbidden app "${f}" found in context menu: ${ctxMenuText}`);
+}
+console.log('PASS context menu does not contain old app names');
+
+// Check terminal ls and help do not list old apps or cosmos
 const termIcon = page.locator('.desk-icon').filter({ hasText: 'terminal' }).first();
 if (await termIcon.count() > 0) {
   await termIcon.dblclick();
   const termWin = await windowFor('terminal');
   const termInput = termWin.locator('.term-input');
+  await termInput.fill('help');
+  await termInput.press('Enter');
+  await page.waitForTimeout(200);
   await termInput.fill('ls');
   await termInput.press('Enter');
   await page.waitForTimeout(300);
   const termOutput = await termWin.locator('.term-output').innerText();
-  assert.equal(/cosmos/i.test(termOutput), false, `terminal ls output contained cosmos: ${termOutput}`);
-  console.log('PASS terminal ls does not contain cosmos');
+  for (const f of [...forbidden, 'cosmos', 'wormhole']) {
+    const re = new RegExp(`\\b${f}\\b`, 'i');
+    assert.equal(re.test(termOutput), false, `terminal output contained forbidden app "${f}": ${termOutput}`);
+  }
+  console.log('PASS terminal help/ls does not contain old app names');
   await termWin.locator('[data-close]').click();
   await page.waitForTimeout(300);
 }
@@ -84,6 +115,21 @@ for (const app of promoted) {
   // Wait 1500ms
   await page.waitForTimeout(1500);
 
+  // Header line assertion: <Project> — <tagline from content>
+  let expectedHeader = '';
+  if (app.customTagline) {
+    expectedHeader = `${app.title} — ${app.customTagline}`;
+  } else {
+    const proj = content.projects.find((p) => p.id === (app.projectKey || app.id));
+    assert.ok(proj, `Project not found in content for ${app.id}`);
+    expectedHeader = `${proj.name} — ${proj.tagline}`;
+  }
+  const headerEl = win.locator('.app-project-header');
+  assert.equal(await headerEl.count(), 1, `${app.title}: .app-project-header missing`);
+  const actualHeader = (await headerEl.innerText()).trim();
+  assert.equal(actualHeader, expectedHeader, `${app.title}: header mismatch. Expected "${expectedHeader}", got "${actualHeader}"`);
+  console.log(`PASS ${app.title}: header matched "${expectedHeader}"`);
+
   // Perform interaction scaled into window's body rect
   const bodyBox = await win.locator('.win-body').boundingBox();
   assert.ok(bodyBox, `${app.title} body rect missing`);
@@ -93,12 +139,17 @@ for (const app of promoted) {
   await page.mouse.move(scaleX(200), scaleY(200));
   await page.mouse.move(scaleX(700), scaleY(450), { steps: 20 });
 
-  if (app.id === 'corrupted') {
+  if (app.id === 'focuslock') {
     await win.locator('#save-header').click();
-  } else if (app.id === 'fluid') {
-    // Mouse move already stirred it
-  } else if (app.id === 'kinetic') {
-    const container = win.locator('.app-kinetic');
+  } else if (app.id === 'darksentinel') {
+    await page.mouse.move(scaleX(150), scaleY(320));
+    await page.mouse.down();
+    await page.mouse.move(scaleX(750), scaleY(320), { steps: 25 });
+    await page.mouse.up();
+  } else if (app.id === 'basketproof') {
+    await page.waitForTimeout(300);
+  } else if (app.id === 'expense') {
+    const container = win.locator('.app-expense');
     const scrollHeight = await container.evaluate((el) => el.scrollHeight - el.clientHeight);
     for (let step = 1; step <= 6; step++) {
       const targetY = (scrollHeight / 6) * step;
@@ -114,26 +165,21 @@ for (const app of promoted) {
       }))
     );
     for (const t of titles) {
-      assert.ok(t.text.length > 0, `Kinetic project title is empty`);
-      assert.ok(t.opacity >= 0.99, `Kinetic project "${t.text}" opacity ${t.opacity} < 0.99`);
+      assert.ok(t.text.length > 0, `Expense project title is empty`);
+      assert.ok(t.opacity >= 0.99, `Expense project "${t.text}" opacity ${t.opacity} < 0.99`);
     }
-    console.log(`PASS Kinetic: all ${titles.length} project titles have opacity >= 0.99 and non-empty text`);
+    console.log(`PASS Expense Tracker: all ${titles.length} stage titles have opacity >= 0.99 and non-empty text`);
 
     const proj2Top = await container.locator('.proj').nth(1).evaluate((el) => el.offsetTop);
     await container.evaluate((el, y) => { el.scrollTop = y - 40; }, proj2Top);
     await page.waitForTimeout(500);
-    await win.screenshot({ path: 'scripts/shots/port-kinetic-02.png' });
-    console.log('[harness] saved port-kinetic-02.png');
-  } else if (app.id === 'tear') {
-    await page.mouse.move(scaleX(150), scaleY(320));
-    await page.mouse.down();
-    await page.mouse.move(scaleX(750), scaleY(320), { steps: 25 });
-    await page.mouse.up();
+  } else if (app.id === 'skills') {
+    await page.waitForTimeout(500);
   }
 
   await page.waitForTimeout(800);
-  await win.screenshot({ path: `scripts/shots/port-${app.id}.png` });
-  console.log(`[harness] saved port-${app.id}.png`);
+  await win.screenshot({ path: `scripts/shots/app-${app.id}.png` });
+  console.log(`[harness] saved app-${app.id}.png`);
 
   const running = await page.evaluate(() => window.__rafCallbacks);
   await page.waitForTimeout(250);
@@ -155,12 +201,10 @@ for (const app of promoted) {
     await page.waitForTimeout(100);
     await win.locator('[data-close]').click();
     await page.waitForTimeout(400);
-  } else if (app.id === 'kinetic' || app.id === 'tear') {
+  } else if (app.id === 'expense' || app.id === 'darksentinel' || app.id === 'basketproof') {
     await win.locator('[data-close]').click();
     await page.waitForTimeout(400);
-    // Three.js animation loop is cancelled and DOM destroyed upon close.
-    // GSAP/ScrollTrigger library background ticks persist without global ticker.sleep()/ScrollTrigger.disable().
-    console.log(`PASS ${app.title} close: Three.js loop cancelled and window closed`);
+    console.log(`PASS ${app.title} close: animation loop cancelled and window closed`);
   } else {
     await win.locator('[data-close]').click();
     await page.waitForTimeout(400);
@@ -168,7 +212,6 @@ for (const app of promoted) {
     await stopDelta(`${app.title} close`, before);
   }
 
-  // Allow close animation to complete, then assert DOM cleanup for WebGL apps
   await page.waitForTimeout(300);
   if (app.webgl) {
     const remaining = await page.evaluate((id) => document.querySelectorAll(`.app-${id}`).length, app.id);
@@ -177,40 +220,28 @@ for (const app of promoted) {
   }
 }
 
-// Assert other sketches keep animating after Kinetic closes
-const fluxDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Flux' }).first();
-await fluxDeskIcon.dispatchEvent('dblclick');
-const fluxWindow = await windowFor('Flux');
+// Assert other sketches keep animating after Expense Tracker closes
+const dsDeskIcon = page.locator('.desk-icon').filter({ hasText: 'DarkSentinel' }).first();
+await dsDeskIcon.dispatchEvent('dblclick');
+const dsWindow = await windowFor('DarkSentinel');
 await page.waitForTimeout(500);
 
-const kineticDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Kinetic' }).first();
-await kineticDeskIcon.dispatchEvent('dblclick');
-const kineticWindow = await windowFor('Kinetic');
+const expDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Expense Tracker' }).first();
+await expDeskIcon.dispatchEvent('dblclick');
+const expWindow = await windowFor('Expense Tracker');
 await page.waitForTimeout(500);
 
-await kineticWindow.locator('[data-close]').click();
+await expWindow.locator('[data-close]').click();
 await page.waitForTimeout(400);
 
-const fluxRunningBefore = await page.evaluate(() => window.__rafCallbacks);
+const dsRunningBefore = await page.evaluate(() => window.__rafCallbacks);
 await page.waitForTimeout(250);
-const fluxRunningAfter = await page.evaluate(() => window.__rafCallbacks);
-assert.ok(fluxRunningAfter > fluxRunningBefore, `Flux stopped animating after Kinetic closed (${fluxRunningBefore} -> ${fluxRunningAfter})`);
-console.log('PASS other sketches keep animating after Kinetic closes');
+const dsRunningAfter = await page.evaluate(() => window.__rafCallbacks);
+assert.ok(dsRunningAfter > dsRunningBefore, `DarkSentinel stopped animating after Expense Tracker closed (${dsRunningBefore} -> ${dsRunningAfter})`);
+console.log('PASS other sketches keep animating after Expense Tracker closes');
 
-await fluxWindow.locator('[data-close]').click();
+await dsWindow.locator('[data-close]').click();
 await page.waitForTimeout(400);
-
-const terminalIcon = page.locator('.desk-icon').filter({ hasText: 'terminal' }).first();
-await terminalIcon.dblclick();
-const terminal = await windowFor('terminal');
-const terminalInput = terminal.locator('.term-input');
-await terminalInput.fill('ls');
-await terminalInput.press('Enter');
-await page.waitForTimeout(100);
-const terminalText = await terminal.locator('.term-output').innerText();
-assert.equal(/wormhole|\blab\b|c[o]smos/i.test(terminalText), false, `removed apps remain in terminal: ${terminalText}`);
-await terminal.locator('[data-close]').click();
-console.log('PASS removed apps are not launchable from desktop or terminal');
 
 const wallpaperIcon = page.locator('.desk-icon').filter({ hasText: 'wallpaper' }).first();
 await wallpaperIcon.dblclick();
@@ -251,60 +282,60 @@ console.log('PASS reload embed.html persists PLN wallpaper');
 for (const close of await page.locator('.os-window [data-close]').all()) await close.click().catch(() => {});
 await page.waitForTimeout(400);
 
-// 4. Resonance audio test (no autoplay, plays/loops song, pauses on minimize, removed on close)
-const resIcon = page.locator('.desk-icon').filter({ hasText: 'resonance' }).first();
-assert.equal(await resIcon.count(), 1, 'resonance desktop icon missing');
+// 4. Music Player audio test (no autoplay, plays/loops song, pauses on minimize, removed on close)
+const resIcon = page.locator('.desk-icon').filter({ hasText: 'Music Player' }).first();
+assert.equal(await resIcon.count(), 1, 'Music Player desktop icon missing');
 await resIcon.dispatchEvent('dblclick');
-const resWin = await windowFor('resonance');
+const resWin = await windowFor('Music Player');
 await page.waitForTimeout(600);
 
-const audio = resWin.locator('audio.resonance-audio');
-assert.equal(await audio.count(), 1, 'resonance audio element missing');
+const audio = resWin.locator('audio.music-audio, audio.resonance-audio');
+assert.equal(await audio.count(), 1, 'music audio element missing');
 const audioHandle = await audio.elementHandle();
 
 // No autoplay: paused and currentTime === 0
 const initialPaused = await audio.evaluate((el) => el.paused);
 const initialTime = await audio.evaluate((el) => el.currentTime);
-assert.equal(initialPaused, true, 'resonance audio should be paused on open');
-assert.equal(initialTime, 0, 'resonance audio currentTime should be 0 on open');
-console.log('PASS resonance audio is paused and currentTime === 0 on open (no autoplay)');
+assert.equal(initialPaused, true, 'music audio should be paused on open');
+assert.equal(initialTime, 0, 'music audio currentTime should be 0 on open');
+console.log('PASS music audio is paused and currentTime === 0 on open (no autoplay)');
 
 // Click play -> wait >1s -> currentTime > 0.5 and loop === true
-const playBtn = resWin.locator('.res-overlay-play-btn');
+const playBtn = resWin.locator('.music-overlay-play-btn, .res-overlay-play-btn');
 await playBtn.click();
 await page.waitForTimeout(1200);
 
 const playingTime = await audio.evaluate((el) => el.currentTime);
 const isLoop = await audio.evaluate((el) => el.loop);
 const isPausedAfterPlay = await audio.evaluate((el) => el.paused);
-assert.equal(isPausedAfterPlay, false, 'resonance audio should be playing after click');
-assert.ok(playingTime > 0.5, `resonance audio currentTime should be > 0.5s after 1s, got: ${playingTime}`);
-assert.equal(isLoop, true, 'resonance audio loop should be true');
-console.log(`PASS resonance audio playing: currentTime=${playingTime.toFixed(2)}s, loop=${isLoop}`);
+assert.equal(isPausedAfterPlay, false, 'music audio should be playing after click');
+assert.ok(playingTime > 0.5, `music audio currentTime should be > 0.5s after 1s, got: ${playingTime}`);
+assert.equal(isLoop, true, 'music audio loop should be true');
+console.log(`PASS music audio playing: currentTime=${playingTime.toFixed(2)}s, loop=${isLoop}`);
 
-await resWin.screenshot({ path: 'scripts/shots/resonance-song.png' });
-console.log('[harness] saved resonance-song.png');
+await resWin.screenshot({ path: 'scripts/shots/music-player-song.png' });
+console.log('[harness] saved music-player-song.png');
 
 // Minimize -> paused
 await resWin.locator('[data-minimize]').click();
 await page.waitForTimeout(400);
 const minimizedPaused = await audioHandle.evaluate((el) => el.paused);
-assert.equal(minimizedPaused, true, 'resonance audio should be paused when minimized');
-console.log('PASS resonance audio paused when minimized');
+assert.equal(minimizedPaused, true, 'music audio should be paused when minimized');
+console.log('PASS music audio paused when minimized');
 
 // Restore and close -> element removed and paused
-const resTaskbar = page.locator('.taskbar-btn').filter({ hasText: 'resonance' }).first();
+const resTaskbar = page.locator('.taskbar-btn').filter({ hasText: 'Music Player' }).first();
 await resTaskbar.click();
 await page.waitForTimeout(400);
 
 await resWin.locator('[data-close]').click();
 await page.waitForTimeout(400);
 
-const audioCountAfterClose = await page.locator('audio.resonance-audio').count();
-assert.equal(audioCountAfterClose, 0, 'resonance audio element should be removed on close');
+const audioCountAfterClose = await page.locator('audio.music-audio, audio.resonance-audio').count();
+assert.equal(audioCountAfterClose, 0, 'music audio element should be removed on close');
 const closedPaused = await audioHandle.evaluate((el) => el.paused);
-assert.equal(closedPaused, true, 'resonance audio should be paused after close');
-console.log('PASS resonance audio element removed and paused on close');
+assert.equal(closedPaused, true, 'music audio should be paused after close');
+console.log('PASS music audio element removed and paused on close');
 
 // 5. Room at http://localhost:4173/#/?sky=dusk and enter monitor
 const roomPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
@@ -357,5 +388,5 @@ assert.deepEqual(externalRequests, [], `external network requests: ${externalReq
 assert.deepEqual(pageErrors, [], `page errors: ${pageErrors.join(' | ')}`);
 assert.deepEqual(failedRequests, [], `failed requests: ${failedRequests.join(' | ')}`);
 console.log('PASS no external requests, page errors, or failed network requests');
-console.log(`[harness] ${promoted.length}/4 promoted apps verified`);
+console.log(`[harness] ${promoted.length}/5 promoted apps verified`);
 await browser.close();

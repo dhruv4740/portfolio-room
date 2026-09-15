@@ -14,9 +14,9 @@ function loadScript(src) {
 }
 
 export default {
-  id: 'tear',
-  title: 'Reality Tear',
-  icon: '╱',
+  id: 'darksentinel',
+  title: 'DarkSentinel',
+  icon: '🛡',
   width: 900,
   height: 640,
 
@@ -76,11 +76,32 @@ export default {
         height: 100%;
       }
 
+      .app-project-header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        background: #0c1610;
+        border-bottom: 1px solid rgba(92,255,208,0.22);
+        color: #5cffd0;
+        font: 11px/1 'JetBrains Mono', monospace;
+        letter-spacing: 0.05em;
+        z-index: 100;
+        user-select: none;
+      }
+
       .app-tear #flat-site {
         position: absolute;
-        inset: 0;
+        top: 32px;
+        bottom: 0;
+        left: 0;
+        right: 0;
         z-index: 3;
-        background: #f4f3ee;
+        background: #081410;
         -webkit-mask-image: var(--mask-url, none);
         mask-image: var(--mask-url, none);
         -webkit-mask-size: 100% 100%;
@@ -253,11 +274,15 @@ export default {
     `;
     root.appendChild(style);
 
-    const first3Projects = content.projects.slice(0, 3);
-    const topProject = first3Projects[0] || { name: 'FocusLock', year: 2025 };
-    const nameLines = content.identity.name.split(' ');
+    const dsProj = content.projects.find((p) => p.id === 'darksentinel') || {
+      name: 'DarkSentinel',
+      tagline: 'Darknet threat monitoring. Hackathon finalist.',
+      decision: 'I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
+      broke: 'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
+    };
 
     root.insertAdjacentHTML('beforeend', `
+      <div class="app-project-header">${dsProj.name} — ${dsProj.tagline}</div>
       <div id="no-webgl">WebGL unavailable in this browser.</div>
       <canvas id="webgl-canvas"></canvas>
 
@@ -266,40 +291,49 @@ export default {
       <div id="flat-site">
         <div class="flat-inner">
           <nav class="flat-nav">
-            <span class="logo">${content.identity.name}</span>
+            <span class="logo" style="color:#5cffd0;">CICFLOWMETER // REALTIME FLOW INGESTION</span>
             <div class="nav-links">
-              <span>Work</span>
-              <span>About</span>
-              <span>Contact</span>
+              <span>INTERFACE: eth0</span>
+              <span>FILTER: CLEARNET</span>
+              <span>STATUS: STREAMING</span>
             </div>
           </nav>
           <div class="flat-hero">
-            <h1>${nameLines[0]}<br>${nameLines.slice(1).join(' ')}</h1>
-            <p>${content.identity.role} based in ${content.identity.location}.</p>
+            <h1 style="color:#fff;font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:600;letter-spacing:-0.01em;">SURFACE FLOW DASHBOARD</h1>
+            <p style="color:rgba(92,255,208,0.7);font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:8px;">Live clear-net flow scoring via Random Forest classifier. Clean cases forwarded; anomalous traffic flagged for Tor inspection.</p>
           </div>
-          <div class="flat-section-label">Selected Work</div>
+          <div class="flat-section-label" style="color:rgba(92,255,208,0.4);">Active Flow Stream</div>
           <ul class="flat-work-list">
-            ${first3Projects.map((p) => `
-              <li><span class="project-name">${p.name}</span><span class="project-year">${p.year}</span></li>
-            `).join('')}
+            <li><span class="project-name" style="color:#5cffd0;font-family:'JetBrains Mono',monospace;font-size:12px;">Flow-8901 · 192.168.1.104:443 [TCP SYN]</span><span class="project-year" style="color:rgba(92,255,208,0.6);">SCORE: 0.12 · PASS</span></li>
+            <li><span class="project-name" style="color:#5cffd0;font-family:'JetBrains Mono',monospace;font-size:12px;">Flow-8902 · 10.0.0.12:80 [TCP ACK]</span><span class="project-year" style="color:rgba(92,255,208,0.6);">SCORE: 0.08 · PASS</span></li>
+            <li><span class="project-name" style="color:#5cffd0;font-family:'JetBrains Mono',monospace;font-size:12px;">Flow-8903 · 172.16.0.4:53 [UDP DNS]</span><span class="project-year" style="color:rgba(92,255,208,0.6);">SCORE: 0.05 · PASS</span></li>
+            <li><span class="project-name" style="color:#ffb000;font-family:'JetBrains Mono',monospace;font-size:12px;">Flow-8904 · 192.168.1.205:9001 [ORPort TLS]</span><span class="project-year" style="color:#ffb000;">SCORE: 0.68 · UNCERTAIN ZONE</span></li>
+            <li><span class="project-name" style="color:#5cffd0;font-family:'JetBrains Mono',monospace;font-size:12px;">Flow-8905 · 10.0.0.88:8080 [HTTP GET]</span><span class="project-year" style="color:rgba(92,255,208,0.6);">SCORE: 0.18 · PASS</span></li>
           </ul>
-          <div class="flat-divider"></div>
-          <div class="flat-footer-row">
-            <span>${content.contact.email}</span>
+          <div class="flat-divider" style="background:rgba(92,255,208,0.15);"></div>
+          <div class="flat-footer-row" style="color:rgba(92,255,208,0.4);font-family:'JetBrains Mono',monospace;">
+            <span>FastAPI Ingestion Node · Streamlit &amp; Next.js Dashboards</span>
+            <span>Uncertain threshold: 0.55–0.75</span>
           </div>
         </div>
       </div>
 
       <div id="reveal-overlay">
-        <div id="reveal-title">${content.identity.name.toUpperCase()}</div>
-        <div id="reveal-project">${topProject.name} — ${topProject.year}</div>
+        <div id="reveal-title">DARKNET LAYER</div>
+        <div style="margin-top:10px;font:600 11px/1.4 'JetBrains Mono',monospace;color:#5cffd0;letter-spacing:0.18em;text-align:center;">
+          FLOW SCORING → TOR SCRAPE → TEXT CLASSIFICATION → RISK ROUTING
+        </div>
+        <div style="max-width:560px;margin-top:14px;font:11px/1.6 'JetBrains Mono',monospace;color:rgba(200,240,255,0.88);background:rgba(5,15,20,0.85);border:1px solid rgba(92,255,208,0.3);padding:12px 16px;border-radius:4px;text-align:left;">
+          <div style="color:#5cffd0;font-weight:600;margin-bottom:4px;font-size:10px;letter-spacing:0.1em;">UNCERTAIN-ZONE LLM DECISION</div>
+          ${dsProj.decision}
+        </div>
       </div>
 
       <button id="reset-btn">↺ restore</button>
 
       <div id="concept-label">
-        <div class="title">REALITY TEAR</div>
-        <div class="hint">drag across the page to tear reality open</div>
+        <div class="title">DARKSENTINEL</div>
+        <div class="hint">drag across surface flow to tear open darknet pipeline</div>
       </div>
     `);
 

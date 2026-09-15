@@ -1,9 +1,9 @@
 import content from '../shell/content.js';
 
 export default {
-  id: 'corrupted',
-  title: 'Corrupted',
-  icon: '▧',
+  id: 'focuslock',
+  title: 'FocusLock',
+  icon: '🔒',
   width: 900,
   height: 640,
 
@@ -14,7 +14,7 @@ export default {
 
     // Root container
     const root = document.createElement('div');
-    root.className = 'app-corrupted';
+    root.className = 'app-focuslock app-corrupted';
     root.tabIndex = 0;
     body.appendChild(root);
 
@@ -62,6 +62,22 @@ export default {
         font-size: 18px;
         box-sizing: border-box;
         outline: none;
+      }
+
+      .app-project-header {
+        position: relative;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        background: #0c1610;
+        border-bottom: 1px solid rgba(92,255,208,0.22);
+        color: #5cffd0;
+        font: 11px/1 'JetBrains Mono', monospace;
+        letter-spacing: 0.05em;
+        z-index: 60;
+        flex-shrink: 0;
+        user-select: none;
       }
 
       .app-corrupted *, .app-corrupted *::before, .app-corrupted *::after {
@@ -373,68 +389,78 @@ export default {
     `;
     root.appendChild(style);
 
+    const fl = content.projects.find((p) => p.id === 'focuslock') || {
+      name: 'FocusLock',
+      tagline: 'Screen-time limits that follow you across Android and Windows.',
+      decision: 'It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem — and bought a real tradeoff: Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.',
+      broke: 'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
+      tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
+      links: { github: 'https://github.com/dhruv4740/focuslock' }
+    };
+
     // Markup
     root.insertAdjacentHTML('beforeend', `
+      <div class="app-project-header">${fl.name} — ${fl.tagline}</div>
       <canvas id="noise"></canvas>
       <div id="vignette"></div>
 
       <div id="stage">
         <div id="integrity-wrap">
-          <div id="integrity-label">SAVE INTEGRITY</div>
+          <div id="integrity-label">LOCK INTEGRITY</div>
           <div id="integrity-track"><div id="integrity-fill"></div></div>
           <div id="integrity-pct">0%</div>
         </div>
 
         <div id="save-header" class="glitching unrep">
-          <div class="save-tag">FILE: SAVE_01 · SLOT A</div>
-          <div id="save-name">D⌷RUV K0THΛRI</div>
-          <div id="save-status">[CORRUPTED]</div>
-          <div class="panel-hint">▶ CLICK TO REPAIR HEADER</div>
+          <div class="save-tag">CROSS-DEVICE ENFORCEMENT · ANDROID (KOTLIN) &amp; WINDOWS (ELECTRON)</div>
+          <div id="save-name">DISTRACTION DETECTED</div>
+          <div id="save-status">[LIMIT OVERRIDE ACTIVE]</div>
+          <div class="panel-hint">▶ CLICK TO ENFORCE LIMITS</div>
         </div>
 
         <div id="panels">
           <div class="panel unrep" id="panel-stats">
-            <div class="panel-title">CHARACTER STATS</div>
+            <div class="panel-title">SHARED STATE &amp; DECISION</div>
             <div class="panel-body" id="stats-body">
               <div class="corrupt-text" id="stats-corrupt">
-                ■■▒▒░ STAT DATA MISSING ░▒▒■■<br>
-                ░▒■ RE-initialize ■▒░<br>
-                ERROR 0x4F: MEMORY FAULT<br>
-                ▓▒░▒▓ NULL ▓▒░▒▓
+                ■■▒ FIRESTORE SYNC DESYNCHRONIZED ▒■■<br>
+                ░▒ ERROR 0x4F: UNSANITIZED ACCESS ▒░<br>
+                PUBLIC KEYS DETECTED<br>
+                ▓▒░ SECURITY RULES INACTIVE ░▒▓
               </div>
             </div>
-            <div class="panel-hint">▶ CLICK TO REPAIR STATS</div>
+            <div class="panel-hint">▶ CLICK TO AUDIT ARCHITECTURE</div>
           </div>
 
           <div class="panel unrep" id="panel-quests">
-            <div class="panel-title">QUEST LOG</div>
+            <div class="panel-title">ENFORCEMENT ENGINE &amp; BUG POSTMORTEM</div>
             <div class="panel-body" id="quests-body">
               <div class="corrupt-text" id="quests-corrupt">
-                MJNQ WUEST: ■■■■■■■■■<br>
-                ░▒▓ QUEST DATA CORRUPTED ▓▒░<br>
-                ░░ side_qst.dat MISSING ░░<br>
-                CHECKSUM FAIL — 0xFF
+                ■■ WM_KEYDOWN CTRL+W FAILED ■■<br>
+                ░▒ TAB PERSISTS IN FOREGROUND ▒░<br>
+                SYNTHETIC INPUT REJECTED<br>
+                POSTMESSAGE DEFECT UNRESOLVED
               </div>
             </div>
-            <div class="panel-hint">▶ CLICK TO REPAIR LOG</div>
+            <div class="panel-hint">▶ CLICK TO AUDIT POSTMORTEM</div>
           </div>
         </div>
 
         <div id="contact" class="unrep">
           <div id="contact-body">
-            <div id="contact-title" class="corrupt-text">■■■ GAME ■■■ / ■■■■■■■■</div>
+            <div id="contact-title" class="corrupt-text">FOCUSLOCK // REPOSITORY &amp; CONNECT</div>
             <div style="font-family:'VT323',monospace;font-size:16px;color:#002211;" id="contact-corrupt">
-              PLAYER DATA UNAVAILABLE — CANNOT LOAD SAVE<br>
-              press any key to throw controller
+              CROSS-DEVICE LOCK ENGINE READY<br>
+              PAIRING CODES SYNCED ACROSS ANDROID &amp; WINDOWS
             </div>
-            <div class="panel-hint" style="display:block;margin-top:8px;">▶ CLICK TO REPAIR CONTACT</div>
+            <div class="panel-hint" style="display:block;margin-top:8px;">▶ CLICK TO VERIFY REPOSITORY</div>
           </div>
         </div>
       </div>
 
       <div id="restored">
-        <div id="restored-text">✦ SAVE RESTORED ✦</div>
-        <div id="restored-sub">INTEGRITY 100% — ALL DATA RECOVERED</div>
+        <div id="restored-text">✦ LOCK ENFORCED ✦</div>
+        <div id="restored-sub">INTEGRITY 100% — FOCUSLOCK ACTIVE ON ALL DEVICES</div>
         <button id="restored-close">[ CONTINUE ]</button>
       </div>
     `);
@@ -555,33 +581,6 @@ export default {
       }
     }
 
-    // Stats HTML builder with real content skills
-    function buildStatsHTML() {
-      return content.skills.map((s) => {
-        const proofProjects = (s.projects || []).map((pid) => {
-          const p = content.projects.find((proj) => proj.id === pid);
-          return p ? p.name : pid;
-        }).join(', ');
-        return `
-          <div class="stat-row">
-            <span class="stat-label">${s.label.toUpperCase()}</span>
-            <span class="stat-proof">${proofProjects || (s.note ? s.note.toUpperCase() : 'VERIFIED')}</span>
-          </div>
-        `;
-      }).join('');
-    }
-
-    // Quest log HTML builder with real content projects
-    function buildQuestsHTML() {
-      return content.projects.map((p, idx) => `
-        <div class="quest ${p.type === 'MAIN QUEST' ? 'main' : ''}" style="${idx > 0 ? 'margin-top:12px;border-top:1px solid #112211;padding-top:8px;' : ''}">
-          <div class="quest-tag">${p.type === 'MAIN QUEST' ? '◆ MAIN QUEST' : '◇ SIDE QUEST'}</div>
-          <div class="quest-title" id="q-${p.id}-title">${p.name}</div>
-          <div class="quest-desc" id="q-${p.id}-desc">${p.tagline}</div>
-        </div>
-      `).join('');
-    }
-
     // Integrity & repair logic
     const PANELS = ['header', 'stats', 'quests', 'contact'];
     const repairedSet = new Set();
@@ -607,9 +606,9 @@ export default {
         el.classList.remove('glitching', 'unrep');
         el.classList.add('repaired');
         const nameEl = root.querySelector('#save-name');
-        scrambleTo(nameEl, content.identity.name.toUpperCase(), 1200, () => {
+        scrambleTo(nameEl, 'FOCUSLOCK ENFORCED', 1200, () => {
           const statusEl = root.querySelector('#save-status');
-          scrambleTo(statusEl, `[LOADED — LV.21 ${content.identity.role.toUpperCase()}]`, 800);
+          scrambleTo(statusEl, '[ENFORCING LIMITS · ANDROID & WINDOWS PAIRED]', 800);
         });
       }
 
@@ -618,7 +617,13 @@ export default {
         panel.classList.remove('unrep');
         panel.classList.add('repaired');
         const sBody = root.querySelector('#stats-body');
-        sBody.innerHTML = buildStatsHTML();
+        sBody.innerHTML = `
+          <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#00ff66;margin-bottom:8px;">FIRESTORE SYNC &amp; SECURITY RULES</div>
+          <div style="font-family:'VT323',monospace;font-size:18px;line-height:1.3;color:#aaffcc;margin-bottom:12px;">${fl.decision}</div>
+          <div class="stat-row"><span class="stat-label">TECH STACK</span><span class="stat-proof">${(fl.tech || []).join(', ')}</span></div>
+          <div class="stat-row"><span class="stat-label">SHARED STATE</span><span class="stat-proof">FIRESTORE REALTIME SYNC</span></div>
+          <div class="stat-row"><span class="stat-label">PAIRING</span><span class="stat-proof">6-CHAR SYNC CODES</span></div>
+        `;
       }
 
       if (id === 'quests') {
@@ -626,17 +631,12 @@ export default {
         panel.classList.remove('unrep');
         panel.classList.add('repaired');
         const qBody = root.querySelector('#quests-body');
-        qBody.innerHTML = buildQuestsHTML();
-
-        // Scramble first few project titles
-        content.projects.slice(0, 3).forEach((p, idx) => {
-          const titleEl = root.querySelector(`#q-${p.id}-title`);
-          if (titleEl) {
-            setTimeout(() => {
-              scrambleTo(titleEl, p.name, 700);
-            }, idx * 250);
-          }
-        });
+        qBody.innerHTML = `
+          <div style="font-family:'Press Start 2P',monospace;font-size:7px;color:#00ff66;margin-bottom:8px;">WINDOWS AGENT // SENDINPUT FIX</div>
+          <div style="font-family:'VT323',monospace;font-size:18px;line-height:1.3;color:#aaffcc;margin-bottom:12px;">${fl.broke}</div>
+          <div class="stat-row"><span class="stat-label">ANDROID DETECTION</span><span class="stat-proof">ACCESSIBILITY SERVICE EVENT BUS</span></div>
+          <div class="stat-row"><span class="stat-label">WINDOWS INJECTION</span><span class="stat-proof">SENDINPUT WITH FOREGROUND FOCUS</span></div>
+        `;
       }
 
       if (id === 'contact') {
@@ -645,16 +645,15 @@ export default {
         el.classList.add('repaired');
         const cBody = root.querySelector('#contact-body');
         cBody.innerHTML = `
-          <div id="contact-title" style="font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:16px;">NEW GAME / CONTINUE</div>
+          <div id="contact-title" style="font-family:'Press Start 2P',monospace;font-size:10px;letter-spacing:.2em;color:var(--gold);margin-bottom:16px;">FOCUSLOCK REPOSITORY &amp; VERIFICATION</div>
           <div id="ct" style="font-family:'VT323',monospace;font-size:20px;color:var(--crt-dim);"></div>
           <div id="contact-links">
+            <a href="${fl.links?.github || 'https://github.com/dhruv4740/focuslock'}" target="_blank" rel="noopener">[ GITHUB REPO ]</a>
             <a href="mailto:${content.contact.email}">[ EMAIL ]</a>
-            <a href="${content.contact.github}" target="_blank" rel="noopener">[ GITHUB ]</a>
-            <a href="${content.contact.linkedin}" target="_blank" rel="noopener">[ LINKEDIN ]</a>
           </div>
         `;
         const ct = root.querySelector('#ct');
-        scrambleTo(ct, `LOAD PLAYER: ${content.identity.name} — ready to connect`, 900);
+        scrambleTo(ct, `FOCUSLOCK — ${fl.tagline}`, 900);
       }
 
       updateIntegrity();

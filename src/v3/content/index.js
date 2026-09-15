@@ -87,14 +87,14 @@ export const skills = [
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
   { id: 'ml',       label: 'ML / data',            proof: ['fraud'],                            note: 'XGBoost, pandas' },
   { id: 'iot',      label: 'ESP32 / Raspberry Pi', proof: ['ecowater'],                         note: 'sensor integration, control logic' },
-  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: Flux, Kinetic, Reality Tear' },
+  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: DarkSentinel, Expense Tracker' },
 ];
 
 export const projects = [
   {
     id: 'focuslock',
     name: 'FocusLock',
-    year: 2025,
+    year: 2026,
     kind: 'product',
     tagline: 'Screen-time limits that follow you across Android and Windows.',
     description:
@@ -113,7 +113,7 @@ export const projects = [
     kind: 'product',
     tagline: 'Logs your spending by reading the receipts your phone already gets.',
     description:
-      'React Native with native Kotlin modules that parse SMS and notifications to log expenses automatically. Everything stays in local SQLite — no account, no cloud, no sync.',
+      'React Native app where Kotlin captures SMS and notifications into a peek/ack buffer, and a TypeScript parser logs expenses automatically into local SQLite — no account, no cloud, no sync.',
     decision:
       'The native buffer exposes peek and ack rather than drain. Drain-then-process loses events if processing crashes mid-loop; peek-then-ack only marks them consumed after they have actually been handled. Drain stayed behind as a legacy fallback.',
     broke:
@@ -123,17 +123,17 @@ export const projects = [
   },
   {
     id: 'basket',
-    name: 'Basket Price',
+    name: 'BasketProof',
     year: 2026,
     kind: 'tool',
     tagline: 'Refuses to show you a price it cannot prove.',
     description: 
-      'A private grocery price comparison and cart-sync tool for one family, across three delivery services. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
+      'A private grocery price comparison tool for one family, adding items across three delivery services separately. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
     decision:
       'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
     broke:
       'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
-    tech: ['Python'],
+    tech: ['Python', 'FastAPI', 'PostgreSQL', 'Kotlin'],
     links: { live: '', github: '' },
   },
   {

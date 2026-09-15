@@ -14,9 +14,9 @@ function loadScript(src) {
 }
 
 export default {
-  id: 'kinetic',
-  title: 'Kinetic',
-  icon: '↝',
+  id: 'expense',
+  title: 'Expense Tracker',
+  icon: '💳',
   width: 900,
   height: 640,
 
@@ -26,7 +26,7 @@ export default {
     let cleanedUp = false;
 
     const root = document.createElement('div');
-    root.className = 'app-kinetic';
+    root.className = 'app-expense app-kinetic';
     root.tabIndex = 0;
     body.appendChild(root);
 
@@ -71,6 +71,25 @@ export default {
         font-family: "JetBrains Mono", monospace;
         -webkit-font-smoothing: antialiased;
         outline: none;
+      }
+
+      .app-project-header {
+        position: sticky;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        background: #0c1610;
+        border-bottom: 1px solid rgba(92,255,208,0.22);
+        color: #5cffd0;
+        font: 11px/1 'JetBrains Mono', monospace;
+        letter-spacing: 0.05em;
+        z-index: 100;
+        flex-shrink: 0;
+        user-select: none;
       }
 
       .app-kinetic *, .app-kinetic *::before, .app-kinetic *::after {
@@ -302,21 +321,38 @@ export default {
     `;
     root.appendChild(style);
 
-    // Three-line kinetic layout for role
-    const roleWords = (content.identity.role || 'Full-stack developer').split(' ');
-    let line1 = '', line2 = '', line3 = '';
-    if (roleWords.length >= 2) {
-      line1 = roleWords.slice(0, -1).join(' ');
-      line2 = '&amp;';
-      line3 = `<span class="acid">${roleWords[roleWords.length - 1]}</span>`;
-    } else {
-      line1 = roleWords[0] || 'Developer';
-      line2 = '';
-      line3 = `<span class="acid">${roleWords[0] || 'Developer'}</span>`;
-    }
+    const exp = content.projects.find((p) => p.id === 'expense') || {
+      name: 'Expense Tracker',
+      tagline: 'Logs your spending by reading the receipts your phone already gets.',
+      description: 'React Native app where Kotlin captures SMS and notifications into a peek/ack buffer, and a TypeScript parser logs expenses automatically into local SQLite — no account, no cloud, no sync.',
+      decision: 'The native buffer exposes peek and ack rather than drain. Drain-then-process loses events if processing crashes mid-loop; peek-then-ack only marks them consumed after they have actually been handled. Drain stayed behind as a legacy fallback.',
+      broke: 'The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read — dedup keys bucket by minute, and two clock reads can straddle a boundary.',
+      tech: ['React Native', 'Kotlin', 'TypeScript', 'SQLite'],
+      links: { github: 'https://github.com/dhruv4740/expense-tracker' },
+    };
 
-    const totalProjects = content.projects.length;
-    const counterText = `(01—${String(totalProjects).padStart(2, '0')})`;
+    const stages = [
+      {
+        name: 'Bank SMS Ingestion',
+        tagline: 'Kotlin BroadcastReceiver captures incoming bank SMS receipts in background with zero network permissions.',
+        tech: ['Kotlin', 'Android', 'BroadcastReceiver', 'Zero Network'],
+      },
+      {
+        name: 'Peek / Ack Buffer',
+        tagline: exp.decision,
+        tech: ['Architecture Decision', 'Kotlin Buffer', 'Peek/Ack', 'Crash-Safe'],
+      },
+      {
+        name: 'Transaction Parser',
+        tagline: exp.broke,
+        tech: ['TypeScript', 'Regex State Machine', 'Dedup Bucket', 'SQLite Ingestion'],
+      },
+      {
+        name: 'Offline SQLite Ledger',
+        tagline: 'Completely offline ledger stored in device SQLite — no account, no cloud, no sync.',
+        tech: ['SQLite', 'React Native', 'Offline-First', 'Private Storage'],
+      },
+    ];
 
     const hues = [
       [14, 1.0], [150, 0.7], [265, 0.8], [330, 0.85],
@@ -324,27 +360,28 @@ export default {
     ];
 
     root.insertAdjacentHTML('beforeend', `
+      <div class="app-project-header">${exp.name} — ${exp.tagline}</div>
       <canvas id="gl"></canvas>
       <div id="grain"></div>
 
       <div class="wrap" id="skewer">
         <section class="hero">
-          <div class="kicker">${content.identity.name} — Portfolio</div>
+          <div class="kicker">EXPENSE TRACKER // BANK SMS &amp; NOTIFICATION PARSER</div>
           <h1 class="display">
-            <span class="line"><span>${line1}</span></span>
-            ${line2 ? `<span class="line"><span>${line2}</span></span>` : ''}
-            <span class="line"><span>${line3}</span></span>
+            <span class="line"><span>INR •••</span></span>
+            <span class="line"><span>DEBITED</span></span>
+            <span class="line"><span><span class="acid">PARSED</span></span></span>
           </h1>
-          <p class="sub">${content.identity.statement}</p>
-          <div class="scrollhint"><i></i> scroll</div>
+          <p class="sub">${exp.description}</p>
+          <div class="scrollhint"><i></i> scroll pipeline</div>
         </section>
 
         <div class="marquee"><div class="track" id="mq1"></div></div>
 
         <section class="projects">
           <div class="sec-head">
-            <h2>Selected Work</h2>
-            <em>${counterText}</em>
+            <h2>Ledger Ingestion Pipeline</h2>
+            <em>(01—04)</em>
           </div>
           <div id="projlist"></div>
         </section>
@@ -352,8 +389,8 @@ export default {
         <div class="marquee"><div class="track" id="mq2"></div></div>
 
         <section class="outro">
-          <div class="big reveal">Let's<br /><span class="acid">build</span> it.</div>
-          <a class="cta" href="mailto:${content.contact.email}">Get in touch</a>
+          <div class="big reveal">PRIVATE.<br /><span class="acid">OFFLINE.</span><br />AUTOMATIC.</div>
+          <a class="cta" href="${exp.links?.github || 'https://github.com/dhruv4740/expense-tracker'}" target="_blank" rel="noopener">View Github Repo</a>
         </section>
       </div>
     `);
@@ -362,12 +399,12 @@ export default {
     const mq1 = root.querySelector('#mq1');
     const mq2 = root.querySelector('#mq2');
     const mqHTML = (txt) => Array.from({ length: 8 }).map(() => `<span>${txt}</span>`).join('');
-    mq1.innerHTML = mqHTML('Selected Work');
-    mq2.innerHTML = mqHTML(content.identity.name.toUpperCase());
+    mq1.innerHTML = mqHTML('INR ••• DEBITED · PARSED TO SQLITE ·');
+    mq2.innerHTML = mqHTML('PEEK / ACK BUFFER · OFFLINE PRIVACY ·');
 
     // Project rows
     const projlist = root.querySelector('#projlist');
-    projlist.innerHTML = content.projects.map((p, i) => `
+    projlist.innerHTML = stages.map((p, i) => `
       <article class="proj">
         <div class="pmeta">
           <div class="idx reveal">${String(i + 1).padStart(2, '0')}</div>
@@ -502,7 +539,7 @@ export default {
       planes = [];
       root.querySelectorAll('.pimg').forEach((el) => {
         const i = +el.dataset.proj;
-        const p = content.projects[i];
+        const p = stages[i] || { name: 'Expense' };
         const h = hues[i % hues.length];
         const tex = makeTexture(p.name, h[0], h[1]);
         const mat = new THREE.ShaderMaterial({

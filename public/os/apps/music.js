@@ -26,7 +26,7 @@ export default {
     if (!parentMusic) {
       // Standalone mode: fallback local audio element
       audio = document.createElement('audio');
-      audio.className = 'music-audio';
+      audio.className = 'music-audio resonance-audio';
       audio.src = new URL('../audio/song.mp3', import.meta.url).href;
       audio.loop = true;
       audio.preload = 'none';

@@ -168,8 +168,11 @@ export default {
           '  gallery       open gallery',
           '  wallpaper     open wallpaper',
           '  contact       show contact info',
-          '  gravity       open gravity (physics)',
-          '  decoder       open decoder (bio reveal)',
+          '  skills        open skills (physics)',
+          '  basketproof   open basketproof',
+          '  darksentinel  open darksentinel',
+          '  focuslock     open focuslock',
+          '  expense       open expense tracker',
           '  music         open music player',
           '  whoami        identity',
           '  open <app>    open any app by name',
@@ -177,9 +180,15 @@ export default {
         );
       },
       ls(_, print) {
-        const appList = ['about', 'terminal', 'projects', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'music'];
+        const appList = ['about', 'terminal', 'projects', 'gallery', 'wallpaper', 'contact', 'skills', 'basketproof', 'darksentinel', 'focuslock', 'expense', 'music'];
         print('  ' + appList.join('  '));
       },
+      skills(ctx) { ctx?.openApp?.('skills'); },
+      basketproof(ctx) { ctx?.openApp?.('basketproof'); },
+      darksentinel(ctx) { ctx?.openApp?.('darksentinel'); },
+      focuslock(ctx) { ctx?.openApp?.('focuslock'); },
+      expense(ctx) { ctx?.openApp?.('expense'); },
+      music(ctx) { ctx?.openApp?.('music'); },
       about(ctx, print) {
         print(
           '  ' + identity.name,

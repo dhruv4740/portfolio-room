@@ -169,8 +169,8 @@ export function initDesktop(apps, ctx) {
     ].join(';');
 
     const items = [
-      { label: '⊚  Gravity',   action: () => ctx.openApp('gravity') },
-      { label: '▓  Decoder',   action: () => ctx.openApp('decoder') },
+      { label: '⊚  Skills',       action: () => ctx.openApp('skills') },
+      { label: '▓  BasketProof',  action: () => ctx.openApp('basketproof') },
       { label: '♫  Music Player', action: () => ctx.openApp('music') },
       null,
       { label: '≋  Wallpaper', action: () => ctx.openApp('wallpaper') },
