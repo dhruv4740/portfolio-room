@@ -5,11 +5,13 @@ import { chromium } from 'playwright';
 const BASE = process.env.BASE || 'http://localhost:4174';
 // Left wall above the lamp, seated view. Confirmed on sky-seated-day.png.
 const RECT = { xMin: 0.05, xMax: 0.22, yMin: 0.30, yMax: 0.55 };
+// Keyboard in the seated view, for the screen-spill hot spot.
+const KEYBOARD = { xMin: 0.05, xMax: 0.8, yMin: 0.52, yMax: 0.76 };
 
 // Screenshots (compositor output) are analyzed rather than reading the live
 // WebGL canvas directly: without preserveDrawingBuffer, getImageData on the
 // canvas after presentation can read back blank.
-async function measure(page) {
+async function measure(page, rect = RECT) {
   const base64 = (await page.screenshot()).toString('base64');
   return page.evaluate(({ dataUrl, rect }) => new Promise((resolve) => {
     const img = new Image();
@@ -31,7 +33,7 @@ async function measure(page) {
       resolve({ wall: lumSum / total, clipped: clipped / total });
     };
     img.src = dataUrl;
-  }), { dataUrl: `data:image/png;base64,${base64}`, rect: RECT });
+  }), { dataUrl: `data:image/png;base64,${base64}`, rect });
 }
 
 async function main() {
@@ -53,8 +55,9 @@ async function main() {
     await page.waitForTimeout(2500);
     await page.screenshot({ path: `scripts/shots/sky-seated-${skyState}.png` });
     const { wall, clipped } = await measure(page);
-    results[skyState] = { wall, clipped };
-    console.log(JSON.stringify({ skyState, wall, clipped, errors }));
+    const keyboardClipped = (await measure(page, KEYBOARD)).clipped;
+    results[skyState] = { wall, clipped, keyboardClipped };
+    console.log(JSON.stringify({ skyState, wall, clipped, keyboardClipped, errors }));
     await page.close();
   }
   await browser.close();

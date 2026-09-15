@@ -162,7 +162,7 @@ export const SKY_CONFIGS = {
     windowLight: 0.7,
   },
   day: {
-    hemi: { sky: '#a8c8e8', ground: '#4a453a', intensity: 3.6 },
+    hemi: { sky: '#c6c0b4', ground: '#4a453a', intensity: 3.6 },
     key: { color: '#fff4e0', closed: 2.3, open: 2.9, position: [2.3, 4.1, -2.6] },
     windowLight: 0.9,
   },
@@ -766,8 +766,8 @@ export function buildWorkspace(scene, options = {}) {
   // Warm lamp pool on the desk surface beneath the shade.
   const lampPool=glowDecal('Lamp pool', 0.48, [-1.03, 1.167, -0.3], -Math.PI / 2, '#ffb35c', 0.38);
   // Screen spill onto desk/keyboard in front of the monitor.
-  glowDecal('Screen spill', 0.67, [0, 1.183, 0.02], -Math.PI / 2, '#b6d8ff', 0.38);
-  const screenGlow = new THREE.PointLight('#b6d8ff', 2.4, 1.65, 2);
+  glowDecal('Screen spill', 0.67, [0, 1.183, 0.02], -Math.PI / 2, '#b6d8ff', 0.24);
+  const screenGlow = new THREE.PointLight('#b6d8ff', 1.8, 1.65, 2);
   screenGlow.position.set(0, 1.57, -0.08); fx.add(screenGlow);
 
   const edgeSpill = glowDecal('Screen desk edge', 0.55, [0, 1.108, 0.687], 0, '#b6d8ff', 0.23);
