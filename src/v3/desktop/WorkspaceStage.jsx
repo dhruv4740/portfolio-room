@@ -230,7 +230,7 @@ export default function WorkspaceStage({
       // length from an upright seat, so reaching leans the body in (camera and
       // shoulders together) instead of stretching the arm.
       const SEAT = new THREE.Vector3(...WORKSPACE.seat.position), look = new THREE.Vector3();
-      const REST = [-0.27, 0.27].map(x => ({ p: new THREE.Vector3(x, 1.28, 0.405), q: new THREE.Quaternion() }));
+      const REST = [-0.27, 0.27].map(x => ({ p: new THREE.Vector3(x, 1.292, 0.405), q: new THREE.Quaternion() }));
       const restOf = h => REST[h === model.hands.left ? 0 : 1];
       const poseA = { p: new THREE.Vector3(), q: new THREE.Quaternion() }, poseB = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
       function gripPose(g, out) {
@@ -510,7 +510,7 @@ export default function WorkspaceStage({
       }
       function roomAction(id,reduced) {
         const r=model.roomActions,o=r.objects[id],h=model.hands[id==='coffee'||id==='lamp'?'left':'right'];
-        action?.kill();model.hands.reset();model.setHandsVisible(true);if(!['headphones','award','drawer'].includes(id))model.hands.grip(h,id==='lamp');extraHeld=id;host.dataset.actionState=id;
+        action?.kill();model.hands.reset();model.setHandsVisible(true);if(!['headphones','award','drawer'].includes(id))model.hands.grip(h,id==='lamp'||id==='pen');extraHeld=id;host.dataset.actionState=id;
         controls.enabled=false;
         const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);host.dataset.drawerOpen=String(r.state.drawer);host.dataset.windowOpen=String(r.state.windowOpen);model.hands.update();invalidate();};
         const follow=()=>{h.hand.position.copy(o.position).add(new THREE.Vector3(id==='coffee'?-0.085:0.12,-0.075,id==='award'?-0.075:id==='coffee'?-0.09:0.055));h.hand.rotation.copy(o.rotation);if(id==='coffee')h.hand.rotation.x+=1.15;update();};

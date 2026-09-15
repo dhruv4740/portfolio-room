@@ -291,7 +291,7 @@ function seatedHands() {
   const lean = new THREE.Vector3();
   for (const side of [-1, 1]) {
     const hand = new THREE.Group(); root.add(hand);
-    hand.position.set(side * 0.27, 1.28, 0.405);
+    hand.position.set(side * 0.27, 1.292, 0.405);
     mesh(palmGeometry(), skin, hand);
 
     const fingers = [];
@@ -315,7 +315,7 @@ function seatedHands() {
       [-side*0.070,-0.010,-0.006],[-side*0.087,-0.018,-0.03]], [0.024,0.019,0.013,0.001]),skin,thumb);
     // Separate sleeve/forearm rods follow the authored wrist, without IK.
     const sleeve = mesh(new THREE.CylinderGeometry(0.054, 0.082, 1, 24), cloth, root);
-    const arm = mesh(new THREE.CylinderGeometry(0.028, 0.048, 1, 32), skin, root);
+    const arm = mesh(new THREE.CylinderGeometry(0.016, 0.046, 1, 32), skin, root);
     const wrist = new THREE.Vector3(), elbow = new THREE.Vector3(side * 0.40, 1.13, 1.10);
     const shoulder = new THREE.Vector3(0.05 + side * 0.225, 1.40, 1.23);
     const fit = (m, a, b) => {
@@ -323,7 +323,8 @@ function seatedHands() {
       m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
     };
     hands.push({ hand, fingers, thumb, arm, sleeve, index: side === 1 ? 0 : 3, update() {
-      wrist.set(0, 0, 0.095).applyEuler(hand.rotation).add(hand.position);
+      // End cap buried inside the palm so it never shows as a cut disc.
+      wrist.set(0, 0.004, 0.06).applyEuler(hand.rotation).add(hand.position);
       const s = shoulder.clone().add(lean);
       const direction = wrist.clone().sub(s), distance = direction.length(); direction.normalize();
       const pole = new THREE.Vector3(side * 0.25,-1,0.1);pole.addScaledVector(direction,-pole.dot(direction)).normalize();
@@ -334,7 +335,7 @@ function seatedHands() {
   function update() { hands.forEach(h => h.update()); }
   function reset() {
     lean.set(0, 0, 0);
-    hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.28, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); h.hand.visible = h.arm.visible = h.sleeve.visible = true; }); update();
+    hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.292, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); h.hand.visible = h.arm.visible = h.sleeve.visible = true; }); update();
   }
   const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82 });
   for (const h of hands) for (const group of [h.hand, ...h.fingers, h.thumb]) {
