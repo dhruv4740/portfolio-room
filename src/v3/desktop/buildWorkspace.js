@@ -430,6 +430,8 @@ export function buildWorkspace(scene, options = {}) {
   wall('Passage end',[0.10,2.50,1.08],[3.12,1.28,0.89]);
   wall('Passage return',[0.75,2.50,0.10],[2.77,1.28,0.32]);
   wall('Clipped rear corner',[0.13,3.12,0.90],[-2.14,1.58,-1.49],-Math.PI/4);
+  // Closes the room behind the seat; hidden with the other walls from the orbit view.
+  wall('Front wall',[5,3.12,0.13],[0,1.58,2.08]);
   box('Passage foundation',[0.82,0.18,1.10],[2.80,-0.10,0.88],dark);
   box('Passage threshold',[0.82,0.04,1.10],[2.80,0.09,0.88],floor);
 
@@ -660,7 +662,16 @@ export function buildWorkspace(scene, options = {}) {
     ctx.font = '22px monospace'; ctx.fillStyle = '#555a50'; ctx.fillText('NOTES FROM THE WORKSPACE', 42, 418);
   }, 640, 480);
   const poster = new THREE.Mesh(new THREE.PlaneGeometry(0.79, 0.59), new THREE.MeshStandardMaterial({ map: print, roughness: 0.95 }));
-  poster.position.set(-1.56, 2.37, -1.645); poster.rotation.z = -0.035; root.add(poster);
+  // Framed print: 12 mm dark frame standing 8 mm off the board, 8 mm white mat.
+  const posterFrame = new THREE.Group(); posterFrame.name = 'Poster frame';
+  posterFrame.position.set(-1.56, 2.37, -1.644); posterFrame.rotation.z = -0.035; root.add(posterFrame);
+  const matBoard = new THREE.Mesh(new THREE.PlaneGeometry(0.806, 0.606), mat('poster mat', '#f1eee6'));
+  matBoard.position.z = 0.012; posterFrame.add(matBoard);
+  poster.position.set(0, 0, 0.013); posterFrame.add(poster);
+  const frameMat = mat('poster frame', '#1c1c1c');
+  for (const [w, h, x, y] of [[0.83, 0.012, 0, 0.309], [0.83, 0.012, 0, -0.309], [0.012, 0.606, 0.409, 0], [0.012, 0.606, -0.409, 0]]) {
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02), frameMat); bar.position.set(x, y, 0.01); bar.castShadow = true; posterFrame.add(bar);
+  }
   box('Pinned note', [0.24, 0.27, 0.004], [-0.97, 2.51, -1.64], paper);
   box('Wall shelf', [1.28, 0.055, 0.25], [-1.44, 1.74, -1.56], wood, 0.008);
   for (let i = 0; i < 6; i++) box('Shelf book', [0.056, 0.22 + (i % 3) * 0.026, 0.15], [-1.85 + i * 0.069, 1.89, -1.57], [bone, dark, mat('sage', '#828977')][i % 3], 0.002);
