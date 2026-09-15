@@ -38,7 +38,7 @@
 
 | Item | Status |
 |---|---|
-| Right-click desktop context menu | ✅ Done (desktop.js — gravity/decoder/resonance/wallpaper/contact/reset) |
+| Right-click desktop context menu | ✅ Done (desktop.js — gravity/decoder/music/wallpaper/contact/reset) |
 | Animated default wallpaper on boot | ✅ Done (shell/beneathCanvas.js — 80-particle curl flow, 24fps) |
 | Mobile / small-screen layout | ⬜ Pending |
 
@@ -52,7 +52,7 @@
 | Reality Tear | dependency-free canvas | ✅ Done — visible-lifecycle sketch |
 | Gravity (Matter.js skill chips) | `mockups/gravity.html` | ✅ Done — chips from content.js, click→openProject |
 | Decoder (scramble-reveal bio) | `mockups/decoder.html` | ✅ Done — 5-stage DOM text reveal from content.js |
-| Resonance (audio-reactive) | `mockups/resonance.html` | ✅ Done — Canvas 2D, uses ctx.audio.analyser |
+| Music Player (audio-reactive) | `mockups/resonance.html` | ✅ Done — Canvas 2D, uses ctx.audio.analyser |
 | Liminal (raymarched fog) | `mockups/raymarch.html` | ⬜ Pending |
 | Particle Genesis lite | `mockups/particles.html` | ⬜ Pending |
 | Singularity (raymarched BH) | `mockups/singularity.html` | ⬜ Pending |

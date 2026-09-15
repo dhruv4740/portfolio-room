@@ -1,5 +1,5 @@
 /**
- * audio.js — Resonance ambient soundscape via Web Audio API.
+ * audio.js — Shell ambient soundscape via Web Audio API.
  * Bass sine + detuned saw pad through lowpass with LFO.
  * Starts ONLY on user gesture (toggle).
  */

@@ -170,14 +170,14 @@ export default {
           '  contact       show contact info',
           '  gravity       open gravity (physics)',
           '  decoder       open decoder (bio reveal)',
-          '  resonance     open resonance (audio viz)',
+          '  music         open music player',
           '  whoami        identity',
           '  open <app>    open any app by name',
           '  clear         clear screen',
         );
       },
       ls(_, print) {
-        const appList = ['about', 'terminal', 'projects', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'resonance'];
+        const appList = ['about', 'terminal', 'projects', 'gallery', 'wallpaper', 'contact', 'gravity', 'decoder', 'music'];
         print('  ' + appList.join('  '));
       },
       about(ctx, print) {

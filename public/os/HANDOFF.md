@@ -250,7 +250,7 @@ See `public/os/docs/ROADMAP.md` for full checkbox list. Summary:
 - Mobile/small-screen layout
 
 ### Phase 3 — New Apps
-Priority order: **Gravity** (Matter.js skill chips) → **Decoder** → **Resonance** → others  
+Priority order: **Gravity** (Matter.js skill chips) → **Decoder** → **Music Player** → others  
 Mockup sources in `mockups/` — see ROADMAP.md for the table.
 
 ### Deploy

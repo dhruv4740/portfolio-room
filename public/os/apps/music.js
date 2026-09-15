@@ -1,7 +1,7 @@
-// os/apps/resonance.js — Canvas 2D audio-reactive visualizer using ctx.audio.analyser
+// os/apps/music.js — Canvas 2D audio-reactive visualizer driving shared music player or standalone local audio
 export default {
-  id: 'resonance',
-  title: 'resonance',
+  id: 'music',
+  title: 'Music Player',
   icon: '♫',
   width: 700,
   height: 540,
@@ -9,28 +9,39 @@ export default {
   mount(body, appCtx) {
     body.style.cssText = 'position:relative;overflow:hidden;background:#050a08;';
 
+    const parentMusic = (typeof window !== 'undefined' && window.parent && window.parent !== window && window.parent.__v3Music)
+      ? window.parent.__v3Music
+      : null;
+
     const canvas = document.createElement('canvas');
     canvas.style.cssText = 'display:block;position:absolute;inset:0;';
     body.appendChild(canvas);
     const c = canvas.getContext('2d');
 
-    // ── Audio Element & Graph ──
-    const audio = document.createElement('audio');
-    audio.className = 'resonance-audio';
-    audio.src = new URL('../audio/song.mp3', import.meta.url).href;
-    audio.loop = true;
-    audio.preload = 'none';
-    body.appendChild(audio);
-
+    let audio = null;
     let mediaSource = null;
     let songGain = null;
     let volume = 0.6;
-    audio.volume = volume;
-    let mode = 'SONG'; // 'SONG' | 'SYNTH'
-    let wasPlayingBeforeHide = false;
+
+    if (!parentMusic) {
+      // Standalone mode: fallback local audio element
+      audio = document.createElement('audio');
+      audio.className = 'music-audio';
+      audio.src = new URL('../audio/song.mp3', import.meta.url).href;
+      audio.loop = true;
+      audio.preload = 'none';
+      audio.volume = volume;
+      body.appendChild(audio);
+    } else {
+      volume = parentMusic.getState().volume;
+    }
 
     function ensureAudioGraph() {
-      if (mediaSource) return;
+      if (parentMusic) {
+        return parentMusic.getAnalyser();
+      }
+      if (mediaSource) return appCtx?.audio?.analyser;
+      if (!appCtx?.audio?.context || !audio) return null;
       const ctx = appCtx.audio.context;
       if (ctx.state === 'suspended') ctx.resume();
       mediaSource = ctx.createMediaElementSource(audio);
@@ -38,11 +49,12 @@ export default {
       songGain.gain.value = volume;
       mediaSource.connect(songGain);
       songGain.connect(appCtx.audio.analyser);
+      return appCtx.audio.analyser;
     }
 
     // ── Overlay (shown when paused / initial state) ──
     const overlay = document.createElement('div');
-    overlay.className = 'resonance-overlay';
+    overlay.className = 'music-overlay';
     overlay.style.cssText = [
       'position:absolute', 'inset:0', 'display:flex', 'flex-direction:column',
       'align-items:center', 'justify-content:center', 'gap:14px',
@@ -51,11 +63,12 @@ export default {
     body.appendChild(overlay);
 
     const hint = document.createElement('span');
+    hint.className = 'music-hint';
     hint.style.cssText = "font:9px 'JetBrains Mono',monospace;color:rgba(92,255,208,0.4);letter-spacing:0.2em;";
-    hint.textContent = 'RESONANCE AUDIO';
+    hint.textContent = 'MUSIC PLAYER';
 
     const overlayPlayBtn = document.createElement('button');
-    overlayPlayBtn.className = 'res-overlay-play-btn';
+    overlayPlayBtn.className = 'res-overlay-play-btn music-overlay-play-btn';
     overlayPlayBtn.textContent = '▶ PLAY SONG';
     overlayPlayBtn.style.cssText = [
       "font:10px 'JetBrains Mono',monospace", 'letter-spacing:0.2em',
@@ -71,7 +84,7 @@ export default {
 
     // ── Persistent Controls Bar ──
     const controlsBar = document.createElement('div');
-    controlsBar.className = 'resonance-controls';
+    controlsBar.className = 'music-controls';
     controlsBar.style.cssText = [
       'position:absolute', 'bottom:14px', 'left:50%', 'transform:translateX(-50%)',
       'display:flex', 'align-items:center', 'gap:14px',
@@ -83,7 +96,7 @@ export default {
 
     // Play/Pause button
     const playPauseBtn = document.createElement('button');
-    playPauseBtn.className = 'res-btn res-play-btn';
+    playPauseBtn.className = 'res-btn res-play-btn music-play-btn';
     playPauseBtn.textContent = '▶ PLAY';
     playPauseBtn.style.cssText = [
       "font:9px 'JetBrains Mono',monospace", 'letter-spacing:0.15em',
@@ -92,18 +105,6 @@ export default {
       'border-radius:4px', 'transition:all 0.2s',
     ].join(';');
     controlsBar.appendChild(playPauseBtn);
-
-    // Mode toggle button (SONG / SYNTH)
-    const modeBtn = document.createElement('button');
-    modeBtn.className = 'res-btn res-mode-btn';
-    modeBtn.textContent = 'SRC: SONG';
-    modeBtn.style.cssText = [
-      "font:9px 'JetBrains Mono',monospace", 'letter-spacing:0.1em',
-      'padding:4px 10px', 'border:1px solid rgba(92,255,208,0.25)',
-      'background:transparent', 'color:rgba(92,255,208,0.7)', 'cursor:pointer',
-      'border-radius:4px', 'transition:all 0.2s',
-    ].join(';');
-    controlsBar.appendChild(modeBtn);
 
     // Volume Slider
     const volWrap = document.createElement('div');
@@ -127,12 +128,18 @@ export default {
     volWrap.appendChild(volVal);
     controlsBar.appendChild(volWrap);
 
+    function isPlaying() {
+      if (parentMusic) {
+        return parentMusic.getState().playing;
+      }
+      return Boolean(audio && !audio.paused);
+    }
+
     function updateUI() {
-      const isPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
-      playPauseBtn.textContent = isPlaying ? '❚❚ PAUSE' : '▶ PLAY';
-      overlayPlayBtn.textContent = isPlaying ? '❚❚ PAUSE' : (mode === 'SONG' ? '▶ PLAY SONG' : '▶ PLAY SYNTH');
-      modeBtn.textContent = `SRC: ${mode}`;
-      if (isPlaying) {
+      const active = isPlaying();
+      playPauseBtn.textContent = active ? '❚❚ PAUSE' : '▶ PLAY';
+      overlayPlayBtn.textContent = active ? '❚❚ PAUSE' : '▶ PLAY SONG';
+      if (active) {
         overlay.style.opacity = '0';
         overlay.style.pointerEvents = 'none';
       } else {
@@ -142,48 +149,53 @@ export default {
     }
 
     function play() {
-      if (mode === 'SONG') {
+      if (parentMusic) {
+        parentMusic.play()?.then(() => updateUI()).catch(() => {});
+      } else if (audio) {
         ensureAudioGraph();
-        const ctx = appCtx.audio.context;
-        if (ctx.state === 'suspended') ctx.resume();
-        audio.play().then(() => updateUI()).catch((e) => console.warn('[resonance] play error:', e));
-      } else {
-        appCtx.audio.start();
-        updateUI();
+        const ctx = appCtx?.audio?.context;
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+        audio.play().then(() => updateUI()).catch((e) => console.warn('[music] play error:', e));
       }
     }
 
     function pause() {
-      if (mode === 'SONG') {
+      if (parentMusic) {
+        parentMusic.pause();
+      } else if (audio) {
         audio.pause();
-      } else {
-        appCtx.audio.stop();
       }
       updateUI();
     }
 
     function togglePlay() {
-      const isPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
-      if (isPlaying) pause(); else play();
+      if (isPlaying()) pause(); else play();
     }
 
-    overlayPlayBtn.addEventListener('click', () => play());
+    overlayPlayBtn.addEventListener('click', () => togglePlay());
     playPauseBtn.addEventListener('click', () => togglePlay());
 
     volSlider.addEventListener('input', (e) => {
       volume = parseFloat(e.target.value);
-      audio.volume = volume;
-      if (songGain) songGain.gain.value = volume;
-      if (appCtx.audio.masterGain) appCtx.audio.masterGain.gain.value = volume;
+      if (parentMusic) {
+        parentMusic.setVolume(volume);
+      } else {
+        if (audio) audio.volume = volume;
+        if (songGain) songGain.gain.value = volume;
+      }
       volVal.textContent = Math.round(volume * 100) + '%';
     });
 
-    modeBtn.addEventListener('click', () => {
-      const wasPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
-      pause();
-      mode = mode === 'SONG' ? 'SYNTH' : 'SONG';
-      if (wasPlaying) play(); else updateUI();
-    });
+    let unsubscribe = null;
+    if (parentMusic) {
+      unsubscribe = parentMusic.subscribe((st) => {
+        updateUI();
+        if (volSlider && Math.abs(parseFloat(volSlider.value) - st.volume) > 0.05) {
+          volSlider.value = String(st.volume);
+          volVal.textContent = Math.round(st.volume * 100) + '%';
+        }
+      });
+    }
 
     updateUI();
 
@@ -194,7 +206,7 @@ export default {
       "font:8px 'JetBrains Mono',monospace", 'color:rgba(92,255,208,0.25)',
       'letter-spacing:0.2em', 'pointer-events:none', 'z-index:5',
     ].join(';');
-    label.textContent = 'RESONANCE';
+    label.textContent = 'MUSIC PLAYER';
     body.appendChild(label);
 
     // ── Dimensions ──
@@ -226,14 +238,14 @@ export default {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now; t += dt;
 
-      const isPlaying = mode === 'SONG' ? !audio.paused : appCtx.audio.running;
+      const active = isPlaying();
 
       // ── Read FFT or idle ──
       let freqData = null;
       let bassEnergy = 0, overallEnergy = 0;
 
-      const analyser = appCtx.audio.analyser;
-      if (isPlaying && analyser) {
+      const analyser = parentMusic ? parentMusic.getAnalyser() : (appCtx?.audio?.analyser || null);
+      if (active && analyser) {
         freqData = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(freqData);
         for (let i = 0; i < 8; i++)  bassEnergy    += freqData[i] / 255;
@@ -332,51 +344,30 @@ export default {
       c.fillStyle = bloom; c.fill();
     }
 
-    function setVisible(v) {
-      if (!v) {
-        if (mode === 'SONG') {
-          if (!audio.paused) {
-            wasPlayingBeforeHide = true;
-            pause();
-          }
-        } else {
-          if (appCtx.audio.running) {
-            wasPlayingBeforeHide = true;
-            pause();
-          }
-        }
-      } else {
-        if (wasPlayingBeforeHide) {
-          wasPlayingBeforeHide = false;
-          play();
-        }
-      }
-    }
-
-    function onV3Visibility(e) {
-      if (e.detail?.state === 'room') {
-        setVisible(false);
-      }
-    }
-    window.addEventListener('v3:visibility', onV3Visibility);
-
     const ro = new ResizeObserver(resize);
     ro.observe(body);
     resize();
     rafId = requestAnimationFrame(loop);
 
     return {
-      setVisible,
+      setVisible(v) {
+        if (!parentMusic && !v && audio && !audio.paused) {
+          audio.pause();
+          updateUI();
+        }
+      },
       cleanup() {
-        window.removeEventListener('v3:visibility', onV3Visibility);
+        if (unsubscribe) unsubscribe();
         cancelAnimationFrame(rafId);
         ro.disconnect();
-        pause();
-        if (mediaSource) {
-          try { mediaSource.disconnect(); } catch (_) {}
-          try { songGain.disconnect(); } catch (_) {}
+        if (!parentMusic) {
+          pause();
+          if (mediaSource) {
+            try { mediaSource.disconnect(); } catch (_) {}
+            try { songGain.disconnect(); } catch (_) {}
+          }
+          if (audio) audio.remove();
         }
-        audio.remove();
       },
     };
   },

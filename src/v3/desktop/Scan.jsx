@@ -130,16 +130,25 @@ export default function Scan() {
   // Wearing the headphones loops the song; taking them off stops it. The event
   // fires from a click, so playback has a user gesture.
   useEffect(() => {
-    let song = null;
+    let player = null;
+    import('./musicPlayer.js').then((mod) => {
+      player = mod.musicPlayer || mod.default;
+    });
     const onHeadphones = (event) => {
+      const p = player || window.__v3Music;
+      if (!p) return;
       if (event.detail?.on) {
-        song ||= Object.assign(new Audio('/os/audio/song.mp3'), { loop: true, volume: 0.6 });
-        song.currentTime = 0;
-        song.play().catch(() => {});
-      } else song?.pause();
+        p.setOutput('headphones');
+        p.play()?.catch(() => {});
+      } else {
+        p.pause();
+        p.setOutput('speakers');
+      }
     };
     window.addEventListener('workspace:headphones', onHeadphones);
-    return () => { window.removeEventListener('workspace:headphones', onHeadphones); song?.pause(); song = null; };
+    return () => {
+      window.removeEventListener('workspace:headphones', onHeadphones);
+    };
   }, []);
 
   const handleClose = useCallback(() => {

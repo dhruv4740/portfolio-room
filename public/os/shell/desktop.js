@@ -21,11 +21,26 @@ export function initDesktop(apps, ctx) {
 
   // ── Sound toggle ──
   const soundBtn = document.getElementById('sound-toggle');
-  soundBtn.addEventListener('click', () => {
-    const on = ctx.audio.toggle();
-    soundBtn.textContent = on ? '♪ ON' : '♪ OFF';
-    soundBtn.classList.toggle('on', on);
-  });
+  const parentMusic = (typeof window !== 'undefined' && window.parent && window.parent !== window && window.parent.__v3Music)
+    ? window.parent.__v3Music
+    : null;
+  if (parentMusic) {
+    const updateSoundBtn = (st) => {
+      const on = st.playing;
+      soundBtn.textContent = on ? '♪ ON' : '♪ OFF';
+      soundBtn.classList.toggle('on', on);
+    };
+    parentMusic.subscribe(updateSoundBtn);
+    soundBtn.addEventListener('click', () => {
+      parentMusic.toggle();
+    });
+  } else {
+    soundBtn.addEventListener('click', () => {
+      const on = ctx.audio.toggle();
+      soundBtn.textContent = on ? '♪ ON' : '♪ OFF';
+      soundBtn.classList.toggle('on', on);
+    });
+  }
 
   // ── Contact button ──
   const menubar = document.getElementById('menubar');
@@ -156,7 +171,7 @@ export function initDesktop(apps, ctx) {
     const items = [
       { label: '⊚  Gravity',   action: () => ctx.openApp('gravity') },
       { label: '▓  Decoder',   action: () => ctx.openApp('decoder') },
-      { label: '♫  Resonance', action: () => ctx.openApp('resonance') },
+      { label: '♫  Music Player', action: () => ctx.openApp('music') },
       null,
       { label: '≋  Wallpaper', action: () => ctx.openApp('wallpaper') },
       { label: '✉  Contact',   action: () => ctx.openContact() },
