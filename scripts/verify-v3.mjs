@@ -87,6 +87,7 @@ const pinSurface = (page, surface) =>
     try {
       localStorage.setItem('v3:surface-override', s);
       localStorage.removeItem('v3:seen-intro');
+      sessionStorage.setItem('v3:controls', 'open');
     } catch {}
   }, surface);
 

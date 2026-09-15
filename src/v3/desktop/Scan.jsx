@@ -39,6 +39,14 @@ export default function Scan() {
   });
   const [liveMonitor,setLiveMonitor]=useState(false);
   const [seated, setSeated] = useState(false);
+  // Collapsed by default; tests (v3:test) start expanded so they can click the buttons.
+  const [controlsOpen, setControlsOpen] = useState(() => {
+    try { return sessionStorage.getItem('v3:controls') === 'open' || localStorage.getItem('v3:test') === '1'; } catch { return false; }
+  });
+  const toggleControls = () => setControlsOpen(open => {
+    try { sessionStorage.setItem('v3:controls', open ? 'closed' : 'open'); } catch {}
+    return !open;
+  });
   const [activeId, setActiveId] = useState(null);
   const [screenPhase, setScreenPhase] = useState('room');
   const [osReady, setOsReady] = useState(false);
@@ -252,7 +260,7 @@ export default function Scan() {
   }, []);
 
   return (
-    <div className="scan-root" data-entrance-state={screenPhase}>
+    <div className="scan-root" data-entrance-state={screenPhase} data-seated={seated}>
       <style>{css}</style>
 
       <WorkspaceStage
@@ -278,14 +286,17 @@ export default function Scan() {
       />
 
       {screenPhase === 'room' && seated && (
-        <div className="seat-exit mono">
-          <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
-          <button onClick={() => handleSelect('phone')}>PHONE</button>
-          {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id.toUpperCase()}</button>)}
-          <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
-          <button onClick={() => handleSelect('window')}>CONTACT</button>
+        <div className="seat-exit mono" data-open={controlsOpen}>
+          <button className="seat-exit-toggle" aria-expanded={controlsOpen} onClick={toggleControls}>CONTROLS {controlsOpen ? '▾' : '▸'}</button>
+          {controlsOpen && <>
+            <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
+            <button onClick={() => handleSelect('phone')}>PHONE</button>
+            {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id.toUpperCase()}</button>)}
+            <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
+            <button onClick={() => handleSelect('window')}>CONTACT</button>
+            <button onClick={handleEnterScreen}>MONITOR</button>
+          </>}
           {activeId && <button className="seat-exit-back" onClick={handleClose}>BACK TO SEAT</button>}
-          <button onClick={handleEnterScreen}>MONITOR</button>
           <button className="seat-exit-back" onClick={() => { setActiveId(null); setSeated(false); }}>STAND UP / ESC</button>
         </div>
       )}
@@ -394,6 +405,10 @@ const css = `
   pointer-events: none;
 }
 .scan-head > * { pointer-events: auto; }
+.scan-head { transition: opacity .3s var(--ease); }
+.scan-root[data-seated="true"] .scan-head { opacity: 0; }
+.scan-root[data-seated="true"] .scan-head > * { pointer-events: none; }
+.seat-exit-toggle { color: var(--signal); }
 .scan-id h1 {
   font-size: 1.05rem;
   font-weight: 500;

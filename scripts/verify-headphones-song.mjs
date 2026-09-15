@@ -6,7 +6,7 @@ const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-requ
 const p = await b.newPage({ viewport: { width: 1200, height: 900 } });
 const errors = []; p.on('pageerror', e => errors.push(e.message));
 await p.addInitScript(() => {
-  localStorage.setItem('v3:surface-override', 'scan'); localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', 'low');
+  localStorage.setItem('v3:surface-override', 'scan'); localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', 'low'); sessionStorage.setItem('v3:controls', 'open');
   window.__songs = [];
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () { if (!window.__songs.includes(this)) window.__songs.push(this); return play.call(this); };

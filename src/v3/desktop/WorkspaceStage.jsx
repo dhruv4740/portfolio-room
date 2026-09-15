@@ -900,8 +900,8 @@ export default function WorkspaceStage({
       <PhoneScreen ref={phoneScreenRef} interactive={phoneLive}
         onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
-        className="anchor-marker workspace-marker" data-object="chair" aria-label="Sit in the chair"
-        onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT</span></button>
+        className="anchor-marker workspace-marker workspace-sit" data-object="chair" aria-label="Sit in the chair"
+        onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT DOWN</span></button>
       {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'drawer',label:'Resume'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
@@ -931,5 +931,9 @@ const css = `
 .workspace-marker-label > span { color:var(--signal); }
 .workspace-marker:hover .workspace-marker-label,.workspace-marker:focus-visible .workspace-marker-label,.workspace-marker.is-active .workspace-marker-label { border-color:var(--signal); }
 .workspace-marker:hover .workspace-marker-dot,.workspace-marker.is-active .workspace-marker-dot { background:var(--signal); border-color:var(--signal); }
+.workspace-sit .workspace-marker-label { min-height:44px; padding:12px 22px; background:var(--signal); border-color:var(--signal); color:#141819; font:13px var(--font-mono); letter-spacing:.16em; }
+.workspace-sit { animation:sit-pulse .9s var(--ease) 1.2s 2; }
+@keyframes sit-pulse { 50% { scale:1.06; } }
+@media (prefers-reduced-motion:reduce) { .workspace-sit { animation:none; } }
 @media (max-width:700px) { .workspace-marker-label { font-size:10px; padding:6px; gap:6px; } }
 `;
