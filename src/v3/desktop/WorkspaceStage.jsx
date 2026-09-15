@@ -445,11 +445,17 @@ export default function WorkspaceStage({
         hold(model.hands.left, restOf(model.hands.left), LEFT, k.left);
         model.hands.update();
       }
+      const KEY_TOP = 1.2625;
       function pressKey(key,index) {
         if(!state.current.seated || state.current.phase !== 'room' || state.current.activeAnchorId) return;
         callbacks.current.onTypeKey?.(key);
+        // The finger over that column dips until its tip meets the keycap top, then both come back up.
+        const col=index%12,h=col<6?model.hands.left:model.hands.right,finger=h.fingers[Math.min(3,Math.floor((col<6?col:col-6)*4/6))];
+        const tip=finger.localToWorld(finger.userData.tip.clone().sub(finger.position)),length=finger.userData.tip.distanceTo(finger.position);
+        const dip=Math.asin(THREE.MathUtils.clamp((tip.y-KEY_TOP)/length,0,0.9));
         const depression={y:0};gsap.to(depression,{y:0.009,duration:0.07,repeat:1,yoyo:true,
-          onUpdate(){model.roomActions.setKey(index,depression.y);invalidate();},onComplete(){model.roomActions.setKey(index,0);invalidate();}});
+          onUpdate(){model.roomActions.setKey(index,depression.y);finger.rotation.x=-dip*depression.y/0.009-(depression.y>0?Math.asin(Math.min(0.9,depression.y/length)):0);invalidate();},
+          onComplete(){model.roomActions.setKey(index,0);finger.rotation.x=0;invalidate();}});
         gsap.ticker.wake();
       }
       function physicalKey(event) {
@@ -870,6 +876,9 @@ export default function WorkspaceStage({
             return null;
           },
           timeline() { return action || null; },
+          fingerTips() {
+            return [model.hands.left, model.hands.right].map(h => h.fingers.map(f => f.localToWorld(f.userData.tip.clone().sub(f.position)).toArray()));
+          },
         };
       }
       refresh();
