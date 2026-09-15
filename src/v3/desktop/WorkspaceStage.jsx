@@ -126,7 +126,7 @@ export default function WorkspaceStage({
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           projected.set(...point).project(camera);
-          const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : id === 'chair') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee','drawer'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : id === 'chair') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
@@ -428,6 +428,23 @@ export default function WorkspaceStage({
           .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},1.1);
         gsap.ticker.wake();
       }
+      // Résumé: the right hand pulls the drawer by its handle and takes the page
+      // from above; then both hands hold its side edges at reading distance.
+      const PAGE_HELD = { x: 0.05, y: 1.56, z: 0.82 };
+      const DRAWER_LEAN = { x: 0.3, y: -0.12, z: -0.05 };
+      const drawerGrip = { handle: 0, pick: 0, right: 0, left: 0 };
+      function poseDrawer() {
+        const page = model.roomActions.resumePage, drawer = model.roomActions.objects.drawer, R = model.hands.right, k = drawerGrip;
+        const HANDLE = { obj: drawer, p: [0, 0.03, 0.07], r: [0, 0, 0] };
+        const PICK = { obj: page, p: [0.1, 0.03, 0.05], r: [0, 0, 0] };
+        const RIGHT = { obj: page, p: [0.13, -0.05, 0.11], r: [0, Math.PI / 2, Math.PI] };
+        const LEFT = { obj: page, p: [-0.13, -0.05, 0.11], r: [0, -Math.PI / 2, Math.PI] };
+        if (k.right > 0) hold(R, PICK, RIGHT, k.right);
+        else if (k.pick > 0) hold(R, HANDLE, PICK, k.pick);
+        else hold(R, restOf(R), HANDLE, k.handle);
+        hold(model.hands.left, restOf(model.hands.left), LEFT, k.left);
+        model.hands.update();
+      }
       function pressKey(key,index) {
         if(!state.current.seated || state.current.phase !== 'room' || state.current.activeAnchorId) return;
         callbacks.current.onTypeKey?.(key);
@@ -447,7 +464,7 @@ export default function WorkspaceStage({
       }
       function roomAction(id,reduced) {
         const r=model.roomActions,o=r.objects[id],h=model.hands[id==='coffee'||id==='lamp'?'left':'right'];
-        action?.kill();model.hands.reset();model.setHandsVisible(true);if(!['headphones','award'].includes(id))model.hands.grip(h,id==='lamp');extraHeld=id;host.dataset.actionState=id;
+        action?.kill();model.hands.reset();model.setHandsVisible(true);if(!['headphones','award','drawer'].includes(id))model.hands.grip(h,id==='lamp');extraHeld=id;host.dataset.actionState=id;
         controls.enabled=false;
         const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);host.dataset.drawerOpen=String(r.state.drawer);host.dataset.windowOpen=String(r.state.windowOpen);model.hands.update();invalidate();};
         const follow=()=>{h.hand.position.copy(o.position).add(new THREE.Vector3(id==='coffee'?-0.085:0.12,-0.075,id==='award'?-0.075:id==='coffee'?-0.09:0.055));h.hand.rotation.copy(o.rotation);if(id==='coffee')h.hand.rotation.x+=1.15;update();};
@@ -474,7 +491,35 @@ export default function WorkspaceStage({
           action.to(r.state,{windowOpen:target,duration:0.65,ease:'power2.inOut'});
           gsap.ticker.wake();return;
         }
-        if(['lamp','drawer','blinds'].includes(id)) {
+        if(id==='drawer') {
+          if(r.state.drawer>0.5){returnExtra(reduced);return;}
+          const page=r.resumePage,room=o.parent,k=drawerGrip;Object.assign(k,{handle:0,pick:0,right:0,left:0});
+          const reading=()=>{host.dataset.actionState='resume-reading';invalidate();};
+          if(reduced){
+            r.state.drawer=1;room.attach(page);page.position.set(PAGE_HELD.x,PAGE_HELD.y,PAGE_HELD.z);page.rotation.set(1.13,0,0);
+            Object.assign(k,{handle:1,pick:1,right:1,left:1});update();poseDrawer();
+            rig.flyTo({position:WORKSPACE.seat.position,target:[PAGE_HELD.x,PAGE_HELD.y,PAGE_HELD.z]},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+            reading();return;
+          }
+          const px=o.position.x,py=o.position.y-0.047,pz=o.position.z+0.46-0.23;
+          startLean();
+          action=gsap.timeline({onUpdate(){if(k.pick>0&&page.parent!==room)room.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:reading});
+          action.to(model.hands.lean,{...DRAWER_LEAN,duration:0.6,ease:'power2.inOut'},0)
+            .to(look,{x:o.position.x,y:o.position.y,z:o.position.z+0.05,duration:0.6,ease:'power2.inOut'},0)
+            .to(k,{handle:1,duration:0.6,ease:'power2.inOut'},0)
+            .to(r.state,{drawer:1,duration:0.65,ease:'power2.inOut'},0.6)
+            .to(look,{x:px,y:py,z:pz,duration:0.65,ease:'power2.inOut'},0.6)
+            .to(k,{pick:1,duration:0.55,ease:'power2.inOut'},1.25)
+            .to(page.position,{y:py+0.1,duration:0.3,ease:'power2.out'},1.8)
+            .to(model.hands.lean,{...ZERO,duration:0.9,ease:'power2.inOut'},2.1)
+            .to(look,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},2.1)
+            .to(page.position,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},2.1)
+            .to(page.rotation,{x:1.13,duration:0.9,ease:'power2.inOut'},2.1)
+            .to(k,{right:1,duration:0.4,ease:'power2.inOut'},2.6)
+            .to(k,{left:1,duration:0.65,ease:'power2.inOut'},2.35);
+          gsap.ticker.wake();return;
+        }
+        if(['lamp','blinds'].includes(id)) {
           rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           const target=1-r.state[id];
           if(reduced){r.state[id]=target;update();end();return;}
@@ -575,6 +620,28 @@ export default function WorkspaceStage({
       function returnExtra(reduced) {
         const id=extraHeld,r=model.roomActions,o=r.objects[id];action?.kill();rig.dispose();
         if(id==='windowOpen'||id==='award'){finishExtra(id);return;}
+        if(id==='drawer'){
+          const page=r.resumePage,room=o.parent,k=drawerGrip;
+          const update=()=>{r.apply();host.dataset.drawerOpen=String(r.state.drawer);};
+          const finish=()=>{o.attach(page);page.position.set(0,-0.047,-0.23);page.rotation.set(0,0,0);r.state.drawer=0;update();Object.assign(k,{handle:0,pick:0,right:0,left:0});finishExtra(id);};
+          if(reduced||page.parent!==room){finish();return;}
+          const floor={x:o.position.x,y:o.position.y-0.047,z:o.position.z-0.23};
+          startLean();
+          action=gsap.timeline({onUpdate(){if(k.pick===0&&page.parent!==o)o.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:finish});
+          action.to(page.position,{...floor,duration:0.8,ease:'power2.inOut'},0)
+            .to(page.rotation,{x:0,duration:0.8,ease:'power2.inOut'},0)
+            .to(k,{left:0,duration:0.45,ease:'power2.inOut'},0)
+            .to(k,{right:0,duration:0.8,ease:'power2.inOut'},0)
+            .to(model.hands.lean,{...DRAWER_LEAN,duration:0.8,ease:'power2.inOut'},0)
+            .to(look,{...floor,duration:0.8,ease:'power2.inOut'},0)
+            .to(k,{pick:0,duration:0.45,ease:'power2.inOut'},0.8)
+            .to(r.state,{drawer:0,duration:0.6,ease:'power2.inOut'},1.25)
+            .to(look,{x:o.position.x,y:o.position.y,z:r.homes.drawer.z+0.05,duration:0.6,ease:'power2.inOut'},1.25)
+            .to(k,{handle:0,duration:0.5,ease:'power2.inOut'},1.85)
+            .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},1.85)
+            .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},1.85);
+          gsap.ticker.wake();return;
+        }
         if(id!=='award'){o.position.copy(r.homes[id]);o.rotation.set(0,0,0);r.updateLiquid(0,0);finishExtra(id);return;}
         const finish=()=>{o.position.copy(r.homes[id]);finishExtra(id);};
         if(reduced){finish();return;}

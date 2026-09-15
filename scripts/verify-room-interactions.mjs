@@ -7,19 +7,13 @@ const click=async name=>{await page.getByRole('button',{name,exact:true}).click(
 async function idle(label){await page.waitForFunction(()=>performance.now()-last>700,null,{polling:100});const a=await page.evaluate(()=>count);await page.waitForTimeout(1500);assert.equal(await page.evaluate(()=>count),a,label);console.log('PASS idle',label);}
 await page.goto((process.env.BASE||'http://127.0.0.1:4174')+'/?sky=night');await page.locator('[data-object="chair"]').click();
 await click('LAMP');assert.equal((await state()).lampOn,'0');await idle('lamp off');await page.screenshot({path:'scripts/shots/seven-lamp-off.png'});await click('LAMP');assert.equal((await state()).lampOn,'1');await page.screenshot({path:'scripts/shots/seven-lamp-on.png'});
-await click('RESUME');assert.equal((await state()).drawerOpen,'1');await idle('drawer open');
-{
-  const link = page.locator('.resume-link');
-  await link.waitFor({state:'visible'});
-  assert.ok((await link.getAttribute('href')).endsWith('/resume.pdf'), 'resume link href must end with /resume.pdf');
-  assert.equal(await link.getAttribute('target'), '_blank');
-  assert.ok((await link.getAttribute('rel')||'').includes('noopener'), 'resume link rel must include noopener');
-  console.log('PASS resume link visible with correct href/target/rel while drawer open');
-}
+await click('RESUME');await page.waitForFunction(()=>document.querySelector('.workspace-stage')?.dataset.actionState==='resume-reading',null,{polling:100});
+assert.equal((await state()).drawerOpen,'1');await idle('resume held');await page.screenshot({path:'scripts/shots/resume-in-hand.png'});
+assert.equal(await page.locator('.resume-link').count(),0,'no separate resume page link');
 await page.keyboard.press('Escape');
-await page.waitForFunction(() => !document.querySelector('.resume-link') || getComputedStyle(document.querySelector('.resume-link')).display === 'none');
-assert.equal(await page.locator('.resume-link').isVisible(), false);
-console.log('PASS resume link hidden after closing the drawer');
+await page.waitForFunction(()=>document.querySelector('.workspace-stage')?.dataset.actionState==='idle',null,{polling:100});
+assert.equal((await state()).drawerOpen,'0');
+console.log('PASS resume page lifted from the drawer, put back and drawer closed on Escape');
 await click('BLINDS');assert.equal((await state()).blindsOpen,'1');await idle('blinds open');await click('BLINDS');assert.equal((await state()).blindsOpen,'0');
 
 // The sash is behind the closed blinds, so opening the window with the
