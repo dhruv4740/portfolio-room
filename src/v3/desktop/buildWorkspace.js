@@ -12,7 +12,7 @@ export const WORKSPACE = {
   target: [0, 1.1, -0.15],
   anchors: {
     monitor: [0, 1.79, -0.37],
-    lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-1.36,1.99,-1.43],
+    lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-0.5,1.335,-0.05],
     drawer: [1.10,0.99,0.62], blinds: [2.16,1.75,-1.48], headphones: [0.67,1.24,-0.05], keyboard: [-0.12,1.249,0.29],
     notebook: [1.14, 1.21, 0.30],
     window: [1.4, 2.12, -1.75],
@@ -435,9 +435,8 @@ export function buildWorkspace(scene, options = {}) {
   box('Passage foundation',[0.82,0.18,1.10],[2.80,-0.10,0.88],dark);
   box('Passage threshold',[0.82,0.04,1.10],[2.80,0.09,0.88],floor);
 
-  const roofLeft=box('Folded ceiling left',[2.55,0.08,3.9],[-1.25,3.21,0.1],plaster);roofLeft.rotation.z=0.04;
-  const roofRight=box('Folded ceiling right',[2.55,0.08,3.9],[1.25,3.21,0.1],plaster);roofRight.rotation.z=-0.04;
-  box('Ceiling beam',[0.14,0.18,3.9],[-0.65,3.16,0.1],wood);
+  box('Ceiling',[5.1,0.08,3.9],[0,3.18,0.1],plaster);
+  box('Ceiling beam',[0.14,0.18,3.9],[-0.65,3.05,0.1],wood);
   box('Back skirting', [4.95, 0.065, 0.045], [0, 0.12, -1.708], dark);
   box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
   const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
@@ -651,39 +650,6 @@ export function buildWorkspace(scene, options = {}) {
   }
   box('Chair back', [0.57, 0.29, 0.045], [0.05, 1.08, 1.414], wood, 0.04, 'chair');
   for (let i = 0; i < 7; i++) box('Chair back slot', [0.025, 0.18, 0.005], [-0.145 + i * 0.064, 1.08, 1.441], dark, 0.009);
-
-  // Pinboard, shelf and a quiet typographic print instead of decorative neon.
-  box('Pinboard frame', [1.35, 0.9, 0.05], [-1.45, 2.35, -1.695], wood, 0.014);
-  box('Pinboard felt', [1.28, 0.83, 0.015], [-1.45, 2.35, -1.66], mat('board', '#555a50'));
-  const print = canvasTexture((ctx, w, h) => {
-    ctx.fillStyle = '#e3decb'; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#262b29'; ctx.font = 'bold 96px sans-serif'; ctx.fillText('MAKE', 40, 138); ctx.fillText('IT REAL.', 40, 247);
-    ctx.fillStyle = '#c9572e'; ctx.fillRect(42, 304, 180, 12);
-    ctx.font = '22px monospace'; ctx.fillStyle = '#555a50'; ctx.fillText('NOTES FROM THE WORKSPACE', 42, 418);
-  }, 640, 480);
-  const poster = new THREE.Mesh(new THREE.PlaneGeometry(0.79, 0.59), new THREE.MeshStandardMaterial({ map: print, roughness: 0.95 }));
-  // Framed print: 12 mm dark frame standing 8 mm off the board, 8 mm white mat.
-  const posterFrame = new THREE.Group(); posterFrame.name = 'Poster frame';
-  posterFrame.position.set(-1.56, 2.37, -1.644); posterFrame.rotation.z = -0.035; root.add(posterFrame);
-  const matBoard = new THREE.Mesh(new THREE.PlaneGeometry(0.806, 0.606), mat('poster mat', '#f1eee6'));
-  matBoard.position.z = 0.012; posterFrame.add(matBoard);
-  poster.position.set(0, 0, 0.013); posterFrame.add(poster);
-  const frameMat = mat('poster frame', '#1c1c1c');
-  for (const [w, h, x, y] of [[0.83, 0.012, 0, 0.309], [0.83, 0.012, 0, -0.309], [0.012, 0.606, 0.409, 0], [0.012, 0.606, -0.409, 0]]) {
-    const bar = new THREE.Mesh(new THREE.BoxGeometry(w, h, 0.02), frameMat); bar.position.set(x, y, 0.01); bar.castShadow = true; posterFrame.add(bar);
-  }
-  box('Pinned note', [0.24, 0.27, 0.004], [-0.97, 2.51, -1.64], paper);
-  box('Wall shelf', [1.28, 0.055, 0.25], [-1.44, 1.74, -1.56], wood, 0.008);
-  for (let i = 0; i < 6; i++) box('Shelf book', [0.056, 0.22 + (i % 3) * 0.026, 0.15], [-1.85 + i * 0.069, 1.89, -1.57], [bone, dark, mat('sage', '#828977')][i % 3], 0.002);
-  cylinder('Plant pot', 0.105, 0.18, [-0.99, 1.855, -1.52], mat('pot', '#aaa18d'), 0.125);
-  const leafMat = mat('leaf', '#405549');
-  for (let i = 0; i < 9; i++) {
-    const angle = i * 2.4;
-    const tip = [-0.99 + Math.cos(angle) * 0.17, 2.08 + (i % 3) * 0.08, -1.52 + Math.sin(angle) * 0.1];
-    rod('Plant stem', [-0.99, 1.93, -1.52], tip, 0.004, leafMat);
-    const leaf = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6), leafMat);
-    leaf.position.set(...tip); leaf.scale.set(0.055, 0.11, 0.016); leaf.rotation.set(0.2, angle, angle * 0.4); root.add(leaf);
-  }
 
   // A faint cool rim is the only shadow-casting source. Depth is baked once.
   const hemiLight = new THREE.HemisphereLight('#8294b2', '#21160e', 0.42);

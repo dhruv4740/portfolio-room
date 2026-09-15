@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export const KEY_ROWS = ['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvbnm,./   ', '            '];
+export const AWARD_REST = [-0.12, 0.36, 0];
+export const KEY_ROWS =['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvbnm,./   ', '            '];
 
 export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys,keyConfig,windowLight}) {
   const objects={};
@@ -13,7 +14,8 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   const profile=[[0,-0.07],[0.063,-0.07],[0.074,-0.052],[0.074,0.074],[0.064,0.074],[0.061,-0.052],[0,-0.052]];
   mesh(coffee,new THREE.LatheGeometry(profile.map(p=>new THREE.Vector2(...p)),48),m.bone);
   // Handle turned toward the sitter's left hand (back-left of the mug is unreachable).
-  const handle=mesh(coffee,new THREE.TorusGeometry(0.044,0.011,12,32),m.bone,[-0.054,0.008,0.054]);handle.rotation.y=Math.PI/4;
+  // Half a torus whose ends meet the outer wall, so no part of the loop sits inside the mug.
+  const handle=mesh(coffee,new THREE.TorusGeometry(0.044,0.011,12,32,Math.PI),m.bone,[-0.043,0.008,0.043]);handle.rotation.set(0,Math.PI/4,Math.PI/2);
   const liquidUniforms={time:{value:0},amplitude:{value:0}};
   const liquidMaterial=new THREE.MeshStandardMaterial({color:'#281307',roughness:0.23,metalness:0});
   liquidMaterial.onBeforeCompile=shader=>{
@@ -30,12 +32,14 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
       transformed.z += sloshAmplitude * rim * (sin(position.x*65.0+sloshTime*8.0) + 0.45*cos(position.y*92.0-sloshTime*6.0));`);
   };
   const liquid=mesh(coffee,new THREE.RingGeometry(0,0.061,48,12),liquidMaterial,[0,0.049,0]);liquid.rotation.x=-Math.PI/2;
-  const award=group('award');box(award,[0.43,0.55,0.035],[0,0,0],m.wood);
+  // A standing desk frame, turned toward the chair and leaning back on a strut.
+  const award=group('award');award.rotation.set(...AWARD_REST);box(award,[0.26,0.33,0.02],[0,0,0],m.wood);
+  const strut=box(award,[0.03,0.3,0.012],[0,-0.03,-0.06],m.wood);strut.rotation.x=-0.35;
   const awardTexture=canvasTexture((ctx,w,h)=>{
     ctx.fillStyle='#eee8d5';ctx.fillRect(0,0,w,h);ctx.fillStyle='#282b29';ctx.textAlign='center';ctx.font='bold 56px serif';ctx.fillText('HACKATHONS',w/2,110);
     let y=225;for(const a of achievements){ctx.font='bold 36px sans-serif';ctx.fillText(a.result.toUpperCase()+' · '+a.year,w/2,y);y+=52;ctx.font='28px sans-serif';let row='';for(const word of a.label.split(' ')){const next=row?row+' '+word:word;if(ctx.measureText(next).width>w-100){ctx.fillText(row,w/2,y);y+=38;row=word;}else row=next;}ctx.fillText(row,w/2,y);y+=110;}
   },1000,1300);
-  mesh(award,new THREE.PlaneGeometry(0.39,0.507),new THREE.MeshBasicMaterial({map:awardTexture,toneMapped:false}),[0,0,0.021]);
+  mesh(award,new THREE.PlaneGeometry(0.235,0.305),new THREE.MeshBasicMaterial({map:awardTexture,toneMapped:false}),[0,0,0.011]);
   const drawer=group('drawer');box(drawer,[0.61,0.14,0.045],[0,0,0],m.wood);box(drawer,[0.60,0.025,0.48],[0,-0.065,-0.23],m.wood);
   for(const x of [-0.285,0.285])box(drawer,[0.025,0.13,0.48],[x,0,-0.23],m.wood);
   box(drawer,[0.15,0.018,0.025],[0,0,0.038]);
