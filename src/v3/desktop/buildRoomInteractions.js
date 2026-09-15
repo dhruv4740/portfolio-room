@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 export const AWARD_REST = [-0.12, 0.36, 0];
+export const PEN_REST = [0, 0.187, 0];
 export const KEY_ROWS =['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvbnm,./   ', '            '];
 
 export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys,keyConfig,windowLight}) {
@@ -49,6 +50,10 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   const pageTexture=new THREE.TextureLoader().load('/resume-page.jpg');pageTexture.colorSpace=THREE.SRGBColorSpace;pageTexture.anisotropy=8;
   const resumePage=new THREE.Group();resumePage.name='resumePage';resumePage.position.set(0,-0.047,-0.23);drawer.add(resumePage);
   const pagePlane=mesh(resumePage,new THREE.PlaneGeometry(0.21,0.21*3300/2550),new THREE.MeshBasicMaterial({map:pageTexture,toneMapped:false,side:THREE.DoubleSide}),[0,0,0],'drawer');pagePlane.rotation.x=-Math.PI/2;
+  // Pencil: the group origin is the graphite tip, the body runs along local +z.
+  const pen=group('pen');pen.rotation.set(...PEN_REST);
+  const penBody=mesh(pen,new THREE.CylinderGeometry(0.0075,0.0075,0.33,6),new THREE.MeshStandardMaterial({color:'#d9a441',roughness:0.6}),[0,0,0.2]);penBody.rotation.x=Math.PI/2;
+  const penTip=mesh(pen,new THREE.ConeGeometry(0.0075,0.035,6),new THREE.MeshStandardMaterial({color:'#e6cfa2',roughness:0.8}),[0,0,0.0175]);penTip.rotation.x=-Math.PI/2;
   const blinds=group('blinds');mesh(blinds,new THREE.CylinderGeometry(0.004,0.004,0.85,8),m.bone,[0,0.2,0]);const cord=mesh(blinds,new THREE.CapsuleGeometry(0.016,0.055,4,12),m.dark,[0,-0.25,0]);
   const headphones=group('headphones');const band=mesh(headphones,new THREE.TorusGeometry(0.115,0.012,10,40,Math.PI),m.dark);band.rotation.x=-Math.PI/2;
   for(const x of [-0.115,0.115])box(headphones,[0.055,0.085,0.09],[x,0,0],m.dark);

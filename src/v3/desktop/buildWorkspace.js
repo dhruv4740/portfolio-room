@@ -14,7 +14,7 @@ export const WORKSPACE = {
     monitor: [0, 1.79, -0.37],
     lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-0.5,1.335,-0.05],
     drawer: [1.10,0.99,0.62], blinds: [2.16,1.75,-1.48], headphones: [0.67,1.24,-0.05], keyboard: [-0.12,1.249,0.29],
-    notebook: [1.14, 1.21, 0.30],
+    notebook: [1.14, 1.21, 0.30], pen: [1.47, 1.218, 0.06],
     window: [1.4, 2.12, -1.75],
     phone: [-0.80, 1.196, -0.03],
     windowOpen: [1.74, 1.99, -1.63],
@@ -24,6 +24,13 @@ export const WORKSPACE = {
   screen: { center: [0, 1.79, -0.362], width: 1.28, height: 0.79 },
 };
 
+function drawBlankPage(ctx, w, h) {
+  ctx.fillStyle = '#efeade'; ctx.fillRect(0, 0, w, h);
+  ctx.strokeStyle = 'rgba(110,116,104,0.20)'; ctx.lineWidth = 1.5;
+  for (let y = 160; y < h - 60; y += 74) { ctx.beginPath(); ctx.moveTo(96, y); ctx.lineTo(w - 110, y); ctx.stroke(); }
+  ctx.strokeStyle = 'rgba(198,83,43,0.5)'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(96, 60); ctx.lineTo(96, h - 60); ctx.stroke();
+}
 function canvasTexture(draw, width = 1024, height = 512) {
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
@@ -542,77 +549,9 @@ export function buildWorkspace(scene, options = {}) {
   const book = box('Notebook cover', [0.46, 0.024, 0.57], [1.14, 1.18, 0.3], mat('cover', '#3e4942'), 0.007, 'notebook');
   book.rotation.y = -0.04;
   const pages = box('Notebook pages', [0.44, 0.016, 0.55], [1.14, 1.199, 0.3], paper, 0.003, 'notebook'); pages.rotation.y = -0.04;
-  // The notebook is read by zooming in on it, not by opening a side panel, so
-  // this page has to carry real legible text. Facts come from the content
-  // source; nothing here is authored twice.
-  // Read by zooming, so legibility beats atmosphere: dark ink, generous type,
-  // and a layout that uses the whole page rather than crowding the top edge —
-  // the top is the most foreshortened part of the page from the reading angle.
-  const notes = canvasTexture((ctx, w, h) => {
-    const M = 130;                 // left margin
-    const R = w - 110;             // right edge of the ruled area
-    ctx.fillStyle = '#efeade'; ctx.fillRect(0, 0, w, h);
-    ctx.strokeStyle = 'rgba(110,116,104,0.20)'; ctx.lineWidth = 1.5;
-    for (let y = 250; y < h - 60; y += 74) {
-      ctx.beginPath(); ctx.moveTo(M - 34, y); ctx.lineTo(R, y); ctx.stroke();
-    }
-    ctx.strokeStyle = 'rgba(198,83,43,0.5)'; ctx.lineWidth = 3;
-    ctx.beginPath(); ctx.moveTo(M - 34, 60); ctx.lineTo(M - 34, h - 60); ctx.stroke();
-
-    const line = (text, y, size, colour, font = 'monospace', weight = '') => {
-      ctx.font = `${weight} ${size}px ${font}`.trim();
-      ctx.fillStyle = colour; ctx.fillText(text, M, y);
-    };
-    const INK = '#22261f', SOFT = '#4d5349', FAINT = '#8b9182';
-
-    line(identity.name, 168, 76, INK, 'Georgia, serif', 'bold');
-    line(`${education.degree} · ${education.year}`, 224, 34, SOFT);
-
-    let y = 336;
-    line('NOW', y, 28, FAINT); y += 66;
-    const current = experience[0];
-    line(`${current.role}`, y, 40, INK); y += 56;
-    line(current.org, y, 34, SOFT); y += 88;
-
-    line('BEFORE', y, 28, FAINT); y += 66;
-    experience.slice(1).forEach((job) => {
-      line(`${job.role} — ${job.org}`, y, 33, INK); y += 62;
-    });
-    y += 34;
-
-    line('RESULTS', y, 28, FAINT); y += 66;
-    achievements.forEach((item) => {
-      const [event] = item.label.split(' — ');
-      ctx.font = 'bold 32px monospace';
-      ctx.fillStyle = item.result === 'Winner' ? '#c6532b' : SOFT;
-      ctx.fillText(item.result.toUpperCase(), M, y); y += 44;
-      // Wrap: the longest of these names is far wider than the page.
-      ctx.font = '31px monospace'; ctx.fillStyle = INK;
-      let row = '';
-      for (const word of event.split(' ')) {
-        const next = row ? `${row} ${word}` : word;
-        if (ctx.measureText(next).width > R - M - 20) {
-          ctx.fillText(row, M, y); y += 40; row = word;
-        } else { row = next; }
-      }
-      if (row) { ctx.fillText(row, M, y); y += 40; }
-      y += 22;
-    });
-
-    // The lower half of the page was empty. The statement is real copy and it
-    // is the one first-person line in the whole room.
-    y += 50;
-    line('—', y, 30, FAINT); y += 62;
-    ctx.font = 'italic 34px Georgia, serif'; ctx.fillStyle = SOFT;
-    let row = '';
-    for (const word of identity.statement.split(' ')) {
-      const next = row ? `${row} ${word}` : word;
-      if (ctx.measureText(next).width > R - M - 20) {
-        ctx.fillText(row, M, y); y += 48; row = word;
-      } else { row = next; }
-    }
-    if (row) ctx.fillText(row, M, y);
-  }, 1400, 1800);
+  // A blank ruled page: visitors draw on it with the pen. The canvas is kept
+  // live so strokes land on the same texture the notebook shows.
+  const notes = canvasTexture(drawBlankPage, 1400, 1800);
   const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 0.514), new THREE.MeshStandardMaterial(
     { map: notes, roughness: 0.98, emissive: '#ffffff', emissiveMap: notes, emissiveIntensity: 0.34 }));
   notePlane.rotation.set(-Math.PI / 2, 0, -0.04); notePlane.position.set(1.14, 1.209, 0.3); root.add(notePlane); tag(notePlane, 'notebook');
@@ -621,7 +560,6 @@ export function buildWorkspace(scene, options = {}) {
   for (const part of [book, pages, notePlane]) {
     part.position.sub(notebook.position); part.castShadow = false; notebook.add(part);
   }
-  rod('Graphite pencil', [1.47, 1.218, 0.06], [1.54, 1.218, 0.43], 0.009, dark);
 
   // Task light, books and a ceramic cup give the room a human scale.
   cylinder('Lamp base', 0.13, 0.035, [-1.28, 1.185, -0.48], dark);
@@ -788,6 +726,8 @@ export function buildWorkspace(scene, options = {}) {
     root, interactive,
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
+    notePage: notePlane, notes,
+    clearNotes() { const c = notes.image; drawBlankPage(c.getContext('2d'), c.width, c.height); notes.needsUpdate = true; },
     resetNotebook() { notebook.position.set(...WORKSPACE.anchors.notebook); notebook.rotation.set(0, 0, 0); },
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },

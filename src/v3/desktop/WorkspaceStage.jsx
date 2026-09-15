@@ -5,7 +5,7 @@ import gsap from 'gsap';
 import { createRig } from './cameraRig.js';
 import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
 import PhoneScreen, { PHONE_SCREEN } from './PhoneScreen.jsx';
-import { KEY_ROWS, AWARD_REST } from './buildRoomInteractions.js';
+import { KEY_ROWS, AWARD_REST, PEN_REST } from './buildRoomInteractions.js';
 import { createPerfGovernor } from './perfGovernor.js';
 
 export function resolveSkyState() {
@@ -126,7 +126,7 @@ export default function WorkspaceStage({
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           projected.set(...point).project(camera);
-          const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee','drawer'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : id === 'chair') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee','drawer','pen'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : id === 'chair') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
@@ -460,6 +460,31 @@ export default function WorkspaceStage({
         hold(R, restOf(R), RIGHT, k.right);
         model.hands.update();
       }
+      // Pen: the right hand holds the pencil near its tip while the tip follows the pointer on the notebook page.
+      const PEN_LEAN = { x: 0.42, y: -0.12, z: -0.22 };
+      const PEN_HELD = { x: -0.95, y: 0.35 };
+      const penGrip = { k: 0 };
+      let lastInk = null;
+      const penDrawing = () => extraHeld === 'pen' && host.dataset.actionState === 'drawing';
+      function posePen() {
+        hold(model.hands.right, restOf(model.hands.right), { obj: model.roomActions.objects.pen, p: [0.015, 0.035, 0.1], r: [0, 0, 0] }, penGrip.k);
+        model.hands.update();
+      }
+      function drawAt(event) {
+        const rect = renderer.domElement.getBoundingClientRect();
+        pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
+        raycaster.setFromCamera(pointer, camera);
+        const onPage = raycaster.intersectObject(model.notePage, false)[0];
+        if (!onPage) { lastInk = null; return; }
+        const pen = model.roomActions.objects.pen; pen.position.copy(onPage.point); pen.position.y += 0.002; posePen();
+        if (down) {
+          const c = model.notes.image, ctx = c.getContext('2d'), x = onPage.uv.x * c.width, y = (1 - onPage.uv.y) * c.height;
+          ctx.strokeStyle = '#1d2733'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+          ctx.beginPath(); ctx.moveTo(...(lastInk || [x + 0.1, y])); ctx.lineTo(x, y); ctx.stroke();
+          model.notes.needsUpdate = true; lastInk = [x, y];
+        } else lastInk = null;
+        invalidate();
+      }
       const KEY_TOP = 1.2625;
       function pressKey(key,index) {
         if(!state.current.seated || state.current.phase !== 'room' || state.current.activeAnchorId) return;
@@ -548,6 +573,20 @@ export default function WorkspaceStage({
           action.to(h.hand.position,{x:o.position.x,y:o.position.y+0.08,z:o.position.z+0.08,duration:0.5,ease:'power2.inOut'})
             .to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'})
             .to(h.hand.position,{x:h===model.hands.left?-0.27:0.27,y:1.28,z:0.405,duration:0.5});
+          gsap.ticker.wake();return;
+        }
+        if(id==='pen') {
+          const home=r.homes.pen,[nx,ny,nz]=WORKSPACE.anchors.notebook;penGrip.k=0;
+          const drawing=()=>{host.dataset.actionState='drawing';renderer.domElement.style.cursor='crosshair';invalidate();};
+          if(reduced){o.position.set(nx,ny+0.006,nz);o.rotation.set(PEN_HELD.x,PEN_HELD.y,0);penGrip.k=1;model.hands.lean.set(PEN_LEAN.x,PEN_LEAN.y,PEN_LEAN.z);look.set(nx,ny,nz);posePen();leanCamera();drawing();return;}
+          startLean();
+          action=gsap.timeline({onUpdate(){posePen();leanCamera();invalidate();},onComplete:drawing});
+          action.to(model.hands.lean,{...PEN_LEAN,duration:0.7,ease:'power2.inOut'},0)
+            .to(look,{x:nx,y:ny,z:nz,duration:0.7,ease:'power2.inOut'},0)
+            .to(penGrip,{k:1,duration:0.6,ease:'power2.inOut'},0)
+            .to(o.position,{y:home.y+0.06,duration:0.25,ease:'power2.out'},0.6)
+            .to(o.rotation,{x:PEN_HELD.x,y:PEN_HELD.y,duration:0.5,ease:'power2.inOut'},0.6)
+            .to(o.position,{x:nx,y:ny+0.006,z:nz,duration:0.5,ease:'power2.inOut'},0.85);
           gsap.ticker.wake();return;
         }
         if(id==='award') {
@@ -685,6 +724,20 @@ export default function WorkspaceStage({
             .to(k,{handle:0,duration:0.5,ease:'power2.inOut'},1.85)
             .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},1.85)
             .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},1.85);
+          gsap.ticker.wake();return;
+        }
+        if(id==='pen'){
+          const home=r.homes.pen;
+          const finish=()=>{o.position.copy(home);o.rotation.set(...PEN_REST);penGrip.k=0;lastInk=null;renderer.domElement.style.cursor='';finishExtra(id);};
+          if(reduced){finish();return;}
+          startLean();
+          action=gsap.timeline({onUpdate(){posePen();leanCamera();invalidate();},onComplete:finish});
+          action.to(o.position,{x:home.x,y:home.y+0.06,z:home.z,duration:0.55,ease:'power2.inOut'},0)
+            .to(o.rotation,{x:PEN_REST[0],y:PEN_REST[1],duration:0.55,ease:'power2.inOut'},0)
+            .to(o.position,{y:home.y,duration:0.2,ease:'power2.inOut'},0.55)
+            .to(penGrip,{k:0,duration:0.5,ease:'power2.inOut'},0.75)
+            .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},0.75)
+            .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},0.75);
           gsap.ticker.wake();return;
         }
         if(id!=='award'){o.position.copy(r.homes[id]);o.rotation.set(0,0,0);r.updateLiquid(0,0);finishExtra(id);return;}
@@ -853,7 +906,7 @@ export default function WorkspaceStage({
         host.dataset.hitKey = result?.object === model.keys ? String(result.instanceId) : '';
         return result?.object.userData.anchorId || null;
       }
-      function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); }
+      function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); if (penDrawing()) drawAt(event); }
       const reading = () => !!extraHeld && /-reading$/.test(host.dataset.actionState || '');
       function wheelZoom(event) {
         if (!reading()) return;
@@ -863,6 +916,7 @@ export default function WorkspaceStage({
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
         if (phoneInHand) { renderer.domElement.style.cursor = 'default'; return; }
+        if (penDrawing()) { drawAt(event); return; }
         if (reading()) {
           // Zoomed in on a held page: the pointer moves the gaze across it.
           const rect = renderer.domElement.getBoundingClientRect(), zoom = (56 - camera.fov) / 38;
@@ -882,6 +936,7 @@ export default function WorkspaceStage({
         renderer.domElement.style.cursor = hit(event) ? 'pointer' : 'grab';
       }
       function pointerUp(event) {
+        if (penDrawing()) { down = null; lastInk = null; return; }
         if (!down || down.moved || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || state.current.phase !== 'room') { down = null; return; }
         down = null;
         if (phoneInHand) return;
@@ -915,7 +970,7 @@ export default function WorkspaceStage({
           }
         }
       }
-      api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome, setSky: (s) => model.setSky(s) };
+      api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome, setSky: (s) => model.setSky(s), clearNotes: () => { model.clearNotes(); invalidate(); } };
       if (typeof localStorage !== 'undefined' && localStorage.getItem('v3:test') === '1') {
         const box3 = new THREE.Box3();
         const boxToPlain = (b) => ({ min: b.min.toArray(), max: b.max.toArray() });
@@ -950,6 +1005,10 @@ export default function WorkspaceStage({
             projected.setFromMatrixPosition(m).applyMatrix4(model.keys.matrixWorld).project(camera);
             return { x: (projected.x * 0.5 + 0.5) * rect.width, y: (-projected.y * 0.5 + 0.5) * rect.height };
           },
+          inkPixels() {
+            const c = model.notes.image, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+            let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 80) n++; return n;
+          },
           fingerTips() {
             return [model.hands.left, model.hands.right].map(h => h.fingers.map(f => f.localToWorld(f.userData.tip.clone().sub(f.position)).toArray()));
           },
@@ -983,10 +1042,11 @@ export default function WorkspaceStage({
       <style>{css}</style>
       <PhoneScreen ref={phoneScreenRef} interactive={phoneLive}
         onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
+      <button className="pen-clear" onClick={() => api.current?.clearNotes()}>CLEAR PAGE</button>
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker workspace-sit" data-object="chair" aria-label="Sit in the chair"
         onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT DOWN</span></button>
-      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'drawer',label:'Resume'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
+      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'drawer',label:'Resume'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'},{id:'pen',label:'Pen'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
@@ -1016,6 +1076,9 @@ const css = `
 .workspace-marker:hover .workspace-marker-label,.workspace-marker:focus-visible .workspace-marker-label,.workspace-marker.is-active .workspace-marker-label { border-color:var(--signal); }
 .workspace-marker:hover .workspace-marker-dot,.workspace-marker.is-active .workspace-marker-dot { background:var(--signal); border-color:var(--signal); }
 .workspace-stage[data-action-state$="-reading"]::after { content:'SCROLL TO ZOOM · MOVE TO READ · ESC TO PUT DOWN'; position:absolute; top:24px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
+.workspace-stage[data-action-state="drawing"]::after { content:'DRAG ON THE PAGE TO DRAW · ESC TO PUT THE PEN DOWN'; position:absolute; top:24px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
+.pen-clear { display:none; position:absolute; top:64px; left:50%; translate:-50% 0; z-index:3; padding:8px 14px; background:var(--void); color:var(--bone); border:1px solid var(--dim); font:11px var(--font-mono); letter-spacing:.14em; }
+.workspace-stage[data-action-state="drawing"] .pen-clear { display:block; }
 .workspace-sit .workspace-marker-label { min-height:44px; padding:12px 22px; background:var(--signal); border-color:var(--signal); color:#141819; font:13px var(--font-mono); letter-spacing:.16em; }
 .workspace-sit { animation:sit-pulse .9s var(--ease) 1.2s 2; }
 @keyframes sit-pulse { 50% { scale:1.06; } }

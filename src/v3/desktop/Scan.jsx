@@ -306,7 +306,7 @@ export default function Scan() {
           {controlsOpen && <>
             <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
             <button onClick={() => handleSelect('phone')}>PHONE</button>
-            {['lamp','coffee','award','drawer','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
+            {['lamp','coffee','award','drawer','pen','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
             <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
             <button onClick={() => handleSelect('window')}>CONTACT</button>
             <button onClick={handleEnterScreen}>MONITOR</button>
@@ -404,7 +404,8 @@ const css = `
 }
 .workspace-stage[data-phone-state="zoomed"] ~ .seat-exit button:not(.seat-exit-back),
 .workspace-stage[data-phone-state="focuslock"] ~ .seat-exit button:not(.seat-exit-back),
-.workspace-stage[data-action-state$="-reading"] ~ .seat-exit button:not(.seat-exit-back) {
+.workspace-stage[data-action-state$="-reading"] ~ .seat-exit button:not(.seat-exit-back),
+.workspace-stage[data-action-state="drawing"] ~ .seat-exit button:not(.seat-exit-back) {
   display: none;
 }
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
