@@ -5,19 +5,15 @@ empty, which is safe, whereas a fabricated one gets caught in an interview.
 
 ## Outstanding
 
-1. **DarkSentinel — what was your part, and what broke?**
-   Private team repo, so it could not be read. `decision` and `broke` are empty
-   in `src/v3/content/index.js`. Needed: which components he personally built
-   (CICFlowMeter capture / the RF + RoBERTa classifier / Tor scraping / the
-   FastAPI + Streamlit interface), and one real problem he hit.
+1. **The black void around the room (standing view).** Deferred by the owner
+   on 2026-09-15 ("we will tackle this later"). Options offered: a building
+   exterior with the city around it, a soft studio backdrop in the sky colour,
+   or skipping the model view and starting seated. No choice made.
 
-2. **Résumé PDF.** He confirmed it should be downloadable and will supply the
-   file. When it arrives: drop it at `public/resume.pdf`, then set
-   `contact.resume = '/resume.pdf'`. The button stays hidden while that is
-   empty, so a missing file can never 404.
-   Note: the PDF he has is stale — it omits FocusLock, DarkSentinel, Expense
-   Tracker and Basket Price entirely, and says "second-year" when he is in his
-   third. Worth regenerating before publishing it.
+2. **Résumé download.** The room now shows the current one-page résumé
+   (`public/resume-page.jpg`) in the drawer. There is still no downloadable
+   PDF; if he wants one, drop it at `public/resume.pdf` and set
+   `contact.resume = '/resume.pdf'`.
 
 3. **Deployment** — no remote, host or domain chosen yet. Nothing has been
    pushed; `git push` is blocked until he supplies a remote.
@@ -32,8 +28,14 @@ empty, which is safe, whereas a fabricated one gets caught in an interview.
 - **Inside the monitor**: dhruvOS, which already exists and retains state.
 - **Basket Price**: ships, with neutral framing. No mention of scraping, terms
   of service, or the specific delivery companies' storefront mechanics.
-- **Interactive sketches**: four dependency-free OS apps remain; the former
-  iframe gallery and its other experiments were dropped.
+- **DarkSentinel role**: answered; the owner built the dashboards, API features
+  and the uncertain-zone Claude call (see its `note` in content).
+- **Monitor and phone apps**: one app per project, and each project runs as its
+  real UI from its own repo — phone apps on the phone, desktop/web apps on the
+  monitor, simulated data instead of backends (2026-09-15). The effect sketches
+  (Corrupted, Flux, Kinetic, Reality Tear) are no longer the goal.
+- **Walls**: bare. No posters, pinboard or shelf; awards stand on the desk.
+- **Notebook**: blank page you draw on with the pen; drawing kept until reload.
 - **Project set**: show all, ranked by depth. FocusLock, Expense Tracker and
   Basket Price lead; hackathon pieces sit below.
 - **CrisisWatch decision**: framed around the constraint (fixed model, so the

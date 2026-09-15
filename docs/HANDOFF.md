@@ -1,4 +1,49 @@
-# Current update � 2026-09-14, fifth room pass
+# Current update — 2026-09-15, desk rework
+
+Branch `feat/v3`, local commits only, no remote. Newer than everything below.
+
+Room, as built now:
+- Standing view: a SIT DOWN button. Seated: controls collapse into CONTROLS ▸
+  with STAND UP / ESC always visible; the name header hides while seated.
+- Walls are bare (pinboard, poster, pinned note, shelf, books and plant removed
+  at the owner's request). Flat ceiling. A front wall closes the room behind the
+  chair and hides with the other walls from the standing view.
+- Desk objects the hands use: phone (FocusLock), notebook (blank ruled page),
+  pen (draws on the notebook page; CLEAR PAGE wipes it; the drawing lasts until
+  reload), coffee (four sips, then REFILL COFFEE), awards frame (stands on the
+  desk, picked up by hand), résumé (drawer → both hands; scroll to zoom, move to
+  read), headphones (shared song), lamp, blinds, window, keyboard (clicks pass
+  through the hands; the finger over the key dips).
+- Lighting: warmer day fill, less screen glare on the keyboard
+  (`scripts/measure-sky.mjs` reports keyboard clipping).
+- Monitor: round-6 project apps plus the shared Music Player
+  (`docs/review/gemini-round6.md`). Round 7 replaces the project apps with the
+  real UIs (below).
+
+Direction set by the owner:
+- **Every project runs as its real UI**: phone apps on the phone, desktop/web
+  apps on the monitor, rebuilt from each project's own repo, frontends backed by
+  in-browser simulated data. Brief: `docs/PROMPT-R7-GEMINI-REAL-PROJECT-UIS.md`.
+- **The black void around the room is deferred.** Options on the table were a
+  building exterior, a soft studio backdrop, or starting seated. Not decided;
+  see OPEN-QUESTIONS.
+
+Known unresolved:
+- Wrist cut on the curled coffee hand: two attempts (wrist joint, deeper
+  forearm) changed nothing visible; cause unknown.
+- FPS drops below 40: headless comparison against 7b8c191 showed identical
+  render cadence and CPU per frame; GPU cost is unmeasured. Most likely the HUD
+  counts only rendered frames (render on demand), which reads low while looking
+  around slowly.
+- The pen's holding hand reads as a fist; the pencil and ink are correct.
+
+Checks: `verify-v3`, `verify-room-interactions`, `verify-held-objects`,
+`verify-headphones-song`, `verify-music-sync`, `verify-pen-drawing`
+(all take `BASE=http://localhost:4173` after `npx vite preview --port 4173`).
+
+---
+
+# Update — 2026-09-14, fifth room pass
 
 The historical handoff below predates the completed night rig and seated interactions.
 Current app changes start from ea0f479 plus its brief-only documentation commit.

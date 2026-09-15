@@ -43,8 +43,9 @@ Contents:
 
 - **`Projects/`** — the real work. Each project a window: what it is, the
   decision behind it, what broke, live and source links.
-- **Interactive sketches** — four dependency-free canvas apps in their own
-  windows: Corrupted, Flux, Kinetic, and Reality Tear.
+- **Project apps** — one window per desktop/web project, rebuilt from that
+  project's own repo and driven by in-browser simulated data (round 7; phone
+  projects run on the phone instead). Plus Skills and the shared Music Player.
 - **`Terminal`** — `resume`, `contact`, `whoami`, `ls`. The easter-egg surface,
   and a genuinely fast path for anyone who'd rather type.
 - **`About`**, plus the existing toys (`car.exe` and friends).
@@ -64,18 +65,14 @@ specification document that deliberately doesn't need a GPU.
 Condensed spectacle plus the full content set. A phone can't orbit a room
 comfortably, so it gets a different experience rather than a squeezed one.
 
-## The retained interactive sketches
+## Project apps
 
-The former iframe gallery was removed. The four retained sketches are registered
-directly as dhruvOS apps, so they have the same window lifecycle as the rest of
-the OS and do not carry CDN-backed HTML pages.
-
-| Idea | Reused as |
-|---|---|
-| **Corrupted** | a dependency-free glitch canvas sketch |
-| **Flux** | a dependency-free cursor-driven flow sketch |
-| **Kinetic** | a dependency-free motion study |
-| **Reality Tear** | a dependency-free pointer-driven reveal sketch |
+The former iframe gallery and the effect sketches are superseded. Round 6 gave
+each project its own window built on an effect (Flux was cut); round 7
+(`docs/PROMPT-R7-GEMINI-REAL-PROJECT-UIS.md`) replaces those with the projects'
+real UIs, rebuilt from their repos with simulated backends. Apps register
+directly in `public/os/shell/registry.js`, so they share the OS window lifecycle
+and carry no CDN-backed pages.
 
 The other former lab experiments were dropped. `src/lab/registry.js` is empty so
 it cannot point at deleted files.

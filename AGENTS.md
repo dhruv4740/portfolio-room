@@ -147,8 +147,10 @@ src/v3/
     buildWorkspace.js   geometry, materials, WORKSPACE anchors + screen dims
     DhruvOSScreen.jsx   persistent same-origin iframe bridge to dhruvOS
     cameraRig.js        flyTo (GSAP power3.inOut), idle drift, project()
-    apps/*.js            registered dhruvOS windows, including Corrupted, Flux,
-                        Kinetic, and Reality Tear
+    musicPlayer.js      the one shared song player (room, headphones, monitor)
+    buildRoomInteractions.js  movable desk objects: lamp, coffee, awards, drawer,
+                        pen, blinds, headphones, window
+  (public/os/apps/*.js  monitor apps: one per project, Skills, Music Player)
     SplatStage.jsx      DEAD — historical splat renderer, unimported
     splatBounds.js      DEAD — supports SplatStage only
   mobile/Deck.jsx       100dvh scroll-snap + gyro
