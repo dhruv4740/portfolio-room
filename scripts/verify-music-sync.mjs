@@ -28,7 +28,8 @@ await page.addInitScript(() => {
 });
 
 console.log('[harness] navigating to', BASE);
-await page.goto(BASE);
+await page.goto(`${BASE}/#/`);
+await page.locator('[data-object="chair"]').waitFor();
 await page.locator('[data-object="chair"]').click();
 await page.waitForTimeout(1800);
 
