@@ -173,6 +173,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   const [intentionSelected, setIntentionSelected] = useState('');
   const [intentionInput, setIntentionInput] = useState('');
   const [shakeProgress, setShakeProgress] = useState(0);
+  const [shakePulsing, setShakePulsing] = useState(false);
   const [reflectionPhrase, setReflectionPhrase] = useState(REFLECTION_PHRASES[0]);
   const [reflectionInput, setReflectionInput] = useState('');
   const [frictionMath, setFrictionMath] = useState(null);
@@ -185,8 +186,32 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   const lastShakeX = useRef(null);
   const lastDirection = useRef(0);
   const shakeReversals = useRef([]);
+  const shakeIdleTimerRef = useRef(null);
+  const shakeProgressRef = useRef(0);
+
+  function clearShakeIdleTimer() {
+    if (shakeIdleTimerRef.current) {
+      clearTimeout(shakeIdleTimerRef.current);
+      shakeIdleTimerRef.current = null;
+    }
+  }
+
+  function resetShakeIdleTimer() {
+    clearShakeIdleTimer();
+    if (shakeProgressRef.current === 0) {
+      const scale = getTimeScale();
+      const idleMs = 2000 / scale;
+      shakeIdleTimerRef.current = setTimeout(() => {
+        if (shakeProgressRef.current === 0) {
+          setShakePulsing(true);
+        }
+      }, idleMs);
+    }
+  }
 
   function clearFrictionTimers() {
+    clearShakeIdleTimer();
+    setShakePulsing(false);
     frictionTimers.current.forEach((id) => {
       clearTimeout(id);
       clearInterval(id);
@@ -208,6 +233,10 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
 
   function handleShakeMove(e) {
     if (app !== 'friction' || currentStep !== 'shake') return;
+    if (shakePulsing) {
+      setShakePulsing(false);
+    }
+    resetShakeIdleTimer();
     const currentX = e.clientX;
     if (lastShakeX.current === null) {
       lastShakeX.current = currentX;
@@ -222,7 +251,11 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
         shakeReversals.current = shakeReversals.current.filter((t) => timestamp - t <= 2000);
         const count = shakeReversals.current.length;
         const progress = Math.min(100, Math.round((count / 6) * 100));
+        shakeProgressRef.current = progress;
         setShakeProgress(progress);
+        if (progress > 0) {
+          clearShakeIdleTimer();
+        }
         if (count >= 6) {
           advanceFrictionStep();
         }
@@ -365,10 +398,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
       setIntentionSelected('');
       setIntentionInput('');
     } else if (step === 'shake') {
+      shakeProgressRef.current = 0;
       setShakeProgress(0);
+      setShakePulsing(false);
       shakeReversals.current = [];
       lastShakeX.current = null;
       lastDirection.current = 0;
+      resetShakeIdleTimer();
     } else if (step === 'reflection') {
       setReflectionPhrase(REFLECTION_PHRASES[Math.floor(Math.random() * REFLECTION_PHRASES.length)]);
       setReflectionInput('');
@@ -1211,8 +1247,25 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
               <div className="fl-step fl-step-shake" data-step="shake">
                 <span className="fl-step-badge">SHAKE</span>
                 <h2 className="fl-step-title">Shake Challenge</h2>
-                <p className="fl-step-desc">Shake your phone to continue</p>
-                <p className="fl-shake-hint">Move your mouse side to side quickly</p>
+                <p className="fl-step-desc fl-shake-line1">Shake your phone to continue</p>
+                <p className="fl-shake-hint fl-shake-line2">On the real phone you physically shake it. Here, move your mouse left and right quickly.</p>
+                <div className="fl-shake-visual" style={{ '--shake-pulse-period': `${1 / getTimeScale()}s` }}>
+                  <span className={`fl-shake-arrow fl-shake-arrow-left ${shakePulsing ? 'is-pulsing' : ''}`} aria-hidden="true">←</span>
+                  <div className="fl-rocking-phone" aria-hidden="true" title="Rocking phone">
+                    <svg viewBox="0 0 28 44" width="32" height="50" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="2" y="2" width="24" height="40" rx="5" stroke="#6366F1" fill="#1E293B" />
+                      <line x1="10" y1="37" x2="18" y2="37" stroke="#A78BFA" strokeWidth="2.5" />
+                      <circle cx="14" cy="7" r="1.5" fill="#94A3B8" />
+                    </svg>
+                  </div>
+                  <div className="fl-shake-mouse" aria-hidden="true" title="Mouse movement">
+                    <svg viewBox="0 0 24 32" width="26" height="34" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="26" rx="9" stroke="#6366F1" fill="#1E293B" />
+                      <line x1="12" y1="7" x2="12" y2="13" stroke="#A78BFA" strokeWidth="2" />
+                    </svg>
+                  </div>
+                  <span className={`fl-shake-arrow fl-shake-arrow-right ${shakePulsing ? 'is-pulsing' : ''}`} aria-hidden="true">→</span>
+                </div>
                 <div className="fl-shake-box">
                   <div className="fl-progress-track">
                     <div className="fl-progress-fill" style={{ width: `${shakeProgress}%` }} />
@@ -1964,15 +2017,74 @@ const css = `
   border-color: #6366F1;
   color: #A78BFA;
 }
-.fl-shake-hint {
-  font-size: 13px;
-  color: #6366F1;
-  font-weight: 600;
+.fl-shake-line1 {
+  font-size: 14px;
+  color: #94A3B8;
   margin: 0;
+  line-height: 1.4;
+}
+.fl-shake-line2 {
+  font-size: 13px;
+  color: #A78BFA;
+  font-weight: 500;
+  margin: 0;
+  line-height: 1.4;
+  max-width: 380px;
+}
+.fl-shake-visual {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin: 14px 0 6px;
+}
+.fl-shake-arrow {
+  font-size: 26px;
+  font-weight: 800;
+  color: #6366F1;
+  user-select: none;
+  display: inline-block;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.fl-shake-arrow.is-pulsing {
+  animation: fl-arrow-pulse var(--shake-pulse-period, 1s) ease-in-out infinite;
+}
+@keyframes fl-arrow-pulse {
+  0%, 100% {
+    transform: scale(1);
+    color: #6366F1;
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.4);
+    color: #FF5F1F;
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(255, 95, 31, 0.7);
+  }
+}
+.fl-rocking-phone {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform-origin: 50% 90%;
+  animation: fl-phone-rock 1.2s ease-in-out infinite;
+}
+@keyframes fl-phone-rock {
+  0%, 100% {
+    transform: rotate(-16deg);
+  }
+  50% {
+    transform: rotate(16deg);
+  }
+}
+.fl-shake-mouse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .fl-shake-box {
   width: 100%;
-  margin: 16px 0;
+  margin: 12px 0 16px;
 }
 .txt-shake-count {
   font-size: 16px;

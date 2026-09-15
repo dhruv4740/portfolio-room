@@ -234,7 +234,32 @@ console.log('PASS friction step: intention completed');
 // Step 4: Shake Challenge
 const shakeStep = phoneScreen.locator('[data-step="shake"]');
 await assert.ok(await shakeStep.isVisible(), 'Shake step should be visible');
-await shootFriction('shake');
+
+// Assert exact Line 1 and Line 2 copy
+const line1 = await shakeStep.locator('.fl-shake-line1').innerText();
+assert.equal(line1.trim(), 'Shake your phone to continue');
+const line2 = await shakeStep.locator('.fl-shake-line2').innerText();
+assert.equal(line2.trim(), 'On the real phone you physically shake it. Here, move your mouse left and right quickly.');
+console.log('PASS friction step: shake challenge copy verified');
+
+// Assert rocking phone element has running CSS animation (getAnimations().length > 0)
+const rockingEl = shakeStep.locator('.fl-rocking-phone');
+await assert.ok(await rockingEl.isVisible(), 'Rocking phone element should be visible');
+const animCount = await rockingEl.evaluate((el) => el.getAnimations().length);
+assert.ok(animCount > 0, `Expected rocking phone to have running CSS animation, got ${animCount}`);
+console.log('PASS friction step: rocking phone running CSS animation verified');
+
+// Assert idle arrow pulse after 2s idle (at scale 20, 2000/20 = 100ms)
+await page.waitForTimeout(150);
+const arrowLeft = shakeStep.locator('.fl-shake-arrow-left');
+const isPulsing = await arrowLeft.evaluate((el) => el.classList.contains('is-pulsing'));
+assert.ok(isPulsing, 'Arrow should pulse when progress is 0 and no mouse movement for 2s');
+console.log('PASS friction step: arrow pulse effect on idle verified');
+
+// Save screenshot to scripts/shots/phone-friction-shake.png
+await phoneScreen.screenshot({ path: 'scripts/shots/phone-friction-shake.png' });
+console.log('[harness] saved phone-friction-shake.png');
+
 // Perform rapid side-to-side mouse moves over the phone screen to trigger >= 6 direction reversals
 const shakeBox = await phoneScreen.boundingBox();
 for (let i = 0; i < 10; i++) {
