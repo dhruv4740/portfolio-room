@@ -519,7 +519,7 @@ export default {
               <span class="ds-panel-title">Service Health &amp; Subsystems</span>
             </div>
             <div style="display:flex;flex-direction:column;gap:8px;">
-              {[
+              ${[
                 { name: 'CICFlowMeter Ingestion Daemon', status: 'online', lat: '12ms' },
                 { name: 'Tor SOCKS5 Proxy Service', status: 'online', lat: '45ms' },
                 { name: 'Random Forest Inference Engine', status: 'online', lat: '8ms' },
