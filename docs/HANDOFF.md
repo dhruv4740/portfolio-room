@@ -1,3 +1,58 @@
+# Current update — 2026-09-16, hands rework
+
+Branch `feat/v3`, local commits only, no remote. Newer than everything below.
+
+The seated hand rig was rebuilt in `src/v3/desktop/seatedHands.js` (it used to
+be `seatedHands()` inside `buildWorkspace.js`). What changed:
+- Palm is a superellipse loft; each finger is three phalanges on nested joints;
+  the thumb has a base that rotates from lying beside the index to opposing the
+  fingers, plus two flexion joints. The forearm hangs off the hand at an
+  elliptical wrist, so the wrist cross-section rolls with the palm; an elbow
+  ball covers the sleeve/forearm join. Elbow is still the analytic two-bone
+  solve with a pole; shoulders still move with `lean`.
+- Poses are seven scalars per hand (`POSES` in seatedHands.js: rest, open,
+  flat, point, pinch, wrap, hook, cup, hold, pen). `hold()` in WorkspaceStage
+  blends pose alongside position and rotation, opens the fingers on the way to
+  a grip, and arcs the reach upward. Each grip names its pose.
+- Side-edge holds (résumé, notebook, award) and the phone hold are authored as
+  explicit hand-axis bases (`edgeGrip`, `basisGrip`) with the fingers tilted so
+  the wrist points toward the elbow. Wrist bend at the held states is now
+  33–59° where it was 74–90°.
+- The pen grip is derived from the pinch pose (`pinchFrame`): the pencil runs
+  through the index and thumb pads and rests in the thumb web. The flat pencil
+  is picked up with a separate grip and rolls into the writing grip while it
+  lifts; the held pencil rotation is derived from an authored writing-hand
+  orientation, not hand-tuned.
+- Rest hands sit at y 1.311 with per-finger curls that put every fingertip
+  4–5 mm above the keycap tops; typing dips still meet the key.
+- Keyboard marker anchor moved to the far edge of the keyboard so its label
+  no longer covers keys.
+- Telemetry shows GPU MS from `EXT_disjoint_timer_query_webgl2` when the
+  browser exposes it (desktop Chrome). It is the first graphics-card number in
+  the HUD; FPS is still render-on-demand cadence and reads low when idle.
+
+Verified on the production build at `http://localhost:4173`: `verify-v3`
+35/35, `verify-room-interactions`, `verify-held-objects` (zero idle frames
+holding phone and notebook), `verify-pen-drawing`, `verify-reduced-hands`
+(new: every action lands held under reduced motion, no page errors),
+`shots-typing` (rest tips 1.266–1.267, press dips to 1.2575). Frames in
+`scripts/shots/hands-*.png`.
+
+Not verified: how the motion feels on real hardware and the owner's judgement
+of the hands; GPU MS on the target laptop (the readout exists, the number is
+his to report); draw-call cost of the rig (≈40 small meshes for both arms,
+unmeasured on a GPU).
+
+Known: the coffee sip still bends the wrist ~84° (the mug's handle grip is
+right, the raised-mug orientation is not); the lamp reach is a straight tween
+without the arc; `scripts/shots-hands.mjs` seeks timelines for mid-reach frames
+and the lamp's camera fly races that seek, so the lamp frame is clock-sampled.
+
+The black void, round-7 project UIs and the FPS cause remain open — see
+OPEN-QUESTIONS and the notes above.
+
+---
+
 # Current update — 2026-09-15, desk rework
 
 Branch `feat/v3`, local commits only, no remote. Newer than everything below.

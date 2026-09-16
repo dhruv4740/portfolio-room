@@ -145,6 +145,8 @@ src/v3/
                         (room / preparing / entering / inside / leaving)
     WorkspaceStage.jsx  renderer, orbit, raycast, projected markers, camera travel
     buildWorkspace.js   geometry, materials, WORKSPACE anchors + screen dims
+    seatedHands.js      first-person hand rig: palm, jointed fingers and thumb,
+                        forearm; POSES and HAND_REST drive grips in WorkspaceStage
     DhruvOSScreen.jsx   persistent same-origin iframe bridge to dhruvOS
     cameraRig.js        flyTo (GSAP power3.inOut), idle drift, project()
     musicPlayer.js      the one shared song player (room, headphones, monitor)
@@ -158,4 +160,6 @@ src/v3/
   ui/                   Telemetry, AnchorPanel, ScanIntro
 docs/                   HANDOFF first, then VISION, DECISIONS, STATE, ROADMAP, DESIGN
 scripts/verify-v3.mjs   Playwright harness
+scripts/shots-hands.mjs every hand grip as a frame + wrist angles (tuning aid)
+scripts/verify-reduced-hands.mjs  reduced-motion: each action lands held at once
 ```
