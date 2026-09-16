@@ -21,6 +21,8 @@
 
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { INSTAGRAM_ICON_UV_RECT } from './buildWorkspace.js';
+import ExpenseApp from './phone-apps/ExpenseApp.jsx';
+import BasketProofApp from './phone-apps/BasketProofApp.jsx';
 
 export const PHONE_SCREEN = Object.freeze({ width: 540, height: 1200 });
 
@@ -344,6 +346,16 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
     onOpenApp?.();
   }
 
+  function handleOpenExpense() {
+    setApp('expense');
+    onOpenApp?.();
+  }
+
+  function handleOpenBasket() {
+    setApp('basketproof');
+    onOpenApp?.();
+  }
+
   function submitMath(event) {
     event.preventDefault();
     const value = answer.trim();
@@ -479,6 +491,16 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
     top: 470,
     size: 130,
   };
+  const expenseIcon = {
+    left: 80,
+    top: 650,
+    size: 130,
+  };
+  const basketIcon = {
+    left: 330,
+    top: 650,
+    size: 130,
+  };
 
   return (
     <div
@@ -543,6 +565,42 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
                 </svg>
               </span>
               <span className="ps-label">FocusLock</span>
+            </button>
+
+            {/* Expense Tracker App Icon */}
+            <button
+              type="button"
+              className="ps-app-expense"
+              aria-label="Open Expense Tracker"
+              onClick={handleOpenExpense}
+              style={{ left: expenseIcon.left, top: expenseIcon.top, width: expenseIcon.size }}
+            >
+              <span className="ps-tile-expense" style={{ width: expenseIcon.size, height: expenseIcon.size }}>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="expense-icon">
+                  <rect x="18" y="18" width="64" height="64" rx="18" fill="#0E0E0E" stroke="#3DDC84" strokeWidth="5" />
+                  <path d="M28 62 L42 46 L58 54 L72 36" fill="none" stroke="#3DDC84" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
+                  <circle cx="72" cy="36" r="4.5" fill="#3DDC84" />
+                </svg>
+              </span>
+              <span className="ps-label">Expense</span>
+            </button>
+
+            {/* BasketProof App Icon */}
+            <button
+              type="button"
+              className="ps-app-basket"
+              aria-label="Open BasketProof"
+              onClick={handleOpenBasket}
+              style={{ left: basketIcon.left, top: basketIcon.top, width: basketIcon.size }}
+            >
+              <span className="ps-tile-basket" style={{ width: basketIcon.size, height: basketIcon.size }}>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="basket-icon">
+                  <rect x="18" y="18" width="64" height="64" rx="18" fill="#1C1D22" stroke="#7C4DFF" strokeWidth="5" />
+                  <path d="M26 46 L74 46 L67 76 L33 76 Z" fill="none" stroke="#A78BFA" strokeWidth="5" strokeLinejoin="round" />
+                  <path d="M36 46 C36 32 64 32 64 46" fill="none" stroke="#7C4DFF" strokeWidth="5" />
+                </svg>
+              </span>
+              <span className="ps-label">BasketProof</span>
             </button>
           </div>
         </div>
@@ -1426,6 +1484,30 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
           {toast && <span className="ps-toast" role="status">{toast}</span>}
         </div>
       )}
+
+      {/* ==================================================================== */}
+      {/* 5. EXPENSE TRACKER APP                                               */}
+      {/* ==================================================================== */}
+      {app === 'expense' && (
+        <div className="ps-full-app">
+          <ExpenseApp onClose={() => goHome()} />
+          <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
+            <span className="ps-home-bar" />
+          </button>
+        </div>
+      )}
+
+      {/* ==================================================================== */}
+      {/* 6. BASKETPROOF APP                                                   */}
+      {/* ==================================================================== */}
+      {app === 'basketproof' && (
+        <div className="ps-full-app">
+          <BasketProofApp onClose={() => goHome()} />
+          <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
+            <span className="ps-home-bar" />
+          </button>
+        </div>
+      )}
     </div>
   );
 });
@@ -1464,7 +1546,7 @@ const css = `
 .ps-status-icons { font-size: 16px; color: #94A3B8; font-weight: 500; display: flex; gap: 12px; }
 .ps-apps-grid { position: absolute; inset: 0; }
 
-.ps-app, .ps-app-focuslock {
+.ps-app, .ps-app-focuslock, .ps-app-expense, .ps-app-basket {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -1474,7 +1556,7 @@ const css = `
   background: none;
   cursor: pointer;
 }
-.ps-app:focus-visible, .ps-app-focuslock:focus-visible { outline: none; }
+.ps-app:focus-visible, .ps-app-focuslock:focus-visible, .ps-app-expense:focus-visible, .ps-app-basket:focus-visible { outline: none; }
 
 .ps-tile {
   display: block;
@@ -1492,14 +1574,69 @@ const css = `
   box-shadow: 0 4px 18px rgba(99, 102, 241, 0.25);
   transition: box-shadow .15s ease, transform .15s ease;
 }
+.ps-tile-expense {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24%;
+  background: #0E0E0E;
+  border: 2px solid #3DDC84;
+  box-shadow: 0 4px 18px rgba(61, 220, 132, 0.25);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+.ps-tile-basket {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 24%;
+  background: #1C1D22;
+  border: 2px solid #7C4DFF;
+  box-shadow: 0 4px 18px rgba(124, 77, 255, 0.25);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
 .ps-app:hover .ps-tile, .ps-app:focus-visible .ps-tile,
-.ps-app-focuslock:hover .ps-tile-fl, .ps-app-focuslock:focus-visible .ps-tile-fl {
+.ps-app-focuslock:hover .ps-tile-fl, .ps-app-focuslock:focus-visible .ps-tile-fl,
+.ps-app-expense:hover .ps-tile-expense, .ps-app-expense:focus-visible .ps-tile-expense,
+.ps-app-basket:hover .ps-tile-basket, .ps-app-basket:focus-visible .ps-tile-basket {
   box-shadow: 0 0 34px rgba(255, 255, 255, .55);
 }
 .ps-tile svg { display: block; width: 100%; height: 100%; fill: none; stroke: #fff; stroke-width: 7.5; }
 .ps-tile .ps-dot { fill: #fff; stroke: none; }
-.fl-shield-icon { width: 75%; height: 75%; }
+.fl-shield-icon, .expense-icon, .basket-icon { width: 75%; height: 75%; }
 .ps-label { margin-top: 18px; font-size: 24px; color: #F8FAFC; white-space: nowrap; font-weight: 500; }
+
+.ps-full-app {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  background: #000;
+}
+.ps-home-bar-btn {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  background: transparent;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+}
+.ps-home-bar {
+  width: 140px;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 3px;
+  transition: background 0.15s ease;
+}
+.ps-home-bar-btn:hover .ps-home-bar {
+  background: rgba(255, 255, 255, 0.8);
+}
 
 /* ── Lock Overlay (Instagram Paused) ─────────────────────────────────────── */
 .ps-lock {
