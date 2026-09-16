@@ -71,6 +71,24 @@ export default function WorkspaceStage({
       renderer.toneMappingExposure = 1.5;
       host.appendChild(renderer.domElement);
       const gov = createPerfGovernor(renderer); // render-on-demand + adaptive pixel ratio; see perfGovernor.js
+      // GPU time per frame where the browser exposes the timer extension
+      // (desktop Chrome does; Firefox and Safari do not). Results arrive a frame
+      // or two late, so they are averaged into the next stats emit. This is the
+      // only measurement in the HUD that reflects the graphics card rather than
+      // CPU submission cadence.
+      const gl = renderer.getContext(), timerExt = gl.getExtension('EXT_disjoint_timer_query_webgl2');
+      const gpuQueries = []; let gpuSum = 0, gpuCount = 0;
+      function gpuBegin() { if (!timerExt) return null; const q = gl.createQuery(); gl.beginQuery(timerExt.TIME_ELAPSED_EXT, q); return q; }
+      function gpuEnd(q) { if (!q) return; gl.endQuery(timerExt.TIME_ELAPSED_EXT); gpuQueries.push(q); }
+      function gpuPoll() {
+        while (gpuQueries.length) {
+          const q = gpuQueries[0], available = gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE), disjoint = gl.getParameter(timerExt.GPU_DISJOINT_EXT);
+          if (!available && !disjoint) break;
+          gpuQueries.shift();
+          if (available && !disjoint) { gpuSum += gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6; gpuCount++; }
+          gl.deleteQuery(q);
+        }
+      }
       const scene = new THREE.Scene();
       // The room stays warm/naturalistic and drops into the --void black at
       // its edges — that contrast against the app's black chrome is intentional.
@@ -204,16 +222,16 @@ export default function WorkspaceStage({
         if (disposed || state.current.paused || document.hidden) return;
         if (!gov.isDirty()) return; // idle: stop issuing frames until something invalidates again
         if (!gov.shouldRender(now)) { raf = requestAnimationFrame(tick); return; } // still dirty, 60Hz floor
-        const start = performance.now(); render(); const cpu = performance.now() - start;
-        gov.recordFrame(cpu, now);
+        const start = performance.now(), query = gpuBegin(); render(); gpuEnd(query); const cpu = performance.now() - start;
+        gpuPoll(); gov.recordFrame(cpu, now);
         const delta = last === null ? null : now - last;
         if (delta !== null && delta > 0 && delta < 250) { cadenceSum += delta; cpuSum += cpu; count++; }
         else { cadenceSum = 0; cpuSum = 0; count = 0; }
         last = now;
         if (now - emitted > 300) {
           const stats = gov.getStats();
-          callbacks.current.onStats?.({ frameMs: count ? cadenceSum / count : null, cpuMs: count ? cpuSum / count : null, gpuMs: null, cameraPos: camera.position.toArray(), perfTier: stats.tier, pixelRatio: stats.pixelRatio });
-          cadenceSum = 0; cpuSum = 0; count = 0; emitted = now;
+          callbacks.current.onStats?.({ frameMs: count ? cadenceSum / count : null, cpuMs: count ? cpuSum / count : null, gpuMs: gpuCount ? gpuSum / gpuCount : null, cameraPos: camera.position.toArray(), perfTier: stats.tier, pixelRatio: stats.pixelRatio });
+          cadenceSum = 0; cpuSum = 0; count = 0; gpuSum = 0; gpuCount = 0; emitted = now;
         }
         raf = requestAnimationFrame(tick);
       }
@@ -1080,6 +1098,7 @@ export default function WorkspaceStage({
         renderer.domElement.removeEventListener('pointermove', pointerMove);
         renderer.domElement.removeEventListener('wheel', wheelZoom);
         renderer.domElement.removeEventListener('pointerup', pointerUp);
+        gpuQueries.forEach(q => gl.deleteQuery(q)); gpuQueries.length = 0;
         controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); gov.dispose(); api.current = null;
       };
     } catch (error) {

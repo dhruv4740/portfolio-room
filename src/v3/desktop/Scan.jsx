@@ -345,6 +345,7 @@ export default function Scan() {
       {/* ---- instrument chrome -------------------------------------------- */}
         <Telemetry
         frameMs={stats.frameMs}
+        gpuMs={stats.gpuMs}
         anchorId={activeId}
       />
 

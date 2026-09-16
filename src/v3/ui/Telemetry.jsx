@@ -25,7 +25,9 @@ function fmtAnchor(anchorId) {
   return anchorId && typeof anchorId === 'string' ? anchorId.toUpperCase() : DASH;
 }
 
-export default function Telemetry({ frameMs, anchorId, compact = false }) {
+// gpuMs is graphics-card time per frame from a GL timer query; it is absent
+// in browsers without the extension and never derived from frame cadence.
+export default function Telemetry({ frameMs, gpuMs, anchorId, compact = false }) {
   if (compact) {
     return (
       <>
@@ -41,6 +43,15 @@ export default function Telemetry({ frameMs, anchorId, compact = false }) {
               <span className="t-key">FPS</span>
               <span className="t-val">{fmtFps(frameMs)}</span>
             </span>
+            {isNum(gpuMs) && (
+              <>
+                <span className="t-sep">&middot;</span>
+                <span className="t-item">
+                  <span className="t-key">GPU</span>
+                  <span className="t-val">{fmtFixed(gpuMs, 1)} MS</span>
+                </span>
+              </>
+            )}
             {anchorId && (
               <>
                 <span className="t-sep">&middot;</span>
@@ -68,6 +79,12 @@ export default function Telemetry({ frameMs, anchorId, compact = false }) {
           <span className="t-key">FPS</span>
           <span className="t-val">{fmtFixed(frameMs, 1)} MS &middot; {fmtFps(frameMs)}</span>
         </div>
+        {isNum(gpuMs) && (
+          <div className="t-row">
+            <span className="t-key">GPU</span>
+            <span className="t-val">{fmtFixed(gpuMs, 1)} MS</span>
+          </div>
+        )}
         {anchorId && (
           <div className="t-row">
             <span className="t-key">FOCUS</span>
