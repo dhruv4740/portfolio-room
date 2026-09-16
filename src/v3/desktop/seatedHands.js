@@ -17,7 +17,7 @@ export const POSES = {
   point: { c0: 0.06, c1: 0.78, c2: 0.88, c3: 0.94, spread: 0.20, tOpp: 0.45, tCurl: 0.55 },
   pinch: { c0: 0.55, c1: 0.62, c2: 0.78, c3: 0.88, spread: 0.20, tOpp: 0.95, tCurl: 0.35 },
   wrap:  { c0: 0.72, c1: 0.76, c2: 0.78, c3: 0.82, spread: 0.10, tOpp: 0.85, tCurl: 0.55 },
-  hook:  { c0: 0.55, c1: 0.60, c2: 0.80, c3: 0.90, spread: 0.10, tOpp: 0.50, tCurl: 0.50 },
+  hook:  { c0: 0.55, c1: 0.60, c2: 0.80, c3: 0.90, spread: 0.10, tOpp: 0.40, tCurl: 0.80 },
   cup:   { c0: 0.45, c1: 0.50, c2: 0.52, c3: 0.56, spread: 0.30, tOpp: 0.60, tCurl: 0.30 },
   // Side-edge hold of a flat object: fingers curled behind it, thumb over the front.
   hold:  { c0: 0.50, c1: 0.55, c2: 0.60, c3: 0.65, spread: 0.20, tOpp: 0.70, tCurl: 0.20 },
