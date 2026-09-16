@@ -1,5 +1,5 @@
 // scripts/verify-music-sync.mjs
-// Verification harness for unified musicPlayer, playhead continuity, output routing,
+// Verification harness for unified musicPlayer, playhead continuity,
 // and single audio element invariant.
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
@@ -47,10 +47,6 @@ const headphonesBtn = page.getByRole('button', { name: 'HEADPHONES', exact: true
 await headphonesBtn.click();
 await idle();
 
-const outputWorn = await page.evaluate(() => window.__v3Music?.getState()?.output);
-assert.equal(outputWorn, 'headphones', `Expected output to be headphones while worn, got: ${outputWorn}`);
-console.log('PASS getState().output is headphones while worn');
-
 const isPlayingWorn = await page.evaluate(() => window.__v3Music?.getState()?.playing);
 assert.equal(isPlayingWorn, true, 'musicPlayer should be playing while headphones worn');
 
@@ -64,10 +60,6 @@ assert.ok(timeBeforeTakeoff >= 2.5, `Expected currentTime >= 2.5s, got: ${timeBe
 // 2. Take off headphones
 await headphonesBtn.click();
 await idle();
-
-const outputOff = await page.evaluate(() => window.__v3Music?.getState()?.output);
-assert.equal(outputOff, 'speakers', `Expected output to be speakers after removal, got: ${outputOff}`);
-console.log('PASS getState().output is speakers otherwise');
 
 const isPausedOff = await page.evaluate(() => window.__v3Music?.getState()?.playing);
 assert.equal(isPausedOff, false, 'musicPlayer should be paused after headphones removed');

@@ -144,11 +144,9 @@ export default function Scan() {
       const p = player || window.__v3Music;
       if (!p) return;
       if (event.detail?.on) {
-        p.setOutput('headphones');
         p.play()?.catch(() => {});
       } else {
         p.pause();
-        p.setOutput('speakers');
       }
     };
     window.addEventListener('workspace:headphones', onHeadphones);
