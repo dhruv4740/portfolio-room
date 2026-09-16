@@ -6,6 +6,7 @@ import { createRig } from './cameraRig.js';
 import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
 import PhoneScreen, { PHONE_SCREEN } from './PhoneScreen.jsx';
 import { KEY_ROWS, AWARD_REST, PEN_REST } from './buildRoomInteractions.js';
+import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
 
 export function resolveSkyState() {
@@ -230,14 +231,18 @@ export default function WorkspaceStage({
       // length from an upright seat, so reaching leans the body in (camera and
       // shoulders together) instead of stretching the arm.
       const SEAT = new THREE.Vector3(...WORKSPACE.seat.position), look = new THREE.Vector3();
-      const REST = [-0.27, 0.27].map(x => ({ p: new THREE.Vector3(x, 1.292, 0.405), q: new THREE.Quaternion() }));
+      const REST = [-1, 1].map(s => ({ p: new THREE.Vector3(s * HAND_REST.x, HAND_REST.y, HAND_REST.z), q: new THREE.Quaternion(), pose: POSES.rest }));
       const restOf = h => REST[h === model.hands.left ? 0 : 1];
-      const poseA = { p: new THREE.Vector3(), q: new THREE.Quaternion() }, poseB = { p: new THREE.Vector3(), q: new THREE.Quaternion() };
+      const poseA = { p: new THREE.Vector3(), q: new THREE.Quaternion(), pose: POSES.rest }, poseB = { p: new THREE.Vector3(), q: new THREE.Quaternion(), pose: POSES.rest };
+      // A grip is { obj, p, r, pose } in the object's frame (r: Euler array or
+      // quaternion; pose: a POSES name) or a snapshot { p, q, pose } in world space.
       function gripPose(g, out) {
+        out.pose = typeof g.pose === 'string' ? POSES[g.pose] : (g.pose || POSES.rest);
         if (g.q) { out.p.copy(g.p); out.q.copy(g.q); return out; }
         g.obj.updateMatrix();
         out.p.set(...g.p).applyMatrix4(g.obj.matrix);
-        out.q.setFromEuler(new THREE.Euler(...g.r)).premultiply(g.obj.quaternion);
+        if (g.r.isQuaternion) out.q.copy(g.r); else out.q.setFromEuler(new THREE.Euler(...g.r));
+        out.q.premultiply(g.obj.quaternion);
         return out;
       }
       // `via` routes the hand around an edge instead of through the object.
@@ -245,9 +250,28 @@ export default function WorkspaceStage({
         if (via) { if (w < 0.5) { b = via; w *= 2; } else { a = via; w = (w - 0.5) * 2; } }
         gripPose(a, poseA); gripPose(b, poseB);
         h.hand.position.lerpVectors(poseA.p, poseB.p, w);
+        // A reach arcs up and over rather than tracking a straight line.
+        h.hand.position.y += Math.min(0.06, poseA.p.distanceTo(poseB.p) * 0.3) * Math.sin(Math.PI * w);
         h.hand.quaternion.slerpQuaternions(poseA.q, poseB.q, w);
+        // From an open hand the fingers spread on the way to a grip, then close on it.
+        const closing = curlSum(poseB.pose) > curlSum(poseA.pose) + 0.2 && curlSum(poseA.pose) < 1.7;
+        if (!closing) lerpPose(h.pose, poseA.pose, poseB.pose, w);
+        else if (w < 0.55) lerpPose(h.pose, poseA.pose, POSES.open, w / 0.55);
+        else lerpPose(h.pose, POSES.open, poseB.pose, (w - 0.55) / 0.45);
       }
-      const snapshot = h => ({ p: h.hand.position.clone(), q: h.hand.quaternion.clone() });
+      const snapshot = h => ({ p: h.hand.position.clone(), q: h.hand.quaternion.clone(), pose: { ...h.pose } });
+      // Hand orientation from where its axes should point in the object's frame
+      // (x: thumb side to pinky side, y: back of the hand, z: fingers to wrist).
+      const basisGrip = (x, y, z) => new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(x, y, z));
+      // Hand on the x = sign edge of a flat object (front +y, top -z): palm
+      // toward the centre and the front, fingers into the back, thumb over the
+      // front; `tilt` swings the fingers toward the top so the wrist drops.
+      function edgeGrip(sign, tilt = 0.6) {
+        const n = new THREE.Vector3(-sign, 1, 0).normalize();
+        const f = new THREE.Vector3(-sign, -1, 0).normalize().multiplyScalar(Math.cos(tilt)).add(new THREE.Vector3(0, 0, -Math.sin(tilt)));
+        const y = n.clone().negate(), z = f.clone().negate();
+        return basisGrip(new THREE.Vector3().crossVectors(y, z), y, z);
+      }
       function startLean() {
         rig.dispose(); look.copy(controls.target);
         model.hands.lean.copy(camera.position).sub(SEAT); if (model.hands.lean.length() > 0.7) model.hands.lean.set(0, 0, 0);
@@ -259,10 +283,14 @@ export default function WorkspaceStage({
       const SEAT_LOOK = { x: WORKSPACE.seat.target[0], y: WORKSPACE.seat.target[1], z: WORKSPACE.seat.target[2] };
       const ZERO = { x: 0, y: 0, z: 0 };
       // Phone: palm down on the glass, thumb on the edge, then the hand rolls
-      // under to hold it from behind while the screen turns to face you.
-      const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.07], r: [0, 0, 0] };
-      const PHONE_SIDE = { obj: model.phone, p: [-0.10, -0.005, 0.05], r: [0, 0, Math.PI / 2] };
-      const PHONE_BACK = { obj: model.phone, p: [0, -0.045, 0.045], r: [0, 0, Math.PI * 0.999] };
+      // under to hold it from behind: palm behind the phone, fingers wrapping
+      // its far edge, thumb over the screen's near edge.
+      const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.07], r: [0, 0, 0], pose: 'flat' };
+      const PHONE_SIDE = { obj: model.phone, p: [-0.10, -0.005, 0.05], r: [0, 0, Math.PI / 2], pose: 'cup' };
+      const PHONE_BACK = (() => {
+        const y = new THREE.Vector3(0, -1, 0), z = new THREE.Vector3(-Math.cos(0.6), 0, Math.sin(0.6)); // fingers to the far edge and up, wrist down
+        return { obj: model.phone, p: [-0.02, -0.03, 0.02], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z), pose: 'wrap' };
+      })();
       const PHONE_LEAN = { x: -0.28, y: -0.08, z: -0.42 };
       let phoneGrip = 1;
       function followPhone() { hold(model.hands.left, PHONE_TOP, PHONE_BACK, phoneGrip, PHONE_SIDE); }
@@ -297,7 +325,7 @@ export default function WorkspaceStage({
       }
       function animatePhone(reduced) {
         action?.kill(); phoneInHand = true;
-        model.resetPhone(); model.hands.reset(); model.hands.grip(model.hands.right, true); model.setHandsVisible(true);
+        model.resetPhone(); model.hands.reset(); model.setHandsVisible(true);
         const left = model.hands.left, held = new THREE.Vector3(0.08, 1.53, 0.59);
         if (reduced) {
           rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, { reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); } });
@@ -366,10 +394,10 @@ export default function WorkspaceStage({
       }
       // Notebook: the right hand takes the near corner from above; once lifted
       // both hands hold the side edges, fingers behind the cover.
-      const NB_PICK = { obj: model.notebook, p: [0.17, 0.035, 0.2], r: [0, 0, 0] };
-      const NB_SIDE = { obj: model.notebook, p: [0.29, -0.01, 0.12], r: [0, 0, -Math.PI / 2] };
-      const NB_RIGHT = { obj: model.notebook, p: [0.25, -0.06, 0.18], r: [0, Math.PI / 2, Math.PI] };
-      const NB_LEFT = { obj: model.notebook, p: [-0.25, -0.06, 0.18], r: [0, -Math.PI / 2, Math.PI] };
+      const NB_PICK = { obj: model.notebook, p: [0.17, 0.035, 0.2], r: [0, 0, 0], pose: 'flat' };
+      const NB_SIDE = { obj: model.notebook, p: [0.29, -0.01, 0.12], r: [0, 0, -Math.PI / 2], pose: 'cup' };
+      const NB_RIGHT = { obj: model.notebook, p: [0.25, -0.02, 0.1], r: edgeGrip(1), pose: 'hold' };
+      const NB_LEFT = { obj: model.notebook, p: [-0.25, -0.02, 0.1], r: edgeGrip(-1), pose: 'hold' };
       const NB_LEAN = { x: 0.45, y: -0.06, z: -0.2 };
       const nb = { right: 1, left: 1 };
       function followNotebook() {
@@ -435,10 +463,10 @@ export default function WorkspaceStage({
       const drawerGrip = { handle: 0, pick: 0, right: 0, left: 0 };
       function poseDrawer() {
         const page = model.roomActions.resumePage, drawer = model.roomActions.objects.drawer, R = model.hands.right, k = drawerGrip;
-        const HANDLE = { obj: drawer, p: [0, 0.03, 0.07], r: [0, 0, 0] };
-        const PICK = { obj: page, p: [0.1, 0.03, 0.05], r: [0, 0, 0] };
-        const RIGHT = { obj: page, p: [0.13, -0.05, 0.11], r: [0, Math.PI / 2, Math.PI] };
-        const LEFT = { obj: page, p: [-0.13, -0.05, 0.11], r: [0, -Math.PI / 2, Math.PI] };
+        const HANDLE = { obj: drawer, p: [0, 0.03, 0.07], r: [0, 0, 0], pose: 'hook' };
+        const PICK = { obj: page, p: [0.1, 0.03, 0.05], r: [0, 0, 0], pose: 'flat' };
+        const RIGHT = { obj: page, p: [0.125, -0.015, 0.03], r: edgeGrip(1), pose: 'hold' };
+        const LEFT = { obj: page, p: [-0.125, -0.015, 0.03], r: edgeGrip(-1), pose: 'hold' };
         if (k.right > 0) hold(R, PICK, RIGHT, k.right);
         else if (k.pick > 0) hold(R, HANDLE, PICK, k.pick);
         else hold(R, restOf(R), HANDLE, k.handle);
@@ -449,25 +477,45 @@ export default function WorkspaceStage({
       const AWARD_LEAN = { x: -0.2, y: -0.08, z: -0.5 };
       const AWARD_HELD_X = 1.13 - Math.PI / 2;
       const awardGrip = { pick: 0, left: 0, right: 0 };
-      const upright = r => new THREE.Euler().setFromQuaternion(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2).multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(...r)))).toArray().slice(0, 3);
-      const AWARD_R = upright([0, Math.PI / 2, Math.PI]), AWARD_L = upright([0, -Math.PI / 2, Math.PI]);
+      const upright = q => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2).multiply(q);
+      const AWARD_R = upright(edgeGrip(1)), AWARD_L = upright(edgeGrip(-1));
       function poseAward() {
         const o = model.roomActions.objects.award, L = model.hands.left, R = model.hands.right, k = awardGrip;
-        const PICK = { obj: o, p: [-0.06, 0.2, 0.02], r: [0, 0, 0] };
-        const LEFT = { obj: o, p: [-0.155, -0.13, -0.05], r: AWARD_L };
-        const RIGHT = { obj: o, p: [0.155, -0.13, -0.05], r: AWARD_R };
+        const PICK = { obj: o, p: [-0.06, 0.2, 0.02], r: [0, 0, 0], pose: 'cup' };
+        const LEFT = { obj: o, p: [-0.15, -0.04, -0.015], r: AWARD_L, pose: 'hold' };
+        const RIGHT = { obj: o, p: [0.15, -0.04, -0.015], r: AWARD_R, pose: 'hold' };
         if (k.left > 0) hold(L, PICK, LEFT, k.left); else hold(L, restOf(L), PICK, k.pick);
         hold(R, restOf(R), RIGHT, k.right);
         model.hands.update();
       }
       // Pen: the right hand holds the pencil near its tip while the tip follows the pointer on the notebook page.
       const PEN_LEAN = { x: 0.42, y: -0.12, z: -0.22 };
-      const PEN_HELD = { x: -0.95, y: 0.35 };
-      const penGrip = { k: 0 };
+      // The grip is derived from the pinch pose: the pencil passes through the
+      // index and thumb pads and rests in the web of the thumb. The pencil's
+      // held rotation follows from the writing hand's orientation (pronated,
+      // fingers toward the page's far left corner, ulnar side down).
+      const PEN = (() => {
+        const R = model.hands.right, pen = model.roomActions.objects.pen, { contact, axis } = model.hands.pinchFrame(R, POSES.pen);
+        const up = new THREE.Vector3(0, 1, 0).addScaledVector(axis, -axis.y).normalize();
+        const penInHand = basisGrip(new THREE.Vector3().crossVectors(up, axis), up, axis), handToPen = penInHand.clone().invert();
+        const tipInHand = contact.clone().addScaledVector(axis, -0.024);
+        const GRIP = { obj: pen, p: tipInHand.applyQuaternion(handToPen).negate().toArray(), r: handToPen, pose: 'pen' };
+        // The flat pencil is pinched from above, 4 cm up the body from the tip.
+        const PICK = { obj: pen, p: new THREE.Vector3(0, 0, 0.04).sub(contact).toArray(), r: [0, 0, 0], pose: 'pen' };
+        // Writing hand in world space: pronated, fingers forward-right and down, ulnar side down.
+        const f = new THREE.Vector3(0.45, -0.35, -0.82).normalize(), n = new THREE.Vector3(-0.6, -0.8, 0.1);
+        n.addScaledVector(f, -n.dot(f)).normalize();
+        const y = n.clone().negate(), z = f.clone().negate();
+        const e = new THREE.Euler().setFromQuaternion(basisGrip(new THREE.Vector3().crossVectors(y, z), y, z).multiply(penInHand));
+        return { GRIP, PICK, HELD: { x: e.x, y: e.y, z: e.z } };
+      })();
+      const PEN_HELD = PEN.HELD;
+      const penGrip = { reach: 0, k: 0 };
       let lastInk = null;
       const penDrawing = () => extraHeld === 'pen' && host.dataset.actionState === 'drawing';
       function posePen() {
-        hold(model.hands.right, restOf(model.hands.right), { obj: model.roomActions.objects.pen, p: [0.015, 0.035, 0.1], r: [0, 0, 0] }, penGrip.k);
+        const R = model.hands.right;
+        if (penGrip.k > 0) hold(R, PEN.PICK, PEN.GRIP, penGrip.k); else hold(R, restOf(R), PEN.PICK, penGrip.reach);
         model.hands.update();
       }
       function drawAt(event) {
@@ -510,7 +558,7 @@ export default function WorkspaceStage({
       }
       function roomAction(id,reduced) {
         const r=model.roomActions,o=r.objects[id],h=model.hands[id==='coffee'||id==='lamp'?'left':'right'];
-        action?.kill();model.hands.reset();model.setHandsVisible(true);if(!['headphones','award','drawer'].includes(id))model.hands.grip(h,id==='lamp'||id==='pen');extraHeld=id;host.dataset.actionState=id;
+        action?.kill();model.hands.reset();model.setHandsVisible(true);extraHeld=id;host.dataset.actionState=id;
         controls.enabled=false;
         const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);host.dataset.drawerOpen=String(r.state.drawer);host.dataset.windowOpen=String(r.state.windowOpen);model.hands.update();invalidate();};
         const follow=()=>{h.hand.position.copy(o.position).add(new THREE.Vector3(id==='coffee'?-0.085:0.12,-0.075,id==='award'?-0.075:id==='coffee'?-0.09:0.055));h.hand.rotation.copy(o.rotation);if(id==='coffee')h.hand.rotation.x+=1.15;update();};
@@ -569,23 +617,27 @@ export default function WorkspaceStage({
           rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           const target=1-r.state[id];
           if(reduced){r.state[id]=target;update();end();return;}
+          // Index finger presses the lamp switch; a pinch takes the blind cord.
           action=gsap.timeline({onUpdate:update,onComplete:end});
-          action.to(h.hand.position,{x:o.position.x,y:o.position.y+0.08,z:o.position.z+0.08,duration:0.5,ease:'power2.inOut'})
-            .to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'})
-            .to(h.hand.position,{x:h===model.hands.left?-0.27:0.27,y:1.28,z:0.405,duration:0.5});
+          action.to(h.hand.position,{x:o.position.x,y:o.position.y+0.08,z:o.position.z+0.08,duration:0.5,ease:'power2.inOut'},0)
+            .to(h.pose,{...POSES[id==='lamp'?'point':'pinch'],duration:0.4,ease:'power2.inOut'},0.1)
+            .to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'},0.5)
+            .to(h.hand.position,{x:h.side*HAND_REST.x,y:HAND_REST.y,z:HAND_REST.z,duration:0.5},'>')
+            .to(h.pose,{...POSES.rest,duration:0.4,ease:'power2.inOut'},'<');
           gsap.ticker.wake();return;
         }
         if(id==='pen') {
-          const home=r.homes.pen,[nx,ny,nz]=WORKSPACE.anchors.notebook;penGrip.k=0;
+          const home=r.homes.pen,[nx,ny,nz]=WORKSPACE.anchors.notebook;penGrip.k=0;penGrip.reach=0;
           const drawing=()=>{host.dataset.actionState='drawing';renderer.domElement.style.cursor='crosshair';invalidate();};
-          if(reduced){o.position.set(nx,ny+0.006,nz);o.rotation.set(PEN_HELD.x,PEN_HELD.y,0);penGrip.k=1;model.hands.lean.set(PEN_LEAN.x,PEN_LEAN.y,PEN_LEAN.z);look.set(nx,ny,nz);posePen();leanCamera();drawing();return;}
+          if(reduced){o.position.set(nx,ny+0.006,nz);o.rotation.set(PEN_HELD.x,PEN_HELD.y,PEN_HELD.z);penGrip.k=1;penGrip.reach=1;model.hands.lean.set(PEN_LEAN.x,PEN_LEAN.y,PEN_LEAN.z);look.set(nx,ny,nz);posePen();leanCamera();drawing();return;}
           startLean();
           action=gsap.timeline({onUpdate(){posePen();leanCamera();invalidate();},onComplete:drawing});
           action.to(model.hands.lean,{...PEN_LEAN,duration:0.7,ease:'power2.inOut'},0)
             .to(look,{x:nx,y:ny,z:nz,duration:0.7,ease:'power2.inOut'},0)
-            .to(penGrip,{k:1,duration:0.6,ease:'power2.inOut'},0)
+            .to(penGrip,{reach:1,duration:0.6,ease:'power2.inOut'},0)
             .to(o.position,{y:home.y+0.06,duration:0.25,ease:'power2.out'},0.6)
-            .to(o.rotation,{x:PEN_HELD.x,y:PEN_HELD.y,duration:0.5,ease:'power2.inOut'},0.6)
+            .to(o.rotation,{x:PEN_HELD.x,y:PEN_HELD.y,z:PEN_HELD.z,duration:0.5,ease:'power2.inOut'},0.6)
+            .to(penGrip,{k:1,duration:0.5,ease:'power2.inOut'},0.6)
             .to(o.position,{x:nx,y:ny+0.006,z:nz,duration:0.5,ease:'power2.inOut'},0.85);
           gsap.ticker.wake();return;
         }
@@ -619,7 +671,7 @@ export default function WorkspaceStage({
           if(reduced){o.position.copy(wear?HEAD:home);o.rotation.x=wear?Math.PI/2:0;o.visible=!wear;end();return;}
           // Both hands take the ear cups, palms in, and carry them up past the camera.
           const L=model.hands.left,R=model.hands.right,k={w:0};
-          const CUP_L={obj:o,p:[-0.16,0.02,0.06],r:[0,0,Math.PI/2]},CUP_R={obj:o,p:[0.16,0.02,0.06],r:[0,0,-Math.PI/2]};
+          const CUP_L={obj:o,p:[-0.16,0.02,0.06],r:[0,0,Math.PI/2],pose:'cup'},CUP_R={obj:o,p:[0.16,0.02,0.06],r:[0,0,-Math.PI/2],pose:'cup'};
           const LEAN={x:0.35,y:-0.08,z:-0.5},HOME_LOOK={x:home.x,y:home.y,z:home.z+0.1};
           let fromL=snapshot(L),fromR=snapshot(R),releasing=false;
           const release=()=>{releasing=true;fromL=snapshot(L);fromR=snapshot(R);k.w=0;};
@@ -671,7 +723,7 @@ export default function WorkspaceStage({
           const finish=()=>{r.state.coffeeLevel=level;o.position.copy(home);o.rotation.set(0,0,0);r.updateLiquid(0,0);host.dataset.coffeeLevel=String(level);window.dispatchEvent(new CustomEvent('workspace:coffee',{detail:{level}}));end();};
           if(reduced){finish();return;}
           // Left hand: fingers through the handle, thumb on top, palm toward the mug.
-          const left=model.hands.left,MUG={obj:o,p:[-0.033,0.012,0.125],r:[0,Math.PI/4,Math.PI/2]};
+          const left=model.hands.left,MUG={obj:o,p:[-0.033,0.012,0.125],r:[0,Math.PI/4,Math.PI/2],pose:'hook'};
           const LEAN={x:-0.2,y:-0.05,z:-0.2},HOME_LOOK={x:home.x,y:home.y,z:home.z},k={reach:0,release:0};
           let from=snapshot(left);
           startLean();
@@ -728,14 +780,15 @@ export default function WorkspaceStage({
         }
         if(id==='pen'){
           const home=r.homes.pen;
-          const finish=()=>{o.position.copy(home);o.rotation.set(...PEN_REST);penGrip.k=0;lastInk=null;renderer.domElement.style.cursor='';finishExtra(id);};
+          const finish=()=>{o.position.copy(home);o.rotation.set(...PEN_REST);penGrip.k=0;penGrip.reach=0;lastInk=null;renderer.domElement.style.cursor='';finishExtra(id);};
           if(reduced){finish();return;}
           startLean();
           action=gsap.timeline({onUpdate(){posePen();leanCamera();invalidate();},onComplete:finish});
           action.to(o.position,{x:home.x,y:home.y+0.06,z:home.z,duration:0.55,ease:'power2.inOut'},0)
-            .to(o.rotation,{x:PEN_REST[0],y:PEN_REST[1],duration:0.55,ease:'power2.inOut'},0)
+            .to(o.rotation,{x:PEN_REST[0],y:PEN_REST[1],z:PEN_REST[2],duration:0.55,ease:'power2.inOut'},0)
+            .to(penGrip,{k:0,duration:0.55,ease:'power2.inOut'},0)
             .to(o.position,{y:home.y,duration:0.2,ease:'power2.inOut'},0.55)
-            .to(penGrip,{k:0,duration:0.5,ease:'power2.inOut'},0.75)
+            .to(penGrip,{reach:0,duration:0.5,ease:'power2.inOut'},0.75)
             .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},0.75)
             .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},0.75);
           gsap.ticker.wake();return;
@@ -901,7 +954,7 @@ export default function WorkspaceStage({
         // Intersect the whole model so a desk/chair cannot be clicked through.
         // Hands rest on the keys; clicks pass through them to whatever is underneath.
         const hands = [model.hands.left, model.hands.right];
-        const isHand = o => hands.some(h => o === h.arm || o === h.sleeve || h.hand === o || (() => { for (let p = o.parent; p; p = p.parent) if (p === h.hand) return true; return false; })());
+        const isHand = o => hands.some(h => o === h.arm || o === h.sleeve || o === h.elbow || h.hand === o || (() => { for (let p = o.parent; p; p = p.parent) if (p === h.hand) return true; return false; })());
         const result = raycaster.intersectObject(model.root, true).find(r => !isHand(r.object));
         host.dataset.hitKey = result?.object === model.keys ? String(result.instanceId) : '';
         return result?.object.userData.anchorId || null;
@@ -1011,6 +1064,10 @@ export default function WorkspaceStage({
           },
           fingerTips() {
             return [model.hands.left, model.hands.right].map(h => h.fingers.map(f => f.localToWorld(f.userData.tip.clone().sub(f.position)).toArray()));
+          },
+          // Wrist bend in degrees (forearm against the hand's own axis) and the live pose, per hand.
+          hands() {
+            return [model.hands.left, model.hands.right].map(h => ({ wristDeg: +h.wristDeg.toFixed(1), pose: Object.fromEntries(Object.keys(POSES.rest).map(k => [k, +h.pose[k].toFixed(2)])), p: h.hand.position.toArray().map(v => +v.toFixed(3)) }));
           },
         };
       }

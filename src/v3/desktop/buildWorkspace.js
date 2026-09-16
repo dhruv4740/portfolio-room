@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { buildRoomInteractions } from './buildRoomInteractions.js';
 import { buildSeatedFigure } from './buildSeatedFigure.js';
+import { seatedHands } from './seatedHands.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -229,148 +230,6 @@ function skylineTexture(foreground = false, state = 'night') {
       x += width + 3 + random() * 10;
     }
   }, 768, 1024);
-}
-
-// Authored rigid parts, not a skeleton. Finger gaps remain visible at rest;
-// forearms join the wrists and long sleeves continue behind the seated eye.
-function seatedHands() {
-  const root = new THREE.Group(); root.name = 'Seated hands and forearms'; root.visible = false;
-  const skin = new THREE.MeshStandardMaterial({ color: '#b9896e', roughness: 0.82 });
-  const cloth = new THREE.MeshStandardMaterial({ color: '#3c4949', roughness: 1 });
-
-  function mesh(geometry, material, parent, position = [0, 0, 0]) {
-    const m = new THREE.Mesh(geometry, material); m.position.set(...position);
-    m.castShadow = false; m.receiveShadow = true; m.raycast = () => {}; parent.add(m); return m;
-  }
-  function rod(parent, a, b, radius, tip, material) {
-    const av = new THREE.Vector3(...a), bv = new THREE.Vector3(...b);
-    const m = mesh(new THREE.CylinderGeometry(tip, radius, av.distanceTo(bv), 10), material, parent, av.clone().add(bv).multiplyScalar(0.5).toArray());
-    m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), bv.sub(av).normalize()); return m;
-  }
-  // Continuous skin surfaces: smoothly varying cross sections, no joint collars.
-  function skinSweep(points, radii, segments = 32, sides = 20, flatten = 1) {
-    const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(...p)));
-    const frames = curve.computeFrenetFrames(segments, false);
-    const vertices = [], indices = [], uv = [];
-    for (let j = 0; j <= segments; j++) {
-      const t = j / segments, q = curve.getPointAt(t), f = t * (radii.length - 1);
-      const k = Math.min(radii.length - 2, Math.floor(f));
-      const u = f - k;
-      const blend = k === radii.length - 2 ? 1 - Math.sqrt(Math.max(0,1-u*u)) : u*u*(3-2*u);
-      const radius = THREE.MathUtils.lerp(radii[k], radii[k + 1], blend);
-      for (let i = 0; i <= sides; i++) {
-        const angle = i / sides * Math.PI * 2;
-        const v = q.clone().addScaledVector(frames.normals[j], Math.cos(angle) * radius)
-          .addScaledVector(frames.binormals[j], Math.sin(angle) * radius * flatten);
-        vertices.push(v.x,v.y,v.z); uv.push(i / sides,t);
-        if(j < segments && i < sides) { const a=j*(sides+1)+i,b=a+sides+1; indices.push(a,a+1,b,b,a+1,b+1); }
-      }
-    }
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
-  }
-  function palmGeometry() {
-    const profile = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(0.025,0.018,0.105),new THREE.Vector3(0.033,0.022,0.067),
-      new THREE.Vector3(0.047,0.024,0.022),new THREE.Vector3(0.051,0.019,-0.02),
-      new THREE.Vector3(0.046,0.013,-0.049),new THREE.Vector3(0.032,0.008,-0.064),
-      new THREE.Vector3(0.001,0.001,-0.070)]);
-    const vertices=[],uv=[],indices=[],rings=48,sides=32;
-    for(let j=0;j<=rings;j++) {
-      const p=profile.getPoint(j/rings);
-      for(let i=0;i<=sides;i++) {
-        const a=i/sides*Math.PI*2;vertices.push(Math.cos(a)*p.x,Math.sin(a)*p.y,p.z);uv.push(i/sides,j/rings);
-        if(j<rings&&i<sides){const a=j*(sides+1)+i,b=a+sides+1;indices.push(a,b,a+1,b,b+1,a+1);}
-      }
-    }
-    const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));
-    g.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));g.setIndex(indices);g.computeVertexNormals();return g;
-  }
-  const hands = [];
-  // Leaning in moves both shoulders (the camera moves with them in WorkspaceStage).
-  const lean = new THREE.Vector3();
-  for (const side of [-1, 1]) {
-    const hand = new THREE.Group(); root.add(hand);
-    hand.position.set(side * 0.27, 1.292, 0.405);
-    mesh(palmGeometry(), skin, hand);
-
-    const fingers = [];
-    for (let i = 0; i < 4; i++) {
-      const finger = new THREE.Group();
-      const order = side === 1 ? i : 3 - i;
-      finger.position.set(-0.036 + i * 0.024, 0, -[0.044, 0.057, 0.049, 0.026][order]); hand.add(finger);
-      const length = [0.079, 0.091, 0.081, 0.057][order];
-      finger.userData.tip = new THREE.Vector3(0, -0.028, -length).add(finger.position);
-      const relaxed = skinSweep([[0,0,0.012],[0,0.004,-length*0.25],[0,0.009,-length*0.48],
-        [0,-0.002,-length*0.76],[0,-0.018,-length*0.96],[0,-0.028,-length]],
-        [0.0125,0.0118,0.0115,0.0098,0.008,0.001]);
-      const curled = skinSweep([[0,0,0.012],[0,0.008,-0.025],[0,-0.012,-0.039],
-        [0,-0.035,-0.018],[0,-0.026,0.010]], [0.0125,0.012,0.011,0.009,0.001]);
-      finger.userData.relaxed = relaxed; finger.userData.curled = curled;
-      mesh(relaxed.clone(), skin, finger);
-      fingers.push(finger);
-    }
-    const thumb = new THREE.Group(); hand.add(thumb);
-    mesh(skinSweep([[-side*0.028,-0.004,0.042],[-side*0.051,-0.004,0.013],
-      [-side*0.070,-0.010,-0.006],[-side*0.087,-0.018,-0.03]], [0.024,0.019,0.013,0.001]),skin,thumb);
-    // Separate sleeve/forearm rods follow the authored wrist, without IK.
-    const sleeve = mesh(new THREE.CylinderGeometry(0.054, 0.082, 1, 24), cloth, root);
-    const arm = mesh(new THREE.CylinderGeometry(0.016, 0.046, 1, 32), skin, root);
-    const wrist = new THREE.Vector3(), elbow = new THREE.Vector3(side * 0.40, 1.13, 1.10);
-    const shoulder = new THREE.Vector3(0.05 + side * 0.225, 1.40, 1.23);
-    const fit = (m, a, b) => {
-      m.position.copy(a).add(b).multiplyScalar(0.5); m.scale.y = a.distanceTo(b);
-      m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
-    };
-    hands.push({ hand, fingers, thumb, arm, sleeve, index: side === 1 ? 0 : 3, update() {
-      // End cap buried inside the palm so it never shows as a cut disc.
-      wrist.set(0, 0.004, 0.06).applyEuler(hand.rotation).add(hand.position);
-      const s = shoulder.clone().add(lean);
-      const direction = wrist.clone().sub(s), distance = direction.length(); direction.normalize();
-      const pole = new THREE.Vector3(side * 0.25,-1,0.1);pole.addScaledVector(direction,-pole.dot(direction)).normalize();
-      elbow.copy(s).addScaledVector(direction,distance*0.5).addScaledVector(pole,Math.sqrt(Math.max(0,0.40**2-(distance*0.5)**2)));
-      fit(arm, elbow, wrist); fit(sleeve, s, elbow);
-    }});
-  }
-  function update() { hands.forEach(h => h.update()); }
-  function reset() {
-    lean.set(0, 0, 0);
-    hands.forEach((h, i) => { h.hand.position.set(i ? 0.27 : -0.27, 1.292, 0.405); h.hand.rotation.set(0, 0, 0); h.thumb.position.set(0,0,0); h.thumb.scale.set(1,1,1); h.fingers.forEach(f => { f.rotation.set(0,0,0); f.position.y = 0; }); h.hand.visible = h.arm.visible = h.sleeve.visible = true; }); update();
-  }
-  const mergedMaterial = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.82 });
-  for (const h of hands) for (const group of [h.hand, ...h.fingers, h.thumb]) {
-    const parts = group.children.filter(o => o.isMesh), geometries = [];
-    for (const part of parts) {
-      part.updateMatrix();
-      const g = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone(); g.applyMatrix4(part.matrix);
-      const color = part.material.color, values = new Float32Array(g.attributes.position.count * 3);
-      for (let i = 0; i < values.length; i += 3) { values[i] = color.r; values[i+1] = color.g; values[i+2] = color.b; }
-      g.setAttribute('color', new THREE.BufferAttribute(values, 3)); geometries.push(g);
-      part.geometry.dispose(); group.remove(part);
-    }
-    mesh(mergeGeometries(geometries, false), mergedMaterial, group); geometries.forEach(g => g.dispose());
-  }
-  function grip(h, pointing = false) {
-    h.fingers.forEach((f,i) => {
-      const geometry = pointing && i === h.index ? f.userData.relaxed : f.userData.curled;
-      const m = f.children[0]; m.geometry.dispose(); m.geometry = geometry.clone();
-      const c = skin.color, colors = new Float32Array(m.geometry.attributes.position.count * 3);
-      for(let n=0;n<colors.length;n+=3){ colors[n]=c.r;colors[n+1]=c.g;colors[n+2]=c.b; }
-      m.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3)); f.rotation.set(0,0,0);
-    });
-  }
-  const resetPose = reset;
-  function rest() { resetPose(); hands.forEach(h => {
-    h.fingers.forEach(f => {
-      const m=f.children[0];m.geometry.dispose();m.geometry=f.userData.relaxed.clone();
-      const c=skin.color, colors=new Float32Array(m.geometry.attributes.position.count*3);
-      for(let n=0;n<colors.length;n+=3){colors[n]=c.r;colors[n+1]=c.g;colors[n+2]=c.b;}
-      m.geometry.setAttribute('color',new THREE.BufferAttribute(colors,3));
-    });
-  }); }
-
-  reset();
-  return { root, left: hands[0], right: hands[1], lean, update, reset: rest, grip };
 }
 
 export function buildWorkspace(scene, options = {}) {
@@ -762,7 +621,6 @@ export function buildWorkspace(scene, options = {}) {
         if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(m => mats.add(m));
         if (object.isLight) object.dispose?.();
       });
-      for (const h of [hands.left,hands.right]) for (const f of h.fingers) { geometries.add(f.userData.relaxed); geometries.add(f.userData.curled); }
       Object.values(phoneTextures).forEach(t => textures.add(t));
       Object.values(cityTextures).forEach(pair => pair.forEach(t => textures.add(t)));
       mats.forEach(m => { for (const value of Object.values(m)) if (value?.isTexture) textures.add(value); m.dispose(); });
