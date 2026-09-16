@@ -169,10 +169,10 @@ export default {
           '  wallpaper     open wallpaper',
           '  contact       show contact info',
           '  skills        open skills (physics)',
-          '  basketproof   open basketproof',
-          '  darksentinel  open darksentinel',
-          '  focuslock     open focuslock',
-          '  expense       open expense tracker',
+          '  focuslock     open focuslock desktop',
+          '  darksentinel  open darksentinel threat monitor',
+          '  crisiswatch   open crisiswatch fact check',
+          '  fraud         open fraud detection dashboard',
           '  music         open music player',
           '  whoami        identity',
           '  open <app>    open any app by name',
@@ -180,14 +180,16 @@ export default {
         );
       },
       ls(_, print) {
-        const appList = ['about', 'terminal', 'projects', 'gallery', 'wallpaper', 'contact', 'skills', 'basketproof', 'darksentinel', 'focuslock', 'expense', 'music'];
+        const appList = ['about', 'terminal', 'projects', 'gallery', 'focuslock', 'darksentinel', 'crisiswatch', 'fraud', 'wallpaper', 'contact', 'skills', 'music'];
         print('  ' + appList.join('  '));
       },
       skills(ctx) { ctx?.openApp?.('skills'); },
-      basketproof(ctx) { ctx?.openApp?.('basketproof'); },
-      darksentinel(ctx) { ctx?.openApp?.('darksentinel'); },
       focuslock(ctx) { ctx?.openApp?.('focuslock'); },
-      expense(ctx) { ctx?.openApp?.('expense'); },
+      darksentinel(ctx) { ctx?.openApp?.('darksentinel'); },
+      crisiswatch(ctx) { ctx?.openApp?.('crisiswatch'); },
+      fraud(ctx) { ctx?.openApp?.('fraud'); },
+      basketproof(_, print) { print('  → BasketProof is on the phone. Zoom into the phone on the desk.'); },
+      expense(_, print) { print('  → Expense Tracker is on the phone. Zoom into the phone on the desk.'); },
       music(ctx) { ctx?.openApp?.('music'); },
       about(ctx, print) {
         print(

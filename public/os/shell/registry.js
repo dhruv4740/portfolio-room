@@ -19,13 +19,13 @@ await load('../apps/about.js');
 await load('../apps/terminal.js');
 await load('../apps/projects.js');
 await load('../apps/gallery.js');
-await load('../apps/corrupted.js');
-await load('../apps/kinetic.js');
-await load('../apps/tear.js');
+await load('../apps/focuslock.js');
+await load('../apps/darksentinel.js');
+await load('../apps/crisiswatch.js');
+await load('../apps/fraud.js');
 await load('../apps/wallpaper.js');
 await load('../apps/contact.js');
 await load('../apps/gravity.js');
-await load('../apps/decoder.js');
 await load('../apps/music.js');
 
 export default apps;

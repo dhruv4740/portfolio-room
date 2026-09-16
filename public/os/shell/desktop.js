@@ -169,9 +169,12 @@ export function initDesktop(apps, ctx) {
     ].join(';');
 
     const items = [
-      { label: '⊚  Skills',       action: () => ctx.openApp('skills') },
-      { label: '▓  BasketProof',  action: () => ctx.openApp('basketproof') },
-      { label: '♫  Music Player', action: () => ctx.openApp('music') },
+      { label: '⊚  Skills',        action: () => ctx.openApp('skills') },
+      { label: '⚡  DarkSentinel',  action: () => ctx.openApp('darksentinel') },
+      { label: '🛡️  FocusLock',     action: () => ctx.openApp('focuslock') },
+      { label: '🔍  CrisisWatch',   action: () => ctx.openApp('crisiswatch') },
+      { label: '⚖️  Fraud Detect',  action: () => ctx.openApp('fraud') },
+      { label: '♫  Music Player',  action: () => ctx.openApp('music') },
       null,
       { label: '≋  Wallpaper', action: () => ctx.openApp('wallpaper') },
       { label: '✉  Contact',   action: () => ctx.openContact() },
