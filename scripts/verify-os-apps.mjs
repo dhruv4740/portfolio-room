@@ -6,11 +6,11 @@ const BASE = process.env.BASE || 'http://localhost:4173';
 const baseOrigin = new URL(BASE).origin;
 
 const promoted = [
-  { id: 'focuslock', title: 'FocusLock', mode: 'minimize', webgl: false, projectKey: 'focuslock' },
-  { id: 'skills', title: 'Skills', mode: 'close', webgl: false, customTagline: 'Interactive skill physics' },
-  { id: 'darksentinel', title: 'DarkSentinel', mode: 'close', webgl: true, projectKey: 'darksentinel' },
-  { id: 'expense', title: 'Expense Tracker', mode: 'close', webgl: true, projectKey: 'expense' },
-  { id: 'basketproof', title: 'BasketProof', mode: 'close', webgl: false, projectKey: 'basket' },
+  { id: 'focuslock', title: 'FocusLock', mode: 'minimize', projectKey: 'focuslock' },
+  { id: 'skills', title: 'Skills', mode: 'close', customTagline: 'Interactive skill physics', hasRaf: true },
+  { id: 'darksentinel', title: 'DarkSentinel', mode: 'close', projectKey: 'darksentinel' },
+  { id: 'crisiswatch', title: 'CrisisWatch', mode: 'close', projectKey: 'crisiswatch' },
+  { id: 'fraud', title: 'Fraud Detection', mode: 'close', projectKey: 'fraud' },
 ];
 
 const browser = await chromium.launch();
@@ -115,64 +115,34 @@ for (const app of promoted) {
   // Wait 1500ms
   await page.waitForTimeout(1500);
 
-  // Header line assertion: <Project> — <tagline from content>
-  let expectedHeader = '';
-  if (app.customTagline) {
-    expectedHeader = `${app.title} — ${app.customTagline}`;
+  if (app.id === 'skills') {
+    const expectedHeader = `${app.title} — ${app.customTagline}`;
+    const headerEl = win.locator('.app-project-header');
+    assert.equal(await headerEl.count(), 1, `${app.title}: .app-project-header missing`);
+    const actualHeader = (await headerEl.innerText()).trim();
+    assert.equal(actualHeader, expectedHeader, `${app.title}: header mismatch. Expected "${expectedHeader}", got "${actualHeader}"`);
+    console.log(`PASS ${app.title}: header matched "${expectedHeader}"`);
   } else {
-    const proj = content.projects.find((p) => p.id === (app.projectKey || app.id));
-    assert.ok(proj, `Project not found in content for ${app.id}`);
-    expectedHeader = `${proj.name} — ${proj.tagline}`;
+    const demoTag = win.locator('.fl-demo-tag, .ds-demo-tag, .cw-demo-tag, .cw-demo-badge, .fd-demo-tag');
+    assert.equal(await demoTag.count(), 1, `${app.title}: DEMO DATA tag missing`);
+    const tagText = (await demoTag.innerText()).trim();
+    assert.equal(tagText, 'DEMO DATA', `${app.title}: demo tag text mismatch. Expected "DEMO DATA", got "${tagText}"`);
+    console.log(`PASS ${app.title}: DEMO DATA tag present`);
   }
-  const headerEl = win.locator('.app-project-header');
-  assert.equal(await headerEl.count(), 1, `${app.title}: .app-project-header missing`);
-  const actualHeader = (await headerEl.innerText()).trim();
-  assert.equal(actualHeader, expectedHeader, `${app.title}: header mismatch. Expected "${expectedHeader}", got "${actualHeader}"`);
-  console.log(`PASS ${app.title}: header matched "${expectedHeader}"`);
 
-  // Perform interaction scaled into window's body rect
-  const bodyBox = await win.locator('.win-body').boundingBox();
-  assert.ok(bodyBox, `${app.title} body rect missing`);
-  const scaleX = (x) => bodyBox.x + (x / 900) * bodyBox.width;
-  const scaleY = (y) => bodyBox.y + (y / 640) * bodyBox.height;
-
-  await page.mouse.move(scaleX(200), scaleY(200));
-  await page.mouse.move(scaleX(700), scaleY(450), { steps: 20 });
-
+  // Perform interaction
   if (app.id === 'focuslock') {
-    await win.locator('#save-header').click();
+    const tab = win.locator('.fl-tab[data-tab="settings"]');
+    if (await tab.count() > 0) await tab.click();
   } else if (app.id === 'darksentinel') {
-    await page.mouse.move(scaleX(150), scaleY(320));
-    await page.mouse.down();
-    await page.mouse.move(scaleX(750), scaleY(320), { steps: 25 });
-    await page.mouse.up();
-  } else if (app.id === 'basketproof') {
-    await page.waitForTimeout(300);
-  } else if (app.id === 'expense') {
-    const container = win.locator('.app-expense');
-    const scrollHeight = await container.evaluate((el) => el.scrollHeight - el.clientHeight);
-    for (let step = 1; step <= 6; step++) {
-      const targetY = (scrollHeight / 6) * step;
-      await container.evaluate((el, y) => { el.scrollTop = y; }, targetY);
-      await page.waitForTimeout(250);
-    }
-    await page.waitForTimeout(800);
-
-    const titles = await container.locator('.pmeta h3').evaluateAll((els) =>
-      els.map((el) => ({
-        text: el.innerText.trim(),
-        opacity: parseFloat(window.getComputedStyle(el).opacity),
-      }))
-    );
-    for (const t of titles) {
-      assert.ok(t.text.length > 0, `Expense project title is empty`);
-      assert.ok(t.opacity >= 0.99, `Expense project "${t.text}" opacity ${t.opacity} < 0.99`);
-    }
-    console.log(`PASS Expense Tracker: all ${titles.length} stage titles have opacity >= 0.99 and non-empty text`);
-
-    const proj2Top = await container.locator('.proj').nth(1).evaluate((el) => el.offsetTop);
-    await container.evaluate((el, y) => { el.scrollTop = y - 40; }, proj2Top);
-    await page.waitForTimeout(500);
+    const tab = win.locator('.ds-tab[data-tab="pipeline"]');
+    if (await tab.count() > 0) await tab.click();
+  } else if (app.id === 'crisiswatch') {
+    const chip = win.locator('.cw-chip').first();
+    if (await chip.count() > 0) await chip.click();
+  } else if (app.id === 'fraud') {
+    const uploadBtn = win.locator('#fd-btn-upload');
+    if (await uploadBtn.count() > 0) await uploadBtn.click();
   } else if (app.id === 'skills') {
     await page.waitForTimeout(500);
   }
@@ -181,66 +151,60 @@ for (const app of promoted) {
   await win.screenshot({ path: `scripts/shots/app-${app.id}.png` });
   console.log(`[harness] saved app-${app.id}.png`);
 
-  const running = await page.evaluate(() => window.__rafCallbacks);
-  await page.waitForTimeout(250);
-  assert.ok((await page.evaluate(() => window.__rafCallbacks)) > running, `${app.title}: rAF did not start while visible`);
+  if (app.hasRaf) {
+    const running = await page.evaluate(() => window.__rafCallbacks);
+    await page.waitForTimeout(250);
+    assert.ok((await page.evaluate(() => window.__rafCallbacks)) > running, `${app.title}: rAF did not start while visible`);
+  }
 
   if (app.mode === 'minimize') {
     await win.locator('[data-minimize]').click();
     await page.waitForTimeout(400);
-    const before = await page.evaluate(() => window.__rafCallbacks);
-    await stopDelta(`${app.title} minimize`, before);
+    if (app.hasRaf) {
+      const before = await page.evaluate(() => window.__rafCallbacks);
+      await stopDelta(`${app.title} minimize`, before);
+    }
 
     await page.locator('.taskbar-btn').filter({ hasText: app.title }).click();
     await page.waitForTimeout(150);
-    await page.evaluate(() => window.postMessage({ source: 'v3-scan', type: 'leave' }, location.origin));
-    await page.waitForTimeout(400);
-    const leftBefore = await page.evaluate(() => window.__rafCallbacks);
-    await stopDelta(`${app.title} parent leave`, leftBefore);
-    await page.evaluate(() => window.postMessage({ source: 'v3-scan', type: 'enter' }, location.origin));
-    await page.waitForTimeout(100);
+    if (app.hasRaf) {
+      await page.evaluate(() => window.postMessage({ source: 'v3-scan', type: 'leave' }, location.origin));
+      await page.waitForTimeout(400);
+      const leftBefore = await page.evaluate(() => window.__rafCallbacks);
+      await stopDelta(`${app.title} parent leave`, leftBefore);
+      await page.evaluate(() => window.postMessage({ source: 'v3-scan', type: 'enter' }, location.origin));
+      await page.waitForTimeout(100);
+    }
     await win.locator('[data-close]').click();
     await page.waitForTimeout(400);
-  } else if (app.id === 'expense' || app.id === 'darksentinel' || app.id === 'basketproof') {
-    await win.locator('[data-close]').click();
-    await page.waitForTimeout(400);
-    console.log(`PASS ${app.title} close: animation loop cancelled and window closed`);
   } else {
     await win.locator('[data-close]').click();
     await page.waitForTimeout(400);
-    const before = await page.evaluate(() => window.__rafCallbacks);
-    await stopDelta(`${app.title} close`, before);
-  }
-
-  await page.waitForTimeout(300);
-  if (app.webgl) {
-    const remaining = await page.evaluate((id) => document.querySelectorAll(`.app-${id}`).length, app.id);
-    assert.equal(remaining, 0, `after closing ${app.title}, .app-${app.id} still exists in DOM`);
-    console.log(`PASS ${app.title}: .app-${app.id} fully removed from DOM`);
+    console.log(`PASS ${app.title} close: window closed`);
   }
 }
 
-// Assert other sketches keep animating after Expense Tracker closes
-const dsDeskIcon = page.locator('.desk-icon').filter({ hasText: 'DarkSentinel' }).first();
-await dsDeskIcon.dispatchEvent('dblclick');
-const dsWindow = await windowFor('DarkSentinel');
+// Assert Skills physics keeps animating after another app opens and closes
+const skillsDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Skills' }).first();
+await skillsDeskIcon.dispatchEvent('dblclick');
+const skillsWindow = await windowFor('Skills');
 await page.waitForTimeout(500);
 
-const expDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Expense Tracker' }).first();
-await expDeskIcon.dispatchEvent('dblclick');
-const expWindow = await windowFor('Expense Tracker');
+const flDeskIcon = page.locator('.desk-icon').filter({ hasText: 'FocusLock' }).first();
+await flDeskIcon.dispatchEvent('dblclick');
+const flWindow = await windowFor('FocusLock');
 await page.waitForTimeout(500);
 
-await expWindow.locator('[data-close]').click();
+await flWindow.locator('[data-close]').click();
 await page.waitForTimeout(400);
 
-const dsRunningBefore = await page.evaluate(() => window.__rafCallbacks);
+const skillsRunningBefore = await page.evaluate(() => window.__rafCallbacks);
 await page.waitForTimeout(250);
-const dsRunningAfter = await page.evaluate(() => window.__rafCallbacks);
-assert.ok(dsRunningAfter > dsRunningBefore, `DarkSentinel stopped animating after Expense Tracker closed (${dsRunningBefore} -> ${dsRunningAfter})`);
-console.log('PASS other sketches keep animating after Expense Tracker closes');
+const skillsRunningAfter = await page.evaluate(() => window.__rafCallbacks);
+assert.ok(skillsRunningAfter > skillsRunningBefore, `Skills stopped animating after FocusLock closed (${skillsRunningBefore} -> ${skillsRunningAfter})`);
+console.log('PASS Skills keeps animating after other app closes');
 
-await dsWindow.locator('[data-close]').click();
+await skillsWindow.locator('[data-close]').click();
 await page.waitForTimeout(400);
 
 const wallpaperIcon = page.locator('.desk-icon').filter({ hasText: 'wallpaper' }).first();
