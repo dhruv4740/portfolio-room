@@ -13,7 +13,12 @@ const externalRequests = [];
 
 function attachPageListeners(p) {
   p.on('pageerror', (err) => pageErrors.push(err.message));
-  p.on('requestfailed', (req) => failedRequests.push(`${req.method()} ${req.url()} - ${req.failure()?.errorText || 'failed'}`));
+  p.on('requestfailed', (req) => {
+    const why = req.failure()?.errorText || 'failed';
+    // Closing a real-UI window removes its iframe mid-prefetch; those aborted chunk loads are not failures.
+    if (why === 'net::ERR_ABORTED' && (req.url().includes('/apps/') || /fonts\.gstatic\.com/.test(req.url()))) return;
+    failedRequests.push(`${req.method()} ${req.url()} - ${why}`);
+  });
   p.on('request', (req) => {
     const url = req.url();
     if (!url.startsWith('data:') && !url.startsWith(baseOrigin) && !url.includes('fonts.googleapis.com') && !url.includes('fonts.gstatic.com')) {
@@ -237,42 +242,23 @@ function attachPageListeners(p) {
     await page.waitForTimeout(400);
   }
 
-  // 5. DarkSentinel Monitor App
+  // 5. DarkSentinel Monitor App — the real Next.js UI in an iframe (apps/darksentinel).
   {
-    console.log('\n[monitor] Testing DarkSentinel Monitor App...');
+    console.log('\n[monitor] Testing DarkSentinel (real UI, iframe)...');
     const icon = page.locator('.desk-icon').filter({ hasText: 'DarkSentinel' }).first();
     await icon.dblclick();
     const win = await windowFor('DarkSentinel');
-    await page.waitForTimeout(600);
-
-    // Screen 1: Mission Control
-    // Citation: darksentinel-ui/app/MissionControl.tsx:32
-    const brand = await win.locator('.ds-brand-title').innerText();
-    assert.equal(brand, 'DARKSENTINEL THREAT MONITOR', 'Brand title mismatch');
-    // Citation: darksentinel-ui/app/MissionControl.tsx:48
-    const statLbl = await win.locator('text=Total Threats').first().innerText();
-    assert.equal(statLbl, 'TOTAL THREATS', 'Total threats stat card missing');
-    // Assert DEMO DATA
-    const demoTag = await win.locator('.ds-demo-tag').innerText();
-    assert.equal(demoTag, 'DEMO DATA', 'DEMO DATA tag missing in DarkSentinel');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-darksentinel-mission.png' });
-    console.log('PASS [monitor:darksentinel] Screen 1 (Mission Control) verified & saved');
-
-    // Screen 2: Pipeline Monitor
-    // Citation: darksentinel-ui/app/pipeline/page.tsx:75
-    const pipeBtn = win.locator('.ds-nav-btn[data-nav="pipeline"]');
-    await pipeBtn.click();
-    await page.waitForTimeout(300);
-    // Citation: darksentinel-ui/app/pipeline/page.tsx:82
-    const panelTitle = await win.locator('.ds-panel-title').innerText();
-    assert.equal(panelTitle, 'PIPELINE MONITOR', 'Panel title mismatch');
-    const claudeCall = await win.locator('text=Uncertain-Zone Claude Call').first().innerText();
-    assert.ok(claudeCall.includes('Uncertain-Zone Claude Call'), 'Uncertain-zone Claude call text missing');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-darksentinel-pipeline.png' });
-    console.log('PASS [monitor:darksentinel] Screen 2 (Pipeline Monitor) verified & saved');
-
+    const frame = win.locator('iframe');
+    assert.equal(await frame.getAttribute('src'), '/apps/darksentinel/', 'DarkSentinel iframe src');
+    // Headless Chromium does not reliably paint a nested iframe: text checks only (visual proof is on the GPU path).
+    const f = await (await frame.elementHandle()).contentFrame();
+    await f.waitForFunction(() => /Autonomous Dark Web Threat Intelligence/.test(document.body.innerText), null, { timeout: 20000, polling: 300 });
+    // Citation: apps/darksentinel/app/LandingPage.tsx (real landing page heading)
+    assert.match(await f.locator('body').innerText(), /Autonomous Dark Web Threat Intelligence/, 'DarkSentinel landing heading');
+    assert.match(await win.locator('.win-title').innerText(), /demo data/i, 'window title names the demo data');
+    await page.screenshot({ path: 'scripts/shots/ui-monitor-darksentinel-mission.png', clip: await win.boundingBox() });
+    console.log('PASS [monitor:darksentinel] real UI rendered in its window');
     await win.locator('[data-close]').click();
-    await page.waitForTimeout(400);
   }
 
   // 6. CrisisWatch Monitor App

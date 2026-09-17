@@ -23,9 +23,8 @@ page.on('pageerror', (error) => pageErrors.push(error.message));
 page.on('requestfailed', (request) => failedRequests.push(`${request.method()} ${request.url()} — ${request.failure()?.errorText || 'failed'}`));
 page.on('request', (request) => {
   const url = request.url();
-  if (!url.startsWith('data:') && !url.startsWith(baseOrigin)) {
-    externalRequests.push(url);
-  }
+  // The real project UIs (public/apps/*) load their own web fonts from Google; everything else must stay on-origin.
+  if (!url.startsWith('data:') && !url.startsWith(new URL(BASE).origin) && !/fonts\.g(oogleapis|static)\.com/.test(url)) externalRequests.push(url);
 });
 
 await page.addInitScript(() => {
@@ -122,6 +121,11 @@ for (const app of promoted) {
     const actualHeader = (await headerEl.innerText()).trim();
     assert.equal(actualHeader, expectedHeader, `${app.title}: header mismatch. Expected "${expectedHeader}", got "${actualHeader}"`);
     console.log(`PASS ${app.title}: header matched "${expectedHeader}"`);
+  } else if (await win.locator('iframe').count()) {
+    // Real project UI (public/os/shell/iframeApp.js): the demo label is the window title, the app is untouched.
+    assert.match(await win.locator('iframe').getAttribute('src'), /^\/apps\/[a-z-]+\/$/, `${app.title}: iframe src`);
+    assert.match(await win.locator('.win-title').innerText(), /demo data/i, `${app.title}: window title names the demo data`);
+    console.log(`PASS ${app.title}: real UI iframe with demo-data title`);
   } else {
     const demoTag = win.locator('.fl-demo-tag, .ds-demo-tag, .cw-demo-tag, .cw-demo-badge, .fd-demo-tag');
     assert.equal(await demoTag.count(), 1, `${app.title}: DEMO DATA tag missing`);
