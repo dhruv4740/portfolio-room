@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export const AWARD_REST = [-0.12, 0.36, 0];
+export const AWARD_REST = [-0.12, 0.62, 0];
 export const PEN_REST = [0, 0.187, 0];
 export const KEY_ROWS =['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvbnm,./   ', '            '];
 

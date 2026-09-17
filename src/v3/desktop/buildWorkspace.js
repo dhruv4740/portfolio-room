@@ -13,7 +13,7 @@ export const WORKSPACE = {
   target: [0, 1.1, -0.15],
   anchors: {
     monitor: [0, 1.79, -0.37],
-    lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-0.5,1.335,-0.05],
+    lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-1.0,1.335,-0.22], // left of the monitor's sightline from the seat, in front of the speaker
     drawer: [1.10,0.99,0.62], blinds: [2.16,1.75,-1.48], headphones: [0.67,1.24,-0.05], keyboard: [-0.12,1.25,0.10], // far edge, so the label clears the keys
     notebook: [1.14, 1.21, 0.30], pen: [1.47, 1.218, 0.06],
     window: [1.4, 2.12, -1.75],

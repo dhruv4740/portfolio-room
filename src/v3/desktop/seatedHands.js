@@ -18,6 +18,8 @@ export const POSES = {
   pinch: { c0: 0.55, c1: 0.62, c2: 0.78, c3: 0.88, spread: 0.20, tOpp: 0.95, tCurl: 0.35 },
   wrap:  { c0: 0.72, c1: 0.76, c2: 0.78, c3: 0.82, spread: 0.10, tOpp: 0.85, tCurl: 0.55 },
   hook:  { c0: 0.55, c1: 0.60, c2: 0.80, c3: 0.90, spread: 0.10, tOpp: 0.40, tCurl: 0.80 },
+  // Mug handle: hooked like `hook` but the far joints stay open so the tips end at the handle, not inside the wall.
+  mug:   { c0: 0.50, c1: 0.55, c2: 0.55, c3: 0.60, spread: 0.10, tOpp: 0.40, tCurl: 0.80 },
   cup:   { c0: 0.45, c1: 0.50, c2: 0.52, c3: 0.56, spread: 0.30, tOpp: 0.60, tCurl: 0.30 },
   // Side-edge hold of a flat object: fingers curled behind it, thumb over the front.
   hold:  { c0: 0.50, c1: 0.55, c2: 0.60, c3: 0.65, spread: 0.20, tOpp: 0.70, tCurl: 0.20 },
@@ -30,8 +32,12 @@ export function curlSum(p) { return p.c0 + p.c1 + p.c2 + p.c3 + p.tCurl * 0.5; }
 
 const MCP = 1.5, PIP = 1.8, DIP = 1.0; // radians at full curl
 const T_MCP = 0.9, T_IP = 1.1;
-const WRIST = new THREE.Vector3(0, 0.001, 0.088);
-const UPPER_ARM = 0.40;
+const WRIST = new THREE.Vector3(0, 0.001, 0.066);
+const UPPER_ARM = 0.32, FOREARM = 0.27;
+// Past this wrist-to-shoulder distance the shoulder comes forward (torso lean)
+// instead of the arm straightening into a rod. The keyboard sits ~76 cm from
+// the shoulders, so at rest the torso already leans ~19 cm.
+const REACH = UPPER_ARM + FOREARM - 0.015;
 
 // [thumb-side x, z, length, radius factor, fan]: index, middle, ring, pinky.
 const FINGERS = [
@@ -55,11 +61,12 @@ function phalanxGeometry(r0, r1, length) {
 }
 // Palm: superellipse cross sections from the wrist (+z) to the knuckles (-z).
 function palmGeometry() {
+  // Wrist crease to knuckles ~13.5 cm, palm ~9.5 cm wide, ~3 cm thick at the heel thinning to the knuckles.
   const rings = [ // z, half width, half thickness, y offset
-    [0.104, 0.000, 0.000, 0.001], [0.100, 0.020, 0.012, 0.001], [0.088, 0.028, 0.017, 0.001],
-    [0.068, 0.036, 0.020, 0.001], [0.042, 0.043, 0.022, 0.000], [0.012, 0.048, 0.022, 0.000],
-    [-0.022, 0.050, 0.021, 0.000], [-0.050, 0.049, 0.019, 0.000], [-0.068, 0.046, 0.016, 0.000],
-    [-0.080, 0.038, 0.011, -0.001], [-0.087, 0.022, 0.005, -0.002], [-0.090, 0.000, 0.000, -0.002],
+    [0.078, 0.000, 0.000, 0.001], [0.075, 0.020, 0.011, 0.001], [0.066, 0.027, 0.014, 0.001],
+    [0.051, 0.035, 0.016, 0.001], [0.032, 0.042, 0.017, 0.000], [0.009, 0.047, 0.017, 0.000],
+    [-0.022, 0.049, 0.016, 0.000], [-0.050, 0.048, 0.015, 0.000], [-0.068, 0.045, 0.013, 0.000],
+    [-0.080, 0.037, 0.009, -0.001], [-0.087, 0.021, 0.004, -0.002], [-0.090, 0.000, 0.000, -0.002],
   ];
   const sides = 28, e = 2 / 2.6, pos = [], idx = [];
   const se = (v) => Math.sign(v) * Math.abs(v) ** e;
@@ -68,9 +75,16 @@ function palmGeometry() {
   const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
 }
 // Forearm: open tapered tube along +y from the wrist (0) to the elbow (1); the
-// wrist ellipsoid and elbow ball cover its ends.
+// wrist ellipsoid and elbow ball cover its ends. Its parent scale (1.15, length, 0.72)
+// makes the cross-section elliptical, so the radii here are for a round arm.
 function forearmGeometry() {
-  return new THREE.LatheGeometry([[0.024, 0], [0.0255, 0.12], [0.030, 0.40], [0.038, 0.78], [0.042, 1.0]].map(p => new THREE.Vector2(...p)), 24);
+  return new THREE.LatheGeometry([[0.0225, 0], [0.0235, 0.10], [0.028, 0.40], [0.036, 0.78], [0.040, 1.0]].map(p => new THREE.Vector2(...p)), 24);
+}
+// Shirt sleeve over the forearm: a cuff 3-4 cm above the wrist, then a slightly
+// loose tube to the elbow. Same frame as the forearm so it rolls with the palm.
+const ELBOW_R = 0.0445;
+function sleeveGeometry() {
+  return new THREE.LatheGeometry([[0.0245, 0.115], [0.029, 0.12], [0.029, 0.17], [0.0325, 0.40], [0.0405, 0.78], [ELBOW_R, 1.0]].map(p => new THREE.Vector2(...p)), 24);
 }
 
 export function seatedHands() {
@@ -101,7 +115,7 @@ export function seatedHands() {
     const hand = new THREE.Group(); root.add(hand);
     mesh(palmGeometry(), skin, hand);
     const wristBall = mesh(new THREE.SphereGeometry(1, 20, 12), skin, hand);
-    wristBall.position.set(0, 0.001, 0.090); wristBall.scale.set(0.0285, 0.0178, 0.024);
+    wristBall.position.set(0, 0.001, 0.068); wristBall.scale.set(0.026, 0.0135, 0.020);
 
     const digits = FINGERS.map(spec => {
       const f = new THREE.Group(); f.position.set(-side * spec.x, 0.002, spec.z); hand.add(f);
@@ -110,13 +124,15 @@ export function seatedHands() {
       f.userData = { L, fan: side * spec.fan, joints: chain(f, L, R), tip: new THREE.Vector3() };
       return f;
     });
-    const thumb = new THREE.Group(); thumb.position.set(-side * 0.032, -0.006, 0.040); hand.add(thumb);
+    const thumb = new THREE.Group(); thumb.position.set(-side * 0.032, -0.006, 0.032); hand.add(thumb);
     const TL = [0.046, 0.032, 0.027];
     thumb.userData = { L: TL, joints: chain(thumb, TL, [0.0140, 0.0115, 0.0100, 0.0082]) };
 
     const arm = mesh(forearmGeometry(), skin, hand);
-    const sleeve = mesh(new THREE.CylinderGeometry(0.054, 0.082, 1, 24), cloth, root);
-    const elbow = mesh(new THREE.SphereGeometry(0.055, 20, 12), cloth, root);
+    mesh(sleeveGeometry(), cloth, arm);
+    // The elbow is a child of the forearm so it matches the sleeve's elliptical end exactly.
+    const elbow = mesh(new THREE.SphereGeometry(1, 20, 12), cloth, arm); elbow.position.y = 1;
+    const sleeve = mesh(new THREE.CylinderGeometry(0.042, 0.048, 1, 24), cloth, root);
     hands.push({
       hand, digits, fingers: side === 1 ? digits : digits.slice().reverse(), thumb, arm, sleeve, elbow, side,
       index: side === 1 ? 0 : 3, pose: { ...POSES.rest },
@@ -148,16 +164,19 @@ export function seatedHands() {
     const tj = h.thumb.userData.joints; tj[1].rotation.x = -p.tCurl * T_MCP; tj[2].rotation.x = -p.tCurl * T_IP;
   }
 
-  const wristW = new THREE.Vector3(), s = new THREE.Vector3(), dir = new THREE.Vector3(), pole = new THREE.Vector3();
+  const wristW = new THREE.Vector3(), s = new THREE.Vector3(), s0 = new THREE.Vector3(), dir = new THREE.Vector3(), pole = new THREE.Vector3();
   const elbowW = new THREE.Vector3(), elbowL = new THREE.Vector3(), ax = new THREE.Vector3(), ay = new THREE.Vector3(), az = new THREE.Vector3();
   function updateHand(h) {
     applyPose(h);
     h.hand.updateMatrixWorld(true);
     wristW.copy(WRIST); h.hand.localToWorld(wristW);
-    s.copy(h.shoulder).add(lean);
-    dir.subVectors(wristW, s); const distance = dir.length(); dir.normalize();
+    s0.copy(h.shoulder).add(lean); s.copy(s0);
+    dir.subVectors(wristW, s); let distance = dir.length(); dir.normalize();
+    if (distance > REACH) { s.addScaledVector(dir, distance - REACH); distance = REACH; }
     pole.set(h.side * 0.25, -1, 0.1); pole.addScaledVector(dir, -pole.dot(dir)).normalize();
-    elbowW.copy(s).addScaledVector(dir, distance * 0.5).addScaledVector(pole, Math.sqrt(Math.max(0, UPPER_ARM ** 2 - (distance * 0.5) ** 2)));
+    // Two unequal bones: the elbow sits `along` the shoulder-wrist line and `drop` toward the pole.
+    const along = (distance * distance + UPPER_ARM * UPPER_ARM - FOREARM * FOREARM) / (2 * distance);
+    elbowW.copy(s).addScaledVector(dir, along).addScaledVector(pole, Math.sqrt(Math.max(0, UPPER_ARM * UPPER_ARM - along * along)));
     // The forearm hangs off the hand, so its elliptical wrist rolls with the palm.
     elbowL.copy(elbowW); h.hand.worldToLocal(elbowL);
     ay.subVectors(elbowL, WRIST); const length = ay.length(); ay.normalize();
@@ -165,9 +184,10 @@ export function seatedHands() {
     az.crossVectors(ax, ay);
     h.arm.quaternion.setFromRotationMatrix(basis.makeBasis(ax, ay, az));
     h.arm.position.copy(WRIST); h.arm.scale.set(1.15, length, 0.72);
+    h.elbow.scale.set(ELBOW_R, ELBOW_R / length, ELBOW_R);
     h.wristDeg = THREE.MathUtils.radToDeg(Math.acos(THREE.MathUtils.clamp(ay.z, -1, 1)));
-    h.elbow.position.copy(elbowW);
-    fit(h.sleeve, s, elbowW);
+    // The upper arm runs from the real shoulder (behind the camera) so its end never floats in view.
+    fit(h.sleeve, s0, elbowW);
   }
   function update() { hands.forEach(updateHand); }
   function reset() {

@@ -77,7 +77,7 @@ export default function WorkspaceStage({
       // only measurement in the HUD that reflects the graphics card rather than
       // CPU submission cadence.
       const gl = renderer.getContext(), timerExt = gl.getExtension('EXT_disjoint_timer_query_webgl2');
-      const gpuQueries = []; let gpuSum = 0, gpuCount = 0;
+      const gpuQueries = []; let gpuSum = 0, gpuCount = 0; let lastGpu = 0;
       function gpuBegin() { if (!timerExt) return null; const q = gl.createQuery(); gl.beginQuery(timerExt.TIME_ELAPSED_EXT, q); return q; }
       function gpuEnd(q) { if (!q) return; gl.endQuery(timerExt.TIME_ELAPSED_EXT); gpuQueries.push(q); }
       function gpuPoll() {
@@ -85,7 +85,7 @@ export default function WorkspaceStage({
           const q = gpuQueries[0], available = gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE), disjoint = gl.getParameter(timerExt.GPU_DISJOINT_EXT);
           if (!available && !disjoint) break;
           gpuQueries.shift();
-          if (available && !disjoint) { gpuSum += gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6; gpuCount++; }
+          if (available && !disjoint) { lastGpu = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6; gpuSum += lastGpu; gpuCount++; }
           gl.deleteQuery(q);
         }
       }
@@ -94,6 +94,27 @@ export default function WorkspaceStage({
       // its edges — that contrast against the app's black chrome is intentional.
       scene.background = new THREE.Color('#0a0a0b');
       scene.fog = new THREE.Fog('#0a0a0b', 6, 13);
+      // Owner's open question: what replaces the black void around the room in
+      // the standing view. Prototypes behind ?void=studio | block so each can
+      // be judged live; the default stays black until he chooses.
+      const voidMode = new URLSearchParams(location.search).get('void');
+      if (voidMode === 'studio' || voidMode === 'block') {
+        const sky = '#2c3848';
+        scene.background = new THREE.Color(sky); scene.fog = new THREE.Fog(sky, 7, 26);
+        const ground = new THREE.Mesh(new THREE.CircleGeometry(40, 48), new THREE.MeshStandardMaterial({ color: voidMode === 'block' ? '#3a3d40' : '#232c39', roughness: 1 }));
+        ground.rotation.x = -Math.PI / 2; ground.position.y = -0.02; ground.raycast = () => {}; scene.add(ground);
+        if (voidMode === 'block') {
+          const concrete = new THREE.MeshStandardMaterial({ color: '#4b4f55', roughness: 0.95 }), lit = new THREE.MeshBasicMaterial({ color: '#ffd9a0' });
+          // The room's own slab and roof, so it reads as a cut-away floor of a building.
+          const slab = new THREE.Mesh(new THREE.BoxGeometry(5.6, 0.5, 4.4), concrete); slab.position.set(0, -0.28, 0.1); slab.raycast = () => {}; scene.add(slab);
+          // Neighbouring blocks with a few lit windows, well outside the orbit.
+          const blocks = [[-14, 7, -10, 4, 3.5], [14, 9, -11, 4.5, 4], [-10, 5, 14, 3.5, 3], [11, 6, 15, 4, 3.5], [0, 10, -18, 7, 4.5], [-18, 8, 2, 3.5, 3.5], [18, 7, 3, 3.5, 3.5]];
+          for (const [x, h, z, w, d] of blocks) {
+            const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), concrete); m.position.set(x, h / 2 - 0.02, z); m.raycast = () => {}; scene.add(m);
+            for (let i = 0; i < 6; i++) { const win = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.7), lit); win.position.set(x + (i % 3 - 1) * (w / 3.2), 1.5 + Math.floor(i / 3) * 2.2, z + (z < 0 ? d / 2 + 0.01 : -d / 2 - 0.01)); if (z >= 0) win.rotation.y = Math.PI; win.raycast = () => {}; scene.add(win); }
+          }
+        }
+      }
       model = buildWorkspace(scene, {
         onShadowNeedsUpdate: () => {
           renderer.shadowMap.needsUpdate = true;
@@ -223,7 +244,10 @@ export default function WorkspaceStage({
         if (!gov.isDirty()) return; // idle: stop issuing frames until something invalidates again
         if (!gov.shouldRender(now)) { raf = requestAnimationFrame(tick); return; } // still dirty, 60Hz floor
         const start = performance.now(), query = gpuBegin(); render(); gpuEnd(query); const cpu = performance.now() - start;
-        gpuPoll(); gov.recordFrame(cpu, now);
+        // The governor adapts pixel ratio off frame cost. CPU submission is 1-3 ms
+        // here while the iGPU takes 25 ms at 1.25x seated, so where the timer
+        // extension exists the GPU number is the cost that matters.
+        gpuPoll(); gov.recordFrame(Math.max(cpu, lastGpu), now);
         const delta = last === null ? null : now - last;
         if (delta !== null && delta > 0 && delta < 250) { cadenceSum += delta; cpuSum += cpu; count++; }
         else { cadenceSum = 0; cpuSum = 0; count = 0; }
@@ -636,12 +660,11 @@ export default function WorkspaceStage({
           const target=1-r.state[id];
           if(reduced){r.state[id]=target;update();end();return;}
           // Index finger presses the lamp switch; a pinch takes the blind cord.
-          action=gsap.timeline({onUpdate:update,onComplete:end});
-          action.to(h.hand.position,{x:o.position.x,y:o.position.y+0.08,z:o.position.z+0.08,duration:0.5,ease:'power2.inOut'},0)
-            .to(h.pose,{...POSES[id==='lamp'?'point':'pinch'],duration:0.4,ease:'power2.inOut'},0.1)
+          const from=snapshot(h),AT={p:new THREE.Vector3(o.position.x,o.position.y+0.08,o.position.z+0.08),q:from.q.clone(),pose:id==='lamp'?'point':'pinch'},k={reach:0,release:0};
+          action=gsap.timeline({onUpdate(){if(k.release>0)hold(h,AT,restOf(h),k.release);else hold(h,from,AT,k.reach);update();},onComplete:end});
+          action.to(k,{reach:1,duration:0.5,ease:'power2.inOut'},0)
             .to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'},0.5)
-            .to(h.hand.position,{x:h.side*HAND_REST.x,y:HAND_REST.y,z:HAND_REST.z,duration:0.5},'>')
-            .to(h.pose,{...POSES.rest,duration:0.4,ease:'power2.inOut'},'<');
+            .to(k,{release:1,duration:0.5,ease:'power2.inOut'},'>');
           gsap.ticker.wake();return;
         }
         if(id==='pen') {
@@ -741,7 +764,7 @@ export default function WorkspaceStage({
           const finish=()=>{r.state.coffeeLevel=level;o.position.copy(home);o.rotation.set(0,0,0);r.updateLiquid(0,0);host.dataset.coffeeLevel=String(level);window.dispatchEvent(new CustomEvent('workspace:coffee',{detail:{level}}));end();};
           if(reduced){finish();return;}
           // Left hand: fingers through the handle, thumb on top, palm toward the mug.
-          const left=model.hands.left,MUG={obj:o,p:[-0.033,0.012,0.125],r:[0,Math.PI/4,Math.PI/2],pose:'hook'};
+          const left=model.hands.left,MUG={obj:o,p:[-0.038,0.012,0.146],r:[0,Math.PI/4,Math.PI/2],pose:'mug'},SIP_TURN=-1.25;
           const LEAN={x:-0.2,y:-0.05,z:-0.2},HOME_LOOK={x:home.x,y:home.y,z:home.z},k={reach:0,release:0};
           let from=snapshot(left);
           startLean();
@@ -757,8 +780,10 @@ export default function WorkspaceStage({
             .to(model.hands.lean,{...ZERO,duration:0.7,ease:'power2.inOut'},0.95)
             .to(look,{x:-0.08,y:1.50,z:0.6,duration:0.7,ease:'power2.inOut'},0.95)
             .to(o.position,{x:-0.10,y:1.52,z:0.78,duration:0.7,ease:'power2.inOut'},0.95)
-            .to(o.rotation,{x:0.35,duration:0.55},1.65).to(r.state,{coffeeLevel:level,duration:0.5},1.75)
+            .to(o.rotation,{y:SIP_TURN,duration:0.7,ease:'power2.inOut'},0.95)
+            .to(o.rotation,{x:0.45,duration:0.55},1.65).to(r.state,{coffeeLevel:level,duration:0.5},1.75)
             .to(o.rotation,{x:0,duration:0.4},2.3)
+            .to(o.rotation,{y:0,duration:0.65,ease:'power2.inOut'},2.7)
             .to(model.hands.lean,{...LEAN,duration:0.65,ease:'power2.inOut'},2.7)
             .to(look,{...HOME_LOOK,duration:0.65,ease:'power2.inOut'},2.7)
             .to(o.position,{x:home.x,y:home.y+0.1,z:home.z,duration:0.65,ease:'power2.inOut'},2.7)
@@ -1070,6 +1095,10 @@ export default function WorkspaceStage({
             return null;
           },
           timeline() { return action || null; },
+          showHands(v) { model.hands.root.visible = !!v; invalidate(); },
+          // Real-GPU cost probes (scripts/measure-gpu.mjs): governor state, live pixel ratio, draw calls.
+          perf() { const i = renderer.info.render, s = renderer.getSize(new THREE.Vector2()); return { ...gov.getStats(), pixelRatio: renderer.getPixelRatio(), calls: i.calls, triangles: i.triangles, w: s.x, h: s.y, shadows: renderer.shadowMap.enabled }; },
+          setPixelRatio(v) { renderer.setPixelRatio(v); invalidate(); },
           projectKey(index) {
             const m = new THREE.Matrix4(); model.keys.getMatrixAt(index, m);
             const rect = host.getBoundingClientRect();
