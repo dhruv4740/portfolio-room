@@ -46,6 +46,8 @@ npm run dev       # dev server
 node node_modules/vite/bin/vite.js preview --host localhost --port 4173
 BASE=http://localhost:4173 node scripts/verify-v3.mjs
 BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
+BASE=http://localhost:4173 node scripts/verify-real-apps.mjs
+node scripts/build-apps.mjs darksentinel   # rebuild a real project UI into public/apps/
 ```
 
 Invoke Vite's bin directly for preview — `npm run preview` strips arguments on
@@ -81,6 +83,14 @@ is intended. Don't recolour the room to match the UI chrome.
 **dhruvOS state persists.** `DhruvOSScreen.jsx` holds a same-origin iframe
 bridge that survives exit and re-entry. Don't remount it on phase change.
 
+**Real project UIs are built from their repos, not redrawn.** `apps/<name>/` is
+a copy of the project's source with a mock layer replacing its backend (each
+has a `PORTFOLIO.md` listing every changed file); `node scripts/build-apps.mjs`
+writes the static output to `public/apps/<name>/`, which is committed so the
+portfolio build never needs the app's toolchain. A window is
+`iframeApp({...})` from `public/os/shell/iframeApp.js`. Recipe and readability
+floor: `docs/PROMPT-R8-GEMINI.md`. Never edit the source repos.
+
 **Keep `/work` lightweight.** It must never pull three.js or the 3D scene.
 `verify-v3.mjs` asserts this.
 
@@ -97,7 +107,16 @@ bridge that survives exit and re-entry. Don't remount it on phase change.
   prove less than they appear to.
 - **rAF cadence is not GPU frame time.** The telemetry readout measures
   submission interval. Under software rendering it will look terrible and mean
-  nothing. Do not convert it into an FPS claim.
+  nothing. Do not convert it into an FPS claim. **Real-GPU headless runs are
+  possible on this machine**: `chromium.launch({ channel: 'chromium', args:
+  ['--use-angle=d3d11', '--ignore-gpu-blocklist'] })` reports the AMD iGPU and
+  exposes the GL timer query; `scripts/measure-gpu.mjs` and `GPU=1 node
+  scripts/shots-hands.mjs` use it. The HUD's GPU MS row is the number to trust.
+- **Headless Chromium does not reliably paint a nested iframe** (a real project
+  UI inside a dhruvOS window). Assert on frame text, not visibility, and take
+  visual proof on the GPU path or in a real browser.
+- **Static exports hydrate late in headless.** The HTML is there before React
+  is; a click before hydration does nothing. `verify-real-apps.mjs` waits for it.
 - **Dead v1/v2 code**: `src/App.jsx`, `src/Shell.jsx`, `src/routes/`,
   `src/flagship/`, `src/components/`. Unreferenced. Do not repair or import.
   Precedent: a stale `manualChunks` entry was force-emitting a dead 514KB chunk.
@@ -152,7 +171,11 @@ src/v3/
     musicPlayer.js      the one shared song player (room, headphones, monitor)
     buildRoomInteractions.js  movable desk objects: lamp, coffee, awards, drawer,
                         pen, blinds, headphones, window
-  (public/os/apps/*.js  monitor apps: one per project, Skills, Music Player)
+  (public/os/apps/*.js  monitor apps: one per project, Skills, Music Player;
+                        darksentinel.js is an iframeApp() entry for the real UI)
+  (public/os/shell/iframeApp.js  window wrapper for a built project UI)
+apps/<name>/            copied project source + mock layer + PORTFOLIO.md
+public/apps/<name>/     its static build (committed; scripts/build-apps.mjs)
     SplatStage.jsx      DEAD — historical splat renderer, unimported
     splatBounds.js      DEAD — supports SplatStage only
   mobile/Deck.jsx       100dvh scroll-snap + gyro
@@ -160,6 +183,11 @@ src/v3/
   ui/                   Telemetry, AnchorPanel, ScanIntro
 docs/                   HANDOFF first, then VISION, DECISIONS, STATE, ROADMAP, DESIGN
 scripts/verify-v3.mjs   Playwright harness
-scripts/shots-hands.mjs every hand grip as a frame + wrist angles (tuning aid)
+scripts/shots-hands.mjs every hand grip as a frame + wrist angles (GPU=1 for the real GPU)
 scripts/verify-reduced-hands.mjs  reduced-motion: each action lands held at once
+scripts/verify-real-apps.mjs  each real project UI opens, renders and navigates in its window
+scripts/measure-gpu.mjs real-GPU frame cost per tier, standing/seated, hands on/off, DPR sweep
+scripts/shots-void.mjs  standing-view frames for the void decision (?void=studio|block)
+scripts/probe-phone-scale.mjs  rendered size of the held phone's 540-px surface
+scripts/build-apps.mjs  builds apps/<name>/ into public/apps/<name>/
 ```

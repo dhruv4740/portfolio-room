@@ -1,3 +1,106 @@
+# Current update — 2026-09-17, round 2 (Fable)
+
+Branch `feat/v3`, local commits only, no remote. Newer than everything below.
+
+## What changed
+
+**Hands and wrist (the owner's main complaint).** Judged on the real GPU this
+time (see "Measuring", below), not from tests. What was wrong and what changed
+in `src/v3/desktop/seatedHands.js`:
+- The palm was ~35% too thick and ~30% too long; the wrist ball bulged past
+  it. Now wrist-to-knuckle 13.5 cm, 9.5 cm wide, ~3 cm thick at the heel.
+- The forearm was a bare tube ending in a 16 cm sleeve cylinder that passed
+  right by the camera. Now a shirt sleeve with a cuff 3–4 cm above the wrist
+  covers the forearm; the elbow is a child of the forearm so it matches the
+  sleeve's elliptical end; the upper-arm sleeve is 8–10 cm and runs from the
+  real shoulder so its end never floats in view.
+- The arm bones were 40 cm each with a symmetric solve, so every reach was a
+  straight rod. Now upper arm 32 cm, forearm 27 cm, general two-bone solve,
+  and past 57.5 cm the shoulder yields toward the hand (torso lean) instead
+  of the arm stretching. Rest wrist bend went 13.5° → 8°; held states 40–56°.
+- The mug grip has its own `mug` pose (far joints open so the tips end at
+  the handle) and the sip turns the mug so the handle faces the body:
+  wrist at the sip 84° → 43°. One fingertip can still show at the rim when
+  the mug tilts; the rest are hidden.
+- Lamp and blind reaches go through `hold()` (arc, fingers open on the way).
+
+**Award frame.** Moved to `[-1.0, 1.335, -0.22]`, turned 0.62 rad toward the
+seat: left of the monitor's sightline from the seat, in front of the speaker,
+clear of the phone and the lamp. `AWARD_REST` in `buildRoomInteractions.js`.
+
+**FPS root cause, measured.** Seated at 1536×864 @ 1.25, the iGPU took 22–28
+ms per frame on every tier while CPU submission was 1–3 ms. The pixel-ratio
+governor fed on CPU time, read every frame as cheap, and climbed to its
+ceiling. It now feeds on GPU time when the timer extension exists
+(`gov.recordFrame(Math.max(cpu, lastGpu))`), and seated it settles at
+0.8–0.95× for 10–16 ms. Standing view is 3–7 ms. The hand rig costs ~3 ms
+(46 draw calls). The remaining cost is five point lights plus the shadowed
+moon on MeshStandardMaterial across the desk; see `docs/FABLE-NOTES.md`.
+
+**Real project UIs: the pattern, proven on DarkSentinel.** `apps/darksentinel/`
+is the Next.js 14 source copied at `d5821bf`; five files changed (its
+`PORTFOLIO.md` lists them): API routes removed, `lib/api.ts` answers every
+request from `lib/mock/router.ts` fixtures (all `DEMO DATA`), static export
+with `basePath /apps/darksentinel`, `generateStaticParams` for the dynamic
+route. `node scripts/build-apps.mjs darksentinel` writes the export to
+`public/apps/darksentinel/` (committed, 2.4 MB, 282 kB raw first load).
+`public/os/shell/iframeApp.js` hosts it in a 1280×780 window; the app entry
+is eight lines. The window title says `· demo data`. The recipe for the other
+apps, the per-app seams and the readability floor are in
+`docs/PROMPT-R8-GEMINI.md`. The old hand-drawn `darksentinel.js` (and its
+"83 features" claim) is gone.
+
+**Readability, measured.** Inside the monitor the OS fills the viewport, so
+app pixels are screen pixels: a 1280×780 window shows DarkSentinel at its
+natural size (smallest text 11.8 px, body 14–16 px). The held phone's 540-px
+surface rendered at 0.68× on a 1536×864 screen (0.85× at 1080p, 0.60× at
+1366×768), so a 16 px phone font shows at 10.9 px. The held phone is already
+framed to fit 94% of the viewport height, so no camera change makes it larger
+without cropping; the rule for phone apps is therefore app-side: text ≥ 20 px
+in surface units. `scripts/probe-phone-scale.mjs` measures the scale.
+
+**Black void: live prototypes for the owner's decision.** `/?void=studio`
+(sky-coloured backdrop, fog, ground) and `/?void=block` (plus the room's slab
+and distant blocks with lit windows). Default stays black. Frames:
+`scripts/shots/void-{black,studio,block}.png` (GPU, 1536×864 @ 1.25). The
+choice is in `OPEN-QUESTIONS.md` item 1.
+
+**Docs.** `docs/IDEAS.md` (ranked ideas, costed, two audiences),
+`docs/FABLE-NOTES.md` (overhaul, research, small things seen),
+`OPEN-QUESTIONS.md` items 5–7 (Compose, React Native, hand mesh).
+
+## Measuring on the real GPU
+
+Headless Playwright with `channel: 'chromium'` and `--use-angle=d3d11` runs on
+the AMD Radeon iGPU of this laptop and exposes `EXT_disjoint_timer_query_webgl2`.
+`scripts/measure-gpu.mjs` (per tier, standing/seated, hands on/off, `SWEEP=`
+pixel ratios), `GPU=1 node scripts/shots-hands.mjs` (frames at 1536×864 @
+1.25), `scripts/shots-void.mjs`, `scripts/probe-phone-scale.mjs`. The HUD's
+`GPU x.x MS` is the number to trust; the FPS row under the harness is limited
+by the harness's own mouse-event rate.
+
+## Verified (production build, `http://localhost:4173`)
+
+`verify-v3` 35/35, `verify-room-interactions`, `verify-held-objects`,
+`verify-pen-drawing`, `verify-reduced-hands`, `verify-os-apps`,
+`verify-project-uis`, `verify-real-apps` (new: the real DarkSentinel UI opens
+in its window, landing → manual console → System Status, no page errors, no
+off-origin requests except its Google Fonts link). Two suites default to
+`127.0.0.1:4174`; always pass `BASE`.
+
+Not verified: the owner's judgement of the hands; whether the DarkSentinel
+mock covers every screen (landing, manual console, system status and the
+threat detail route are exercised; Search & Scrape, PII, alerts and export are
+wired to fixtures but only clicked by hand in a real browser once); the
+Google Fonts request in DarkSentinel's layout is the one third-party request
+in the real-UI path (fallback fonts offline).
+
+Known: headless Chromium does not reliably paint a nested iframe, so real-app
+tests are text-based and screenshots come from the GPU path; a static export
+hydrates late in headless, so tests wait for React before clicking.
+
+---
+
 # Current update — 2026-09-16, hands rework
 
 Branch `feat/v3`, local commits only, no remote. Newer than everything below.

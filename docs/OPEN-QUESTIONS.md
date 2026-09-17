@@ -6,9 +6,15 @@ empty, which is safe, whereas a fabricated one gets caught in an interview.
 ## Outstanding
 
 1. **The black void around the room (standing view).** Deferred by the owner
-   on 2026-09-15 ("we will tackle this later"). Options offered: a building
-   exterior with the city around it, a soft studio backdrop in the sky colour,
-   or skipping the model view and starting seated. No choice made.
+   on 2026-09-15 ("we will tackle this later"). Two of the three options are
+   now live prototypes behind a URL flag so they can be judged in the running
+   room, not from stills: `/?void=studio` (sky-coloured backdrop, fog, a
+   ground plane the room sits on) and `/?void=block` (the same plus the room's
+   own slab and neighbouring blocks with lit windows). The third option, start
+   seated, needs no mock: it is the seated view. Frames on the real GPU:
+   `scripts/shots/void-black.png`, `void-studio.png`, `void-block.png`. The
+   default stays black until he picks; the blocks in `block` are placeholders
+   that a real pass would model properly.
 
 2. **Résumé download.** The room now shows the current one-page résumé
    (`public/resume-page.jpg`) in the drawer. There is still no downloadable
@@ -20,6 +26,32 @@ empty, which is safe, whereas a fabricated one gets caught in an interview.
 
 4. **`og:image`** — absent, so shared links preview as bare text. Waiting on the
    finished night-lit room so the share image is the real thing.
+
+5. **BasketProof on the phone (Jetpack Compose).** Compose cannot run in a
+   browser. Three honest options, his call:
+   a. **Compose Multiplatform, wasm target.** The real composables run. Cost:
+      the Android module has to become a KMP module with `expect/actual` for
+      every Android-only dependency; the download is several MB of Kotlin/Wasm
+      and Skiko; needs Chrome/Firefox/Safari 18+. Days of work, heavy page.
+   b. **Recorded screens with tap hotspots.** Real pixels from the emulator,
+      stitched into a tappable flow on the phone. Not interactive beyond
+      navigation, but nothing is redrawn by hand.
+   c. **Keep the round-7 React rebuild**, labelled "rebuilt from the Compose
+      source". This is what is on the phone now and what he rejected for the
+      monitor apps; on the phone it may be acceptable if labelled.
+
+6. **Expense Tracker on the phone (React Native 0.86).** The recipe proposes
+   react-native-web under Vite with the SQLite and native modules replaced by
+   in-memory stand-ins. It is the riskiest port in the set (charts and
+   navigation libraries may need web shims). Go ahead with that, or keep the
+   round-7 rebuild labelled as in 5c? See `docs/PROMPT-R8-GEMINI.md`.
+
+7. **A real hand mesh.** The procedural rig has been rebuilt twice; it is
+   better and still not a hand you would mistake for one. The next step that
+   changes the picture is a rigged, skinned hand model (GLB), driven by the
+   same pose scalars. Downloading assets is his to do: pick a CC0 or CC-BY
+   rigged hand (Sketchfab, Quaternius, KayKit), drop it in `public/models/`,
+   and say which. Until then the procedural rig stays.
 
 ## Answered — do not re-ask
 
