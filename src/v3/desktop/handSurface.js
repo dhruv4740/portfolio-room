@@ -23,9 +23,9 @@ export function bindHandSurface(h, root, skin, cloth) {
   const inverse = h.hand.matrixWorld.clone().invert();
   const point = (bone, p) => new THREE.Vector3(...p).applyMatrix4(bone.matrixWorld).applyMatrix4(inverse);
   const parts = [];
-  const ellipsoid = (center, radius) => parts.push({ center, radius, bone: 0 });
-  ellipsoid([0, -.001, -.038], [.046, .016, .052]);
-  ellipsoid([0, .001, .023], [.034, .017, .053]);
+  // A single flattened palm, broad at the knuckles and tapered at the wrist.
+  // Two overlapping ellipsoids produced a swollen heel and a pinched waist.
+  parts.push({ palm: true, bone: 0 });
   const segment = (bone, a, b, r0, r1) => {
     const d = b.clone().sub(a);
     parts.push({ a, d, lengthSq: d.lengthSq(), r0, r1, bone: bones.indexOf(bone) });
@@ -37,11 +37,20 @@ export function bindHandSurface(h, root, skin, cloth) {
   // The end is buried under the cuff; wrist weights blend over the palm heel.
   segment(h.arm, point(h.arm, [0, 0, 0]), point(h.arm, [0, .23, 0]), .018, .016);
   const distance = (part, x, y, z) => {
-    if (part.center) {
-      const c = part.center, r = part.radius;
-      const a = (x-c[0])/r[0], b = (y-c[1])/r[1], d = (z-c[2])/r[2];
-      const k0 = Math.hypot(a,b,d), k1 = Math.hypot(a/r[0],b/r[1],d/r[2]);
-      return k1 ? k0*(k0-1)/k1 : -Math.min(...r);
+    if (part.palm) {
+      const t = THREE.MathUtils.smoothstep(z, -.040, .050);
+      const width = THREE.MathUtils.lerp(.044, .022, t);
+      const thickness = THREE.MathUtils.lerp(.012, .011, t);
+      const radius = .008;
+      const qx = Math.abs(x) - (width-radius);
+      const qy = Math.abs(y+.001) - (thickness-radius);
+      // Knuckles follow an arch: middle finger starts farther forward than
+      // index/pinky. Stop the palm at their roots, not over their first joints.
+      const front = -.067 + .015 * Math.min(1, Math.pow(x/.044,2));
+      const back = .051;
+      const qz = Math.abs(z-(front+back)*.5) - ((back-front)*.5-radius);
+      return Math.hypot(Math.max(qx,0),Math.max(qy,0),Math.max(qz,0))
+        + Math.min(Math.max(qx,qy,qz),0)-radius;
     }
     const px=x-part.a.x, py=y-part.a.y, pz=z-part.a.z;
     const t = THREE.MathUtils.clamp((px*part.d.x+py*part.d.y+pz*part.d.z)/part.lengthSq,0,1);
@@ -50,7 +59,7 @@ export function bindHandSurface(h, root, skin, cloth) {
   const field = (x,y,z) => {
     let d = 1;
     for (const part of parts) {
-      const b = distance(part,x,y,z), k = .0045;
+      const b = distance(part,x,y,z), k = .003;
       const w = Math.max(k-Math.abs(d-b),0)/k;
       d = Math.min(d,b)-w*w*k*.25;
     }
@@ -92,7 +101,7 @@ export function bindHandSurface(h, root, skin, cloth) {
   for(let i=0;i<p.count;i++){
     const x=p.getX(i),y=p.getY(i),z=p.getZ(i), scores=new Map();
     const ds=parts.map(part=>distance(part,x,y,z)), best=Math.min(...ds);
-    parts.forEach((part,j)=>{const w=Math.exp(-Math.pow((ds[j]-best)/.009,2));scores.set(part.bone,(scores.get(part.bone)||0)+w);});
+    parts.forEach((part,j)=>{const w=Math.exp(-Math.pow((ds[j]-best)/.006,2));scores.set(part.bone,(scores.get(part.bone)||0)+w);});
     const top=[...scores].sort((a,b)=>b[1]-a[1]).slice(0,4), sum=top.reduce((s,v)=>s+v[1],0);
     for(let j=0;j<4;j++){indices.push(top[j]?.[0]||0);weights.push((top[j]?.[1]||0)/sum);}
   }

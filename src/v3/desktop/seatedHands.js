@@ -5,13 +5,14 @@ import { bindHandSurface } from './handSurface.js';
 // point -z, palm faces -y, wrist at +z, thumb on the side nearer the body's
 // centre line. Grips in WorkspaceStage are authored in this frame.
 
-export const HAND_REST = { x: 0.27, y: 1.311, z: 0.405 };
+export const HAND_REST = { x: 0.27, y: 1.301, z: 0.405 };
 
 // Per-finger curl (index..pinky), finger fan, thumb opposition and thumb
 // curl, all 0..1. A pose is a flat object so GSAP and lerpPose can tween it.
 export const POSES = {
-  // Rest curls put every fingertip 4-5 mm above the keycap tops (1.2625) from HAND_REST.y.
-  rest:  { c0: 0.27, c1: 0.24, c2: 0.27, c3: 0.42, spread: 0.50, tOpp: 0.25, tCurl: 0.25 },
+  // Relaxed keyboard posture: expose the proximal fingers instead of folding
+  // them beneath the palm. Height is paired with HAND_REST above.
+  rest:  { c0: 0.18, c1: 0.16, c2: 0.19, c3: 0.26, spread: 0.50, tOpp: 0.25, tCurl: 0.25 },
   open:  { c0: 0.08, c1: 0.08, c2: 0.10, c3: 0.12, spread: 0.90, tOpp: 0.10, tCurl: 0.08 },
   flat:  { c0: 0.22, c1: 0.24, c2: 0.26, c3: 0.30, spread: 0.35, tOpp: 0.55, tCurl: 0.15 },
   point: { c0: 0.06, c1: 0.78, c2: 0.88, c3: 0.94, spread: 0.20, tOpp: 0.45, tCurl: 0.55 },
@@ -32,7 +33,7 @@ export function curlSum(p) { return p.c0 + p.c1 + p.c2 + p.c3 + p.tCurl * 0.5; }
 
 const MCP = 1.5, PIP = 1.8, DIP = 1.0; // radians at full curl
 const T_MCP = 0.9, T_IP = 1.1;
-const WRIST = new THREE.Vector3(0, 0.001, 0.066);
+const WRIST = new THREE.Vector3(0, 0.001, 0.050);
 const UPPER_ARM = 0.32, FOREARM = 0.27;
 // Past this wrist-to-shoulder distance the shoulder comes forward (torso lean)
 // instead of the arm straightening into a rod. The keyboard sits ~76 cm from
@@ -83,11 +84,11 @@ export function seatedHands() {
     const digits = FINGERS.map(spec => {
       const f = new THREE.Group(); f.position.set(-side * spec.x, 0.002, spec.z); hand.add(f);
       const L = [0.46, 0.30, 0.24].map(k => k * spec.length);
-      const R = [0.0100, 0.0090, 0.0080, 0.0068].map(r => r * spec.r);
+      const R = [0.0090, 0.0082, 0.0074, 0.0064].map(r => r * spec.r);
       f.userData = { L, R, fan: side * spec.fan, joints: chain(f, L, R), tip: new THREE.Vector3() };
       return f;
     });
-    const thumb = new THREE.Group(); thumb.position.set(-side * 0.032, -0.006, 0.032); hand.add(thumb);
+    const thumb = new THREE.Group(); thumb.position.set(-side * 0.032, -0.006, 0.019); hand.add(thumb);
     const TL = [0.035, 0.025, 0.022];
     thumb.userData = { L: TL, R: [0.014, 0.012, 0.010, 0.008], joints: chain(thumb, TL, [0.014, 0.012, 0.010, 0.008]) };
 

@@ -1,3 +1,21 @@
+# Hand rest correction — 2026-09-20
+
+Owner review caught a swollen, uneven resting silhouette missed by the earlier
+grip-focused visual review. The two palm ellipsoids created a pinched waist
+between bulges; the front surface also covered finger roots. Replaced them
+with one flatter, tapered palm and an arched knuckle boundary. Palm thickness
+is now 22–24mm rather than 32–34mm, wrist attachment is 16mm closer to the
+knuckles, finger radii are slimmer, and bone influence blending is tighter.
+The thumb base follows the shorter heel. Left/right dimensions remain mirrored.
+
+Rest fingers now curl less and the hand origin sits 10mm lower over the keys.
+Grip pose controls remain unchanged; pen contact follows the adjusted thumb.
+Regenerated both binary assets. Build passed. Real-GPU rest, typing, cup, award
+and pen captures completed with no page errors; rest, award and pen frames
+were inspected. Rest wrist bend is approximately 7.4°/7.5°. These remain
+stylized procedural hands, not photorealistic anatomy.
+All eight `verify-reduced-hands` actions passed after this correction.
+
 # Current update — 2026-09-20, cinematic studio
 
 This entry supersedes the presentation and hand implementation described below.
