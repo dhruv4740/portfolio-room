@@ -73,7 +73,7 @@ console.log('PASS context menu does not contain old app names');
 // Check terminal ls and help do not list old apps or cosmos
 const termIcon = page.locator('.desk-icon').filter({ hasText: 'terminal' }).first();
 if (await termIcon.count() > 0) {
-  await termIcon.dblclick();
+  await termIcon.click();
   const termWin = await windowFor('terminal');
   const termInput = termWin.locator('.term-input');
   await termInput.fill('help');
@@ -108,7 +108,7 @@ async function stopDelta(label, before) {
 for (const app of promoted) {
   const icon = page.locator('.desk-icon').filter({ hasText: app.title }).first();
   assert.equal(await icon.count(), 1, `${app.title} desktop icon missing`);
-  await icon.dblclick();
+  await icon.click();
   const win = await windowFor(app.title);
 
   // Wait 1500ms
@@ -190,17 +190,25 @@ for (const app of promoted) {
 
 // Assert Skills physics keeps animating after another app opens and closes
 const skillsDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Skills' }).first();
-await skillsDeskIcon.dispatchEvent('dblclick');
+await skillsDeskIcon.click();
 const skillsWindow = await windowFor('Skills');
 await page.waitForTimeout(500);
 
+// A visible window covers the desktop canvas, so minimize Skills before
+// launching the second icon with the shell's single-click affordance. Restore
+// it after FocusLock closes to verify its animation resumes in the foreground.
+await skillsWindow.locator('[data-minimize]').click();
+await page.waitForTimeout(200);
 const flDeskIcon = page.locator('.desk-icon').filter({ hasText: 'FocusLock' }).first();
-await flDeskIcon.dispatchEvent('dblclick');
+await flDeskIcon.click();
 const flWindow = await windowFor('FocusLock');
 await page.waitForTimeout(500);
 
 await flWindow.locator('[data-close]').click();
 await page.waitForTimeout(400);
+
+await page.locator('.taskbar-btn').filter({ hasText: 'Skills' }).click();
+await page.waitForTimeout(300);
 
 const skillsRunningBefore = await page.evaluate(() => window.__rafCallbacks);
 await page.waitForTimeout(250);
@@ -212,7 +220,7 @@ await skillsWindow.locator('[data-close]').click();
 await page.waitForTimeout(400);
 
 const wallpaperIcon = page.locator('.desk-icon').filter({ hasText: 'wallpaper' }).first();
-await wallpaperIcon.dblclick();
+await wallpaperIcon.click();
 const wallpaper = await windowFor('wallpaper');
 
 // 1. Set SKY
@@ -253,7 +261,7 @@ await page.waitForTimeout(400);
 // 4. Music Player audio test (no autoplay, plays/loops song, pauses on minimize, removed on close)
 const resIcon = page.locator('.desk-icon').filter({ hasText: 'Music Player' }).first();
 assert.equal(await resIcon.count(), 1, 'Music Player desktop icon missing');
-await resIcon.dispatchEvent('dblclick');
+await resIcon.click();
 const resWin = await windowFor('Music Player');
 await page.waitForTimeout(600);
 
@@ -309,15 +317,15 @@ console.log('PASS music audio element removed and paused on close');
 const roomPage = await browser.newPage({ viewport: { width: 1440, height: 900 } });
 await roomPage.addInitScript(() => {
   localStorage['v3:surface-override'] = 'scan';
+  localStorage['v3:seen-intro'] = '1';
+  localStorage['v3:test'] = '1';
 });
 await roomPage.goto(`${BASE}/#/?sky=dusk`);
 await roomPage.locator('.scan-root').waitFor({ timeout: 15000 });
 await roomPage.waitForTimeout(1000);
 
-const chair = roomPage.locator('[data-object="chair"]');
-await chair.waitFor({ timeout: 10000 });
-await chair.focus();
-await roomPage.keyboard.press('Enter');
+await roomPage.locator('[data-testid="room-overview"]').waitFor({ timeout: 10000 });
+await roomPage.locator('[data-launchpad-action="explore-room"]').click();
 await roomPage.waitForTimeout(1500);
 
 const monitorMarker = roomPage.locator('.anchor-marker[data-object="monitor"]').first();
@@ -340,7 +348,7 @@ for (const closeBtn of await osFrame.locator('.os-window [data-close]').all()) {
 }
 
 const frameWpIcon = osFrame.locator('.desk-icon').filter({ hasText: 'wallpaper' }).first();
-await frameWpIcon.dispatchEvent('dblclick');
+await frameWpIcon.click();
 const frameWp = osFrame.locator('.os-window').filter({ hasText: 'wallpaper' }).last();
 await frameWp.waitFor({ timeout: 10000 });
 

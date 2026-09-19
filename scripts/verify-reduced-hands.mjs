@@ -8,7 +8,7 @@ const p = await b.newPage({ viewport: { width: 1440, height: 900 }, reducedMotio
 const errors = []; p.on('pageerror', e => errors.push(e.message));
 await p.addInitScript(() => { localStorage.setItem('v3:test', '1'); localStorage.setItem('v3:surface-override', 'scan'); localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', 'low'); sessionStorage.setItem('v3:controls', 'open'); });
 await p.goto(BASE + '/?sky=day'); await p.waitForTimeout(2000);
-await p.locator('[data-object="chair"]').click(); await p.waitForTimeout(1500);
+await p.locator('[data-testid="room-overview"]').waitFor(); await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(1500);
 const data = (k, v) => p.waitForFunction(([k, v]) => document.querySelector('.workspace-stage')?.dataset[k] === v, [k, v], { polling: 50, timeout: 4000 });
 const button = name => p.getByRole('button', { name, exact: true });
 for (const [name, key, held, idle] of [['PEN', 'actionState', 'drawing', 'idle'], ['AWARD', 'actionState', 'award-reading', 'idle'], ['RESUME', 'actionState', 'resume-reading', 'idle'], ['COFFEE', 'actionState', 'idle', 'idle'], ['LAMP', 'actionState', 'idle', 'idle'], ['HEADPHONES', 'actionState', 'idle', 'idle'], ['NOTEBOOK', 'notebookState', 'reading', 'desk'], ['PHONE', 'phoneState', 'zoomed', 'desk']]) {

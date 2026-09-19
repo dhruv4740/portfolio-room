@@ -33,8 +33,8 @@ await page.addInitScript(() => {
 
 console.log('[harness] navigating to', BASE);
 await page.goto(`${BASE}/#/`);
-await page.locator('[data-object="chair"]').waitFor();
-await page.locator('[data-object="chair"]').click();
+await page.locator('[data-testid="room-overview"]').waitFor();
+await page.locator('[data-launchpad-action="explore-room"]').click();
 await page.waitForTimeout(1800);
 
 const phoneState = (s) =>
@@ -181,8 +181,8 @@ console.log('PASS localStorage persistence verified before reload');
 
 // Reload and remount
 await page.reload();
-await page.locator('[data-object="chair"]').waitFor();
-await page.locator('[data-object="chair"]').click();
+await page.locator('[data-testid="room-overview"]').waitFor();
+await page.locator('[data-launchpad-action="explore-room"]').click();
 await page.waitForTimeout(1800);
 await page.getByRole('button', { name: 'PHONE', exact: true }).click();
 await phoneState('zoomed');

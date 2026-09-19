@@ -10,7 +10,7 @@ const p = await b.newPage(GPU ? { viewport: { width: 1536, height: 864 }, device
 const errors = []; p.on('pageerror', e => errors.push(e.message));
 await p.addInitScript(() => { localStorage.setItem('v3:test', '1'); localStorage.setItem('v3:surface-override', 'scan'); localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', 'low'); sessionStorage.setItem('v3:controls', 'open'); });
 await p.goto(BASE + '/?sky=day'); await p.waitForTimeout(2500);
-await p.locator('[data-object="chair"]').click(); await p.waitForTimeout(2500);
+await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(2500);
 const stage = () => p.locator('.workspace-stage');
 const diag = async label => console.log(label, JSON.stringify(await p.evaluate(() => window.__v3test.hands())));
 const shot = async name => { await p.waitForTimeout(150); await p.screenshot({ path: `scripts/shots/hands-${GPU ? 'gpu-' : ''}${name}.png` }); await diag(name); };

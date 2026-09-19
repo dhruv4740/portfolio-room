@@ -11,7 +11,7 @@ await p.addInitScript(() => {
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () { if (!window.__songs.includes(this)) window.__songs.push(this); return play.call(this); };
 });
-await p.goto(BASE); await p.locator('[data-object="chair"]').click(); await p.waitForTimeout(1800);
+await p.goto(BASE); await p.locator('[data-testid="room-overview"]').waitFor(); await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(1800);
 const idle = async () => { await p.waitForFunction(() => document.querySelector('.workspace-stage')?.dataset.actionState === 'idle', null, { polling: 100 }); await p.waitForTimeout(900); };
 const song = () => p.evaluate(() => { const a = window.__songs.find(s => s.src.endsWith('/os/audio/song.mp3')); return a ? { paused: a.paused, loop: a.loop, t: a.currentTime } : null; });
 await p.getByRole('button', { name: 'HEADPHONES', exact: true }).click(); await idle();

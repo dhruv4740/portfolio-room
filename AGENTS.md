@@ -19,7 +19,7 @@ content source drives three surfaces chosen at runtime by device capability:
 | `static` | `/work` | software GPU, saveData, or anyone who clicks WORK | `src/v3/work/`    |
 
 The desktop surface is an **authored three.js room** — desk, monitor, keyboard,
-notebook, chair, lamp, window — that you orbit. Clicking the monitor travels the
+notebook, chair, lamp, window — with an interior launchpad and seated exploration. Clicking the monitor travels the
 camera into the screen and hands off to **dhruvOS**, a real OS-like environment
 the user built, which keeps its state across visits.
 
@@ -90,6 +90,17 @@ writes the static output to `public/apps/<name>/`, which is committed so the
 portfolio build never needs the app's toolchain. A window is
 `iframeApp({...})` from `public/os/shell/iframeApp.js`. Recipe and readability
 floor: `docs/PROMPT-R8-GEMINI.md`. Never edit the source repos.
+
+**Android browser demos may be faithful reconstructions** (owner-approved).
+Keep them close to the original UI and label them honestly. The phone's
+readable stage uses a 390px CSS width, while its projected surface remains
+540×1200. The 3D loop pauses while the stage is open. See
+`docs/CINEMATIC-STUDIO.md` for presentation and manual app-refresh details.
+
+**Hand meshes are generated assets.** After changing topology or the neutral
+bind pose, run `node scripts/build-hand-assets.mjs` and commit both local
+`public/models/hands-v1.bin*` files. Browser startup normally loads the binary,
+not the procedural fallback.
 
 **Keep `/work` lightweight.** It must never pull three.js or the 3D scene.
 `verify-v3.mjs` asserts this.

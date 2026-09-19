@@ -43,8 +43,8 @@ function attachPageListeners(p) {
   });
 
   await page.goto(`${BASE}/#/`);
-  await page.locator('[data-object="chair"]').waitFor({ timeout: 15000 });
-  await page.locator('[data-object="chair"]').click();
+  await page.locator('[data-testid="room-overview"]').waitFor({ timeout: 15000 });
+  await page.locator('[data-launchpad-action="explore-room"]').click();
   await page.waitForTimeout(1800);
 
   const phoneBtn = page.getByRole('button', { name: 'PHONE', exact: true });
@@ -55,6 +55,7 @@ function attachPageListeners(p) {
     () => document.querySelector('.workspace-stage')?.dataset.phoneState === 'zoomed',
     { timeout: 10000 }
   );
+  await page.locator('.phone-presentation--stage[data-phone-mode="stage"]').waitFor({ timeout: 10000 });
   console.log('PASS phone zoomed and interactive');
 
   const phoneScreen = page.locator('.phone-screen');
@@ -180,18 +181,18 @@ function attachPageListeners(p) {
 }
 
 // ============================================================================
-// PART 2: Monitor Apps Verification (FocusLock, DarkSentinel, CrisisWatch, Fraud)
-// ============================================================================
+// PART 2: Desktop real-app shell verification.
+// Deep iframe rendering and in-app navigation live in verify-real-apps.mjs.
 {
-  console.log('\n--- VERIFYING MONITOR APPS ---');
+  console.log('\n--- VERIFYING DESKTOP REAL-APP SHELL ---');
   const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
   attachPageListeners(page);
 
-  await page.goto(`${BASE}/os/embed.html?embed=1`);
+  await page.goto(BASE + '/os/embed.html?embed=1');
   await page.locator('.desk-icon').first().waitFor({ timeout: 10000 });
   await page.waitForTimeout(800);
 
-  // Close boot windows
+  // Close boot windows.
   for (const close of await page.locator('.os-window [data-close]').all()) {
     await close.click().catch(() => {});
   }
@@ -202,146 +203,28 @@ function attachPageListeners(p) {
     return win;
   }
 
-  // 4. FocusLock Desktop Agent Monitor App
-  {
-    console.log('\n[monitor] Testing FocusLock Desktop Agent...');
-    const icon = page.locator('.desk-icon').filter({ hasText: 'FocusLock' }).first();
-    await icon.dblclick();
-    const win = await windowFor('FocusLock');
-    await page.waitForTimeout(600);
-
-    // Screen 1: Overview
-    // Citation: new-focuslock/windows-agent/src/index.html:28
-    const title = await win.locator('.fl-logo-title').innerText();
-    assert.equal(title, 'FocusLock Desktop Dashboard', 'Desktop agent title mismatch');
-    // Citation: new-focuslock/windows-agent/src/index.html:42
-    const h1 = await win.locator('.fl-panel-title').innerText();
-    assert.equal(h1, 'Overview', 'Desktop agent panel title mismatch');
-    const protectionCard = await win.locator('text=Active Focus Protection').first().innerText();
-    assert.equal(protectionCard, 'Active Focus Protection', 'Active focus protection card missing');
-    // Assert DEMO DATA
-    const demoTag = await win.locator('.fl-demo-tag').innerText();
-    assert.equal(demoTag, 'DEMO DATA', 'DEMO DATA tag missing in FocusLock desktop');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-focuslock-overview.png' });
-    console.log('PASS [monitor:focuslock] Screen 1 (Overview) verified & saved');
-
-    // Screen 2: Settings Tab
-    // Citation: new-focuslock/windows-agent/src/renderer.js:145
-    const settingsTab = win.locator('.fl-nav-btn[data-tab="tab-settings"]');
-    await settingsTab.click();
-    await page.waitForTimeout(300);
-    // Citation: new-focuslock/windows-agent/src/index.html:112
-    const syncCodeLabel = await win.locator('text=Sync Code').first().innerText();
-    assert.equal(syncCodeLabel, 'Sync Code', 'Sync code heading mismatch');
-    const limitsHeading = await win.locator('text=Daily Limits').first().innerText();
-    assert.equal(limitsHeading, 'Daily Limits', 'Daily limits heading mismatch');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-focuslock-settings.png' });
-    console.log('PASS [monitor:focuslock] Screen 2 (Settings) verified & saved');
-
-    await win.locator('[data-close]').click();
-    await page.waitForTimeout(400);
-  }
-
-  // 5. DarkSentinel Monitor App — the real Next.js UI in an iframe (apps/darksentinel).
-  {
-    console.log('\n[monitor] Testing DarkSentinel (real UI, iframe)...');
-    const icon = page.locator('.desk-icon').filter({ hasText: 'DarkSentinel' }).first();
-    await icon.dblclick();
-    const win = await windowFor('DarkSentinel');
+  const apps = [
+    { icon: 'FocusLock', src: '/apps/focuslock/' },
+    { icon: 'DarkSentinel', src: '/apps/darksentinel/' },
+    { icon: 'CrisisWatch', src: '/apps/crisiswatch/' },
+    { icon: 'Fraud Detection', src: '/apps/fraud/' },
+  ];
+  for (const app of apps) {
+    console.log('\n[desktop] Testing ' + app.icon + ' iframe shell...');
+    const icon = page.locator('.desk-icon').filter({ hasText: app.icon }).first();
+    await icon.click();
+    const win = await windowFor(app.icon);
     const frame = win.locator('iframe');
-    assert.equal(await frame.getAttribute('src'), '/apps/darksentinel/', 'DarkSentinel iframe src');
-    // Headless Chromium does not reliably paint a nested iframe: text checks only (visual proof is on the GPU path).
-    const f = await (await frame.elementHandle()).contentFrame();
-    await f.waitForFunction(() => /Autonomous Dark Web Threat Intelligence/.test(document.body.innerText), null, { timeout: 20000, polling: 300 });
-    // Citation: apps/darksentinel/app/LandingPage.tsx (real landing page heading)
-    assert.match(await f.locator('body').innerText(), /Autonomous Dark Web Threat Intelligence/, 'DarkSentinel landing heading');
-    assert.match(await win.locator('.win-title').innerText(), /demo data/i, 'window title names the demo data');
-    await page.screenshot({ path: 'scripts/shots/ui-monitor-darksentinel-mission.png', clip: await win.boundingBox() });
-    console.log('PASS [monitor:darksentinel] real UI rendered in its window');
+    assert.equal(await frame.getAttribute('src'), app.src, app.icon + ': iframe src');
+    assert.match(await win.locator('.win-title').innerText(), /demo data/i, app.icon + ': demo title');
     await win.locator('[data-close]').click();
-  }
-
-  // 6. CrisisWatch Monitor App
-  {
-    console.log('\n[monitor] Testing CrisisWatch Monitor App...');
-    const icon = page.locator('.desk-icon').filter({ hasText: 'CrisisWatch' }).first();
-    await icon.dblclick();
-    const win = await windowFor('CrisisWatch');
-    await page.waitForTimeout(600);
-
-    // Screen 1: Verify Claim
-    // Citation: crisiswatch-web/src/app/page.tsx:38
-    const title = await win.locator('.cw-title').innerText();
-    assert.equal(title, 'CrisisWatch Claim Verification', 'CrisisWatch title mismatch');
-    // Citation: crisiswatch-web/src/app/page.tsx:45
-    const sectionTitle = await win.locator('.cw-section-title').first().innerText();
-    assert.equal(sectionTitle, 'Claim Verification', 'Claim verification section title mismatch');
-    const verifyBtn = win.locator('#cw-btn-verify');
-    assert.ok(await verifyBtn.isVisible(), 'Verify Claim button missing');
-    // Assert DEMO DATA
-    const demoTag = await win.locator('.cw-demo-tag').innerText();
-    assert.equal(demoTag, 'DEMO DATA', 'DEMO DATA tag missing in CrisisWatch');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-crisiswatch-verify.png' });
-    console.log('PASS [monitor:crisiswatch] Screen 1 (Verify Claim) verified & saved');
-
-    // Screen 2: Trending Misinformation Tab
-    // Citation: crisiswatch-web/src/components/MisinformationFeed.tsx:24
-    const feedTab = win.locator('.cw-nav-btn[data-nav="trending"]');
-    await feedTab.click();
     await page.waitForTimeout(300);
-    // Citation: crisiswatch-web/src/components/MisinformationFeed.tsx:31
-    const trendingHeader = await win.locator('.cw-section-title').innerText();
-    assert.equal(trendingHeader, 'Trending Claims', 'Trending header mismatch');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-crisiswatch-trending.png' });
-    console.log('PASS [monitor:crisiswatch] Screen 2 (Trending Misinformation) verified & saved');
-
-    await win.locator('[data-close]').click();
-    await page.waitForTimeout(400);
-  }
-
-  // 7. Fraud Detection Monitor App
-  {
-    console.log('\n[monitor] Testing Fraud Detection Monitor App...');
-    const icon = page.locator('.desk-icon').filter({ hasText: 'Fraud Detection' }).first();
-    await icon.dblclick();
-    const win = await windowFor('Fraud Detection');
-    await page.waitForTimeout(600);
-
-    // Screen 1: Financial Dashboard
-    // Citation: kharghar/src/pages/Dashboard.tsx:42
-    const brand = await win.locator('.fd-brand-title').innerText();
-    assert.equal(brand, 'Financial Fraud Detection Dashboard', 'Brand title mismatch');
-    // Citation: kharghar/src/components/DataTable.tsx:28
-    const colHeader = await win.locator('text=TRANSACTION ID').first().innerText();
-    assert.equal(colHeader, 'TRANSACTION ID', 'Transaction table column mismatch');
-    // Assert DEMO DATA
-    const demoTag = await win.locator('.fd-demo-tag').innerText();
-    assert.equal(demoTag, 'DEMO DATA', 'DEMO DATA tag missing in Fraud Detection');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-fraud-dashboard.png' });
-    console.log('PASS [monitor:fraud] Screen 1 (Financial Dashboard) verified & saved');
-
-    // Screen 2: About / Attribution Modal
-    // Citation: kharghar/src/components/RiskMeter.tsx:34
-    const aboutBtn = win.locator('.fd-about-btn');
-    await aboutBtn.click();
-    await page.waitForTimeout(300);
-    const modalTitle = await win.locator('text=About Fraud Detection Dashboard').first().innerText();
-    assert.equal(modalTitle, 'About Fraud Detection Dashboard', 'Modal title mismatch');
-    const modalText = await win.locator('text=Innovathon 2025 winner.').first().innerText();
-    assert.ok(modalText.includes('Innovathon 2025'), 'Innovathon winner tagline mismatch');
-    await win.screenshot({ path: 'scripts/shots/ui-monitor-fraud-about.png' });
-    console.log('PASS [monitor:fraud] Screen 2 (About Modal) verified & saved');
-
-    await win.locator('#fd-btn-close-about').click();
-    await page.waitForTimeout(200);
-    await win.locator('[data-close]').click();
-    await page.waitForTimeout(400);
+    assert.equal(await win.count(), 0, app.icon + ': window closed');
+    console.log('PASS [desktop:' + app.icon + '] iframe shell opened and closed');
   }
 
   await page.close();
 }
-
-// ============================================================================
 // PART 3: Network and Error Invariants
 // ============================================================================
 assert.deepEqual(externalRequests, [], `external network requests detected: ${externalRequests.join(' | ')}`);
@@ -349,6 +232,6 @@ assert.deepEqual(pageErrors, [], `page errors detected: ${pageErrors.join(' | ')
 assert.deepEqual(failedRequests, [], `failed network requests detected: ${failedRequests.join(' | ')}`);
 
 console.log('\n================================================================');
-console.log('ALL 7 REAL PROJECT UIS VERIFIED WITH 0 NETWORK LEAKS AND 0 ERRORS');
+console.log('PHONE NATIVE UIS + DESKTOP REAL-APP SHELL VERIFIED WITH 0 NETWORK LEAKS AND 0 ERRORS');
 console.log('================================================================');
 await browser.close();

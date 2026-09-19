@@ -181,10 +181,78 @@ const pinSurface = (page, surface) =>
   record('scan: workspace actually paints', cov.litRatio > 0.08,
     `${(cov.litRatio * 100).toFixed(1)}% lit, mean luma ${cov.meanLuma.toFixed(1)}`);
 
-  const initialMarkers = await page.locator('.anchor-marker').evaluateAll(els => els.filter(e => e.style.visibility === 'visible').map(e => e.dataset.object));
-  record('scan: only SIT is offered initially', initialMarkers.length === 1 && initialMarkers[0] === 'chair', initialMarkers.join(', '));
-  await page.locator('[data-object="chair"]').focus(); await page.keyboard.press('Enter');
+  // The first room view is a launchpad. It must provide the three primary
+  // routes directly, before a visitor has to sit down or discover a marker.
+  const overview = page.locator('[data-testid="room-overview"]');
+  const overviewVisible = await overview.waitFor({ timeout: 15_000 })
+    .then(() => overview.isVisible())
+    .catch(() => false);
+  record('scan: room overview is visible', overviewVisible,
+    overviewVisible ? 'launchpad visible' : 'room overview missing');
+  const overviewActions = await overview.locator('[data-launchpad-action]').evaluateAll((els) =>
+    els.filter((el) => ['desktop-projects', 'mobile-projects', 'explore-room'].includes(el.dataset.launchpadAction))
+      .map((el) => ({ action: el.dataset.launchpadAction, text: el.innerText.trim(), enabled: !el.disabled }))
+  ).catch(() => []);
+  const directRoutes = ['desktop-projects', 'mobile-projects', 'explore-room'].every((action) =>
+    overviewActions.some((item) => item.action === action && item.enabled && item.text.length > 0));
+  record('scan: overview exposes desktop, mobile, and room routes', directRoutes,
+    directRoutes ? overviewActions.map((item) => item.action).join(', ') : JSON.stringify(overviewActions));
+
+  // Exercise the direct desktop route from the overview. Escape is sent to the
+  // nested OS document itself so the postMessage request-leave bridge remains
+  // covered in addition to the host-level Escape path below.
+  let directDesktopInside = false;
+  if (overviewVisible && directRoutes) {
+    await page.locator('[data-launchpad-action="desktop-projects"]').click();
+    directDesktopInside = await page.waitForFunction(
+      () => document.querySelector('.scan-root')?.dataset.entranceState === 'inside',
+      { timeout: 15_000 },
+    ).then(() => true).catch(() => false);
+  }
+  record('scan: overview desktop route reaches dhruvOS', directDesktopInside,
+    directDesktopInside ? 'inside' : `state=${await page.locator('.scan-root').getAttribute('data-entrance-state')}`);
+  let nestedEscapeReturned = false;
+  if (directDesktopInside) {
+    const directOS = page.frameLocator('[data-testid="dhruv-os-frame"]');
+    nestedEscapeReturned = await directOS.locator('body').press('Escape')
+      .then(async () => page.waitForFunction(
+        () => document.querySelector('.scan-root')?.dataset.entranceState === 'room'
+          && document.querySelector('.scan-root')?.dataset.overview === 'true',
+        { timeout: 8_000 },
+      ).then(() => true).catch(() => false))
+      .catch(() => false);
+  }
+  record('scan: nested OS Escape returns to overview', nestedEscapeReturned,
+    nestedEscapeReturned ? 'iframe Escape bridge' : 'nested Escape did not restore overview');
+
+  // Continue the original room/anchor checks through the explicit Explore
+  // route. This keeps the marker and modeled-mesh paths independent of the
+  // overview actions above.
+  if (directDesktopInside && !nestedEscapeReturned) {
+    // Keep the remaining diagnostics independent from a bridge failure while
+    // preserving the failed nested-Escape result above.
+    await page.locator('[data-testid="back-to-room"]').click().catch(() => {});
+    await page.waitForFunction(
+      () => document.querySelector('.scan-root')?.dataset.entranceState === 'room',
+      { timeout: 8_000 },
+    ).catch(() => {});
+  }
+  if (await page.locator('[data-launchpad-action="explore-room"]').count()) {
+    await page.locator('[data-launchpad-action="explore-room"]').click();
+  }
+  const seatedFromOverview = await page.waitForFunction(
+    () => document.querySelector('.scan-root')?.dataset.seated === 'true'
+      && document.querySelector('.scan-root')?.dataset.overview === 'false',
+    { timeout: 4_000 },
+  ).then(() => true).catch(() => false);
+  record('scan: Explore the room seats the visitor', seatedFromOverview,
+    seatedFromOverview ? 'seated' : 'overview did not transition to the seat');
   await page.waitForTimeout(1600);
+  const objectsToggle = page.locator('.seat-exit-toggle');
+  const objectsText = await objectsToggle.innerText().catch(() => '');
+  record('scan: seated menu is named Objects', /^OBJECTS\s/.test(objectsText) && !/CONTROLS/i.test(objectsText),
+    objectsText || 'Objects menu missing');
+  if (await objectsToggle.getAttribute('aria-expanded') !== 'true') await objectsToggle.click();
   const expectedObjects = [
     ['monitor', 'Monitor'],
     ['notebook', 'Notebook'],
@@ -201,6 +269,10 @@ const pinSurface = (page, surface) =>
     objectReports.some((item) => item.id === id && item.label.startsWith(label) && item.tag === 'button' && item.enabled));
   record('scan: workspace objects expose anchor buttons', objectButtons,
     objectButtons ? expectedObjects.map(([, label]) => label).join(', ') : JSON.stringify(objectReports));
+  const labelsPresent = expectedObjects.every(([id, label]) =>
+    objectReports.some((item) => item.id === id && item.label.toLowerCase().includes(label.toLowerCase())));
+  record('scan: modeled anchors keep accessible labels', labelsPresent,
+    labelsPresent ? expectedObjects.map(([, label]) => label).join(', ') : JSON.stringify(objectReports));
 
   // Depth cueing sets fractional opacity, so test for "shown at all", not "1".
   const visibleMarkers = await page.locator('.anchor-marker').evaluateAll(
@@ -216,14 +288,21 @@ const pinSurface = (page, surface) =>
   // can use. This catches markers that merely look like labels but are not
   // wired to the shared anchor-selection callback.
   for (const [id, label] of expectedObjects) {
-    const marker = id === 'monitor' ? monitorMarker : page.getByRole('button', { name: {notebook:'NOTEBOOK',window:'CONTACT'}[id], exact:true });
+    // Monitor uses the projected marker; notebook and contact use the
+    // visible Objects-menu buttons so the keyboard path remains operable even
+    // when their depth-cued labels are visually collapsed.
+    const marker = id === 'monitor'
+      ? monitorMarker
+      : page.getByRole('button', { name: id === 'notebook' ? 'NOTEBOOK' : 'CONTACT', exact: true });
     let activated = false;
     try {
       await marker.focus();
       await page.keyboard.press('Enter');
       activated = await page
         .locator(`.anchor-marker.is-active[data-object="${id}"]`)
-        .count() === 1;
+        .waitFor({ state: 'attached', timeout: 3_000 })
+        .then(() => true)
+        .catch(() => false);
     } catch {}
     record(`scan: ${label.toLowerCase()} anchor activates`, activated,
       activated ? 'active' : 'button did not activate');
@@ -235,6 +314,10 @@ const pinSurface = (page, surface) =>
       await page.waitForFunction(
         () => !document.querySelector('.anchor-marker.is-active'),
         { timeout: 3_000 },
+      ).catch(() => {});
+      await page.waitForFunction(
+        () => document.querySelector('.scan-root')?.dataset.entranceState === 'room',
+        { timeout: 5_000 },
       ).catch(() => {});
       await page.waitForTimeout(id === 'notebook' ? 2400 : 1400);
     }
@@ -325,7 +408,7 @@ const pinSurface = (page, surface) =>
         const cardPresent = await firstCard.count().catch(() => 0);
         let decoded = false;
         if (cardPresent) {
-          await firstCard.click();
+          await firstCard.locator('.ql-detail-toggle').click();
           decoded = await osFrame
             .locator('.ql-card.ql-decoded')
             .first()
@@ -333,7 +416,7 @@ const pinSurface = (page, surface) =>
             .then(() => true)
             .catch(() => false);
         }
-        record('scan: embedded project responds', decoded, decoded ? 'project decoded' : 'project card did not decode');
+        record('scan: embedded project responds', decoded, decoded ? 'project details expanded' : 'project details did not expand');
 
         await page.locator('[data-testid="back-to-room"]').click();
         const returned = await page
@@ -369,7 +452,7 @@ const pinSurface = (page, surface) =>
           ? await osFrame.locator('.ql-card.ql-decoded').count().catch(() => 0)
           : 0;
         record('scan: repeated entry retains app state', reentered && retained > 0,
-          reentered ? `${retained} decoded card(s)` : 'second entry did not reach inside');
+          reentered ? `${retained} expanded card(s)` : 'second entry did not reach inside');
 
         // Exercise the OTHER exit: Escape, not the Back button. All prior
         // exits in this suite click [data-testid="back-to-room"]; this is the

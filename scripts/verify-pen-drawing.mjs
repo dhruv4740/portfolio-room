@@ -8,7 +8,7 @@ const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = []; p.on('pageerror', e => errors.push(e.message));
 await p.addInitScript(() => { localStorage.setItem('v3:test', '1'); localStorage.setItem('v3:surface-override', 'scan'); localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', 'low'); });
 await p.goto(BASE + '/?sky=day'); await p.waitForTimeout(3000);
-await p.locator('[data-object="chair"]').click(); await p.waitForTimeout(2500);
+await p.locator('[data-testid="room-overview"]').waitFor(); await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(2500);
 const state = v => p.waitForFunction(v => document.querySelector('.workspace-stage')?.dataset.actionState === v, v, { polling: 100, timeout: 20000 });
 await p.getByRole('button', { name: 'PEN', exact: true }).click();
 await p.waitForTimeout(500); await p.screenshot({ path: 'scripts/shots/pen-pickup.png' });

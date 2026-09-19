@@ -1,3 +1,78 @@
+# Current update — 2026-09-20, cinematic studio
+
+This entry supersedes the presentation and hand implementation described below.
+Branch `feat/v3`; local work only. Design and refresh details:
+[docs/CINEMATIC-STUDIO.md](CINEMATIC-STUDIO.md).
+
+## Changes
+
+- Interior night launchpad with direct Desktop projects, Mobile projects,
+  Explore the room, Work and Contact paths. Computer iframe state survives
+  exit/re-entry. Project launchers are keyboard buttons and open with one click.
+- Rebuilt wall boundaries, real window opening, recessed doorway, ceiling and
+  world-depth city layers. Opening the window now gives a deliberate close-up.
+  Static shadow updates are preserved; two weak point lights were removed.
+- Continuous skinned hands replace individual palm/finger/wrist pieces. Each
+  hand and sleeve pair uses two draws. Cuff rim is closed and thumb shortened.
+  Regenerate binary geometry with `node scripts/build-hand-assets.mjs` after
+  changing geometry or neutral bone transforms.
+- Phone pickup hands off to a 390px-wide portrait stage with responsive height,
+  readable typography, app scrolling, focus containment and explicit Home/Back.
+  Stage pauses room rendering. App state remains mounted across room returns.
+  Android apps are labelled browser reconstructions, as the owner permitted.
+- FocusLock desktop, CrisisWatch and Fraud Detection now join DarkSentinel as
+  real-source iframe demos. Backend/IPC seams supply demo fixtures. Source
+  manifests live in `apps/<name>/PORTFOLIO.md`; builds in `public/apps/`.
+  No source repository was edited. Refresh is manual, not automatic.
+
+## Verification status
+
+Production and per-app builds passed. Integrated regression results:
+- `verify-v3`: 41/41; `verify-studio`: 23/23.
+- Held objects and all eight reduced-motion hand actions passed. Phone and
+  notebook settled with zero additional idle render frames in those checks.
+- OS apps: 5/5 plus music, wallpaper persistence and Skills RAF checks.
+- Room interactions passed, including window audio, blinds, sky variants,
+  lamp, keyboard and held objects.
+- Real-GPU `verify-real-apps`: all four desktop apps passed, including native
+  FocusLock minimize/restore/close, with no page errors or failed requests.
+- Final `shots-studio` passed window Back during opening and modal phone entry;
+  catalog, phone, overview, seat and window screenshots were inspected.
+- `verify-project-uis` and secondary legacy harnesses were syntax-checked only,
+  not browser-run. Physical Android and other GPUs remain untested.
+
+Visual review also removed the embedded CRT overlay, restored CrisisWatch's
+Inter/Space Grotesk font stacks, and caught a stream confidence fixture scale
+error. The real project UI is retained. Its Google Fonts and original remote
+images still require network access; readable system fallbacks are explicit.
+The final GPU probe exposed an orbit returning to its start being treated as
+a click; pointer movement is now tracked in standing mode as well as seated.
+
+Real-GPU screenshots inspected: interior overview, window close-up, pen, cup
+and award grips. Smooth surface normals removed visible triangle faceting in
+skin. These are stylized procedural hands, not anatomical scan assets.
+The cup/award held wrist measurements remain about 44°/53°; the main improvement
+is the continuous surface and cuff, not a claim of new wrist biomechanics.
+
+Phone agent checked 1366×768 and 1536×864: widths 390px, responsive heights,
+16px body/13px secondary text for main app content, state persistence,
+dialog-first Escape and entry focus. Parent corrected a clipped demo label
+by allowing the FocusLock header to grow.
+
+Performance limitation: the old drag sweep changed camera framing between
+samples and the governor previously changed pixel ratio. Do not use it to
+claim a controlled before/after speedup. Pixel-ratio pinning is now explicit
+and the probe returns its pointer to the starting position after each sweep.
+Final corrected sweep on AMD Radeon / ANGLE D3D11, 1536×864, mid tier, seated:
+68 draws and 64,492 triangles at each pinned ratio. GPU median / p95 in ms:
+0.8×: 9.57 / 11.75; 1×: 14.56 / 16.38; 1.25×: 21.96 / 24.45.
+This is current-device render cost, not a before/after improvement or FPS
+claim. The full-resolution seat remains too expensive for a reliable 60Hz
+claim on this iGPU; retain the adaptive ratio. The standing transient HUD
+sample was 30.6ms and was not a steady-state benchmark.
+No cross-device or physical-Android validation was performed.
+
+---
 # Current update — 2026-09-17, round 2 (Fable)
 
 Branch `feat/v3`, local commits only, no remote. Newer than everything below.
