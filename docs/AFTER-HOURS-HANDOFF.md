@@ -15,6 +15,12 @@ it as achieving the GTA/RDR realism target.
 
 ## Next exact actions
 
+Parent resumed isolated 3D work on owner request: deskContactShadows.js is
+authored but deliberately UNIMPORTED so the verification snapshot stays stable.
+Read DESK-CONTACT-PASS.md for its underside capture design, desk/mat receiver
+coordinates, resource ownership, integration sequence and missing GPU proof.
+Syntax check passed; do not describe the effect as visible or verified yet.
+
 **Latest team handoff supersedes the old active-ownership notes below.**
 Read TEAM-COORDINATION.md. Internal agents were stopped on owner request;
 no verification Node process was left running. Claude Opus receives

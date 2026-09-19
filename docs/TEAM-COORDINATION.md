@@ -35,6 +35,11 @@ Current runtime checkpoint: aad580e; assets checkpoint: 56bae6d. Dist predates
 the final nail-material adjustment. Codex runtime edits are now frozen for the
 handoff; hand-rig reference/export additions do not affect runtime.
 
+Owner subsequently asked Codex to continue in parallel. Codex may author new,
+UNIMPORTED 3D modules and Blender scripts during verification. Existing runtime
+imports, public assets and dist remain frozen until Gemini releases the slot.
+Current staged work: src/v3/desktop/deskContactShadows.js, not integrated.
+
 Opus may edit its three files now. Gemini can do static harness/doc work in
 parallel. Gemini must wait for OPUS-INTEGRATION-HANDOFF.md to say
 `Status: READY FOR VERIFICATION` (or `NO RUNTIME CHANGES`) before building.
