@@ -76,7 +76,8 @@ function installDemoBackend() {
       this.timers.push(setTimeout(() => this.emit({ type: "source", status: "found", source: "Sample source registry", count: 14 }), 300));
       this.timers.push(setTimeout(() => {
         const claim = new URL(this.url, window.location.origin).searchParams.get("claim") || "Sample claim";
-        this.emit({ type: "complete", result: { ...checkResult(claim).data, claim_text: claim, sources_checked: 14, processing_time_seconds: 1.8 } });
+        const result = checkResult(claim).data;
+        this.emit({ type: "complete", result: { ...result, confidence: result.confidence / 100, claim_text: claim, sources_checked: 14, processing_time_seconds: 1.8 } });
       }, 520));
     }
     private emit(data: Record<string, unknown>) {

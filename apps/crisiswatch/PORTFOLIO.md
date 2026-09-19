@@ -5,18 +5,23 @@ commit `330509f`.
 
 The unused `live-demo-backup.txt` source backup is omitted.
 
-Changed source files: `app/layout.tsx`, `app/providers.tsx`,
+Changed source files: `app/layout.tsx`, `app/providers.tsx`, `tailwind.config.ts`,
 `app/api/check/route.ts` (removed), `app/api/check/stream/route.ts` (removed),
 `app/api/trending/route.ts` (removed), `next.config.js`, and `package.json`.
 
 The original Next.js page, components, animations and styling are copied as
 authored. The following source changes make the renderer static: `app/layout.tsx`
-removes the build-time Google font fetch, `next.config.js` enables the static
-export under `/apps/crisiswatch`, and the three `app/api/**` route handlers are
-removed. `app/providers.tsx` is the narrow mock seam. It intercepts only this
-app's `/api/check` and `/api/trending` browser requests and supplies deterministic
+restores the original Inter and Space Grotesk typography through an allowed
+runtime Google Fonts stylesheet, while `tailwind.config.ts` gives each font
+family explicit sans-serif fallbacks; `next.config.js` enables the static export
+under `/apps/crisiswatch`, and the three `app/api/**` route handlers are removed.
+`app/providers.tsx` is the narrow mock seam. It intercepts only this app's
+`/api/check` and `/api/trending` browser requests and supplies deterministic
 `DEMO DATA`; it also provides the same SSE event sequence expected by the live
-demo. A small fake latency keeps the original loading and progress states visible.
+demo. The POST fixture keeps the original percentage confidence contract, while
+the synthetic SSE payload uses the source API's 0–1 scale before the copied
+client's existing normalization. A small fake latency keeps the original
+loading and progress states visible.
 
 Backend touchpoints inventoried: `app/components/sections/live-demo.tsx`
 calls `GET/POST /api/check` and `EventSource /api/check/stream`; that component

@@ -64,9 +64,9 @@ const config: Config = {
         },
       },
       fontFamily: {
-        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
-        display: ["var(--font-sora)", "system-ui", "sans-serif"],
-        mono: ["var(--font-space-mono)", "monospace"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Space Grotesk", "Inter", "system-ui", "sans-serif"],
+        mono: ["Space Mono", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       fontSize: {
         "display-2xl": ["4.5rem", { lineHeight: "1.1", letterSpacing: "-0.02em" }],

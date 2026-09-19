@@ -1,4 +1,5 @@
 import { chromium } from 'playwright';
+import assert from 'node:assert/strict';
 const browser = await chromium.launch({channel:'chromium',args:['--use-angle=d3d11','--ignore-gpu-blocklist']});
 const page = await browser.newPage({viewport:{width:1440,height:900}});
 page.on('pageerror',e=>console.log('ERROR',e.message));
@@ -12,6 +13,11 @@ const frame=await (await win.locator('iframe').elementHandle()).contentFrame();
 await frame.locator('h1').waitFor();
 await page.waitForTimeout(3500);
 console.log('font',await frame.locator('body').evaluate(el=>getComputedStyle(el).fontFamily));
+const confidence = await frame.evaluate(async()=>{
+  const response=await fetch('/api/check',{method:'POST',body:JSON.stringify({claim:'NASA earthquake example'})});
+  return (await response.json()).data.confidence;
+});
+assert.equal(confidence,96,'REST fixture uses percentage confidence');
 await page.screenshot({path:'scripts/shots/crisiswatch-final-home.png'});
 await frame.getByRole('link',{name:'Cap Check',exact:true}).click();
 await page.waitForTimeout(1500);

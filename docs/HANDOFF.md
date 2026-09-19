@@ -45,6 +45,9 @@ Visual review also removed the embedded CRT overlay, restored CrisisWatch's
 Inter/Space Grotesk font stacks, and caught a stream confidence fixture scale
 error. The real project UI is retained. Its Google Fonts and original remote
 images still require network access; readable system fallbacks are explicit.
+Final `shots-crisiswatch` passed normal navigation and sample submission,
+asserted REST confidence 96 and displayed stream confidence 96%, and captured
+the painted embedded result with the restored font stack.
 The final GPU probe exposed an orbit returning to its start being treated as
 a click; pointer movement is now tracked in standing mode as well as seated.
 
