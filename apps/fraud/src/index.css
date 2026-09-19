@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-cyber-dark text-gray-100;
+  }
+}
+
+.glow {
+  text-shadow: 0 0 15px rgba(0, 209, 255, 0.5);
+}
+
+@keyframes glow {
+  from {
+    filter: drop-shadow(0 0 2px #00ff9d55);
+  }
+  to {
+    filter: drop-shadow(0 0 6px #00ff9daa);
+  }
+}
+@layer utilities {
+  .glow {
+    animation: glow-pulse 2s infinite;
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 2px theme('colors.cyber-primary'));
+      opacity: 0.8;
+    }
+    50% {
+      filter: drop-shadow(0 0 6px theme('colors.cyber-primary'));
+      opacity: 1;
+    }
+  }
+
+  .glow-alert {
+    animation: glow-alert-pulse 1.5s infinite;
+  }
+
+  @keyframes glow-alert-pulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 2px theme('colors.cyber-alert'));
+    }
+    50% {
+      filter: drop-shadow(0 0 8px theme('colors.cyber-alert'));
+    }
+  }
+}
+.glow {
+  animation: glow-pulse 2s infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% { filter: drop-shadow(0 0 2px #00ff9d55); }
+  50% { filter: drop-shadow(0 0 6px #00ff9daa); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+body {
+  background-image: radial-gradient(circle at 50% 50%, 
+    rgba(0, 209, 255, 0.05) 0%, 
+    transparent 100%);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  background: #0a1a2f;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #00d1ff;
+  border-radius: 4px;
+}

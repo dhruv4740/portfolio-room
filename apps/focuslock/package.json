@@ -1,0 +1,6 @@
+{
+  "name": "focuslock-portfolio-renderer",
+  "private": true,
+  "version": "0.0.0",
+  "portfolio": { "outDir": "out", "command": "node build.mjs" }
+}
