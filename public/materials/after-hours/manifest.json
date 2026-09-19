@@ -1,0 +1,32 @@
+{
+  "license": "CC0 1.0 Universal",
+  "source": "Poly Haven (official API/download service)",
+  "normalConvention": "OpenGL (nor_gl)",
+  "resolution": "1K JPG",
+  "sets": {
+    "wood": {
+      "assetId": "dark_wood",
+      "baseColor": "/materials/after-hours/dark_wood/dark_wood_diff_1k.jpg",
+      "normal": "/materials/after-hours/dark_wood/dark_wood_nor_gl_1k.jpg",
+      "roughness": "/materials/after-hours/dark_wood/dark_wood_rough_1k.jpg"
+    },
+    "plaster": {
+      "assetId": "painted_plaster_wall",
+      "baseColor": "/materials/after-hours/painted_plaster_wall/painted_plaster_wall_diff_1k.jpg",
+      "normal": "/materials/after-hours/painted_plaster_wall/painted_plaster_wall_nor_gl_1k.jpg",
+      "roughness": "/materials/after-hours/painted_plaster_wall/painted_plaster_wall_rough_1k.jpg"
+    },
+    "floor": {
+      "assetId": "dark_wooden_planks",
+      "baseColor": "/materials/after-hours/dark_wooden_planks/dark_wooden_planks_diff_1k.jpg",
+      "normal": "/materials/after-hours/dark_wooden_planks/dark_wooden_planks_nor_gl_1k.jpg",
+      "roughness": "/materials/after-hours/dark_wooden_planks/dark_wooden_planks_rough_1k.jpg"
+    },
+    "brick": {
+      "assetId": "brick_wall_10",
+      "baseColor": "/materials/after-hours/brick_wall_10/brick_wall_10_diff_1k.jpg",
+      "normal": "/materials/after-hours/brick_wall_10/brick_wall_10_nor_gl_1k.jpg",
+      "roughness": "/materials/after-hours/brick_wall_10/brick_wall_10_rough_1k.jpg"
+    }
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "generator": "scripts/blender/build_after_hours.py",
+  "source": "art/after-hours/winter-city.blend",
+  "runtime": "public/models/after-hours/winter-city.glb",
+  "units": "metres",
+  "objects": 9,
+  "triangles": 45660
+}

@@ -1,0 +1,14 @@
+{
+  "generator": "scripts/blender/bake_room.py",
+  "source": "art/after-hours/room-lighting.blend",
+  "resolution": 256,
+  "bakeResolution": 512,
+  "samples": 24,
+  "channels": "linear irradiance; no albedo",
+  "receivers": [
+    "back",
+    "left",
+    "right",
+    "floor"
+  ]
+}
