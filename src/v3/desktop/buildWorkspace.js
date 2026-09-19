@@ -15,7 +15,7 @@ export const WORKSPACE = {
   anchors: {
     monitor: [0, 1.79, -0.37],
     lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-1.0,1.335,-0.22], // left of the monitor's sightline from the seat, in front of the speaker
-    drawer: [1.10,0.99,0.62], blinds: [2.16,1.75,-1.48], headphones: [0.67,1.24,-0.05], keyboard: [-0.12,1.25,0.10], // far edge, so the label clears the keys
+    drawer: [1.10,0.99,0.62], blinds: [2.16,1.75,-1.48], headphones: [0.67,1.24,-0.05], keyboard: [0,1.2375,0.20],
     notebook: [1.14, 1.21, 0.30], pen: [1.47, 1.218, 0.06],
     window: [1.4, 2.12, -1.75],
     phone: [-0.80, 1.196, -0.03],
@@ -247,6 +247,7 @@ export function buildWorkspace(scene, options = {}) {
   const paper = mat('paper', '#e4dfcc', { roughness: 0.98 });
   const orange = mat('orange', '#df5b29', { roughness: 0.5 });
   const wood = mat('oak', '#ffffff', { map: woodTexture(), roughness: 0.52, metalness: 0.02 });
+  const bakedMaterials = {};
 
   function tag(mesh, id) {
     if (id && id !== 'desk') { mesh.userData.anchorId = id; interactive.push(mesh); }
@@ -254,6 +255,20 @@ export function buildWorkspace(scene, options = {}) {
   }
   function box(name, size, position, material, radius = 0, id) {
     const geometry = radius ? new RoundedBoxGeometry(...size, 2, radius) : new THREE.BoxGeometry(...size);
+    const surface = name.startsWith('Back wall') || name.startsWith('Window wall') ? 'back'
+      : name === 'Left wall' ? 'left' : name.startsWith('Right wall') ? 'right'
+      : name === 'Concrete floor' ? 'floor' : null;
+    if (surface) {
+      material = bakedMaterials[surface] ||= material.clone();
+      material.name = `Baked ${surface}`;
+      const p=geometry.getAttribute('position'), uv=[];
+      for(let i=0;i<p.count;i++) {
+        const x=p.getX(i)+position[0],y=p.getY(i)+position[1],z=p.getZ(i)+position[2];
+        uv.push(surface==='back'?(x+2.5)/5:surface==='floor'?(x+2.5)/5:surface==='left'?(2.04-z)/3.88:(z+1.84)/3.88,
+          surface==='floor'?(2.05-z)/3.9:(y-.02)/3.12);
+      }
+      geometry.setAttribute('uv1',new THREE.Float32BufferAttribute(uv,2));
+    }
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = name; mesh.position.set(...position); mesh.castShadow = true; mesh.receiveShadow = true;
     root.add(mesh); return tag(mesh, id);
@@ -336,7 +351,7 @@ export function buildWorkspace(scene, options = {}) {
   mullion.castShadow = false;
   const blindsGroup=new THREE.Group();root.add(blindsGroup);
   for (let i = 0; i < 11; i++) {
-    const slat = box('Venetian blind', [1.47, 0.022, 0.08], [1.39, 2.88 - i * 0.145, -1.56], bone, 0, 'window');
+    const slat = box('Venetian blind', [1.47, 0.003, 0.08], [1.39, 2.88 - i * 0.145, -1.56], bone, 0, 'window');
     slat.rotation.x = -0.22;slat.castShadow=true;blindsGroup.add(slat);
   }
   box('Window sill', [1.7, 0.065, 0.32], [1.39, 0.99, -1.54], bone, 0.012);
@@ -350,7 +365,7 @@ export function buildWorkspace(scene, options = {}) {
     box('Desk foot rail', [0.055, 0.055, 1.12], [x, 0.19, -0.025], dark, 0.008);
   }
   box('Rear stretcher', [2.94, 0.07, 0.045], [0, 0.84, -0.54], dark);
-  box('Felt desk mat', [1.62, 0.014, 0.6], [-0.05, 1.174, 0.25], mat('felt', '#454744'), 0.025, 'desk');
+  box('Felt desk mat', [.95, 0.008, 0.52], [.11, 1.170, 0.25], mat('felt', '#303533'), 0.025, 'desk');
 
   // Real screen geometry gives the entrance a destination and a known plane.
   box('Monitor foot', [0.5, 0.035, 0.29], [0, 1.18, -0.35], steel, 0.02, 'monitor');
@@ -370,19 +385,19 @@ export function buildWorkspace(scene, options = {}) {
   cable([[0, 1.55, -0.47], [0.12, 1.17, -0.5], [0.7, 1.17, -0.67], [1.3, 0.75, -0.7]]);
 
   // A compact mechanical keyboard: instanced keycaps, an orange escape key.
-  box('Keyboard case', [1.04, 0.055, 0.36], [-0.12, 1.211, 0.29], bone, 0.026, 'desk');
-  const keyGeometry = new RoundedBoxGeometry(0.061, 0.027, 0.055, 1, 0.006);
+  box('Keyboard case', [.48, .035, .20], [0, 1.201, .28], bone, .009, 'desk');
+  const keyGeometry = new RoundedBoxGeometry(.029, .017, .027, 2, .002);
   const keys = new THREE.InstancedMesh(keyGeometry, mat('keycaps', '#d3d0c3'), 60);
   const transform = new THREE.Object3D();
   for (let row = 0; row < 5; row++) for (let col = 0; col < 12; col++) {
-    transform.position.set(-0.562 + col * 0.077, 1.249, 0.163 + row * 0.059);
+    transform.position.set(-.187 + col * .034, 1.229, .214 + row * .032);
     transform.updateMatrix(); keys.setMatrixAt(row * 12 + col, transform.matrix);
   }
   keys.castShadow = false; root.add(keys); tag(keys, 'keyboard');
-  box('Escape key', [0.063, 0.031, 0.057], [-0.562, 1.251, 0.163], orange, 0.006);
-  box('Spacebar', [0.35, 0.032, 0.055], [-0.13, 1.252, 0.4], bone, 0.006);
-  box('Mouse', [0.13, 0.057, 0.21], [0.63, 1.22, 0.32], bone, 0.04, 'desk');
-  box('Mouse wheel', [0.014, 0.011, 0.032], [0.63, 1.252, 0.279], dark, 0.004);
+  box('Escape key', [.030, .018, .028], [-.187, 1.230, .214], orange, .002);
+  box('Spacebar', [.16, .019, .028], [0, 1.231, .342], bone, .003);
+  box('Mouse', [.070, .037, .12], [.37, 1.195, .30], bone, .022, 'desk');
+  box('Mouse wheel', [.009, .007, .018], [.37, 1.216, .274], dark, .002);
 
   // Keep the complete phone out of static batching and out of baked shadows.
   const phone = new THREE.Group(); phone.name = 'Animated phone';
@@ -421,7 +436,12 @@ export function buildWorkspace(scene, options = {}) {
   const shade = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.15, 32, 1, true), dark);
   shade.position.set(-1.03, 1.89, -0.4); shade.rotation.z = -0.3; root.add(shade);
   const bulb = new THREE.PointLight('#ffe4b1', 0.75, 2.2, 2); bulb.position.set(-1.02, 1.82, -0.39); root.add(bulb);
-  for (let i = 0; i < 3; i++) box('Book stack', [0.48 - i * 0.025, 0.052, 0.34], [-1.25, 1.197 + i * 0.055, 0.15], [bone, dark, mat('bookTaupe', '#858070')][i], 0.008, 'desk');
+  for (let i = 0; i < 3; i++) {
+    const width=.48-i*.025,y=1.197+i*.055,cover=[bone,dark,mat('bookTaupe','#858070')][i];
+    box('Book page block',[width-.012,.041,.325],[-1.25,y,.15],paper,.003,'desk');
+    for(const dy of [-.024,.024])box('Book cover',[width,.005,.34],[-1.25,y+dy,.15],cover,.002,'desk');
+    box('Book spine',[.009,.052,.34],[-1.25-width*.5+.0045,y,.15],cover,.003,'desk');
+  }
   /* mug is authored by buildRoomInteractions */
 
 
@@ -576,7 +596,7 @@ export function buildWorkspace(scene, options = {}) {
   const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
-    root, interactive,
+    root, interactive, materials, bakedMaterials, city, bulb, hemiLight,
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
     notePage: notePlane, notes,

@@ -3,7 +3,7 @@
 // scene. Integrated-GPU laptops are the primary target, not an edge case.
 //
 // Owns three things:
-//   1. Render-on-demand scheduling (a dirty flag + a 60Hz frame-budget floor).
+//   1. Render-on-demand scheduling (a dirty flag + a 30Hz frame-budget floor).
 //   2. An adaptive pixel-ratio ladder driven by a rolling MEDIAN of measured
 //      per-frame render cost, with hysteresis + a cooldown so it cannot
 //      oscillate, and re-evaluated continuously for the life of the session
@@ -27,15 +27,15 @@
 
 const OVERRIDE_KEY = 'v3:perf-tier';
 
-const FRAME_BUDGET_MS = 1000 / 60; // never render faster than the display can show
-const PR_FLOOR = 0.6;
-const PR_CEIL_DEFAULT = 1.5;
+const FRAME_BUDGET_MS = 1000 / 30; // room art prioritizes a stable cinematic 30Hz
+const PR_FLOOR = 0.8;
+const PR_CEIL_DEFAULT = 1.25;
 
-// Cost thresholds leave headroom under the 16.7ms/frame budget at 1080p
+// Cost thresholds leave headroom under the 33.3ms/frame budget
 // before acting, so a downshift happens ahead of visible frame drops rather
 // than after.
-const DOWNSHIFT_MS = 12;
-const UPSHIFT_MS = 6;
+const DOWNSHIFT_MS = 27;
+const UPSHIFT_MS = 14;
 
 const WINDOW = 40;        // rolling sample window, in *rendered* frames (idle frames are never counted)
 const PERSIST = 24;       // consecutive samples on the wrong side of a threshold before acting

@@ -10,9 +10,9 @@ import { Link } from 'react-router-dom';
 import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
-import ScanIntro from '../ui/ScanIntro.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
-import { startCityAmbience, stopCityAmbience, disposeCityAmbience } from './cityAudio.js';
+import { startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted } from './cityAudio.js';
+import { disposeRoomAudio, isRoomMuted, playRoomFoley, setRoomMuted, unlockRoomAudio } from './roomAudio.js';
 import { anchors, projects, identity } from '../content/index.js';
 import {
   prefersReducedMotion,
@@ -26,6 +26,15 @@ import {
 const ENTRY_MS = 1200;
 const RETURN_MS = 1000;
 const PREPARE_TIMEOUT_MS = 9000;
+const ARRIVAL_SEEN_KEY = 'v3:arrival-seen';
+
+function hasSeenArrival() {
+  try { return sessionStorage.getItem(ARRIVAL_SEEN_KEY) === '1'; } catch { return false; }
+}
+
+function markArrivalSeen() {
+  try { sessionStorage.setItem(ARRIVAL_SEEN_KEY, '1'); } catch { /* private mode */ }
+}
 
 export default function Scan() {
   const reduced = useMemo(() => prefersReducedMotion(), []);
@@ -38,7 +47,9 @@ export default function Scan() {
     } catch { return false; }
   }, []);
   const [introDone, setIntroDone] = useState(() => hasSeenIntro());
-  const [workspaceProgress, setWorkspaceProgress] = useState(0);
+  const [arrivalToken, setArrivalToken] = useState(0);
+  const nextArrivalToken = useRef(1);
+  const arrivalTokenRef = useRef(0);
   const [stats, setStats] = useState({
     frameMs: undefined,
     cpuMs: undefined,
@@ -49,6 +60,7 @@ export default function Scan() {
   const [seated, setSeated] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(true);
   const [coffeeEmpty, setCoffeeEmpty] = useState(false);
+  const [roomMuted, setRoomMutedState] = useState(() => isRoomMuted());
   useEffect(() => {
     const onCoffee = (event) => setCoffeeEmpty(event.detail.level <= 0.001);
     window.addEventListener('workspace:coffee', onCoffee);
@@ -80,6 +92,35 @@ export default function Scan() {
   const dhruvRef = useRef(null);
   const windowIntent = useRef(false);
 
+  arrivalTokenRef.current = arrivalToken;
+
+  const cancelArrival = useCallback(() => {
+    if (arrivalTokenRef.current !== 0) setArrivalToken(0);
+  }, []);
+
+  const replayArrival = useCallback(() => {
+    if (screenPhase !== 'room' || !seated || activeId) return;
+    setActiveId(null);
+    setControlsOpen(false);
+    setSeated(false);
+    setOverviewOpen(true);
+    returnOrigin.current = 'room';
+    launchLocked.current = false;
+    const token = nextArrivalToken.current++;
+    setArrivalToken(token);
+  }, [activeId, screenPhase, seated]);
+
+  const handleArrivalComplete = useCallback((token) => {
+    if (token !== arrivalTokenRef.current) return;
+    setActiveId(null);
+    setControlsOpen(false);
+    setSeated(false);
+    setOverviewOpen(true);
+    returnOrigin.current = 'room';
+    launchLocked.current = false;
+    setArrivalToken(0);
+  }, []);
+
   const handleScreenRect = useCallback((rect) => {
     dhruvRef.current?.setScreenRect(rect);
   }, []);
@@ -98,15 +139,18 @@ export default function Scan() {
   // The monitor anchor is the one that opens the embedded OS.
   const monitorIsActive = activeAnchor?.ref === 'lab';
 
-  const handleProgress = useCallback((event) => {
-    const value = typeof event === 'number' ? event : event?.progress;
-    if (typeof value !== 'number' || !Number.isFinite(value)) return;
-    setWorkspaceProgress(Math.max(0, Math.min(1, value)));
-  }, []);
-
   const handleWorkspaceReady = useCallback(() => {
-    setWorkspaceProgress(1);
-  }, []);
+    // Keep the old persistent intro flag for existing harnesses and returning
+    // visitors, while the cinematic arrival itself is once per browser session.
+    if (!hasSeenIntro()) markIntroSeen();
+    setIntroDone(true);
+    if (!reduced && !hasSeenArrival()) {
+      markArrivalSeen();
+      const token = nextArrivalToken.current++;
+      arrivalTokenRef.current = token;
+      setArrivalToken(token);
+    }
+  }, [reduced]);
 
   const handleSelect = useCallback((id, meta) => {
     if (screenPhase !== 'room') return;
@@ -115,6 +159,7 @@ export default function Scan() {
       return;
     }
     if (id === 'phone' && !seated) {
+      cancelArrival();
       returnOrigin.current = 'overview';
       overviewFocusAction.current = 'mobile-projects';
       setOverviewOpen(false); setSeated(true);
@@ -129,17 +174,18 @@ export default function Scan() {
     }
     lastTrigger.current = document.activeElement;
     setActiveId((cur) => (cur === id ? null : id));
-  }, [screenPhase, activeId, seated]);
+  }, [cancelArrival, screenPhase, activeId, seated]);
 
   const beginLaunch = useCallback((origin, trigger) => {
     if (launchLocked.current || screenPhase !== 'room') return false;
+    cancelArrival();
     launchLocked.current = true;
     returnOrigin.current = origin;
     lastTrigger.current = trigger || document.activeElement;
     overviewFocusAction.current = trigger?.dataset?.launchpadAction || 'desktop-projects';
     setOverviewOpen(false);
     return true;
-  }, [screenPhase]);
+  }, [cancelArrival, screenPhase]);
 
   const returnToOverview = useCallback(() => {
     returnOrigin.current = 'room';
@@ -190,6 +236,40 @@ export default function Scan() {
     return () => disposeCityAmbience();
   }, []);
 
+  // Unlock room foley from a real gesture. Arrival itself never creates or
+  // starts audio, and every event is short enough to clean up without a loop.
+  useEffect(() => {
+    const onPointerDown = () => unlockRoomAudio();
+    const onKeyDown = () => unlockRoomAudio();
+    const onFoley = (event) => playRoomFoley(event.detail);
+    const onVisibility = () => { if (document.hidden) stopCityAmbience(); };
+    document.addEventListener('pointerdown', onPointerDown, { passive: true });
+    document.addEventListener('keydown', onKeyDown, { passive: true });
+    window.addEventListener('workspace:foley', onFoley);
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('workspace:foley', onFoley);
+      document.removeEventListener('visibilitychange', onVisibility);
+      disposeRoomAudio();
+    };
+  }, []);
+
+  useEffect(() => {
+    setCityAmbienceMuted(roomMuted);
+  }, [roomMuted]);
+
+  const toggleRoomMute = useCallback(() => {
+    const next = setRoomMuted(!roomMuted);
+    setRoomMutedState(next);
+    setCityAmbienceMuted(next);
+    if (!next) {
+      unlockRoomAudio();
+      if (windowIntent.current && seated && screenPhase === 'room') startCityAmbience();
+    }
+  }, [roomMuted, screenPhase, seated]);
+
   // Wearing the headphones loops the song; taking them off stops it. The event
   // fires from a click, so playback has a user gesture.
   useEffect(() => {
@@ -227,6 +307,7 @@ export default function Scan() {
 
   const handleEnterScreen = useCallback((origin = 'room', trigger = null) => {
     if (screenPhase !== 'room') return;
+    cancelArrival();
     // Marker selection already recorded the marker before the cue moved focus
     // into the panel. Preserve it for the cue path; direct canvas hits focus
     // the same marker in WorkspaceStage before calling this handler.
@@ -243,7 +324,7 @@ export default function Scan() {
     // on a previous marker-selection render.
     setActiveId('monitor');
     setScreenPhase(osReady ? (reduced ? 'inside' : 'entering') : 'preparing');
-  }, [activeId, osReady, reduced, screenPhase, seated]);
+  }, [activeId, cancelArrival, osReady, reduced, screenPhase, seated]);
 
   const handleLaunchDesktop = useCallback((event) => {
     if (!beginLaunch('overview', event.currentTarget)) return;
@@ -258,16 +339,14 @@ export default function Scan() {
     setActiveId(null);
   }, [screenPhase]);
 
-  const handleIntroDone = useCallback(() => {
-    setIntroDone(true);
-    markIntroSeen();
-  }, []);
-
   // Escape backs out one level: the embedded OS, then the selected anchor.
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
-      if (screenPhase === 'inside' || screenPhase === 'entering') {
+      if (arrivalTokenRef.current !== 0) {
+        e.preventDefault();
+        cancelArrival();
+      } else if (screenPhase === 'inside' || screenPhase === 'entering') {
         e.preventDefault();
         handleLeaveScreen();
       } else if (screenPhase === 'preparing') {
@@ -282,7 +361,7 @@ export default function Scan() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [activeId, handleClose, handleLeaveScreen, overviewOpen, returnToOverview, screenPhase, seated]);
+  }, [activeId, cancelArrival, handleClose, handleLeaveScreen, overviewOpen, returnToOverview, screenPhase, seated]);
 
   // The destination is prepared before the camera handoff commits. If the
   // child never answers, restore the room instead of leaving an inert overlay.
@@ -370,14 +449,15 @@ export default function Scan() {
         seated={seated}
         liveMonitor={liveMonitor && seated && !activeId}
         onTypeKey={key=>{setLiveMonitor(true);dhruvRef.current?.typeKey(key);}}
-        onSit={() => { returnOrigin.current = 'room'; setOverviewOpen(false); setActiveId(null); setSeated(true); if (windowIntent.current) startCityAmbience(); }}
+        onSit={() => { cancelArrival(); returnOrigin.current = 'room'; setOverviewOpen(false); setActiveId(null); setSeated(true); if (windowIntent.current) startCityAmbience(); }}
         windowIntent={windowIntent.current}
         anchors={anchors}
         activeAnchorId={activeId}
         onAnchorSelect={handleSelect}
         onEnterScreen={handleEnterScreen}
-        onProgress={handleProgress}
         onReady={handleWorkspaceReady}
+        arrivalToken={arrivalToken}
+        onArrivalComplete={handleArrivalComplete}
         onStats={setStats}
         onError={setError}
         onScreenRect={handleScreenRect}
@@ -406,7 +486,7 @@ export default function Scan() {
             </button>
           </div>
           <nav className="launchpad-links mono" aria-label="Portfolio links">
-            <Link to="/work">WORK</Link>
+            <Link to="/work" onClick={cancelArrival}>WORK</Link>
             <button data-launchpad-action="contact" onClick={handleOpenContact}>CONTACT</button>
           </nav>
         </section>
@@ -416,6 +496,8 @@ export default function Scan() {
         <div className="seat-exit mono" data-open={controlsOpen}>
           <button className="seat-exit-toggle" aria-expanded={controlsOpen} onClick={toggleControls}>OBJECTS {controlsOpen ? '▾' : '▸'}</button>
           {controlsOpen && <>
+            <button type="button" aria-pressed={!roomMuted} onClick={toggleRoomMute}>ROOM SOUND {roomMuted ? 'OFF' : 'ON'}</button>
+            {arrivalToken === 0 && !activeId && <button data-testid="replay-arrival" onClick={replayArrival}>REPLAY ARRIVAL</button>}
             <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
             <button onClick={() => handleSelect('phone')}>PHONE</button>
             {['lamp','coffee','award','drawer','pen','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
@@ -435,7 +517,7 @@ export default function Scan() {
           <p className="mono">{identity.role} — {identity.location}</p>
         </div>
         <nav className="scan-nav mono">
-          <Link to="/work">WORK</Link>
+          <Link to="/work" onClick={cancelArrival}>WORK</Link>
           <span className="sep" aria-hidden="true">/</span>
           <button
             onClick={() => { setOverride('deck'); window.location.reload(); }}
@@ -491,13 +573,11 @@ export default function Scan() {
         onRequestLeave={handleLeaveScreen}
       />
 
-      {!introDone && (
-        <ScanIntro
-          progress={workspaceProgress}
-          active={!introDone}
-          onDone={handleIntroDone}
-          skipped={false}
-        />
+      {arrivalToken !== 0 && (
+        <div className="arrival-cue" role="status">
+          <span className="arrival-cue-label mono">ARRIVAL</span>
+          <button type="button" className="arrival-skip mono" data-testid="arrival-skip" onClick={cancelArrival}>SKIP</button>
+        </div>
       )}
 
       {/* Hint shown once the scene is live and nothing is selected. */}
@@ -510,6 +590,10 @@ export default function Scan() {
 
 const css = `
 .launchpad { position:absolute; inset:0; z-index:var(--z-panel); pointer-events:none; color:var(--bone); animation:launchpad-in .6s var(--ease) both; }
+.arrival-cue { position:absolute; top:78px; right:var(--gutter); z-index:var(--z-panel); display:flex; align-items:center; gap:.75rem; padding:7px 9px; border:1px solid color-mix(in srgb, var(--dim) 70%, transparent); background:color-mix(in srgb, var(--void) 82%, transparent); color:var(--dim); pointer-events:auto; }
+.arrival-cue-label { font-size:10px; letter-spacing:.16em; }
+.arrival-skip { min-height:28px; padding:4px 7px; border:1px solid var(--faint); color:var(--bone); font-size:10px; letter-spacing:.12em; }
+.arrival-skip:hover,.arrival-skip:focus-visible { border-color:var(--signal); color:var(--signal); }
 .launchpad > * { position:absolute; left:var(--gutter); }
 .launchpad-kicker { top:32px; color:#b7b9b2; font-size:11px; letter-spacing:.18em; }
 .launchpad h1 { top:56px; margin:0; font-size:clamp(30px,3.5vw,52px); font-weight:500; line-height:1; letter-spacing:-.04em; text-shadow:0 2px 18px #000; }
@@ -525,6 +609,7 @@ const css = `
 .launchpad-links a,.launchpad-links button { color:var(--bone); min-height:32px; }
 @keyframes launchpad-in { from { opacity:0; } }
 @media(max-height:650px) { .launchpad-statement { display:none; } .launchpad-actions {bottom:20px;} .launchpad h1 {font-size:30px;} .launchpad-role {top:98px;} }
+@media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
 
 .seat-exit { display:flex; align-items:center; gap:10px; flex-wrap:wrap; max-width:calc(100% - 280px); position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:9px 12px; color:var(--bone); background:color-mix(in srgb, var(--void) 92%, transparent); border:1px solid var(--dim); }
 .workspace-stage[data-phone-state="zoomed"] ~ .seat-exit,

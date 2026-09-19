@@ -5,6 +5,9 @@ let masterGain = null;
 let noiseSource = null;
 let humOsc1 = null;
 let humOsc2 = null;
+let muted = (() => {
+  try { return localStorage.getItem('v3:room-muted') === '1'; } catch { return false; }
+})();
 // Tracks intent (last start/stop call), not the mid-ramp gain value — a fade
 // in progress still counts as "playing" for sync-checking purposes.
 let playing = false;
@@ -74,6 +77,10 @@ function initAudio() {
 }
 
 export function startCityAmbience() {
+  if (muted) {
+    playing = false;
+    return;
+  }
   playing = true;
   try {
     initAudio();
@@ -105,6 +112,11 @@ export function stopCityAmbience() {
 
 export function isCityAmbiencePlaying() {
   return playing;
+}
+
+export function setCityAmbienceMuted(value) {
+  muted = !!value;
+  if (muted) stopCityAmbience();
 }
 
 export function disposeCityAmbience() {

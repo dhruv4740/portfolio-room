@@ -1,0 +1,162 @@
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { Reflector } from 'three/addons/objects/Reflector.js';
+
+const ROOT = `${import.meta.env.BASE_URL}materials/after-hours/`;
+
+// Resources are optional upgrades: failure leaves the working authored scene.
+// All URLs are local; runtime never depends on an asset-library service.
+export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}) {
+  let disposed=false, city=null, sky='night', probeDirty=true, lastLamp=-1;
+  const resources=[],targets=[], uniforms={lamp:{value:1},time:{value:0}};
+  const textureLoader=new THREE.TextureLoader();
+  const loadTexture=async(url,color=false)=>{
+    const t=await textureLoader.loadAsync(url);
+    if(disposed){t.dispose();throw new Error('Scene disposed');}
+    t.colorSpace=color?THREE.SRGBColorSpace:THREE.NoColorSpace;
+    t.anisotropy=Math.min(4,renderer.capabilities.getMaxAnisotropy());resources.push(t);return t;
+  };
+  const snowGeometry=new THREE.BufferGeometry(), positions=[], seeds=[];
+  let seed=1926;const random=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  for(let i=0;i<(tier==='low'?180:tier==='high'?850:460);i++){
+    positions.push(-8+random()*20,-5+random()*17,-2.4-random()*24);seeds.push(random());
+  }
+  snowGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  snowGeometry.setAttribute('seed',new THREE.Float32BufferAttribute(seeds,1));
+  const snowMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{time:uniforms.time},
+    vertexShader:`attribute float seed;uniform float time;varying float fade;
+      void main(){vec3 p=position;p.y=-5.+mod(position.y+5.-time*(.38+seed*.38),17.);
+      p.x+=sin(time*.3+seed*40.)*.25;vec4 mv=modelViewMatrix*vec4(p,1.);
+      fade=mix(.13,.46,seed)*clamp((-mv.z-1.)*.4,0.,1.);gl_Position=projectionMatrix*mv;
+      gl_PointSize=clamp((18.+seed*19.)/-mv.z,1.,4.);}`,
+    fragmentShader:`varying float fade;void main(){float r=length(gl_PointCoord-.5);if(r>.5)discard;
+      gl_FragColor=vec4(.71,.80,.90,fade*smoothstep(.5,.1,r));}`});
+  const snow=new THREE.Points(snowGeometry,snowMaterial);snow.name='Exterior snowfall';snow.frustumCulled=false;snow.raycast=()=>{};scene.add(snow);
+
+  // A small, low-opacity glass reflection follows the actual sliding sash.
+  // Mid/low retain the prefiltered room probe without a second scene render.
+  let glassReflection=null, costlyFrames=0;
+  if(tier==='high'){
+    const shader={...Reflector.ReflectorShader,fragmentShader:Reflector.ReflectorShader.fragmentShader.replace('blendOverlay( base.rgb, color ), 1.0','blendOverlay( base.rgb, color ), 0.13')};
+    glassReflection=new Reflector(new THREE.PlaneGeometry(.64,1.85),{textureWidth:384,textureHeight:512,multisample:0,clipBias:.003,color:0x7f7f7f,shader});
+    glassReflection.name='Sash reflection';glassReflection.position.set(0,0,.091);
+    glassReflection.material.transparent=true;glassReflection.material.depthWrite=false;
+    glassReflection.raycast=()=>{};model.roomActions.objects.windowOpen.add(glassReflection);
+  }
+
+  // Camera-facing wisps rise in world space from the moving liquid surface.
+  const steamGeometry=new THREE.BufferGeometry();
+  steamGeometry.setAttribute('position',new THREE.Float32BufferAttribute(new Float32Array(36),3));
+  steamGeometry.setAttribute('seed',new THREE.Float32BufferAttribute(Array.from({length:12},(_,i)=>i/12),1));
+  const steamOrigin=new THREE.Vector3();
+  const steamMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{time:uniforms.time,origin:{value:steamOrigin}},
+    vertexShader:`attribute float seed;uniform float time;uniform vec3 origin;varying float fade;
+      void main(){float age=fract(seed+time*.23);vec3 p=origin+vec3(sin(age*7.+seed*31.)*.018*age,age*.19,cos(seed*26.+age*4.)*.016*age);
+      vec4 mv=viewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;gl_PointSize=clamp((7.+age*16.)/-mv.z,2.,42.);fade=sin(age*3.14159)*.055;}`,
+    fragmentShader:`varying float fade;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;gl_FragColor=vec4(.76,.79,.79,fade*smoothstep(.5,0.,d));}`});
+  const steam=new THREE.Points(steamGeometry,steamMaterial);steam.name='Coffee steam';steam.frustumCulled=false;steam.raycast=()=>{};scene.add(steam);
+
+  // Small physical-scale architecture details, batched by material.
+  const detail=new THREE.Group();detail.name='Winter room details';model.root.add(detail);
+  const trim=new THREE.MeshStandardMaterial({color:'#303934',roughness:.54,metalness:.12});
+  const snowCap=new THREE.MeshStandardMaterial({color:'#b6c5cf',roughness:.98});
+  const detailParts=[];
+  function box(size,pos,mat){const g=new THREE.BoxGeometry(...size);g.translate(...pos);detailParts.push({g,mat});}
+  for(const x of [.56,2.21])box([.026,2.13,.045],[x,1.99,-1.565],trim);
+  box([1.72,.045,.26],[1.385,.975,-1.89],snowCap);
+  for(let i=0;i<13;i++)box([.045,.43,.10],[.85+i*.082,.50,-1.60],trim);
+  for(const y of [.29,.70])box([1.10,.036,.08],[1.34,y,-1.57],trim);
+  for(const mat of [trim,snowCap]){
+    const gs=detailParts.filter(p=>p.mat===mat).map(p=>p.g);
+    const mesh=new THREE.Mesh(mergeGeometries(gs),mat);gs.forEach(g=>g.dispose());mesh.receiveShadow=true;detail.add(mesh);
+  }
+
+  const pmrem=new THREE.PMREMGenerator(renderer), probes=new Map();
+  function captureProbe(){
+    if(disposed||sky!=='night')return;
+    const key=model.roomActions.state.lamp>.5?'on':'off';
+    if(probes.has(key)){scene.environment=probes.get(key).texture;return;}
+    const target=new THREE.WebGLCubeRenderTarget(tier==='high'?128:64,{type:THREE.HalfFloatType});
+    const cube=new THREE.CubeCamera(.05,120,target);cube.position.set(0,1.60,.1);
+    const visible=[model.hands.root.visible,model.figure.root.visible,snow.visible];
+    model.hands.root.visible=false;model.figure.root.visible=false;snow.visible=false;
+    const reflectVisible=glassReflection?.visible;if(glassReflection)glassReflection.visible=false;
+    steam.visible=false;
+    scene.environment=null;
+    const oldShadow=renderer.shadowMap.enabled;renderer.shadowMap.enabled=false;
+    cube.update(renderer,scene);renderer.shadowMap.enabled=oldShadow;
+    const filtered=pmrem.fromCubemap(target.texture);target.dispose();targets.push(filtered);probes.set(key,filtered);
+    scene.environment=filtered.texture;scene.environmentIntensity=.35;
+    model.hands.root.visible=visible[0];model.figure.root.visible=visible[1];snow.visible=visible[2];
+    if(glassReflection)glassReflection.visible=reflectVisible;
+  }
+  const status={city:'loading',materials:'loading',bake:'loading'};
+  const report=()=>onStatus?.({...status});
+  const cityPromise=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/winter-city.glb`).then(gltf=>{
+    if(disposed){gltf.scene.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});return;}
+    city=gltf.scene;city.name='After Hours winter city';
+    city.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;o.raycast=()=>{};
+      o.material.fog=true;o.material.envMapIntensity=.12;
+      // Exterior has its own soft sky fill; no indoor point lights reach it.
+      if(!o.material.name.startsWith('Window ')){o.material.color.multiplyScalar(.68);o.material.emissive.copy(o.material.color);o.material.emissiveIntensity=.06;}
+    }});
+    scene.add(city);model.city.visible=false;status.city='ready';probeDirty=true;invalidate();report();
+  }).catch(e=>{status.city='fallback';console.warn('Winter city fallback:',e.message);report();});
+  const mapsPromise=fetch(`${ROOT}manifest.json`).then(r=>{if(!r.ok)throw new Error('material manifest unavailable');return r.json();}).then(async manifest=>{
+    const entries=manifest.sets||manifest.materials||manifest;
+    const sets={};await Promise.all(Object.entries(entries).filter(([,v])=>v?.baseColor).map(async([key,v])=>{
+      const urls=[v.baseColor,v.normal,v.roughness];const ts=await Promise.all(urls.map((url,i)=>url?loadTexture(url.startsWith('/')?url:ROOT+url,i===0):null));
+      ts.filter(Boolean).forEach(t=>{t.wrapS=t.wrapT=THREE.RepeatWrapping;});sets[key]=ts;
+    }));
+    if(disposed)return;
+    function assign(material,set,repeat=[1,1]){if(!material||!set)return;
+      [material.map,material.normalMap,material.roughnessMap]=set.map(t=>{if(!t)return null;const c=t.clone();c.repeat.set(...repeat);resources.push(c);return c;});
+      material.color.set('#ffffff');material.normalScale.set(.32,.32);material.roughness=.86;material.needsUpdate=true;
+    }
+    assign(model.materials.oak,sets.wood,[2,1]);
+    assign(model.materials.plaster,sets.plaster,[2,2]);
+    for(const [name,m] of Object.entries(model.bakedMaterials))assign(m,sets[name==='floor'?'floor':'plaster'],name==='floor'?[4,3]:[3,2]);
+    await cityPromise;
+    city?.traverse(o=>{if(!o.isMesh)return;const n=o.material.name;if(n==='Winter masonry'||n==='Winter limestone'){
+      const color=o.material.color.clone();assign(o.material,sets.brick,[.5,.5]);o.material.color.copy(color).multiplyScalar(2.2);
+      // Approximate exterior sky/street bounce without adding a light to every
+      // indoor material's shader. Keep the brick detail legible below windows.
+      o.material.emissive.copy(o.material.color);o.material.emissiveMap=o.material.map;o.material.emissiveIntensity=.12;
+    }});
+    status.materials='ready';probeDirty=true;invalidate();report();
+  }).catch(e=>{status.materials='fallback';console.warn('Room materials fallback:',e.message);report();});
+  const bakePromise=Promise.all(Object.entries(model.bakedMaterials).map(async([name,m])=>{
+    const [off,on]=await Promise.all(['off','on'].map(mode=>loadTexture(`${ROOT}baked/${name}-${mode}.png`)));
+    off.channel=on.channel=1;m.lightMap=off;m.lightMapIntensity=sky==='night'?.7:0;
+    m.onBeforeCompile=shader=>{
+      shader.uniforms.taskLamp=uniforms.lamp;shader.uniforms.lampLightmap={value:on};
+      shader.fragmentShader='uniform float taskLamp;uniform sampler2D lampLightmap;\n'+shader.fragmentShader;
+      shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_maps>',THREE.ShaderChunk.lights_fragment_maps.replace('texture2D( lightMap, vLightMapUv )','mix(texture2D( lightMap, vLightMapUv ),texture2D(lampLightmap,vLightMapUv),taskLamp)'));
+    };m.customProgramCacheKey=()=>`after-hours-bake-${name}`;m.needsUpdate=true;
+  })).then(()=>{status.bake='ready';probeDirty=true;invalidate();report();}).catch(e=>{status.bake='fallback';console.warn('Room bake fallback:',e.message);report();});
+
+  return {
+    ready:Promise.allSettled([cityPromise,mapsPromise,bakePromise]),
+    update(time,cost=0){uniforms.time.value=time;uniforms.lamp.value=model.roomActions.state.lamp;
+      model.roomActions.objects.coffee.updateWorldMatrix(true,false);
+      steamOrigin.set(0,.079,0).applyMatrix4(model.roomActions.objects.coffee.matrixWorld);
+      steam.visible=model.roomActions.state.coffeeLevel>.01 && time!==0;
+      // Shed the extra scene pass before sustained overload lowers resolution.
+      costlyFrames=cost>27?costlyFrames+1:0;
+      if(glassReflection&&costlyFrames>=10)glassReflection.visible=false;
+      const lamp=uniforms.lamp.value>.5?1:0;
+      if(lamp!==lastLamp){probeDirty=true;lastLamp=lamp;}
+      if(probeDirty&&status.city!=='loading'&&status.materials!=='loading'&&status.bake!=='loading'){
+        probeDirty=false;captureProbe();
+      }
+    },
+    setSky(value){sky=value;snow.visible=value==='night';scene.environment=value==='night'?(probes.get(lastLamp?'on':'off')?.texture||null):null;
+      for(const m of Object.values(model.bakedMaterials))m.lightMapIntensity=value==='night'?.7:0;probeDirty=true;},
+    setWeather(active){snow.visible=active&&sky==='night';},
+    dispose(){disposed=true;scene.environment=null;scene.remove(snow,steam);snowGeometry.dispose();snowMaterial.dispose();steamGeometry.dispose();steamMaterial.dispose();
+      if(glassReflection){glassReflection.removeFromParent();glassReflection.geometry.dispose();glassReflection.dispose();}
+      city?.traverse(o=>{o.geometry?.dispose();if(o.material){o.material.map?.dispose();o.material.normalMap?.dispose();o.material.roughnessMap?.dispose();o.material.dispose();}});if(city)scene.remove(city);
+      resources.forEach(t=>t.dispose());targets.forEach(t=>t.dispose());pmrem.dispose();},
+  };
+}

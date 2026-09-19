@@ -12,11 +12,12 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   function box(g,size,position,material=m.dark) {return mesh(g,new RoundedBoxGeometry(...size,2,0.008),material,position);}
   const lamp=group('lamp');const toggle=box(lamp,[0.055,0.025,0.075],[0,0,0]);
   const coffee=group('coffee');
-  const profile=[[0,-0.07],[0.063,-0.07],[0.074,-0.052],[0.074,0.074],[0.064,0.074],[0.061,-0.052],[0,-0.052]];
-  mesh(coffee,new THREE.LatheGeometry(profile.map(p=>new THREE.Vector2(...p)),48),m.bone);
+  const ceramic=new THREE.MeshPhysicalMaterial({color:'#c4b9a2',roughness:.24,metalness:0,clearcoat:.42,clearcoatRoughness:.18});
+  const profile=[[0,-.070],[.047,-.070],[.049,-.068],[.050,-.064],[.059,-.064],[.066,-.060],[.071,-.050],[.073,.061],[.074,.069],[.073,.073],[.070,.075],[.067,.073],[.065,.069],[.064,-.043],[.061,-.050],[.054,-.053],[0,-.053]];
+  mesh(coffee,new THREE.LatheGeometry(profile.map(p=>new THREE.Vector2(...p)),64),ceramic);
   // Handle turned toward the sitter's left hand (back-left of the mug is unreachable).
   // Half a torus whose ends meet the outer wall, so no part of the loop sits inside the mug.
-  const handle=mesh(coffee,new THREE.TorusGeometry(0.044,0.011,12,32,Math.PI),m.bone,[-0.043,0.008,0.043]);handle.rotation.set(0,Math.PI/4,Math.PI/2);
+  const handle=mesh(coffee,new THREE.TorusGeometry(0.044,0.011,16,40,Math.PI),ceramic,[-0.043,0.008,0.043]);handle.rotation.set(0,Math.PI/4,Math.PI/2);
   const liquidUniforms={time:{value:0},amplitude:{value:0}};
   const liquidMaterial=new THREE.MeshStandardMaterial({color:'#281307',roughness:0.23,metalness:0});
   liquidMaterial.onBeforeCompile=shader=>{

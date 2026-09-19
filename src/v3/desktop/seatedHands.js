@@ -5,7 +5,7 @@ import { bindHandSurface } from './handSurface.js';
 // point -z, palm faces -y, wrist at +z, thumb on the side nearer the body's
 // centre line. Grips in WorkspaceStage are authored in this frame.
 
-export const HAND_REST = { x: 0.27, y: 1.301, z: 0.405 };
+export const HAND_REST = { x: 0.11, y: 1.278, z: 0.405 };
 
 // Per-finger curl (index..pinky), finger fan, thumb opposition and thumb
 // curl, all 0..1. A pose is a flat object so GSAP and lerpPose can tween it.

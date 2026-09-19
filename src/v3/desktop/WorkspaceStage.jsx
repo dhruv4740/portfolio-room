@@ -8,6 +8,8 @@ import PhoneScreen, { PHONE_SCREEN } from './PhoneScreen.jsx';
 import { KEY_ROWS, AWARD_REST, PEN_REST } from './buildRoomInteractions.js';
 import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
+import { createAfterHours } from './afterHours.js';
+import { createSceneDirector } from './sceneDirector.js';
 
 export function resolveSkyState() {
   const parseSky = (str) => {
@@ -33,7 +35,7 @@ export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
   onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
   paused = false, phase = 'room', seated = false, onSit, onPhoneExit, entryVisible = true, onTypeKey, liveMonitor = false,
-  windowIntent = false,
+  windowIntent = false, arrivalToken = 0, onArrivalComplete,
 }) {
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
@@ -41,13 +43,13 @@ export default function WorkspaceStage({
   const phoneScreenRef = useRef(null);
   const [phoneLive, setPhoneLive] = useState(false);
   const callbacks = useRef({});
-  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onPhoneExit, onTypeKey };
+  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onPhoneExit, onTypeKey, onArrivalComplete };
   const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent });
   state.current = { paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent };
 
   useEffect(() => {
     const host = hostRef.current;
-    let renderer, controls, model, resizeObserver, tween, rig, action;
+    let renderer, controls, model, resizeObserver, tween, rig, action, afterHours, director;
     let extraHeld = null;
     let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
     // null | 'in' | 'held' | 'out'. While set, PhoneScreen tracks the display.
@@ -90,7 +92,7 @@ export default function WorkspaceStage({
       // The room stays warm/naturalistic and drops into the --void black at
       // its edges — that contrast against the app's black chrome is intentional.
       scene.background = new THREE.Color('#0a0a0b');
-      scene.fog = new THREE.Fog('#0a0a0b', 6, 13);
+      scene.fog = new THREE.Fog('#15202b', 24, 105);
       // Owner's open question: what replaces the black void around the room in
       // the standing view. Prototypes behind ?void=studio | block so each can
       // be judged live; the default stays black until he chooses.
@@ -121,13 +123,14 @@ export default function WorkspaceStage({
       const originalSetSky = model.setSky;
       model.setSky = (skyState) => {
         originalSetSky(skyState);
+        afterHours?.setSky(skyState);
         host.dataset.skyState = skyState;
       };
       const initialSky = resolveSkyState();
       model.setSky(initialSky);
       host.dataset.skyState = initialSky;
       host.dataset.windowOpen = String(model.roomActions.state.windowOpen);
-      const camera = new THREE.PerspectiveCamera(56, 1, 0.025, 60);
+      const camera = new THREE.PerspectiveCamera(56, 1, 0.025, 140);
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true; controls.dampingFactor = 0.075;
       controls.enablePan = false;
@@ -142,6 +145,7 @@ export default function WorkspaceStage({
       rig = createRig(camera, controls); rig.setIdle(false);
       let headYaw = 0, headPitch = 0;
       let home;
+      director=createSceneDirector({camera,controls,invalidate,onComplete:(token)=>callbacks.current.onArrivalComplete?.(token)});
       const screenCenter = new THREE.Vector3(...WORKSPACE.screen.center);
       const projected = new THREE.Vector3();
       const raycaster = new THREE.Raycaster();
@@ -227,7 +231,9 @@ export default function WorkspaceStage({
         // on the keyboard above an empty chair — the exact disembodied-arms
         // problem the figure was added to solve.
         if (!inTheSeat) model.hands.root.visible = false;
-        model.figure.head.visible = seatDistance > 0.24; renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); updatePhoneAlign(); }
+        model.figure.head.visible = seatDistance > 0.24;
+        afterHours?.update(state.current.reducedMotion ? 0 : performance.now()/1000,gov.getStats().medianMs||0);
+        renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); updatePhoneAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
       // Re-arm the render loop from outside tick() itself — used wherever something
       // animates without going through OrbitControls (camera-travel tween, resize).
@@ -237,7 +243,7 @@ export default function WorkspaceStage({
         if (disposed || state.current.paused || document.hidden) return;
         if (phoneZoom === 'held') return;
         if (!gov.isDirty()) return; // idle: stop issuing frames until something invalidates again
-        if (!gov.shouldRender(now)) { raf = requestAnimationFrame(tick); return; } // still dirty, 60Hz floor
+        if (!gov.shouldRender(now)) { raf = requestAnimationFrame(tick); return; } // still dirty, 30Hz floor
         const start = performance.now(), query = gpuBegin(); render(); gpuEnd(query); const cpu = performance.now() - start;
         // The governor adapts pixel ratio off frame cost. CPU submission is 1-3 ms
         // here while the iGPU takes 25 ms at 1.25x seated, so where the timer
@@ -252,6 +258,7 @@ export default function WorkspaceStage({
           callbacks.current.onStats?.({ frameMs: count ? cadenceSum / count : null, cpuMs: count ? cpuSum / count : null, gpuMs: gpuCount ? gpuSum / gpuCount : null, cameraPos: camera.position.toArray(), perfTier: stats.tier, pixelRatio: stats.pixelRatio });
           cadenceSum = 0; cpuSum = 0; count = 0; gpuSum = 0; gpuCount = 0; emitted = now;
         }
+        if(!state.current.reducedMotion && state.current.phase==='room' && !phoneInHand && !notebookInHand && !extraHeld)gov.markDirty();
         raf = requestAnimationFrame(tick);
       }
       function refresh() {
@@ -571,7 +578,7 @@ export default function WorkspaceStage({
         } else lastInk = null;
         invalidate();
       }
-      const KEY_TOP = 1.2625;
+      const KEY_TOP = 1.2375;
       function pressKey(key,index) {
         if(!state.current.seated || state.current.phase !== 'room' || state.current.activeAnchorId) return;
         callbacks.current.onTypeKey?.(key);
@@ -772,18 +779,21 @@ export default function WorkspaceStage({
           action.to(model.hands.lean,{...LEAN,duration:0.6,ease:'power2.inOut'},0)
             .to(look,{...HOME_LOOK,duration:0.6,ease:'power2.inOut'},0)
             .to(k,{reach:1,duration:0.6,ease:'power2.inOut'},0)
+            .call(()=>window.dispatchEvent(new CustomEvent('workspace:foley',{detail:{kind:'cup-lift',pan:-.25}})),[],.6)
             .to(o.position,{y:home.y+0.1,duration:0.35,ease:'power2.out'},0.6)
             .to(model.hands.lean,{...ZERO,duration:0.7,ease:'power2.inOut'},0.95)
             .to(look,{x:-0.08,y:1.50,z:0.6,duration:0.7,ease:'power2.inOut'},0.95)
             .to(o.position,{x:-0.10,y:1.52,z:0.78,duration:0.7,ease:'power2.inOut'},0.95)
             .to(o.rotation,{y:SIP_TURN,duration:0.7,ease:'power2.inOut'},0.95)
             .to(o.rotation,{x:0.45,duration:0.55},1.65).to(r.state,{coffeeLevel:level,duration:0.5},1.75)
+            .call(()=>window.dispatchEvent(new CustomEvent('workspace:foley',{detail:{kind:'sip',pan:0}})),[],1.95)
             .to(o.rotation,{x:0,duration:0.4},2.3)
             .to(o.rotation,{y:0,duration:0.65,ease:'power2.inOut'},2.7)
             .to(model.hands.lean,{...LEAN,duration:0.65,ease:'power2.inOut'},2.7)
             .to(look,{...HOME_LOOK,duration:0.65,ease:'power2.inOut'},2.7)
             .to(o.position,{x:home.x,y:home.y+0.1,z:home.z,duration:0.65,ease:'power2.inOut'},2.7)
             .to(o.position,{y:home.y,duration:0.35,ease:'power2.inOut'},3.35)
+            .call(()=>window.dispatchEvent(new CustomEvent('workspace:foley',{detail:{kind:'cup-setdown',pan:-.25}})),[],3.7)
             .call(()=>{from=snapshot(left);},[],3.7)
             .to(k,{release:1,duration:0.5,ease:'power2.inOut'},3.7)
             .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},3.7)
@@ -863,6 +873,7 @@ export default function WorkspaceStage({
       }
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
+        if(director?.active)return;
         if (returningPhone || returningNotebook) return;
         tween?.kill(); rig.dispose();
         if(extraHeld){returnExtra(state.current.reducedMotion);return;}
@@ -1061,6 +1072,10 @@ export default function WorkspaceStage({
       document.addEventListener('visibilitychange', refresh);
       resizeObserver = new ResizeObserver(resize); resizeObserver.observe(host);
       resize(); place(home); render();
+      afterHours=createAfterHours({scene,model,renderer,invalidate,tier:gov.tier,onStatus:s=>{
+        host.dataset.winterCity=s.city;host.dataset.roomMaterials=s.materials;host.dataset.roomBake=s.bake;
+      }});
+      afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });
       callbacks.current.onReady?.({ splatCount: null });
       let entryPlayed = false;
@@ -1074,11 +1089,17 @@ export default function WorkspaceStage({
           }
         }
       }
-      api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome, setSky: (s) => model.setSky(s), clearNotes: () => { model.clearNotes(); invalidate(); } };
+      api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome,
+        arrival(token){
+          if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion);}
+          else if(director.active){director.cancel();if(state.current.phase==='room'&&!state.current.seated&&!state.current.activeAnchorId)place(home);invalidate();}
+        },
+        setSky: (s) => model.setSky(s), clearNotes: () => { model.clearNotes(); invalidate(); } };
       if (typeof localStorage !== 'undefined' && localStorage.getItem('v3:test') === '1') {
         const box3 = new THREE.Box3();
         const boxToPlain = (b) => ({ min: b.min.toArray(), max: b.max.toArray() });
         window.__v3test = {
+          arrival:()=>director.snapshot(),
           projectAnchor(id) {
             const point = id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id];
             if (!point) return null;
@@ -1132,7 +1153,7 @@ export default function WorkspaceStage({
       }
       refresh();
       return () => {
-        disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
+        disposed = true; director?.cancel();afterHours?.dispose();entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
         renderer.domElement.removeEventListener('keydown', physicalKey);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
@@ -1143,12 +1164,13 @@ export default function WorkspaceStage({
         controls.dispose(); model.dispose(); renderer.dispose(); renderer.domElement.remove(); gov.dispose(); api.current = null;
       };
     } catch (error) {
-      disposed = true; entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect(); controls?.dispose(); model?.dispose(); renderer?.dispose(); renderer?.domElement?.remove();
+      disposed = true; director?.cancel();afterHours?.dispose();entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect(); controls?.dispose(); model?.dispose(); renderer?.dispose(); renderer?.domElement?.remove();
       callbacks.current.onError?.(error);
     }
   }, []);
 
   useEffect(() => { if (entryVisible) api.current?.startEntryPower(); }, [entryVisible]);
+  useLayoutEffect(() => { api.current?.arrival(arrivalToken); }, [arrivalToken]);
 
   // Restore marker visibility before the parent returns keyboard focus.
   useLayoutEffect(() => { api.current?.refresh(); }, [paused, phase, seated, liveMonitor]);

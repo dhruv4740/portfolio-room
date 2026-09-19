@@ -4,6 +4,26 @@ const prebuilt = typeof window === 'undefined' ? null : await loadHandAssets().c
 
 import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
+// One extra skinned draw per hand: thin nail plates follow the distal bones,
+// including thumb opposition, rather than floating above the animated fingers.
+function bindNails(h,root,bones){
+  const parts=[];
+  for(const digit of [...h.digits,h.thumb]){
+    const {L,R,joints}=digit.userData, joint=joints[2];
+    const g=new THREE.SphereGeometry(1,12,8);
+    g.scale(R[2]*.68,.0007,L[2]*.34);
+    g.translate(0,R[2]*.89,-L[2]*.57);g.applyMatrix4(joint.matrixWorld);
+    const ids=[],weights=[];
+    for(let i=0;i<g.attributes.position.count;i++){ids.push(bones.indexOf(joint),0,0,0);weights.push(1,0,0,0);}
+    g.setAttribute('skinIndex',new THREE.Uint16BufferAttribute(ids,4));
+    g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));parts.push(g);
+  }
+  const geometry=mergeGeometries(parts);parts.forEach(g=>g.dispose());
+  const nails=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial({color:'#ae8574',roughness:.58}));
+  root.add(nails);nails.bind(h.skeleton,new THREE.Matrix4());nails.frustumCulled=false;nails.receiveShadow=true;nails.raycast=()=>{};
+  h.nailMesh=nails;
+}
+
 // Smooth implicit union in the neutral bind pose. Unlike overlapping capsules,
 // this produces a single closed skin surface through the webbing and wrist.
 // Only built once; all subsequent deformation runs in the skinning shader.
@@ -17,6 +37,7 @@ export function bindHandSurface(h, root, skin, cloth) {
     for(const source of h.clothParts){source.removeFromParent();source.geometry.dispose();}
     for(const mesh of [h.skinMesh,h.clothMesh]){root.add(mesh);mesh.bind(skeleton,new THREE.Matrix4());mesh.frustumCulled=false;mesh.castShadow=false;mesh.receiveShadow=true;mesh.raycast=()=>{};}
     h.skeleton=skeleton;
+    bindNails(h,root,bones);
     return;
   }
 
@@ -122,4 +143,5 @@ export function bindHandSurface(h, root, skin, cloth) {
   const clothMesh=new THREE.SkinnedMesh(clothGeometry,cloth);root.add(clothMesh);clothMesh.bind(skeleton);
   for(const mesh of [skinMesh,clothMesh]){mesh.frustumCulled=false;mesh.castShadow=false;mesh.receiveShadow=true;mesh.raycast=()=>{};}
   h.skinMesh=skinMesh;h.clothMesh=clothMesh;h.skeleton=skeleton;
+  bindNails(h,root,bones);
 }
