@@ -122,8 +122,7 @@ export default function Scan() {
     if (id === 'windowOpen') {
       const stage = document.querySelector('.workspace-stage');
       const actionState = stage?.dataset.actionState;
-      // Mid-animation: a second click (or the completion echo below racing
-      // it) must not re-enter — ignore outright rather than re-toggle.
+      // Ignore repeat visitor clicks until the sash has finished moving.
       if (actionState && actionState !== 'idle') return;
       windowIntent.current = !windowIntent.current;
       if (windowIntent.current) startCityAmbience(); else stopCityAmbience();

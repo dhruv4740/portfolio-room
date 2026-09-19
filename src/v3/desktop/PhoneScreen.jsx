@@ -665,6 +665,8 @@ const PhoneScreen = forwardRef(function PhoneScreen({
     <div
       className={`phone-presentation phone-presentation--${mode}`}
       data-phone-mode={mode}
+      role={stageMode ? 'dialog' : undefined}
+      aria-modal={stageMode ? true : undefined}
       aria-label={stageMode ? 'Interactive mobile project stage' : undefined}
     >
       {stageMode && <div className="phone-stage-backdrop" aria-hidden="true" />}

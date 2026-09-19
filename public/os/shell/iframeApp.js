@@ -6,6 +6,8 @@
 // `zoom` scales the app's whole document (same-origin, so we can reach in)
 // for apps whose natural type is small; the readability floor is in
 // docs/PROMPT-R8-GEMINI.md.
+import { closeApp, minimizeApp } from './windowManager.js';
+
 export function iframeApp({ id, title, icon, src, width = 1280, height = 780, zoom = 1 }) {
   return {
     id, title, icon, width, height,
@@ -17,9 +19,17 @@ export function iframeApp({ id, title, icon, src, width = 1280, height = 780, zo
       frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#0b0d12;';
       if (zoom !== 1) frame.addEventListener('load', () => { try { frame.contentDocument.documentElement.style.zoom = String(zoom); } catch { /* cross-origin: leave it */ } });
       body.appendChild(frame);
+      // Copied desktop renderers can retain their native window controls.
+      // Accept requests only from this exact same-origin child document.
+      const onWindowRequest = (event) => {
+        if (event.origin !== location.origin || event.source !== frame.contentWindow || event.data?.source !== 'dhruvOS') return;
+        if (event.data.type === 'app-hide') minimizeApp(id);
+        else if (event.data.type === 'app-close') closeApp(id);
+      };
+      window.addEventListener('message', onWindowRequest);
       const post = (type) => { try { frame.contentWindow?.postMessage({ source: 'dhruvOS', type }, location.origin); } catch { /* ignore */ } };
       return {
-        cleanup() { frame.remove(); },
+        cleanup() { window.removeEventListener('message', onWindowRequest); frame.remove(); },
         setVisible(visible) { post(visible ? 'app-show' : 'app-hide'); },
       };
     },

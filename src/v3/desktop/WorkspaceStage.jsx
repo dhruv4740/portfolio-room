@@ -795,6 +795,11 @@ export default function WorkspaceStage({
       function returnExtra(reduced) {
         const id=extraHeld,r=model.roomActions,o=r.objects[id];action?.kill();rig.dispose();
         if(id==='windowOpen'){
+          // Back can arrive while the blinds/sash are moving. Finish the
+          // requested open state so geometry and city audio cannot diverge.
+          if(state.current.windowIntent && r.state.windowOpen<1){
+            r.state.windowOpen=1;r.state.blinds=1;r.apply();host.dataset.windowOpen='1';host.dataset.blindsOpen='1';
+          }
           if(!state.current.windowIntent && r.state.windowOpen>0){
             if(reduced){r.state.windowOpen=0;r.apply();host.dataset.windowOpen='0';finishExtra(id);return;}
             action=gsap.to(r.state,{windowOpen:0,duration:.6,ease:'power2.inOut',onUpdate(){r.apply();host.dataset.windowOpen=String(r.state.windowOpen);invalidate();},onComplete(){finishExtra(id);}});gsap.ticker.wake();return;
@@ -1013,6 +1018,7 @@ export default function WorkspaceStage({
       }
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
+        if (down) down.moved ||= Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6;
         if (phoneInHand) { renderer.domElement.style.cursor = 'default'; return; }
         if (penDrawing()) { drawAt(event); return; }
         if (reading()) {
@@ -1084,10 +1090,13 @@ export default function WorkspaceStage({
             if (name === 'monitorScreen' || name === 'monitorBezel' || name === 'desk') return boxToPlain(model.staticBoxes[name]);
             if (name === 'phone') return boxToPlain(box3.setFromObject(model.phone));
             if (name === 'coffeeMug') return boxToPlain(box3.setFromObject(model.roomActions.objects.coffee));
-            if (name === 'handL') return boxToPlain(box3.setFromObject(model.hands.left.skinMesh));
-            if (name === 'handR') return boxToPlain(box3.setFromObject(model.hands.right.skinMesh));
-            if (name === 'armL') return boxToPlain(box3.setFromObject(model.hands.left.clothMesh));
-            if (name === 'armR') return boxToPlain(box3.setFromObject(model.hands.right.clothMesh));
+            if (['handL','handR','armL','armR'].includes(name)) {
+              const hand = name.endsWith('L') ? model.hands.left : model.hands.right;
+              const mesh = name.startsWith('hand') ? hand.skinMesh : hand.clothMesh;
+              model.hands.root.updateMatrixWorld(true);
+              mesh.computeBoundingBox();
+              return boxToPlain(box3.setFromObject(mesh));
+            }
             if (name === 'held') {
               const held = extraHeld ? model.roomActions.objects[extraHeld]
                 : notebookInHand ? model.notebook

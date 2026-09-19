@@ -12,7 +12,8 @@ const CSS = `
 .ql-card { padding:20px; border:1px solid #3a4741; background:#151d1b; border-radius:8px; }
 .ql-card h2 { margin:0 0 12px; font-size:21px; font-weight:550; }
 .ql-type { font:12px monospace; color:#aab9b0; margin:0 0 10px; }
-.ql-desc-text { font-size:15px; line-height:1.65; color:#c5d0c9; margin:0 0 18px; }
+.ql-desc-text { font-size:15px; line-height:1.65; color:#c5d0c9; margin:0 0 18px; display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden; }
+.ql-card.ql-decoded .ql-desc-text { display:block; -webkit-line-clamp:unset; }
 .ql-actions { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
 .ql-actions button,.ql-links a { font:13px system-ui,sans-serif; min-height:40px; padding:10px 14px; border:1px solid #677b6d; border-radius:4px; background:transparent; color:#e9ebe5; cursor:pointer; text-decoration:none; }
 .ql-actions .ql-demo { background:#d8e4d8; color:#142018; border-color:#d8e4d8; }
