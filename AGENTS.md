@@ -6,6 +6,13 @@ invariants, traps. Narrative and rationale live in `docs/`.
 **Start with [docs/HANDOFF.md](docs/HANDOFF.md)** — it records the live state
 and what is genuinely unverified.
 
+**Active direction: After Hours.** Read `docs/AFTER-HOURS-PLAN.md` and
+`docs/AFTER-HOURS-HANDOFF.md` before editing. GTA V/RDR2 physical realism is
+the owner-approved target across all scene assets, not an achieved claim.
+Parent owns 3D. Supporting subagents must be Luna high/xhigh (max when needed);
+Sol low/medium only for a concrete problem Luna cannot solve. Max three
+subagents concurrently. Update the continuation ledger before stopping.
+
 ## What this is
 
 A personal portfolio (Dhruv Kothari). Its first job is to impress other

@@ -1,5 +1,14 @@
 # Vision
 
+## Current direction — 2026-09-20
+
+After Hours is the approved next direction: a physically believable warm
+studio overlooking a fictional snowy city at night, with an interruptible
+first-person arrival. No dialogue. GTA V/RDR2 are artistic references across
+all visible assets; the current implementation has not achieved that quality.
+See AFTER-HOURS-PLAN.md and AFTER-HOURS-HANDOFF.md. Floating-void/toy-like
+presentation below is historical and must not drive new art decisions.
+
 ## The two jobs
 
 A portfolio does two things, and they want opposite designs:

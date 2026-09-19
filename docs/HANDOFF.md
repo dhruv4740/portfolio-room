@@ -1,3 +1,10 @@
+# Active work — After Hours realism upgrade
+
+Read [AFTER-HOURS-HANDOFF.md](AFTER-HOURS-HANDOFF.md) first, then
+[AFTER-HOURS-PLAN.md](AFTER-HOURS-PLAN.md). Owner approved execution on
+2026-09-20. Those documents distinguish the new target from completed work.
+All entries below are historical evidence, not verification of new changes.
+
 # Hand rest correction — 2026-09-20
 
 Owner review caught a swollen, uneven resting silhouette missed by the earlier

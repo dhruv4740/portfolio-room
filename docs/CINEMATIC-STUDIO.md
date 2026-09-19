@@ -1,5 +1,10 @@
 # Cinematic studio — implementation notes
 
+The next approved upgrade is specified in AFTER-HOURS-PLAN.md; current
+execution state lives in AFTER-HOURS-HANDOFF.md. The description below records
+the working baseline, not completion of the new realism target. Production
+assets will use Blender sources, reproducible exports and ASSET-REGISTER.md.
+
 The room is a launchpad for the work. Visitors can open desktop projects,
 mobile projects, or explore the desk immediately. WORK remains the short path
 to project facts and contact information; capability fallback still avoids
