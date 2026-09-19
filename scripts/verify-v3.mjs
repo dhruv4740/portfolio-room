@@ -79,7 +79,10 @@ async function saveScreenshot(page, options) {
 // behaviour we want in production but it makes the 3D surfaces untestable, so
 // the scan/deck contexts below pin the surface override explicitly, and the
 // fallback itself is asserted as its own case.
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.GPU === '1'
+  ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] }
+  : {});
+const fallbackBrowser = await chromium.launch();
 
 /** Pin a surface before any app code runs. */
 const pinSurface = (page, surface) =>
@@ -87,6 +90,7 @@ const pinSurface = (page, surface) =>
     try {
       localStorage.setItem('v3:surface-override', s);
       localStorage.removeItem('v3:seen-intro');
+      sessionStorage.setItem('v3:arrival-seen', '1');
       sessionStorage.setItem('v3:controls', 'open');
     } catch {}
   }, surface);
@@ -95,7 +99,7 @@ const pinSurface = (page, surface) =>
 // 0. capability fallback — software GPU must never get the 3D surface
 // ---------------------------------------------------------------------------
 {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const ctx = await fallbackBrowser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/#/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
@@ -506,6 +510,7 @@ const pinSurface = (page, surface) =>
 }
 
 await browser.close();
+await fallbackBrowser.close();
 
 const failed = results.filter((r) => !r.pass);
 writeFileSync(`${SHOTS}/v3-results.json`, JSON.stringify(results, null, 2));

@@ -5,7 +5,9 @@ import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 
 const BASE = process.env.BASE || 'http://localhost:4173';
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.GPU === '1'
+  ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] }
+  : {});
 const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
 const errors = [];
 page.on('pageerror', (error) => errors.push(error.message));
@@ -15,6 +17,7 @@ await page.addInitScript(() => {
   localStorage.setItem('v3:surface-override', 'scan');
   localStorage.setItem('v3:seen-intro', '1');
   localStorage.setItem('v3:perf-tier', 'low');
+  sessionStorage.setItem('v3:arrival-seen', '1');
   sessionStorage.setItem('v3:controls', 'open');
   localStorage.setItem('v3:focuslock', JSON.stringify({ hardBlockAfterLimit: true }));
   const raf = window.requestAnimationFrame;

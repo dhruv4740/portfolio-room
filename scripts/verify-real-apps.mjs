@@ -25,6 +25,7 @@ const b = await chromium.launch(process.env.GPU === '1'
   ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] }
   : {});
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+await p.addInitScript(() => sessionStorage.setItem('v3:arrival-seen', '1'));
 const errors = [], external = [], failed = [];
 p.on('pageerror', e => errors.push(e.message));
 p.on('requestfailed', r => failed.push(r.url()));

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
-const browser=await chromium.launch();const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
-await page.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','low');localStorage.setItem('v3:test','1');window.count=0;window.last=0;const r=requestAnimationFrame;window.requestAnimationFrame=f=>r(t=>{count++;last=performance.now();f(t);});});
+const browser=await chromium.launch(process.env.GPU === '1' ? {channel:'chromium',args:['--use-angle=d3d11','--ignore-gpu-blocklist']} : {});const page=await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','low');localStorage.setItem('v3:test','1');sessionStorage.setItem('v3:arrival-seen','1');window.count=0;window.last=0;const r=requestAnimationFrame;window.requestAnimationFrame=f=>r(t=>{count++;last=performance.now();f(t);});});
 const state=()=>page.locator('.workspace-stage').evaluate(e=>({...e.dataset}));
 const click=async name=>{await page.getByRole('button',{name,exact:true}).click();await page.waitForTimeout(100);};
 const openObjects=async onPage=>{const toggle=onPage.locator('.seat-exit-toggle');if(await toggle.getAttribute('aria-expanded')!=='true')await toggle.click();};
@@ -168,7 +168,7 @@ await page.close();
 {
   const dayPage = await browser.newPage({viewport:{width:1440,height:1000},reducedMotion:'reduce'});
   const dayErrors=[];dayPage.on('pageerror',e=>dayErrors.push(e.message));
-  await dayPage.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','low');localStorage.setItem('v3:test','1');});
+  await dayPage.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','low');localStorage.setItem('v3:test','1');sessionStorage.setItem('v3:arrival-seen','1');});
   await dayPage.goto((process.env.BASE||'http://localhost:4173')+'/?sky=day');
   await dayPage.locator('[data-testid="room-overview"]').waitFor();
   await dayPage.locator('[data-launchpad-action="explore-room"]').click();
@@ -204,6 +204,7 @@ for (const sky of ['day', 'dusk', 'night']) {
   await skyPage.addInitScript(() => {
     localStorage.setItem('v3:surface-override', 'scan');
     localStorage.setItem('v3:seen-intro', '1');
+    sessionStorage.setItem('v3:arrival-seen', '1');
   });
   await skyPage.goto(`${process.env.BASE || 'http://localhost:4173'}?sky=${sky}`);
   await skyPage.waitForSelector('.workspace-stage');

@@ -64,6 +64,7 @@ function pinScan(page) {
     localStorage.setItem('v3:seen-intro', '1');
     localStorage.setItem('v3:perf-tier', 'low');
     localStorage.removeItem('v3:focuslock');
+    sessionStorage.setItem('v3:arrival-seen', '1');
     sessionStorage.setItem('v3:controls', 'closed');
   });
 }
@@ -81,7 +82,9 @@ async function openObjects(page) {
   return toggle;
 }
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.GPU === '1'
+  ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] }
+  : {});
 const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await ctx.newPage();
 const errors = [];
