@@ -1,5 +1,9 @@
 # Sonnet parallel assignment — room audio and lifecycle verification
 
+**CLOSED/SUPERSEDED:** preserve the existing report and audio harness. Current
+team is Codex + Opus + Gemini Flash; read TEAM-COORDINATION.md. Do not start
+another Sonnet task from this historical prompt.
+
 You are collaborating with the parent Codex agent in the SAME working tree.
 Read AGENTS.md, docs/HANDOFF.md, docs/AFTER-HOURS-HANDOFF.md and
 docs/AFTER-HOURS-PLAN.md first. Parent owns all 3D. A Luna agent currently owns

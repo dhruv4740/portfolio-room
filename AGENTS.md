@@ -6,6 +6,11 @@ invariants, traps. Narrative and rationale live in `docs/`.
 **Start with [docs/HANDOFF.md](docs/HANDOFF.md)** — it records the live state
 and what is genuinely unverified.
 
+**Active parallel work:** read [docs/TEAM-COORDINATION.md](docs/TEAM-COORDINATION.md)
+before editing. The owner now uses Codex for 3D, external Claude Opus for
+application logic, and external Gemini 3.8 Flash for tests/docs. No internal
+subagents. Respect exclusive file ownership and the single build/browser slot.
+
 **Active direction: After Hours.** Read `docs/AFTER-HOURS-PLAN.md` and
 `docs/AFTER-HOURS-HANDOFF.md` before editing. GTA V/RDR2 physical realism is
 the owner-approved target across all scene assets, not an achieved claim.

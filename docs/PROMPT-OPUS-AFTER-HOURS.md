@@ -1,5 +1,9 @@
 # Opus parallel assignment — independent realism review
 
+**COMPLETED:** the review is docs/reviews/OPUS-AFTER-HOURS-REVIEW.md.
+For the current assignment read PROMPT-OPUS-INTEGRATION.md and
+TEAM-COORDINATION.md; do not repeat this review unless requested.
+
 You are collaborating with the parent Codex agent in the SAME working tree.
 Read AGENTS.md, docs/HANDOFF.md, docs/AFTER-HOURS-HANDOFF.md,
 docs/AFTER-HOURS-PLAN.md, docs/ASSET-REGISTER.md, docs/FABLE-NOTES.md first.
