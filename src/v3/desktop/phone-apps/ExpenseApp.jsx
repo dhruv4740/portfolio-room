@@ -571,6 +571,9 @@ export default function ExpenseApp({ onClose }) {
       {/* Add Transaction Modal */}
       {showAddModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Add expense"
           style={{
             position: 'absolute',
             inset: 0,
@@ -666,6 +669,7 @@ export default function ExpenseApp({ onClose }) {
                 </button>
                 <button
                   type="button"
+                  data-phone-dialog-close="true"
                   onClick={() => setShowAddModal(false)}
                   style={{
                     flex: 1,
@@ -689,6 +693,9 @@ export default function ExpenseApp({ onClose }) {
       {/* About Modal */}
       {showAboutModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="About Expense Tracker"
           style={{
             position: 'absolute',
             inset: 0,
@@ -721,6 +728,7 @@ export default function ExpenseApp({ onClose }) {
               • Running on sample fixture data with fake latency simulation.
             </div>
             <button
+              data-phone-dialog-close="true"
               onClick={() => setShowAboutModal(false)}
               style={{
                 backgroundColor: THEME.surfaceAlt,

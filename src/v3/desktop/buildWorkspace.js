@@ -10,7 +10,8 @@ import { identity, education, experience, achievements } from '../content/index.
 // not a capture; content anchors remain normalized in the content source.
 export const WORKSPACE = {
   min: [-2.5, 0, -1.85], max: [2.5, 3.2, 2.1],
-  target: [0, 1.1, -0.15],
+  target: [0.15, 1.5, -0.55],
+  overview: { position: [-0.55, 2.05, 1.98], target: [0.15, 1.52, -0.55] },
   anchors: {
     monitor: [0, 1.79, -0.37],
     lamp: [-1.28,1.21,-0.38], coffee: [-0.89,1.242,0.46], award: [-1.0,1.335,-0.22], // left of the monitor's sightline from the seat, in front of the speaker
@@ -60,8 +61,8 @@ function woodTexture() {
 
 function screenTexture() {
   return canvasTexture((ctx, w, h) => {
-    ctx.fillStyle = '#667e91'; ctx.fillRect(0, 0, w, h);
-    ctx.fillStyle = '#354757'; ctx.fillRect(0, 0, w, 42);
+    ctx.fillStyle = '#152028'; ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = '#25343b'; ctx.fillRect(0, 0, w, 42);
     ctx.font = '20px monospace'; ctx.fillStyle = '#ddd9d0';
     ctx.fillStyle = '#8e918e'; ctx.fillText('WORKSPACE 01', w - 210, 28);
     ctx.strokeStyle = '#464845'; ctx.lineWidth = 1;
@@ -71,7 +72,7 @@ function screenTexture() {
     ctx.fillStyle = '#ff5f1f'; ctx.fillRect(95, 186, 9, 9);
     ctx.fillStyle = '#ece7db'; ctx.font = '48px sans-serif'; ctx.fillText('Things I made.', 95, 256);
     ctx.fillStyle = '#969991'; ctx.font = '20px monospace'; ctx.fillText('Open the machine. Try something.', 97, 302);
-    const labels = ['01   Open the computer', '02   Experiments', '03   Selected projects'];
+    const labels = ['01   Desktop projects', '02   Built to be used', '03   Explore the computer'];
     labels.forEach((label, i) => {
       const y = 366 + i * 53;
       ctx.strokeStyle = '#363a38'; ctx.beginPath(); ctx.moveTo(96, y - 22); ctx.lineTo(924, y - 22); ctx.stroke();
@@ -161,7 +162,7 @@ export function phoneHomeTexture(highlighted = false) {
 export const SKY_CONFIGS = {
   night: {
     hemi: { sky: '#8294b2', ground: '#21160e', intensity: 0.42 },
-    key: { color: '#8eadd8', closed: 1.15, open: 1.60, position: [2.1, 3.6, -2.7] },
+    key: { color: '#8eadd8', closed: 1.15, open: 1.60, position: [1.65, 2.85, -3.0] },
     windowLight: 0.55,
   },
   dusk: {
@@ -237,11 +238,11 @@ export function buildWorkspace(scene, options = {}) {
   const interactive = [];
   const materials = {};
   const mat = (name, color, options = {}) => materials[name] ||= new THREE.MeshStandardMaterial({ color, roughness: 0.72, ...options });
-  const plaster = mat('plaster', '#b9b5a9');
-  const floor = mat('floor', '#969386');
+  const plaster = mat('plaster', '#8d918c', { roughness: 0.96 });
+  const floor = mat('floor', '#565955', { roughness: 0.94 });
   const dark = mat('graphite', '#24282a', { roughness: 0.38, metalness: 0.42 });
   const black = mat('rubber', '#131718', { roughness: 0.95, metalness: 0 });
-  const steel = mat('steel', '#8b8f89', { metalness: 0.92, roughness: 0.18 });
+  const steel = mat('steel', '#8b8f89', { metalness: 0.92, roughness: 0.32 });
   const bone = mat('bone', '#e4dfce', { roughness: 0.82 });
   const paper = mat('paper', '#e4dfcc', { roughness: 0.98 });
   const orange = mat('orange', '#df5b29', { roughness: 0.5 });
@@ -275,39 +276,26 @@ export function buildWorkspace(scene, options = {}) {
   box('Foundation', [5.1, 0.18, 4.0], [0, -0.1, 0.1], dark, 0.035);
   box('Concrete floor', [5, 0.08, 3.9], [0, 0.025, 0.1], floor, 0.01);
   for (let x = -2; x <= 2; x += 1) box('Floor joint', [0.008, 0.003, 3.86], [x, 0.067, 0.1], mat('joint', '#7f7c71'));
-  // Solid left portion and an inset luminous window on the right.
-  // The wall behind the window panel is solid geometry (no real cutout), so it
-  // would fully block a light placed outside to simulate daylight. Since the
-  // window and its frame are a glued-on inset rather than an actual hole, they
-  // (and the wall) are excluded from shadow casting here — only the blind
-  // slats occlude, which is what actually produces the banding cue.
-  const backWall = box('Back wall', [5, 3.12, 0.13], [0, 1.58, -1.8], plaster);
-  backWall.castShadow = false;
-  const architecture = new THREE.Group(); root.add(architecture);
-  function wall(name,size,position,angle=0) {
-    const material=plaster.clone();const mesh=box(name,size,position,material);mesh.rotation.y=angle;
-    architecture.add(mesh);
-    mesh.onBeforeRender=(_r,_s,camera)=>{const outside=camera.position.z>2.15||Math.abs(camera.position.x)>2.5;material.colorWrite=!outside;material.depthWrite=!outside;};
-    return mesh;
-  }
-  wall('Left wall',[0.13,3.12,3.88],[-2.43,1.58,0.1]);
-  wall('Right wall behind opening',[0.13,3.12,1.85],[2.43,1.58,-0.93]);
-  wall('Right wall front pier',[0.13,3.12,0.62],[2.43,1.58,1.72]);
-  wall('Doorway lintel',[0.13,0.57,1.06],[2.43,2.86,0.89]);
-  wall('Passage end',[0.10,2.50,1.08],[3.12,1.28,0.89]);
-  wall('Passage return',[0.75,2.50,0.10],[2.77,1.28,0.32]);
-  wall('Clipped rear corner',[0.13,3.12,0.90],[-2.14,1.58,-1.49],-Math.PI/4);
-  // Closes the room behind the seat; hidden with the other walls from the orbit view.
-  wall('Front wall',[5,3.12,0.13],[0,1.58,2.08]);
-  box('Passage foundation',[0.82,0.18,1.10],[2.80,-0.10,0.88],dark);
-  box('Passage threshold',[0.82,0.04,1.10],[2.80,0.09,0.88],floor);
-
-  box('Ceiling',[5.1,0.08,3.9],[0,3.18,0.1],plaster);
-  box('Ceiling beam',[0.14,0.18,3.9],[-0.65,3.05,0.1],wood);
-  box('Back skirting', [4.95, 0.065, 0.045], [0, 0.12, -1.708], dark);
-  box('Left skirting', [0.045, 0.065, 1.52], [-2.34, 0.12, -1.06], dark);
-  const windowRecess = box('Window recess', [1.53, 2.03, 0.065], [1.39, 1.99, -1.697], dark, 0.025, 'window');
-  windowRecess.castShadow = false;
+  // Wall sections surround a real aperture: light and exterior geometry
+  // can pass through it. Interior cameras never need threshold-based cutaways.
+  box('Back wall left', [3.135, 3.12, .16], [-.9325, 1.58, -1.8], plaster);
+  box('Back wall right', [.375, 3.12, .16], [2.3125, 1.58, -1.8], plaster);
+  box('Window wall below', [1.49, .955, .16], [1.38, .4975, -1.8], plaster);
+  box('Window wall above', [1.49, .165, .16], [1.38, 3.0575, -1.8], plaster);
+  box('Left wall', [.16,3.12,3.88], [-2.43,1.58,.1], plaster);
+  box('Right wall rear', [.16,3.12,2.10], [2.43,1.58,-.80], plaster);
+  box('Right wall front', [.16,3.12,.68], [2.43,1.58,1.74], plaster);
+  box('Doorway header', [.16,.62,1.15], [2.43,2.83,.825], plaster);
+  box('Recess back', [.10,2.50,1.15], [2.82,1.27,.825], dark);
+  box('Recess top', [.45,.10,1.15], [2.60,2.47,.825], plaster);
+  for (const z of [.25,1.4]) box('Recess reveal', [.45,2.50,.08], [2.60,1.27,z], plaster);
+  box('Front wall', [5,3.12,.16], [0,1.58,2.16], plaster);
+  box('Ceiling', [5.1,.08,4.1], [0,3.18,.1], plaster);
+  box('Ceiling beam', [.10,.12,4.0], [-.65,3.08,.1], dark);
+  box('Back skirting', [4.95,.065,.045], [0,.12,-1.69], dark);
+  for (const x of [-2.33,2.33]) box('Side skirting', [.045,.065,3.85], [x,.12,.1], dark);
+  for (const x of [.615,2.155]) box('Window jamb', [.065,2.10,.25], [x,1.99,-1.73], dark,.008,'window');
+  for (const y of [.96,3.02]) box('Window rail', [1.60,.065,.25], [1.385,y,-1.73], dark,.008,'window');
   const city = new THREE.Group(); city.name = 'Mumbai view';
   const cityTextures = {
     night: [skylineTexture(false, 'night'), skylineTexture(true, 'night')],
@@ -320,24 +308,29 @@ export function buildWorkspace(scene, options = {}) {
   });
   const cityLayers = [0, 1].map((index) => {
     const map = cityTextures.night[index];
-    const layer = new THREE.Mesh(new THREE.PlaneGeometry(1.41, 1.91), new THREE.MeshBasicMaterial({
+    const layer = new THREE.Mesh(new THREE.PlaneGeometry(index ? 6 : 12, index ? 5 : 10), new THREE.MeshBasicMaterial({
       map, transparent: index === 1, alphaTest: index === 1 ? 0.01 : 0,
       toneMapped: false, fog: false,
     }));
-    layer.position.set(1.39, 1.99, -1.65 + index * 0.005);
-    // Camera-driven UV parallax through the existing aperture avoids a large
-    // exterior plane leaking around the cutaway wall. No new frame requests.
-    layer.onBeforeRender = (_renderer, _scene, camera) => {
-      const activeMap = layer.material.map;
-      if (!activeMap) return;
-      const depth = Math.max(0.5, camera.position.z + 1.65);
-      const amount = index ? 0.065 : 0.025;
-      activeMap.offset.x = 0.11 + THREE.MathUtils.clamp((camera.position.x - 1.39) / depth * amount, -0.1, 0.1);
-      activeMap.offset.y = 0.06 + THREE.MathUtils.clamp((camera.position.y - 1.99) / depth * amount, -0.05, 0.05);
-    };
+    layer.position.set(1.39, 1.99, index ? -4.5 : -8.0);
+    layer.raycast = () => {}; // true depth supplies camera parallax through the aperture
     tag(layer, 'window'); city.add(layer);
     return layer;
   });
+  // Nearby parapets establish scale against the distant skyline.
+  const facade = new THREE.MeshStandardMaterial({color:'#26313b',roughness:1});
+  const windows = new THREE.MeshBasicMaterial({color:'#c9ab7c',toneMapped:false});
+  for (const [x,y,z,w,h] of [[-.7,.1,-4.2,.8,2.4],[2.6,.2,-5.0,1.2,3.0],[.65,-.4,-5.6,.9,2.2]]) {
+    const building=new THREE.Mesh(new THREE.BoxGeometry(w,h,.65),facade);building.position.set(x,y,z);city.add(building);
+    for(let row=0;row<12;row++)for(let col=0;col<5;col++)if((row+col)%3!==1){
+      const win=new THREE.Mesh(new THREE.PlaneGeometry(.035,.055),windows);win.position.set(x-w*.35+col*w*.175,y-h*.4+row*h*.075,z+.331);city.add(win);
+    }
+  }
+  for(const material of [facade,windows]) {
+    const parts=city.children.filter(o=>o.material===material), gs=parts.map(o=>{o.updateMatrix();const g=o.geometry.clone().applyMatrix4(o.matrix);o.removeFromParent();o.geometry.dispose();return g;});
+    const combined=mergeGeometries(gs);gs.forEach(g=>g.dispose());city.add(new THREE.Mesh(combined,material));
+  }
+  city.traverse(o=>{if(o.isMesh){o.castShadow=false;o.raycast=()=>{};}});
   root.add(city);
   const mullion = box('Window mullion', [0.034, 1.92, 0.04], [1.39, 1.99, -1.62], bone);
   mullion.castShadow = false;
@@ -402,7 +395,7 @@ export function buildWorkspace(scene, options = {}) {
   phoneDisplay.rotation.x = -Math.PI / 2; phone.add(phoneDisplay); tag(phoneDisplay, 'phone');
   const earpiece = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.002, 0.003), black);
   earpiece.position.set(0, 0.001, -0.157); phone.add(earpiece); tag(earpiece, 'phone');
-  const phoneGlow = new THREE.PointLight('#d4d5d8', 0.07, 0.38, 2);
+  const phoneGlow = new THREE.Object3D(); phoneGlow.color = new THREE.Color('#d4d5d8'); phoneGlow.intensity = .07;
   phoneGlow.position.set(-0.80, 1.24, -0.03); root.add(phoneGlow);
 
   // Open notebook: a real document object, pencil and authored page markings.
@@ -453,7 +446,7 @@ export function buildWorkspace(scene, options = {}) {
   const hemiLight = new THREE.HemisphereLight('#8294b2', '#21160e', 0.42);
   scene.add(hemiLight);
   const moon = new THREE.DirectionalLight('#8eadd8', 1.15);
-  moon.position.set(2.1, 3.6, -2.7); moon.castShadow = true;
+  moon.position.set(1.65, 2.85, -3.0); moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
   Object.assign(moon.shadow.camera, { left: -2.6, right: 2.6, top: 3, bottom: -1.6, near: 0.3, far: 9 });
   moon.shadow.bias = -0.00018;
@@ -490,7 +483,7 @@ export function buildWorkspace(scene, options = {}) {
   const pendantMaterial = new THREE.MeshStandardMaterial({ color: '#ad8860', emissive: '#e0ac68', emissiveIntensity: 0.7 });
   const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), pendantMaterial);
   pendant.position.set(-0.65, 2.47, 0.5); pendant.scale.y = 1.35; root.add(pendant);
-  const pendantLight = new THREE.PointLight('#ffd29a', 0.85, 3.2, 2);
+  const pendantLight = new THREE.Object3D(); pendantLight.intensity = .85;
   pendantLight.position.copy(pendant.position); root.add(pendantLight);
 
   // A post-batch group for effects that must keep their own transforms and
@@ -614,8 +607,9 @@ export function buildWorkspace(scene, options = {}) {
       options.onShadowNeedsUpdate?.();
     },
     dispose() {
-      const geometries = new Set(), mats = new Set(), textures = new Set();
+      const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {
+        if (object.skeleton) skeletons.add(object.skeleton);
         if (object.geometry) geometries.add(object.geometry);
         if(object.customDepthMaterial)mats.add(object.customDepthMaterial);
         if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(m => mats.add(m));
@@ -625,6 +619,7 @@ export function buildWorkspace(scene, options = {}) {
       Object.values(cityTextures).forEach(pair => pair.forEach(t => textures.add(t)));
       mats.forEach(m => { for (const value of Object.values(m)) if (value?.isTexture) textures.add(value); m.dispose(); });
       geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose());
+      skeletons.forEach(s => s.dispose());
     },
   };
 }

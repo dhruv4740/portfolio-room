@@ -123,6 +123,7 @@ export function createPerfGovernor(renderer) {
   // aliased.
   if (tier === 'low') renderer.shadowMap.enabled = false;
 
+  let pinned = false;
   let dirty = true;
   let lastRenderAt = -Infinity; // never throttle the very first frame
   const samples = [];
@@ -133,6 +134,8 @@ export function createPerfGovernor(renderer) {
 
   const api = {
     tier,
+    // Test-only fixed-resolution measurements must not be silently downscaled.
+    pinPixelRatio(value) { pinned = value !== null; if(pinned){pixelRatio=value;renderer.setPixelRatio(value);} samples.length=0; },
 
     /** Mark the scene dirty. Does not itself schedule a frame — the caller's loop checks isDirty(). */
     markDirty() { dirty = true; },
@@ -167,6 +170,7 @@ export function createPerfGovernor(renderer) {
       if (m > DOWNSHIFT_MS) { overCount++; underCount = 0; }
       else if (m < UPSHIFT_MS) { underCount++; overCount = 0; }
       else { overCount = 0; underCount = 0; }
+      if (pinned) return;
       if (now - lastStepAt < COOLDOWN_MS) return;
       if (overCount >= PERSIST && pixelRatio > PR_FLOOR) {
         pixelRatio = Math.max(PR_FLOOR, +(pixelRatio - STEP).toFixed(3));

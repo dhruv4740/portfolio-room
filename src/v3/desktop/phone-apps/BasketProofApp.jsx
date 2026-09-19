@@ -564,6 +564,9 @@ export default function BasketProofApp({ onClose }) {
       {/* About Modal */}
       {showAboutModal && (
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="About BasketProof"
           style={{
             position: 'absolute',
             inset: 0,
@@ -596,6 +599,7 @@ export default function BasketProofApp({ onClose }) {
               • Running on sample fixture data with verified vs unknown state demonstration.
             </div>
             <button
+              data-phone-dialog-close="true"
               onClick={() => setShowAboutModal(false)}
               style={{
                 backgroundColor: THEME.surfaceAlt,

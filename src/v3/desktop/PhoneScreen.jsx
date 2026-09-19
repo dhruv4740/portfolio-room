@@ -7,7 +7,8 @@
 //
 // Features:
 // 1. Home screen with Instagram (.ps-app) and FocusLock (.ps-app-focuslock).
-// 2. Real FocusLock Android app built from https://github.com/dhruv4740/focuslock:
+// 2. Faithful browser reconstruction of the FocusLock Android app, based on
+//    the original source layouts, strings, and colors:
 //    - Visual style from res/values/colors.xml (#0A0E17, #111827, #1E293B, #6366F1).
 //    - Layout & strings from activity_main.xml & strings.xml.
 //    - 5 full screens: Dashboard, Apps & Limits, Modes & Surfaces, Stats & History, Settings.
@@ -19,12 +20,15 @@
 //    - If Instagram is unblocked in FocusLock, tapping Instagram shows the mock feed.
 // ============================================================================
 
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { INSTAGRAM_ICON_UV_RECT } from './buildWorkspace.js';
 import ExpenseApp from './phone-apps/ExpenseApp.jsx';
 import BasketProofApp from './phone-apps/BasketProofApp.jsx';
 
 export const PHONE_SCREEN = Object.freeze({ width: 540, height: 1200 });
+// The stage uses a real portrait CSS viewport. PHONE_SCREEN remains the
+// projective surface contract used by the room's WebGL display.
+export const PHONE_STAGE = Object.freeze({ width: 390, height: 844 });
 
 const STORAGE_KEY = 'v3:focuslock';
 const TARGET = 'com.instagram.android';
@@ -145,8 +149,18 @@ function loadSavedState() {
   return defaults;
 }
 
-const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpenApp, onHome }, ref) {
+const PhoneScreen = forwardRef(function PhoneScreen({
+  interactive = false,
+  onOpenApp,
+  onHome,
+  onExit,
+  mode = 'projected',
+}, ref) {
   const rootRef = useRef(null);
+  const modeRef = useRef(mode);
+  const projectedRectRef = useRef(null);
+  modeRef.current = mode;
+  const stageMode = mode === 'stage';
   const [app, setApp] = useState('home'); // 'home' | 'focuslock' | 'locked' | 'friction'
   const [flState, setFlState] = useState(loadSavedState);
   const [flTab, setFlTab] = useState('dashboard');
@@ -300,15 +314,158 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
     if (notify) onHome?.();
   }
 
+  function handleStageEscape(event) {
+    if (event.key !== 'Escape' || !stageMode || !interactive) return;
+
+    // App dialogs own Escape before the phone navigation does. The two
+    // Android reconstructions mark their dialogs explicitly so this remains
+    // true even when focus is inside a form control.
+    const dialog = [...(rootRef.current?.querySelectorAll('[role="dialog"]') || [])]
+      .find((candidate) => {
+        if (candidate.closest('[inert]') || candidate.closest('[aria-hidden="true"]')) return false;
+        const style = window.getComputedStyle(candidate);
+        return style.visibility !== 'hidden' && style.display !== 'none';
+      });
+    if (dialog) {
+      const close = dialog.querySelector('[data-phone-dialog-close], button[title="Close"], button');
+      if (close) {
+        event.preventDefault();
+        event.stopPropagation();
+        close.click();
+        return;
+      }
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    if (app !== 'home') goHome();
+    else onExit?.();
+  }
+
+  function handleStageKeydown(event) {
+    if (event.key === 'Escape') {
+      handleStageEscape(event);
+      return;
+    }
+    if (event.key !== 'Tab' || !stageMode || !interactive) return;
+
+    const presentation = rootRef.current?.closest('.phone-presentation');
+    if (!presentation) return;
+    const focusable = [...presentation.querySelectorAll(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+    )].filter((node) => {
+      if (node.closest('[inert]') || node.closest('[aria-hidden="true"]')) return false;
+      const style = window.getComputedStyle(node);
+      return style.visibility !== 'hidden' && style.display !== 'none';
+    });
+    if (!focusable.length) return;
+
+    const current = document.activeElement;
+    const index = focusable.indexOf(current);
+    const next = event.shiftKey
+      ? focusable[index <= 0 ? focusable.length - 1 : index - 1]
+      : focusable[index === focusable.length - 1 || index < 0 ? 0 : index + 1];
+    event.preventDefault();
+    event.stopPropagation();
+    next?.focus({ preventScroll: true });
+  }
+
   useImperativeHandle(ref, () => ({
     setRect(matrix) {
       const el = rootRef.current;
       if (!el) return;
+      // The stage is a normal portrait layout. WorkspaceStage may continue to
+      // send projected matrices while it is mounted; they must never distort
+      // the readable stage viewport.
+      if (modeRef.current === 'stage') {
+        el.style.visibility = 'visible';
+        el.style.transform = '';
+        return;
+      }
+      if (matrix) {
+        const rect = el.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          projectedRectRef.current = {
+            x: rect.x,
+            y: rect.y,
+            width: rect.width,
+            height: rect.height,
+          };
+        }
+      }
       el.style.visibility = matrix ? 'visible' : 'hidden';
       el.style.transform = matrix ? `matrix3d(${matrix.join(',')})` : '';
     },
     reset() { goHome(false); },
   }), []);
+
+  // Clear any projected transform immediately when a persistent PhoneScreen
+  // switches into stage mode. The component and every app below it stay
+  // mounted, so navigation and form state survive the presentation handoff.
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    if (stageMode) {
+      el.style.visibility = 'visible';
+      const presentation = el.closest('.phone-presentation');
+      const from = projectedRectRef.current;
+      const to = el.getBoundingClientRect();
+      const reduced = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const duration = reduced ? 0 : 250;
+      let cleanupTimer = null;
+
+      presentation?.classList.add('phone-stage-entering');
+      el.style.transformOrigin = '0 0';
+      if (from && to.width > 0 && to.height > 0 && duration > 0) {
+        const sx = from.width / to.width;
+        const sy = from.height / to.height;
+        const dx = from.x - to.x;
+        const dy = from.y - to.y;
+        el.classList.add('phone-stage-flip');
+        el.style.setProperty('transform', `translate3d(${dx}px, ${dy}px, 0) scale(${sx}, ${sy})`, 'important');
+        requestAnimationFrame(() => {
+          el.style.setProperty('transform', 'none', 'important');
+        });
+        cleanupTimer = window.setTimeout(() => {
+          el.classList.remove('phone-stage-flip');
+          el.style.removeProperty('transform');
+          el.style.removeProperty('transform-origin');
+        }, duration + 40);
+      } else {
+        el.style.removeProperty('transform');
+        el.style.removeProperty('transform-origin');
+      }
+
+      const focusTarget = presentation?.querySelector('[data-phone-stage-control="exit"]')
+        || presentation?.querySelector('[data-phone-stage-control="home"]');
+      focusTarget?.focus({ preventScroll: true });
+      const fadeTimer = window.setTimeout(() => presentation?.classList.remove('phone-stage-entering'), duration);
+      return () => {
+        if (cleanupTimer) window.clearTimeout(cleanupTimer);
+        window.clearTimeout(fadeTimer);
+        presentation?.classList.remove('phone-stage-entering');
+        el.classList.remove('phone-stage-flip');
+        el.style.removeProperty('transform');
+        el.style.removeProperty('transform-origin');
+      };
+    } else {
+      el.style.visibility = 'hidden';
+      el.style.transform = '';
+    }
+  }, [stageMode]);
+
+  useEffect(() => {
+    if (!stageMode || !interactive) return undefined;
+    window.addEventListener('keydown', handleStageKeydown, true);
+    return () => window.removeEventListener('keydown', handleStageKeydown, true);
+  }, [stageMode, interactive, app]);
+
+  // Hidden projected screens should not keep friction timers alive. State is
+  // intentionally retained; when the screen becomes interactive again the
+  // current step resumes from its existing state.
+  useEffect(() => {
+    if (!interactive) clearFrictionTimers();
+  }, [interactive]);
 
   function handleOpenInstagram() {
     const isHardBlocked = flState.hardBlockAfterLimit || flState.focusActive;
@@ -371,7 +528,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   }
 
   useEffect(() => {
-    if (app !== 'friction') return undefined;
+    if (app !== 'friction' || !interactive) return undefined;
     clearFrictionTimers();
     const step = frictionSteps[frictionStepIndex] || 'decision';
     const scale = getTimeScale();
@@ -428,26 +585,28 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
     }
 
     return () => clearFrictionTimers();
-  }, [app, frictionStepIndex, frictionSteps, flState.friction.mathDifficulty]);
+  }, [app, frictionStepIndex, frictionSteps, flState.friction.mathDifficulty, interactive]);
 
   useEffect(() => {
     if (!interactive) return undefined;
     const frame = requestAnimationFrame(() => {
       const root = rootRef.current;
-      const target = app === 'home'
+      const target = stageMode
+        ? root?.closest('.phone-presentation')?.querySelector('[data-phone-stage-control="exit"]')
+        : app === 'home'
         ? root?.querySelector('.ps-app')
         : root?.querySelector(math ? 'input' : '.ps-btn, .fl-back, .fl-nav-item');
       target?.focus({ preventScroll: true });
     });
     return () => cancelAnimationFrame(frame);
-  }, [interactive, app, math]);
+  }, [interactive, app, math, stageMode]);
 
   useEffect(() => {
-    if (app !== 'locked') return undefined;
+    if (app !== 'locked' || !interactive) return undefined;
     const load = setTimeout(() => setStatsReady(true), 450);
     const tick = setInterval(() => setNow(Date.now()), 1000);
     return () => { clearTimeout(load); clearInterval(tick); };
-  }, [app, blockStart]);
+  }, [app, blockStart, interactive]);
 
   useEffect(() => {
     if (!interactive || app !== 'home') return undefined;
@@ -456,18 +615,18 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
   }, [interactive, app]);
 
   useEffect(() => {
-    if (!status) return undefined;
+    if (!status || !interactive) return undefined;
     const timer = status === GRANTED
       ? setTimeout(() => goHome(), 1800)
       : setTimeout(() => setStatus(GRANTED), 700);
     return () => clearTimeout(timer);
-  }, [status]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [status, interactive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!toast) return undefined;
+    if (!toast || !interactive) return undefined;
     const timer = setTimeout(() => setToast(''), 2000);
     return () => clearTimeout(timer);
-  }, [toast]);
+  }, [toast, interactive]);
 
   function triggerSavedBanner(msg = '✓ Policy saved') {
     setSavedBanner(msg);
@@ -504,17 +663,24 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
 
   return (
     <div
-      ref={rootRef}
-      className="phone-screen"
-      role="region"
-      aria-label="Phone screen"
-      data-app={app}
-      data-fl-tab={flTab}
-      data-friction-step={app === 'friction' ? currentStep : undefined}
-      inert={!interactive}
-      style={{ pointerEvents: interactive ? 'auto' : 'none' }}
-      onPointerMove={handleShakeMove}
+      className={`phone-presentation phone-presentation--${mode}`}
+      data-phone-mode={mode}
+      aria-label={stageMode ? 'Interactive mobile project stage' : undefined}
     >
+      {stageMode && <div className="phone-stage-backdrop" aria-hidden="true" />}
+      <div
+        ref={rootRef}
+        className={`phone-screen phone-screen--${mode}`}
+        role="region"
+        aria-label="Phone screen"
+        data-app={app}
+        data-fl-tab={flTab}
+        data-friction-step={app === 'friction' ? currentStep : undefined}
+        inert={!interactive}
+        style={{ pointerEvents: interactive ? 'auto' : 'none' }}
+        onPointerMove={handleShakeMove}
+        onKeyDown={handleStageKeydown}
+      >
       <style>{css}</style>
 
       {/* ==================================================================== */}
@@ -660,6 +826,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
             <div className="fl-header-info">
               <h1 className="fl-app-title">FocusLock</h1>
               <span className="fl-app-version">Stay Mindful • Break Habit Loops</span>
+              <span className="fl-app-demo">BROWSER DEMO · ANDROID UI</span>
             </div>
           </div>
 
@@ -1488,24 +1655,57 @@ const PhoneScreen = forwardRef(function PhoneScreen({ interactive = false, onOpe
       {/* ==================================================================== */}
       {/* 5. EXPENSE TRACKER APP                                               */}
       {/* ==================================================================== */}
-      {app === 'expense' && (
-        <div className="ps-full-app">
+      <div
+        className={`ps-full-app${app === 'expense' ? ' is-active' : ''}`}
+        aria-hidden={app !== 'expense'}
+        inert={app !== 'expense'}
+      >
           <ExpenseApp onClose={() => goHome()} />
           <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
             <span className="ps-home-bar" />
           </button>
-        </div>
-      )}
+      </div>
 
       {/* ==================================================================== */}
       {/* 6. BASKETPROOF APP                                                   */}
       {/* ==================================================================== */}
-      {app === 'basketproof' && (
-        <div className="ps-full-app">
+      <div
+        className={`ps-full-app${app === 'basketproof' ? ' is-active' : ''}`}
+        aria-hidden={app !== 'basketproof'}
+        inert={app !== 'basketproof'}
+      >
           <BasketProofApp onClose={() => goHome()} />
           <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
             <span className="ps-home-bar" />
           </button>
+      </div>
+
+      </div>
+      {stageMode && (
+        <div className="phone-stage-chrome" role="toolbar" aria-label="Phone navigation">
+          <div className="phone-stage-heading">
+            <span className="phone-stage-kicker">MOBILE PROJECTS</span>
+            <span className="phone-stage-title">Interactive phone demo</span>
+          </div>
+          <div className="phone-stage-actions">
+            <button
+              type="button"
+              className="phone-stage-home"
+              data-phone-stage-control="home"
+              onClick={() => goHome()}
+              disabled={app === 'home'}
+            >
+              Phone home
+            </button>
+            <button
+              type="button"
+              className="phone-stage-exit"
+              data-phone-stage-control="exit"
+              onClick={() => onExit?.()}
+            >
+              Back to room <span aria-hidden="true">↗</span>
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -1518,6 +1718,102 @@ export default PhoneScreen;
 // bg_dark: #0A0E17, surface_dark: #111827, surface_dark_card: #1E293B,
 // color_primary: #6366F1, color_accent: #A78BFA, border_color: #334155
 const css = `
+.phone-presentation {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: none;
+}
+.phone-presentation--stage {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  padding: 36px 16px;
+  background: #0A0A0B;
+  pointer-events: auto;
+  isolation: isolate;
+}
+.phone-presentation--stage.phone-stage-entering {
+  background: transparent;
+}
+.phone-stage-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: #0A0A0B;
+  opacity: 1;
+  transition: opacity 250ms cubic-bezier(.22, 1, .36, 1);
+}
+.phone-presentation--stage.phone-stage-entering .phone-stage-backdrop {
+  opacity: 0;
+}
+.phone-screen.phone-screen--stage {
+  position: relative;
+  top: auto;
+  left: auto;
+  z-index: 2;
+  flex: 0 0 auto;
+  width: min(390px, calc(100vw - 32px));
+  max-width: calc(100vw - 32px);
+  height: min(844px, calc(100dvh - 72px));
+  max-height: calc(100dvh - 72px);
+  border: 10px solid #15151B;
+  border-radius: 34px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .62), 0 0 0 1px rgba(255, 255, 255, .08);
+  visibility: visible !important;
+  transform: none !important;
+  container-type: inline-size;
+  pointer-events: auto !important;
+}
+.phone-screen.phone-screen--stage.phone-stage-flip {
+  transform-origin: 0 0;
+  transition: transform 250ms cubic-bezier(.22, 1, .36, 1);
+}
+.phone-stage-chrome {
+  position: absolute;
+  top: max(14px, env(safe-area-inset-top));
+  left: max(18px, env(safe-area-inset-left));
+  right: max(18px, env(safe-area-inset-right));
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  color: #E8E4DC;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  pointer-events: none;
+}
+.phone-stage-heading, .phone-stage-actions { pointer-events: auto; }
+.phone-stage-heading { display: flex; flex-direction: column; gap: 2px; }
+.phone-stage-kicker {
+  color: #8D8D95;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+.phone-stage-title { font-size: 14px; color: #E8E4DC; }
+.phone-stage-actions { display: flex; align-items: center; gap: 8px; }
+.phone-stage-actions button {
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid #3B3B42;
+  border-radius: 999px;
+  color: #E8E4DC;
+  background: #16161A;
+  font-size: 13px;
+  white-space: nowrap;
+}
+.phone-stage-actions button:hover,
+.phone-stage-actions button:focus-visible { border-color: #E8E4DC; }
+.phone-stage-actions button:disabled { opacity: .46; cursor: default; }
+.phone-stage-exit { color: #FFB394 !important; border-color: rgba(255, 95, 31, .55) !important; }
+.phone-stage-exit:hover, .phone-stage-exit:focus-visible { border-color: #FF5F1F !important; }
+
 .phone-screen {
   position: absolute;
   top: 0; left: 0;
@@ -1533,6 +1829,45 @@ const css = `
   -webkit-font-smoothing: antialiased;
 }
 .phone-screen button, .phone-screen input { font-family: inherit; }
+
+/* The stage is a real portrait viewport. Projected mode keeps the historical
+   540×1200 surface above so the three.js affine map remains unchanged. */
+.phone-screen--stage .ps-home {
+  overflow: hidden;
+}
+.phone-screen--stage .ps-statusbar {
+  padding: 5.5cqw 6cqw 0;
+}
+.phone-screen--stage .ps-clock { font-size: clamp(17px, 5.2cqw, 21px); }
+.phone-screen--stage .ps-status-icons { font-size: clamp(12px, 3.5cqw, 15px); gap: 3cqw; }
+.phone-screen--stage .ps-apps-grid {
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 7cqw 5cqw;
+  padding: 28cqw 9cqw 0;
+}
+.phone-screen--stage .ps-app,
+.phone-screen--stage .ps-app-focuslock,
+.phone-screen--stage .ps-app-expense,
+.phone-screen--stage .ps-app-basket {
+  position: static !important;
+  width: auto !important;
+  min-width: 0;
+  min-height: 44px;
+}
+.phone-screen--stage .ps-tile,
+.phone-screen--stage .ps-tile-fl,
+.phone-screen--stage .ps-tile-expense,
+.phone-screen--stage .ps-tile-basket {
+  width: clamp(64px, 21cqw, 82px) !important;
+  height: clamp(64px, 21cqw, 82px) !important;
+}
+.phone-screen--stage .ps-label {
+  margin-top: 3cqw;
+  font-size: clamp(13px, 3.8cqw, 16px);
+}
 
 /* ── Home screen ─────────────────────────────────────────────────────────── */
 .ps-home { position: absolute; inset: 0; background: #0A0E17; }
@@ -1612,6 +1947,14 @@ const css = `
   flex-direction: column;
   z-index: 10;
   background: #000;
+  visibility: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.ps-full-app.is-active {
+  visibility: visible;
+  pointer-events: auto;
+  z-index: 10;
 }
 .ps-home-bar-btn {
   position: absolute;
@@ -1748,6 +2091,7 @@ const css = `
 .fl-header-info { text-align: right; }
 .fl-app-title { margin: 0; font-size: 22px; font-weight: 700; color: #F8FAFC; }
 .fl-app-version { font-size: 12px; color: #6366F1; font-weight: 500; }
+.fl-app-demo { display: block; margin-top: 3px; font-size: 10px; color: #94A3B8; letter-spacing: .08em; }
 
 .fl-banner {
   background: #4F46E5;
@@ -2295,5 +2639,182 @@ const css = `
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+/* ── Readable portrait stage ------------------------------------------------
+   The source apps were originally tuned for a projected 540×1200 surface.
+   These rules reflow their existing markup at the stage's 320–430px width;
+   they do not scale a smaller screenshot into the viewport. */
+.phone-screen--stage .ps-full-app,
+.phone-screen--stage .fl-root,
+.phone-screen--stage .fl-friction-root {
+  border-radius: 22px;
+}
+.phone-screen--stage .ps-home-bar-btn { display: none; }
+.phone-screen--stage .ps-full-app button,
+.phone-screen--stage .ps-full-app input,
+.phone-screen--stage .ps-full-app select,
+.phone-screen--stage .fl-root button,
+.phone-screen--stage .fl-root input,
+.phone-screen--stage .fl-root select,
+.phone-screen--stage .fl-friction-root button,
+.phone-screen--stage .fl-friction-root input {
+  min-height: 44px;
+}
+.phone-screen--stage .ps-lock {
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding: 28px 18px 36px;
+}
+.phone-screen--stage .ps-pill { margin-bottom: 18px; font-size: 13px; }
+.phone-screen--stage .ps-title { font-size: clamp(24px, 7cqw, 30px); }
+.phone-screen--stage .ps-card { padding: 18px; margin-bottom: 16px; border-radius: 16px; }
+.phone-screen--stage .ps-caption { font-size: 13px; }
+.phone-screen--stage .ps-stats,
+.phone-screen--stage .ps-status { font-size: 16px; }
+.phone-screen--stage .ps-quote { font-size: 18px; }
+.phone-screen--stage .ps-math-label { font-size: 16px; }
+.phone-screen--stage .ps-math-q { font-size: 26px; }
+.phone-screen--stage .ps-btn { min-height: 48px; padding: 10px 16px; font-size: 16px; }
+.phone-screen--stage .ps-math-row { flex-wrap: wrap; }
+.phone-screen--stage .ps-math-row .ps-btn { flex: 1 1 120px; width: auto; }
+
+.phone-screen--stage .fl-appbar {
+  height: auto;
+  min-height: 80px;
+  padding: 8px 14px;
+}
+.phone-screen--stage .fl-back { min-height: 44px; padding: 8px 11px; font-size: 13px; }
+.phone-screen--stage .fl-app-title { font-size: 19px; }
+.phone-screen--stage .fl-app-version { font-size: 11px; }
+.phone-screen--stage .fl-app-demo { font-size: 10px; }
+.phone-screen--stage .fl-banner { padding: 9px 12px; font-size: 13px; }
+.phone-screen--stage .fl-content { padding: 14px 12px 88px; }
+.phone-screen--stage .fl-card { padding: 16px; margin-bottom: 14px; border-radius: 16px; }
+.phone-screen--stage .fl-card-title { font-size: 13px; margin-bottom: 10px; }
+.phone-screen--stage .fl-card-desc {
+  font-size: 14px;
+}
+.phone-screen--stage .fl-subhead,
+.phone-screen--stage .fl-status-text,
+.phone-screen--stage .fl-duration-label,
+.phone-screen--stage .fl-field-row label,
+.phone-screen--stage .fl-toggle-row span,
+.phone-screen--stage .fl-window-item,
+.phone-screen--stage .fl-checkbox-label,
+.phone-screen--stage .fl-mode-pills,
+.phone-screen--stage .fl-intercept-stat,
+.phone-screen--stage .fl-log-item,
+.phone-screen--stage .fl-opens-stat { font-size: 16px; }
+.phone-screen--stage .fl-card-desc { line-height: 1.45; }
+.phone-screen--stage .fl-status-text,
+.phone-screen--stage .fl-session-status { line-height: 1.4; }
+.phone-screen--stage .fl-badge-grid { grid-template-columns: 1fr; gap: 8px; }
+.phone-screen--stage .fl-badge { min-height: 44px; display: flex; align-items: center; font-size: 13px; }
+.phone-screen--stage .fl-duration-row { padding: 10px 12px; }
+.phone-screen--stage .fl-duration-input,
+.phone-screen--stage .fl-input-number { min-height: 44px; font-size: 16px; }
+.phone-screen--stage .fl-input,
+.phone-screen--stage .fl-fl-input,
+.phone-screen--stage .fl-checkbox-label,
+.phone-screen--stage .fl-todo-empty,
+.phone-screen--stage .fl-app-item-name,
+.phone-screen--stage .fl-btn,
+.phone-screen--stage .fl-pill-btn,
+.phone-screen--stage .fl-chip,
+.phone-screen--stage .fl-step-desc,
+.phone-screen--stage .fl-shake-line1,
+.phone-screen--stage .fl-shake-line2 {
+  font-size: 16px;
+}
+.phone-screen--stage .fl-app-item-pkg,
+.phone-screen--stage .fl-metric-lbl,
+.phone-screen--stage .fl-chart,
+.phone-screen--stage .fl-chart-row,
+.phone-screen--stage .fl-chart-day,
+.phone-screen--stage .fl-chart-val,
+.phone-screen--stage .fl-log-time { font-size: 13px; }
+.phone-screen--stage .fl-input,
+.phone-screen--stage .fl-input-number { padding: 10px 12px; }
+.phone-screen--stage .fl-btn { padding: 11px 14px; }
+.phone-screen--stage .fl-btn-small { min-height: 44px; padding: 0 13px; font-size: 14px; }
+.phone-screen--stage .fl-todo-input-row,
+.phone-screen--stage .fl-add-app-row,
+.phone-screen--stage .fl-sync-row { align-items: stretch; }
+.phone-screen--stage .fl-todo-input-row .fl-input,
+.phone-screen--stage .fl-add-app-row .fl-input,
+.phone-screen--stage .fl-sync-row .fl-input { min-width: 0; }
+.phone-screen--stage .fl-todo-row { padding: 10px 12px; }
+.phone-screen--stage .fl-del-btn { min-width: 44px; }
+.phone-screen--stage .fl-switch { flex: 0 0 52px; min-height: 28px !important; }
+.phone-screen--stage .fl-mode-pills { flex-wrap: wrap; gap: 8px; }
+.phone-screen--stage .fl-pill-btn { min-width: 92px; min-height: 44px; }
+.phone-screen--stage .fl-nav { height: 72px; }
+.phone-screen--stage .fl-nav-item { min-height: 44px; }
+.phone-screen--stage .fl-nav-icon { font-size: 18px; }
+.phone-screen--stage .fl-nav-label { font-size: 13px; }
+.phone-screen--stage .fl-friction-content { padding: 22px 18px 30px; }
+.phone-screen--stage .fl-step { max-width: none; gap: 12px; }
+.phone-screen--stage .fl-step-title { font-size: 24px; line-height: 1.2; }
+.phone-screen--stage .fl-step-badge { font-size: 12px; }
+.phone-screen--stage .fl-chip { min-height: 48px; padding: 12px 14px; }
+.phone-screen--stage .fl-circle-breathing { margin: 28px auto; }
+.phone-screen--stage .fl-stats-grid { gap: 8px; }
+.phone-screen--stage .fl-stat-lbl { font-size: 13px; }
+.phone-screen--stage .fl-stat-val { font-size: 17px; }
+
+/* Expense Tracker and BasketProof are reconstructed from their original
+   React Native / Compose screens. Keep their markup and copy intact while
+   lifting the small projected labels to a readable mobile baseline. */
+.phone-screen--stage .expense-app-root,
+.phone-screen--stage .basketproof-app-root {
+  font-size: 16px;
+}
+.phone-screen--stage .expense-app-root [style*="font-size: 9px"],
+.phone-screen--stage .expense-app-root [style*="font-size: 10px"],
+.phone-screen--stage .expense-app-root [style*="font-size: 11px"],
+.phone-screen--stage .basketproof-app-root [style*="font-size: 9px"],
+.phone-screen--stage .basketproof-app-root [style*="font-size: 10px"],
+.phone-screen--stage .basketproof-app-root [style*="font-size: 11px"] { font-size: 13px !important; }
+.phone-screen--stage .expense-app-root [style*="font-size: 12px"],
+.phone-screen--stage .expense-app-root [style*="font-size: 13px"],
+.phone-screen--stage .expense-app-root [style*="font-size: 14px"],
+.phone-screen--stage .basketproof-app-root [style*="font-size: 12px"],
+.phone-screen--stage .basketproof-app-root [style*="font-size: 13px"],
+.phone-screen--stage .basketproof-app-root [style*="font-size: 14px"] { font-size: 16px !important; }
+.phone-screen--stage .expense-app-root [style*="font-size: 15px"],
+.phone-screen--stage .basketproof-app-root [style*="font-size: 15px"] { font-size: 17px !important; }
+.phone-screen--stage .expense-app-root button,
+.phone-screen--stage .expense-app-root input,
+.phone-screen--stage .expense-app-root select,
+.phone-screen--stage .basketproof-app-root button,
+.phone-screen--stage .basketproof-app-root input,
+.phone-screen--stage .basketproof-app-root select {
+  min-height: 44px;
+}
+.phone-screen--stage .expense-app-root input,
+.phone-screen--stage .expense-app-root select,
+.phone-screen--stage .basketproof-app-root input,
+.phone-screen--stage .basketproof-app-root select { font-size: 16px !important; }
+.phone-screen--stage .expense-app-root > header,
+.phone-screen--stage .basketproof-app-root > header { padding: 10px 12px; }
+.phone-screen--stage .expense-app-root > div,
+.phone-screen--stage .basketproof-app-root > div { padding-left: 12px; padding-right: 12px; }
+.phone-screen--stage .expense-app-root nav button,
+.phone-screen--stage .basketproof-app-root footer { font-size: 13px !important; }
+
+@media (max-width: 560px) {
+  .phone-stage-chrome { gap: 8px; }
+  .phone-stage-title { display: none; }
+  .phone-stage-actions button { padding-inline: 11px; }
+}
+@media (max-height: 620px) {
+  .phone-presentation--stage { align-items: flex-start; padding-block: 62px 18px; }
+  .phone-screen.phone-screen--stage { width: clamp(280px, calc(100vw - 32px), 390px); max-height: none; }
+  .phone-stage-chrome { position: fixed; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .phone-stage-backdrop,
+  .phone-screen.phone-screen--stage.phone-stage-flip { transition: none; }
 }
 `;

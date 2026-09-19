@@ -1,7 +1,7 @@
 import * as THREE from 'three';
+import { bindHandSurface } from './handSurface.js';
 
-// Seated hands and forearms: authored rigid parts on a joint hierarchy, no
-// skinning, no IK beyond the analytic elbow. Hand frame (both hands): fingers
+// Connected skin driven by finger bones and an analytic two-bone arm solve. Hand frame (both hands): fingers
 // point -z, palm faces -y, wrist at +z, thumb on the side nearer the body's
 // centre line. Grips in WorkspaceStage are authored in this frame.
 
@@ -47,44 +47,11 @@ const FINGERS = [
   { x: -0.033, z: -0.058, length: 0.058, r: 0.86, fan: -0.17 },
 ];
 
-function lathe(profile, segments) {
-  const g = new THREE.LatheGeometry(profile.map(([r, y]) => new THREE.Vector2(r, y)), segments);
-  g.rotateX(-Math.PI / 2); return g; // revolve axis +y becomes -z
-}
-// Tapered segment with rounded ends, base joint at the origin, running along -z.
-function phalanxGeometry(r0, r1, length) {
-  const pts = [];
-  for (let i = 0; i <= 4; i++) { const a = -Math.PI / 2 + (i / 4) * (Math.PI / 2); pts.push([Math.cos(a) * r0, Math.sin(a) * r0 * 0.85]); }
-  pts.push([r1, length]);
-  for (let i = 1; i <= 4; i++) { const a = (i / 4) * (Math.PI / 2); pts.push([Math.cos(a) * r1, length + Math.sin(a) * r1]); }
-  return lathe(pts, 14);
-}
-// Palm: superellipse cross sections from the wrist (+z) to the knuckles (-z).
-function palmGeometry() {
-  // Wrist crease to knuckles ~13.5 cm, palm ~9.5 cm wide, ~3 cm thick at the heel thinning to the knuckles.
-  const rings = [ // z, half width, half thickness, y offset
-    [0.078, 0.000, 0.000, 0.001], [0.075, 0.020, 0.011, 0.001], [0.066, 0.027, 0.014, 0.001],
-    [0.051, 0.035, 0.016, 0.001], [0.032, 0.042, 0.017, 0.000], [0.009, 0.047, 0.017, 0.000],
-    [-0.022, 0.049, 0.016, 0.000], [-0.050, 0.048, 0.015, 0.000], [-0.068, 0.045, 0.013, 0.000],
-    [-0.080, 0.037, 0.009, -0.001], [-0.087, 0.021, 0.004, -0.002], [-0.090, 0.000, 0.000, -0.002],
-  ];
-  const sides = 28, e = 2 / 2.6, pos = [], idx = [];
-  const se = (v) => Math.sign(v) * Math.abs(v) ** e;
-  for (const [z, w, t, y0] of rings) for (let i = 0; i <= sides; i++) { const a = (i / sides) * Math.PI * 2; pos.push(w * se(Math.cos(a)), y0 + t * se(Math.sin(a)), z); }
-  for (let j = 0; j < rings.length - 1; j++) for (let i = 0; i < sides; i++) { const a = j * (sides + 1) + i, b = a + sides + 1; idx.push(a, b, a + 1, b, b + 1, a + 1); }
-  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals(); return g;
-}
-// Forearm: open tapered tube along +y from the wrist (0) to the elbow (1); the
-// wrist ellipsoid and elbow ball cover its ends. Its parent scale (1.15, length, 0.72)
-// makes the cross-section elliptical, so the radii here are for a round arm.
-function forearmGeometry() {
-  return new THREE.LatheGeometry([[0.0225, 0], [0.0235, 0.10], [0.028, 0.40], [0.036, 0.78], [0.040, 1.0]].map(p => new THREE.Vector2(...p)), 24);
-}
 // Shirt sleeve over the forearm: a cuff 3-4 cm above the wrist, then a slightly
 // loose tube to the elbow. Same frame as the forearm so it rolls with the palm.
 const ELBOW_R = 0.0445;
 function sleeveGeometry() {
-  return new THREE.LatheGeometry([[0.0245, 0.115], [0.029, 0.12], [0.029, 0.17], [0.0325, 0.40], [0.0405, 0.78], [ELBOW_R, 1.0]].map(p => new THREE.Vector2(...p)), 24);
+  return new THREE.LatheGeometry([[0.015, 0.115], [0.0245, 0.115], [0.029, 0.12], [0.029, 0.17], [0.0325, 0.40], [0.0405, 0.78], [ELBOW_R, 1.0]].map(p => new THREE.Vector2(...p)), 24);
 }
 
 export function seatedHands() {
@@ -98,8 +65,7 @@ export function seatedHands() {
   function chain(parent, L, R) {
     const joints = []; let p = parent;
     for (let i = 0; i < 3; i++) {
-      const j = new THREE.Group(); if (i) j.position.z = -L[i - 1]; p.add(j);
-      mesh(phalanxGeometry(R[i], R[i + 1], L[i]), skin, j).scale.y = 0.9;
+      const j = new THREE.Bone(); if (i) j.position.z = -L[i - 1]; p.add(j);
       joints.push(j); p = j;
     }
     return joints;
@@ -112,29 +78,27 @@ export function seatedHands() {
   // Leaning in moves both shoulders (the camera moves with them in WorkspaceStage).
   const lean = new THREE.Vector3();
   for (const side of [-1, 1]) {
-    const hand = new THREE.Group(); root.add(hand);
-    mesh(palmGeometry(), skin, hand);
-    const wristBall = mesh(new THREE.SphereGeometry(1, 20, 12), skin, hand);
-    wristBall.position.set(0, 0.001, 0.068); wristBall.scale.set(0.026, 0.0135, 0.020);
+    const hand = new THREE.Bone(); root.add(hand);
 
     const digits = FINGERS.map(spec => {
       const f = new THREE.Group(); f.position.set(-side * spec.x, 0.002, spec.z); hand.add(f);
       const L = [0.46, 0.30, 0.24].map(k => k * spec.length);
       const R = [0.0100, 0.0090, 0.0080, 0.0068].map(r => r * spec.r);
-      f.userData = { L, fan: side * spec.fan, joints: chain(f, L, R), tip: new THREE.Vector3() };
+      f.userData = { L, R, fan: side * spec.fan, joints: chain(f, L, R), tip: new THREE.Vector3() };
       return f;
     });
     const thumb = new THREE.Group(); thumb.position.set(-side * 0.032, -0.006, 0.032); hand.add(thumb);
-    const TL = [0.046, 0.032, 0.027];
-    thumb.userData = { L: TL, joints: chain(thumb, TL, [0.0140, 0.0115, 0.0100, 0.0082]) };
+    const TL = [0.035, 0.025, 0.022];
+    thumb.userData = { L: TL, R: [0.014, 0.012, 0.010, 0.008], joints: chain(thumb, TL, [0.014, 0.012, 0.010, 0.008]) };
 
-    const arm = mesh(forearmGeometry(), skin, hand);
-    mesh(sleeveGeometry(), cloth, arm);
-    // The elbow is a child of the forearm so it matches the sleeve's elliptical end exactly.
-    const elbow = mesh(new THREE.SphereGeometry(1, 20, 12), cloth, arm); elbow.position.y = 1;
-    const sleeve = mesh(new THREE.CylinderGeometry(0.042, 0.048, 1, 24), cloth, root);
+    const arm = new THREE.Bone(); hand.add(arm);
+    const cuff = mesh(sleeveGeometry(), cloth, arm);
+    const elbow = new THREE.Bone(); elbow.position.y = 1; arm.add(elbow);
+    const elbowCover = mesh(new THREE.SphereGeometry(1, 20, 12), cloth, elbow);
+    const sleeve = new THREE.Bone(); root.add(sleeve);
+    const upperCloth = mesh(new THREE.CylinderGeometry(0.042, 0.048, 1, 24), cloth, sleeve);
     hands.push({
-      hand, digits, fingers: side === 1 ? digits : digits.slice().reverse(), thumb, arm, sleeve, elbow, side,
+      clothParts: [cuff, elbowCover, upperCloth], hand, digits, fingers: side === 1 ? digits : digits.slice().reverse(), thumb, arm, sleeve, elbow, side,
       index: side === 1 ? 0 : 3, pose: { ...POSES.rest },
       shoulder: new THREE.Vector3(0.05 + side * 0.225, 1.40, 1.23), wristDeg: 0,
     });
@@ -214,6 +178,13 @@ export function seatedHands() {
     const contact = tips.digits[0].clone().lerp(tips.thumb, 0.5);
     const axis = new THREE.Vector3(-h.side * 0.048, -0.004, -0.040).sub(contact).normalize();
     return { contact, axis };
+  }
+  reset();
+  for (const h of hands) {
+    // Bind with separated, straight digits; posed geometry would fuse a fist.
+    Object.assign(h.pose, POSES.open, { c0: 0, c1: 0, c2: 0, c3: 0, tCurl: 0 });
+    updateHand(h); root.updateMatrixWorld(true);
+    bindHandSurface(h, root, skin, cloth);
   }
   reset();
   return { root, left: hands[0], right: hands[1], lean, update, reset, localTips, pinchFrame };

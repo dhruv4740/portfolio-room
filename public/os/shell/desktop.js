@@ -119,32 +119,37 @@ export function initDesktop(apps, ctx) {
     });
   }
 
-  // ── Desktop icons (max 6 per column, wrap to 2nd column) ──
+  // Projects come first. Secondary tools remain available without competing
+  // with the work, and every launcher supports one click and keyboard input.
   const workspace = document.getElementById('workspace');
-  const MAX_PER_COL = 6;
-  const ICON_TOP    = 36;
-  const ICON_GAP    = 72;
-  const COL_X       = [20, 100]; // left px for col 0, col 1
-
-  apps.forEach((app, i) => {
-    const col = Math.floor(i / MAX_PER_COL);
-    const row = i % MAX_PER_COL;
-    const icon = document.createElement('div');
+  const projectIds = ['darksentinel', 'focuslock', 'crisiswatch', 'fraud'];
+  const launchers = document.createElement('div');
+  launchers.className = 'desktop-launchers';
+  workspace.appendChild(launchers);
+  for (const [title, entries] of [
+    ['PROJECTS', projectIds.map(id => apps.find(app => app.id === id)).filter(Boolean)],
+    ['ABOUT & TOOLS', apps.filter(app => !projectIds.includes(app.id))],
+  ]) {
+    const section = document.createElement('section');
+    section.className = 'desktop-app-group';
+    section.setAttribute('aria-label', title);
+    const heading = document.createElement('h2');
+    heading.textContent = title;
+    section.appendChild(heading);
+    launchers.appendChild(section);
+    entries.forEach(app => {
+    const icon = document.createElement('button');
+    icon.type = 'button';
     icon.className = 'desk-icon';
-    icon.style.top  = (ICON_TOP + row * ICON_GAP) + 'px';
-    icon.style.left = (COL_X[col] ?? 180) + 'px';
+    icon.setAttribute('aria-label', `Open ${app.title}`);
     icon.innerHTML = `
       <div class="icon-glyph">${app.icon}</div>
       <div class="icon-label">${app.title}</div>
     `;
-    icon.addEventListener('dblclick', () => ctx.openApp(app.id));
-    let clickTimer = null;
-    icon.addEventListener('click', () => {
-      if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; ctx.openApp(app.id); return; }
-      clickTimer = setTimeout(() => { clickTimer = null; }, 300);
+    icon.addEventListener('click', () => ctx.openApp(app.id));
+    section.appendChild(icon);
     });
-    workspace.appendChild(icon);
-  });
+  }
 
   // ── Right-click context menu ──
   let ctxMenu = null;

@@ -26,16 +26,13 @@ export function resolveSkyState() {
     const fromHash = parseSky(hash.slice(qIdx));
     if (fromHash) return fromHash;
   }
-  const hour = new Date().getHours();
-  if (hour >= 7 && hour < 17) return 'day';
-  if ((hour >= 5 && hour < 7) || (hour >= 17 && hour < 19)) return 'dusk';
   return 'night';
 }
 
 export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
   onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
-  paused = false, phase = 'room', seated = false, onSit, entryVisible = true, onTypeKey, liveMonitor = false,
+  paused = false, phase = 'room', seated = false, onSit, onPhoneExit, entryVisible = true, onTypeKey, liveMonitor = false,
   windowIntent = false,
 }) {
   const hostRef = useRef(null);
@@ -44,7 +41,7 @@ export default function WorkspaceStage({
   const phoneScreenRef = useRef(null);
   const [phoneLive, setPhoneLive] = useState(false);
   const callbacks = useRef({});
-  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onTypeKey };
+  callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onPhoneExit, onTypeKey };
   const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent });
   state.current = { paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent };
 
@@ -77,7 +74,7 @@ export default function WorkspaceStage({
       // only measurement in the HUD that reflects the graphics card rather than
       // CPU submission cadence.
       const gl = renderer.getContext(), timerExt = gl.getExtension('EXT_disjoint_timer_query_webgl2');
-      const gpuQueries = []; let gpuSum = 0, gpuCount = 0; let lastGpu = 0;
+      const gpuSamples = []; const gpuQueries = []; let gpuSum = 0, gpuCount = 0; let lastGpu = 0;
       function gpuBegin() { if (!timerExt) return null; const q = gl.createQuery(); gl.beginQuery(timerExt.TIME_ELAPSED_EXT, q); return q; }
       function gpuEnd(q) { if (!q) return; gl.endQuery(timerExt.TIME_ELAPSED_EXT); gpuQueries.push(q); }
       function gpuPoll() {
@@ -85,7 +82,7 @@ export default function WorkspaceStage({
           const q = gpuQueries[0], available = gl.getQueryParameter(q, gl.QUERY_RESULT_AVAILABLE), disjoint = gl.getParameter(timerExt.GPU_DISJOINT_EXT);
           if (!available && !disjoint) break;
           gpuQueries.shift();
-          if (available && !disjoint) { lastGpu = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6; gpuSum += lastGpu; gpuCount++; }
+          if (available && !disjoint) { lastGpu = gl.getQueryParameter(q, gl.QUERY_RESULT) / 1e6; gpuSum += lastGpu; gpuCount++; gpuSamples.push(lastGpu); if(gpuSamples.length>1200)gpuSamples.shift(); }
           gl.deleteQuery(q);
         }
       }
@@ -130,7 +127,7 @@ export default function WorkspaceStage({
       model.setSky(initialSky);
       host.dataset.skyState = initialSky;
       host.dataset.windowOpen = String(model.roomActions.state.windowOpen);
-      const camera = new THREE.PerspectiveCamera(40, 1, 0.025, 60);
+      const camera = new THREE.PerspectiveCamera(56, 1, 0.025, 60);
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true; controls.dampingFactor = 0.075;
       controls.enablePan = false;
@@ -152,13 +149,10 @@ export default function WorkspaceStage({
       let down = null;
 
       function framing() {
-        // Fit the modeled room's known bounds. Capture framing remains separate.
-        const size = new THREE.Vector3().subVectors(new THREE.Vector3(...WORKSPACE.max), new THREE.Vector3(...WORKSPACE.min));
-        const vfov = THREE.MathUtils.degToRad(camera.fov);
-        const distance = (Math.max(size.y / (2 * Math.tan(vfov / 2)), size.x / (2 * Math.tan(vfov / 2) * camera.aspect)) + size.z * 0.66) * 1.22;
-        const target = new THREE.Vector3(0, 1.1, -0.2);
-        const direction = new THREE.Vector3(0.62, 0.43, 1).normalize();
-        home = { position: target.clone().addScaledVector(direction, distance), target };
+        const position = new THREE.Vector3(...WORKSPACE.overview.position);
+        // Narrow viewports pull back along the same interior sightline.
+        const target = new THREE.Vector3(...WORKSPACE.overview.target);
+        home = { position, target };
       }
       function place(view) { camera.position.copy(view.position); controls.target.copy(view.target); controls.update(); }
       function updateMarkers() {
@@ -166,7 +160,7 @@ export default function WorkspaceStage({
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           projected.set(...point).project(camera);
-          const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee','drawer','pen'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : id === 'chair') && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee','drawer','pen'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
@@ -211,7 +205,7 @@ export default function WorkspaceStage({
       }
       const phoneCorner = new THREE.Vector3();
       function updatePhoneAlign() {
-        if (!phoneZoom) return;
+        if (!phoneZoom || phoneZoom === 'held') return;
         const rect = host.getBoundingClientRect();
         const W = rect.width || 1, H = rect.height || 1;
         const { width: w, height: h } = model.phoneDisplay.geometry.parameters;
@@ -222,7 +216,7 @@ export default function WorkspaceStage({
         });
         phoneScreenRef.current?.setRect(pts.some((pt) => pt.z > 1) ? null : quadMatrix(pts, PHONE_SCREEN.width, PHONE_SCREEN.height));
       }
-      function render() { if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
+      function render() { for (const h of [model.hands.left, model.hands.right]) { if(h.skinMesh)h.skinMesh.visible=h.clothMesh.visible=h.hand.visible; } if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
         // The chair reads as empty until you are in it. The body only exists
         // once the camera has arrived at the seat, so the approach never shows
         // someone already sitting there — and the head is dropped at the last
@@ -241,6 +235,7 @@ export default function WorkspaceStage({
       function tick(now) {
         raf = 0;
         if (disposed || state.current.paused || document.hidden) return;
+        if (phoneZoom === 'held') return;
         if (!gov.isDirty()) return; // idle: stop issuing frames until something invalidates again
         if (!gov.shouldRender(now)) { raf = requestAnimationFrame(tick); return; } // still dirty, 60Hz floor
         const start = performance.now(), query = gpuBegin(); render(); gpuEnd(query); const cpu = performance.now() - start;
@@ -334,7 +329,7 @@ export default function WorkspaceStage({
         return { obj: model.phone, p: [-0.02, -0.03, 0.02], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z), pose: 'wrap' };
       })();
       const PHONE_LEAN = { x: -0.28, y: -0.08, z: -0.42 };
-      let phoneGrip = 1;
+      let phoneGrip = 1, phoneVisited = false;
       function followPhone() { hold(model.hands.left, PHONE_TOP, PHONE_BACK, phoneGrip, PHONE_SIDE); }
       // PhoneScreen drives these. The texture under the DOM screen follows it,
       // so pulling back out of the zoom never pops to a different screen.
@@ -360,9 +355,9 @@ export default function WorkspaceStage({
         const distance = Math.max(h / (2 * tan), w / (2 * tan * camera.aspect)) * 1.06;
         phoneZoom = 'in'; markPhone('zooming');
         rig.flyTo({ position: center.clone().addScaledVector(normal, distance).toArray(), target: center.toArray() }, {
-          reduced, duration: 0.9,
+          reduced, duration: phoneVisited ? .3 : .45,
           onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
-          onComplete() { phoneZoom = 'held'; markPhone('zoomed'); setPhoneLive(true); invalidate(); },
+          onComplete() { phoneZoom = 'held'; markPhone('zoomed'); host.dataset.phonePresentation='stage'; setPhoneLive(true); phoneVisited=true; cancelAnimationFrame(raf); raf=0; },
         });
       }
       function animatePhone(reduced) {
@@ -393,13 +388,14 @@ export default function WorkspaceStage({
           .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 1.05)
           .to(k, { grip: 1, duration: 0.85, ease: 'power2.inOut' }, 1.05)
           .call(() => markPhone('home'), [], 1.9);
+        action.timeScale(phoneVisited ? 3.2 : 1.55);
         gsap.ticker.wake();
       }
       function returnPhone(reduced) {
-        action?.kill(); rig.dispose(); returningPhone = true; markPhone('returning'); setPhoneLive(false);
+        action?.kill(); rig.dispose(); returningPhone = true; host.dataset.phonePresentation='projected'; markPhone('returning'); setPhoneLive(false);
         const finish = () => {
           phoneInHand = false; returningPhone = false; model.resetPhone(); model.hands.reset();
-          phoneScreenRef.current?.reset(); markPhone('desk'); fly(); invalidate();
+          markPhone('desk'); callbacks.current.onPhoneExit?.(); fly(); invalidate();
         };
         if (phoneZoom) {
           // Pull back out of the screen first. PhoneScreen rides the quad until
@@ -596,7 +592,7 @@ export default function WorkspaceStage({
       }
       function finishExtra(id) {
         extraHeld=null;model.hands.reset();model.setHandsVisible(true);host.dataset.actionState='idle';invalidate();
-        if(state.current.activeAnchorId===id)callbacks.current.onAnchorSelect?.(id);else fly();
+        if(state.current.activeAnchorId===id)callbacks.current.onAnchorSelect?.(id,{completed:true});else fly();
       }
       function roomAction(id,reduced) {
         const r=model.roomActions,o=r.objects[id],h=model.hands[id==='coffee'||id==='lamp'?'left':'right'];
@@ -613,12 +609,12 @@ export default function WorkspaceStage({
           if(target===r.state.windowOpen){end();return;}
           const opening=target>r.state.windowOpen;
           const raiseBlindsFirst=opening&&r.state.blinds<0.5;
-          rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+          rig.flyTo({position:opening?[1.12,1.93,-.45]:WORKSPACE.seat.position,target:opening?[1.45,2.02,-4.5]:o.position.toArray()},{reduced,duration:1.05,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           if(reduced){
             if(raiseBlindsFirst)r.state.blinds=1;
-            r.state.windowOpen=target;update();end();return;
+            r.state.windowOpen=target;update();if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();return;
           }
-          action=gsap.timeline({onUpdate:update,onComplete:end});
+          action=gsap.timeline({onUpdate:update,onComplete(){if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();}});
           // The sash sits behind the closed blinds — from the seat, sliding it
           // is invisible until the blinds are out of the way. Opening always
           // raises them first (same tween shape/duration as the BLINDS
@@ -764,7 +760,7 @@ export default function WorkspaceStage({
           const finish=()=>{r.state.coffeeLevel=level;o.position.copy(home);o.rotation.set(0,0,0);r.updateLiquid(0,0);host.dataset.coffeeLevel=String(level);window.dispatchEvent(new CustomEvent('workspace:coffee',{detail:{level}}));end();};
           if(reduced){finish();return;}
           // Left hand: fingers through the handle, thumb on top, palm toward the mug.
-          const left=model.hands.left,MUG={obj:o,p:[-0.038,0.012,0.146],r:[0,Math.PI/4,Math.PI/2],pose:'mug'},SIP_TURN=-1.25;
+          const left=model.hands.left,MUG={obj:o,p:[-0.043,0.012,0.162],r:[0,Math.PI/4,Math.PI/2],pose:'mug'},SIP_TURN=-1.25;
           const LEAN={x:-0.2,y:-0.05,z:-0.2},HOME_LOOK={x:home.x,y:home.y,z:home.z},k={reach:0,release:0};
           let from=snapshot(left);
           startLean();
@@ -798,7 +794,13 @@ export default function WorkspaceStage({
       }
       function returnExtra(reduced) {
         const id=extraHeld,r=model.roomActions,o=r.objects[id];action?.kill();rig.dispose();
-        if(id==='windowOpen'){finishExtra(id);return;}
+        if(id==='windowOpen'){
+          if(!state.current.windowIntent && r.state.windowOpen>0){
+            if(reduced){r.state.windowOpen=0;r.apply();host.dataset.windowOpen='0';finishExtra(id);return;}
+            action=gsap.to(r.state,{windowOpen:0,duration:.6,ease:'power2.inOut',onUpdate(){r.apply();host.dataset.windowOpen=String(r.state.windowOpen);invalidate();},onComplete(){finishExtra(id);}});gsap.ticker.wake();return;
+          }
+          finishExtra(id);return;
+        }
         if(id==='drawer'){
           const page=r.resumePage,room=o.parent,k=drawerGrip;
           const update=()=>{r.apply();host.dataset.drawerOpen=String(r.state.drawer);};
@@ -856,8 +858,8 @@ export default function WorkspaceStage({
       }
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
-        tween?.kill(); rig.dispose();
         if (returningPhone || returningNotebook) return;
+        tween?.kill(); rig.dispose();
         if(extraHeld){returnExtra(state.current.reducedMotion);return;}
         if (notebookInHand) { returnNotebook(state.current.reducedMotion); return; }
         if (phoneInHand) { returnPhone(state.current.reducedMotion); return; }
@@ -917,7 +919,7 @@ export default function WorkspaceStage({
         controls.enableDamping = !state.current.seated;
         controls.minAzimuthAngle = -0.8; controls.maxAzimuthAngle = 0.85;
         controls.maxDistance = 11;
-        camera.fov = BASE_FOV; camera.updateProjectionMatrix();
+        camera.fov = currentPhase === 'room' && !state.current.seated ? 56 : BASE_FOV; camera.updateProjectionMatrix();
         let view = currentPhase === 'leaving' && state.current.seated
           ? { position: new THREE.Vector3(...WORKSPACE.seat.position), target: new THREE.Vector3(...WORKSPACE.seat.target) } : home;
         controls.minDistance = 0.025;
@@ -988,7 +990,7 @@ export default function WorkspaceStage({
         renderer.setSize(width, height); camera.aspect = width / height; camera.updateProjectionMatrix(); framing();
         if (!state.current.seated && !state.current.activeAnchorId && state.current.phase === 'room') place(home);
         else if (state.current.phase === 'inside') fly();
-        if (!state.current.paused) render();
+        if (!state.current.paused && phoneZoom !== 'held') render();
       }
       function hit(event) {
         const rect = renderer.domElement.getBoundingClientRect();
@@ -1022,8 +1024,8 @@ export default function WorkspaceStage({
         }
         if (notebookInHand || extraHeld) return;
         if (down && !phoneInHand && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
-          headYaw -= (event.clientX - down.lx) * 0.005;
-          headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -Math.PI / 2 + 0.02, Math.PI / 2 - 0.02);
+          headYaw = THREE.MathUtils.clamp(headYaw - (event.clientX - down.lx) * 0.005, -1.2, 1.2);
+          headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -.8, .65);
           down.moved ||= Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6;
           down.lx = event.clientX; down.ly = event.clientY;
           controls.target.copy(camera.position).add(new THREE.Vector3(-Math.sin(headYaw) * Math.cos(headPitch), Math.sin(headPitch), -Math.cos(headYaw) * Math.cos(headPitch)));
@@ -1037,7 +1039,7 @@ export default function WorkspaceStage({
         down = null;
         if (phoneInHand) return;
         const id = hit(event); if (!id) return;
-        if (!state.current.seated && id !== 'chair') return;
+        if (!state.current.seated && !['chair','monitor','phone'].includes(id)) return;
         if (id === 'keyboard') { const index=Number(host.dataset.hitKey); pressKey(KEY_ROWS[Math.floor(index/12)]?.[index%12] || ' ',index);renderer.domElement.focus();return; }
         if (id === 'chair') { callbacks.current.onSit?.(); return; }
         const marker = markerRefs.current.get(id); marker?.focus();
@@ -1082,10 +1084,10 @@ export default function WorkspaceStage({
             if (name === 'monitorScreen' || name === 'monitorBezel' || name === 'desk') return boxToPlain(model.staticBoxes[name]);
             if (name === 'phone') return boxToPlain(box3.setFromObject(model.phone));
             if (name === 'coffeeMug') return boxToPlain(box3.setFromObject(model.roomActions.objects.coffee));
-            if (name === 'handL') return boxToPlain(box3.setFromObject(model.hands.left.hand));
-            if (name === 'handR') return boxToPlain(box3.setFromObject(model.hands.right.hand));
-            if (name === 'armL') return boxToPlain(box3.setFromObject(model.hands.left.arm));
-            if (name === 'armR') return boxToPlain(box3.setFromObject(model.hands.right.arm));
+            if (name === 'handL') return boxToPlain(box3.setFromObject(model.hands.left.skinMesh));
+            if (name === 'handR') return boxToPlain(box3.setFromObject(model.hands.right.skinMesh));
+            if (name === 'armL') return boxToPlain(box3.setFromObject(model.hands.left.clothMesh));
+            if (name === 'armR') return boxToPlain(box3.setFromObject(model.hands.right.clothMesh));
             if (name === 'held') {
               const held = extraHeld ? model.roomActions.objects[extraHeld]
                 : notebookInHand ? model.notebook
@@ -1098,7 +1100,8 @@ export default function WorkspaceStage({
           showHands(v) { model.hands.root.visible = !!v; invalidate(); },
           // Real-GPU cost probes (scripts/measure-gpu.mjs): governor state, live pixel ratio, draw calls.
           perf() { const i = renderer.info.render, s = renderer.getSize(new THREE.Vector2()); return { ...gov.getStats(), pixelRatio: renderer.getPixelRatio(), calls: i.calls, triangles: i.triangles, w: s.x, h: s.y, shadows: renderer.shadowMap.enabled }; },
-          setPixelRatio(v) { renderer.setPixelRatio(v); invalidate(); },
+          setPixelRatio(v) { gov.pinPixelRatio(v); invalidate(); },
+          gpuSamples(clear=false) {const out=gpuSamples.slice();if(clear)gpuSamples.length=0;return out;},
           projectKey(index) {
             const m = new THREE.Matrix4(); model.keys.getMatrixAt(index, m);
             const rect = host.getBoundingClientRect();
@@ -1145,7 +1148,7 @@ export default function WorkspaceStage({
   return (
     <div ref={hostRef} className="stage-root workspace-stage" data-scene="workspace">
       <style>{css}</style>
-      <PhoneScreen ref={phoneScreenRef} interactive={phoneLive}
+      <PhoneScreen ref={phoneScreenRef} interactive={phoneLive} mode={phoneLive ? 'stage' : 'projected'} onExit={() => callbacks.current.onAnchorSelect?.('phone')}
         onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
       <button className="pen-clear" onClick={() => api.current?.clearNotes()}>CLEAR PAGE</button>
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
@@ -1156,7 +1159,7 @@ export default function WorkspaceStage({
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
           onClick={() => {
-            if (!seated) return;
+            if (!seated && !['phone','monitor'].includes(anchor.id)) return;
             // The monitor goes straight in; the window only opens/closes (contact
             // info lives on the CONTACT button).
             if (anchor.id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
@@ -1172,10 +1175,13 @@ export default function WorkspaceStage({
 
 const css = `
 .workspace-stage { position:absolute; inset:0; overflow:hidden; background:#15191b; }
+.workspace-stage[data-phone-presentation=stage] ~ .seat-exit {display:none;}
 .workspace-stage canvas { display:block; width:100%; height:100%; touch-action:none; }
 .workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
 .workspace-marker-dot { width:8px; height:8px; border:1px solid var(--bone); border-radius:50%; box-shadow:0 0 0 5px rgba(20,24,25,.18); background:var(--void); }
 .workspace-marker-label { display:flex; align-items:center; gap:12px; padding:8px 11px; background:rgba(20,24,25,.92); border:1px solid rgba(232,228,220,.18); color:var(--bone); font:12px var(--font-display); white-space:nowrap; }
+.workspace-marker:not([data-object=monitor]):not([data-object=phone]):not(.workspace-sit) .workspace-marker-label { opacity:0; transition:opacity .15s; }
+.workspace-marker:hover .workspace-marker-label,.workspace-marker:focus-visible .workspace-marker-label { opacity:1 !important; }
 .workspace-marker-label small { color:#a4a79c; font:9px var(--font-mono); }
 .workspace-marker-label > span { color:var(--signal); }
 .workspace-marker:hover .workspace-marker-label,.workspace-marker:focus-visible .workspace-marker-label,.workspace-marker.is-active .workspace-marker-label { border-color:var(--signal); }

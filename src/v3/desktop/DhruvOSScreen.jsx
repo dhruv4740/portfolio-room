@@ -73,7 +73,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
       if (!vg || !fl) return;
       if (travelPhase === 'entering' || travelPhase === 'leaving') {
         vg.style.opacity = String(Math.min(1, t * 1.15));
-        fl.style.opacity = String(Math.max(0, (t - 0.82) / 0.18) * 0.85);
+        fl.style.opacity = String(Math.max(0, (t - 0.84) / 0.16) * 0.32);
       } else {
         vg.style.opacity = '0';
         fl.style.opacity = '0';
