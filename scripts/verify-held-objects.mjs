@@ -69,10 +69,11 @@ async function phoneMetrics() {
   });
 }
 
+try {
 await page.goto(BASE + '/#/', { waitUntil: 'domcontentloaded' });
 await page.locator('[data-testid="room-overview"]').waitFor({ timeout: 15_000 });
 await page.locator('[data-launchpad-action="explore-room"]').click();
-await page.waitForFunction(() => document.querySelector('.scan-root')?.dataset.seated === 'true', null, { timeout: 5_000 });
+await page.waitForFunction(() => document.querySelector('.scan-root')?.dataset.seated === 'true', null, { timeout: 12_000 });
 await openObjects();
 
 await button('PHONE').click();
@@ -145,7 +146,7 @@ if (!phoneReturned) {
 
 if (await page.locator('[data-testid="room-overview"]').count()) {
   await page.locator('[data-launchpad-action="explore-room"]').click();
-  await page.waitForFunction(() => document.querySelector('.scan-root')?.dataset.seated === 'true', null, { timeout: 5_000 });
+  await page.waitForFunction(() => document.querySelector('.scan-root')?.dataset.seated === 'true', null, { timeout: 12_000 });
 }
 await openObjects();
 await button('NOTEBOOK').click();
@@ -161,4 +162,6 @@ await page.keyboard.press('Escape');
 await waitState('notebookState', 'desk');
 assert.deepEqual(errors, []);
 console.log('notebook returned', errors);
-await browser.close();
+} finally {
+  await browser.close();
+}

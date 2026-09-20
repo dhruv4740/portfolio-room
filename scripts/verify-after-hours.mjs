@@ -111,8 +111,12 @@ async function waitArrivalSettled(page, timeout = 10_000) {
 async function cancelArrival(page, key = 'skip') {
   const before = await arrivalSnapshot(page);
   const skip = page.locator('[data-testid="arrival-skip"], .arrival-skip');
-  if (await visible(skip)) await skip.click();
-  else await page.keyboard.press('Escape');
+  try {
+    if (await visible(skip)) await skip.click({ timeout: 2000 });
+    else await page.keyboard.press('Escape');
+  } catch {
+    await page.keyboard.press('Escape').catch(() => {});
+  }
   const settled = await waitArrivalSettled(page);
   const exercised = before.cueVisible || before.api?.active === true || /running|active|arriving/i.test(before.api?.phase || '');
   record(`arrival: ${key} interruption settles`, exercised && settled,

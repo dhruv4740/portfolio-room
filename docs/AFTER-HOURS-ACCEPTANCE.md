@@ -60,29 +60,80 @@ before measuring. A separate fallback context aborts the optional city,
 material, and bake requests and verifies that the overview, seat, and object
 controls remain usable while the stage reports `fallback` statuses.
 
-## Latest run
+## Harness Audit Table
 
-On 2026-09-20, the GPU acceptance command completed **26/26 passed**. It
-measured 1,013,170 bytes of core resources and 11,566,796 bytes of
-`/after-hours/` enhancement resources, including material textures and baked
-light maps. Google font requests were allowed under the existing portfolio
-font policy; intentional aborted optional assets were checked separately.
+| Script | Source Snapshot | Completed Assertions | Exit Status | Remaining Check |
+|---|---|---|---|---|
+| `scripts/verify-after-hours-audio.mjs` | D3D11 launch + Playwright internal listener filter + auto-resume contract | 35 / 35 | PASS (code 0) | None (synthetic event verified; acoustic listening quality unverified) |
+| `scripts/verify-after-hours.mjs` | D3D11 launch + detach-safe skip click + Escape fallback | 26 / 26 | PASS (code 0) | None |
+| `scripts/verify-v3.mjs` | Configurable GPU main browser (`GPU=1`) + separate unpinned software fallback | 41 / 41 | PASS (code 0) | None |
+| `scripts/verify-studio.mjs` | D3D11 launch + try/finally browser close | 23 / 23 | PASS (code 0) | None |
+| `scripts/verify-held-objects.mjs` | D3D11 launch + 12s seated exploration timeout + try/finally browser close | 6 / 6 lifecycle assertions | PASS (code 0) | None |
+| `scripts/verify-reduced-hands.mjs` | D3D11 launch + 8 hand poses held/escaped + try/finally browser close | 8 / 8 poses + clean errors | PASS (code 0) | None |
+| `scripts/verify-room-interactions.mjs` | D3D11 launch + window visibility diff + audio tests 1-4 + sky states | All room controls + 3 skies | PASS (code 0) | None |
+| `scripts/verify-real-apps.mjs` | D3D11 launch + 4 iframe apps (DarkSentinel, FocusLock, CrisisWatch, Fraud) | 4 apps navigated, 0 errors, 0 failed, 0 external | PASS (code 0) | None (DOM text and navigation verified; headless nested iframe paint unverified) |
 
-The legacy regressions were then started serially against the same preview:
+## Latest Verification Run (2026-09-20)
 
-- `verify-v3.mjs` was incomplete twice. The first run stopped after 10 durable
-  passes during scan coverage. The GPU retry reached the scan section, failed
-  its 15-second workspace mount wait, and then timed out in the existing
-  `screenCoverage()` screenshot after 30 seconds.
-- `verify-studio.mjs` recorded 12 passes through mobile stage exit, then
-  stopped before its room checks without a final result.
-- `verify-held-objects.mjs` failed at its existing 5-second seated wait after
-  Explore (`page.waitForFunction` at line 73).
+Following the freeze by external Claude Opus (`docs/reviews/OPUS-INTEGRATION-HANDOFF.md`: `Status: READY FOR VERIFICATION`), a clean production build (`npm run build`, 1.05s) was run once, serving on the dedicated preview server at `http://localhost:4173`. All suites were executed serially on the real GPU (`GPU=1`, Chromium ANGLE D3D11, AMD Radeon Graphics):
 
-`verify-reduced-hands.mjs`, `verify-room-interactions.mjs`, and
-`verify-real-apps.mjs` were not started against that stale preview. The GPU
-measurement and hand/typing shot scripts were also not rerun. These are
-explicitly unverified until the next built preview is available.
+1. **`verify-after-hours-audio.mjs`**: **35/35 passed** (Exit code 0). Verified all 5 After Hours audio jobs (window open/close city soundscape, double-click debouncing, standing/seated pause/resume, headphones mute/unmute, background blur/visibility suspension and foreground auto-resume).
+2. **`verify-after-hours.mjs`**: **26/26 passed** (Exit code 0). Verified arrival cue visibility, start/middle/end interruptions, WORK route navigation, seated replay re-entry, reduced-motion bypass, asset budgets, and missing-asset fallback.
+   - Core required transfer: 1,015,446 bytes (~1.02 MB, limit 15 MB).
+   - Optional `/after-hours/` transfer: 11,566,796 bytes (~11.57 MB, limit 15 MB).
+   - Runtime requests: 33 model resources, strictly local/same-origin.
+3. **`verify-v3.mjs`**: **41/41 passed** (Exit code 0). Software GPU static fallback to `/work` with zero 3D requests and <250KB payload; desktop 3D workspace mount, 76.2% lit canvas, launchpad overview, anchor projection, dhruvOS camera travel, state persistence across returns, and mobile deck surface isolation.
+4. **`verify-studio.mjs`**: **23/23 passed** (Exit code 0). Overview launchpad routes, mobile stage presentation, readable CSS (390px, no sub-1 scaling), FocusLock stage interaction, tab persistence, resize invariance (1280x720, 1600x900, 1440x900), and clean room return.
+5. **`verify-held-objects.mjs`**: **Passed** (Exit code 0). Phone stage metrics (`mode: stage`, `zoom: 1`, `width: 390`, `labelFontPx: 14.06`), 0 idle frame submissions while held, FocusLock extension grant flow, and notebook reading idle and Escape return.
+6. **`verify-reduced-hands.mjs`**: **Passed** (Exit code 0). Immediate hold on click for PEN (86ms), AWARD (53ms), RESUME (53ms), COFFEE (31ms), LAMP (83ms), HEADPHONES (177ms), NOTEBOOK (57ms), PHONE (255ms), with clean Escape returns and 0 page errors.
+7. **`verify-room-interactions.mjs`**: **Passed** (Exit code 0). Lamp toggle, resume drawer open/close, blinds toggle, window auto-raise on blinds, window visibility diff shares (night: 40.8%, day: 85.4%), room audio triggers (open->playing, double-click consistency, close->silent, stand->silent, sit->playing), headphones mute, coffee depletion/refill, award inspection, typing, and sky presets (day, dusk, night).
+8. **`verify-real-apps.mjs`**: **Passed** (Exit code 0). All four embedded apps opened and navigated without console errors, failed requests, or external leaks:
+   - DarkSentinel: Launch Manual Mode, System Status
+   - FocusLock: Blocked Rules, minimize/restore/close
+   - CrisisWatch: Fact/Cap debunker query
+   - Fraud Detection: Dashboard navigation
+
+## Fixed-Camera GPU Measurement Sweep
+
+Measured using `scripts/measure-gpu.mjs` with `TIERS=mid`, `SWEEP=0.8,1,1.25`, viewport 1536×864, Chromium ANGLE D3D11 on AMD Radeon Graphics (`0x000015E7`), Direct3D11 vs_5_0 ps_5_0:
+
+| Measurement Point | Tier | DPR | Samples | GPU Median | GPU p95 | Draw Calls | Triangles | Shadows |
+|---|---|---|---|---|---|---|---|---|
+| Standing drag | mid | 1.25 | — | 12.17 ms | — | 90 | 91,664 | true |
+| Seated drag (with hands) | mid | 1.25 | — | 12.79 ms | — | 83 | 125,188 | true |
+| Seated drag (no-hands) | mid | 1.25 | — | 12.36 ms | — | 77 | 87,336 | true |
+| Seated sweep: DPR 0.8 | mid | 0.80 | 93 | 6.93 ms | 7.49 ms | 83 | 122,844 | true |
+| Seated sweep: DPR 1.0 | mid | 1.00 | 92 | 9.31 ms | 9.85 ms | 83 | 125,188 | true |
+| Seated sweep: DPR 1.25 | mid | 1.25 | 92 | 13.08 ms | 13.82 ms | 83 | 122,844 | true |
+
+*Note: Hand rig adds ~6 draw calls and ~37,852 triangles, representing ~0.42 ms GPU cost. GPU frame cost scales with pixel count (fill rate), demonstrating proper draw call batching.*
+
+## Captured GPU Visual Proofs
+
+- Hand poses (`scripts/shots/hands-gpu-*.png`):
+  - `hands-gpu-rest.png`
+  - `hands-gpu-pen-pick.png`
+  - `hands-gpu-pen-drawing.png`
+  - `hands-gpu-coffee-grab.png`
+  - `hands-gpu-coffee-sip.png`
+  - `hands-gpu-award-pick.png`
+  - `hands-gpu-award-held.png`
+- Typing (`scripts/shots/typing-press.png`)
+- After Hours mid-tier scene (`scripts/shots/after-hours-mid-*.png`):
+  - `after-hours-mid-overview.png`
+  - `after-hours-mid-seat.png`
+  - `after-hours-mid-window.png`
+  - `after-hours-mid-coffee.png`
+
+## Historical Runs (Prior Interrupted Run Context)
+
+On earlier test cycles on 2026-09-20 prior to the Opus audio freeze and harness fixes:
+- `verify-after-hours.mjs` passed 26/26.
+- `verify-v3.mjs` was incomplete due to timeout in `screenCoverage()` under software rendering.
+- `verify-studio.mjs` had stopped after 12 assertions before room checks.
+- `verify-held-objects.mjs` failed at a 5-second seated wait.
+- `verify-reduced-hands.mjs`, `verify-room-interactions.mjs`, and `verify-real-apps.mjs` were unrun in that cycle.
+All of these regressions have now been re-run to completion with 100% passing status as detailed above.
 
 ## Baseline evidence
 

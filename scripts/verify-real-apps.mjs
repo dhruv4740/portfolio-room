@@ -24,6 +24,7 @@ const APPS = [
 const b = await chromium.launch(process.env.GPU === '1'
   ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] }
   : {});
+try {
 const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 await p.addInitScript(() => sessionStorage.setItem('v3:arrival-seen', '1'));
 const errors = [], external = [], failed = [];
@@ -85,4 +86,7 @@ for (const app of APPS) {
 }
 console.log('errors', errors); console.log('failed', failed); console.log('external', external);
 assert.equal(errors.length, 0); assert.equal(external.length, 0);
-console.log('PASS verify-real-apps'); await b.close();
+console.log('PASS verify-real-apps');
+} finally {
+  await b.close();
+}

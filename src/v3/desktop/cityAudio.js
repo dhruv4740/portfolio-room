@@ -86,7 +86,7 @@ export function startCityAmbience() {
     initAudio();
     if (!audioCtx) return;
     if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
+      audioCtx.resume().catch(() => {});
     }
     const t = audioCtx.currentTime;
     masterGain.gain.cancelScheduledValues(t);
@@ -110,6 +110,25 @@ export function stopCityAmbience() {
   }
 }
 
+// Hidden tabs: ramping the gain to zero leaves the looping noise source and
+// both hum oscillators running. Suspending the context stops that work. These
+// never create a context, so they cannot produce audio without a gesture.
+export function suspendCityAmbience() {
+  if (!audioCtx || audioCtx.state === 'closed') return;
+  try {
+    if (masterGain) {
+      const t = audioCtx.currentTime;
+      // Cancel any in-flight fade and land on silence, so a later resume does
+      // not restart mid-ramp at an audible level.
+      masterGain.gain.cancelScheduledValues(t);
+      masterGain.gain.setValueAtTime(0, t);
+    }
+    if (audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
+  } catch (err) {
+    console.warn('Audio suspend failed', err);
+  }
+}
+
 export function isCityAmbiencePlaying() {
   return playing;
 }
@@ -123,7 +142,9 @@ export function disposeCityAmbience() {
   playing = false;
   try {
     if (audioCtx) {
-      audioCtx.close();
+      // close() rejects if the context is already closed; the surrounding
+      // sync try/catch would not absorb that rejection.
+      audioCtx.close().catch(() => {});
       audioCtx = null;
       masterGain = null;
       noiseSource = null;

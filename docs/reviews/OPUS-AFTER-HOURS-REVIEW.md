@@ -282,6 +282,22 @@ Camera/light values I can derive, with units:
 Each item states its acceptance test and its structural cost. I derive cost
 from what the code makes the GPU do; I do not invent millisecond figures.
 
+**0 — Desk dimensions.** Ranked zero because everything below is tuned against
+the frame it produces, and doing it after items 1–6 means redoing their
+placement. It is also the largest single change in this list: it moves
+`WORKSPACE.anchors` (11 desk-relative entries), the leg and contact positions
+at `buildWorkspace.js:554`, `HAND_REST` and the shoulder height in
+`seatedHands.js:8`/`:104`, the seat and overview cameras, and the desk occluder
+in `bake_room.py:34` — followed by a bake re-run and a full held-object
+regression. Cost: zero GPU, high integration risk. **Acceptance:** the keyboard
+occupies ~30 % of the desk's width and the seated shoulder sits 0.45–0.55 m
+above the desk top. Hold the monitor at its current size pending an OS
+readability check (§1.1).
+
+If the parent judges that too disruptive this late, say so explicitly in the
+ledger and treat the scale as a stated stylisation — but do not leave it
+unexamined, because it is the first thing a builder will notice.
+
 **1 — Desk-top occlusion.** Highest visual return per unit of work and per unit
 of GPU. Two options: (a) extend the Blender bake to make the desk top a
 *receiver* and add a `desk` entry to `model.bakedMaterials`, giving free
@@ -484,30 +500,62 @@ re-enables it, the constraint set is silently wrong after a cancelled arrival.
 controls.maxDistance = 11;` — the values `WorkspaceStage.jsx:937` and `991`
 otherwise derive. One line.
 
-### 6.2 `captureProbe` hides `steam` and never restores it
+### 6.2 A foreign module mutates renderer state inside the owner's frame
 
-`afterHours.js:82` snapshots `[hands, figure, snow]` visibility; line 85 sets
-`steam.visible = false`; lines 91-92 restore hands, figure, snow and the
-reflector. **`steam.visible` is never restored.**
+`AGENTS.md` states the invariant plainly: "`WorkspaceStage.jsx` owns its own
+renderer and loop." `afterHours.js` does not respect it.
 
-It self-heals because `update()` rewrites `steam.visible` at line 144 *before*
-calling `captureProbe()` at line 151 — so steam is missing for the remainder of
-the capture frame only. Harmless today, and a trap for anyone who moves the
-probe call earlier or triggers it outside `update()`.
+`createAfterHours` takes `renderer` as a constructor parameter, builds a
+`PMREMGenerator` from it (`afterHours.js:75`), and inside `captureProbe`
+reaches into the owner's global state: it toggles
+`renderer.shadowMap.enabled` off and back on (`:87-88`), nulls
+`scene.environment` (`:86`), hides five scene objects (`:83-85`), and drives
+`cube.update()` — six render-target binds and six full scene passes (`:88`).
+All of this runs synchronously from `update()` (`:151`), which
+`WorkspaceStage`'s `tick` calls mid-frame.
 
-**Fix:** include `steam.visible` in the `visible` array at line 82 and restore
-it at line 91.
+Two concrete consequences. First, `renderer.shadowMap.enabled` is restored to
+whatever it was rather than to a known value, so if anything else ever toggles
+it the two writers will fight. Second, the invariant at `WorkspaceStage.jsx:66`
+(`shadowMap.autoUpdate = false`, baked once) is currently what keeps the six
+cube passes from re-baking the shadow map — a correctness property that lives
+in a different file from the code that depends on it, with no comment on either
+side saying so.
 
-### 6.3 `lastLamp` initialises to `-1`, which is truthy
+**Severity:** no observable defect today. It is an ownership violation that
+makes the shadow-baking invariant fragile, and it is the kind of thing that
+breaks silently when someone adds a second light.
 
-`afterHours.js:11` sets `lastLamp = -1`. `setSky` at line 154 reads
-`probes.get(lastLamp ? 'on' : 'off')`. Before the first `update()` runs,
-`-1` is truthy, so a `setSky('night')` call at that point requests the **`on`**
-probe regardless of the actual lamp state — installing the wrong environment or
-`null` if only the `off` probe was captured.
+**Fix:** give `WorkspaceStage` a narrow `withOfflineRender(fn)` helper that
+owns the save/restore of `shadowMap.enabled` and `scene.environment`, and pass
+*that* to `createAfterHours` instead of the raw renderer. No rewrite; it moves
+about eight lines across a boundary that already exists.
 
-**Fix:** initialise `lastLamp = 0`, or test `lastLamp === 1`.
+### 6.3 The construction-failure path leaves a live `document` listener
 
+`WorkspaceStage.jsx:1155-1165` is the React cleanup; `:1167` is the `catch`
+arm. They are not duplicates — the catch arm runs when construction throws, and
+in that case the effect returns nothing, so the cleanup at `:1156` never runs.
+
+The catch arm omits five things the cleanup does: the
+`document.removeEventListener('visibilitychange', refresh)` at `:1157`, the
+five canvas listener removals at `:1158-1162`, `gl.deleteQuery` at `:1163`,
+`gov.dispose()` and `api.current = null` at `:1164`.
+
+The `document`-level one is the problem. Listeners are registered at
+`:1067-1072`, well before `refresh()` at `:1154`, so an exception anywhere in
+between leaves `refresh` attached to `document`. And `refresh`
+(`WorkspaceStage.jsx:264-270`) has **no `disposed` guard** — every subsequent
+tab visibility change will call it, touching a disposed `controls`
+(`controls.enabled = false`), a disposed `gov` (`gov.markDirty()`) and
+`updateMarkers()` against a torn-down model, for the life of the page.
+
+**Severity:** requires a construction failure to trigger, which is narrow — but
+construction is exactly where a WebGL context failure lands, and that is the
+path most likely to throw on the low-end hardware the fallback exists for.
+
+**Fix:** add `if (disposed) return;` as the first line of `refresh`, and move
+the `document.removeEventListener` into the catch arm. Two lines.
 ### 6.4 A `fallback` status leaves `scene.environment` null, and metals go black
 
 `scene.environment` is only ever assigned from a captured probe
@@ -546,18 +594,36 @@ consecutive frames under ~20 ms — and expose a `setTier(tier)` that at minimum
 adjusts the snow draw range. Creating the `Reflector` lazily on promotion is a
 larger change and I would not do it in this pass.
 
-Considered and cut to stay within five: the probe's six synchronous scene
-renders inside a rAF tick (`afterHours.js:80-88`) — bounded to at most two
-captures per session by the `probes` cache, so it is a one-off spike rather than
-a sustained cost; and the duplicated teardown blocks at `WorkspaceStage.jsx:1156`
-and `1167`, which are correct but drift-prone.
+### Minor correctness bugs, not architectural — fix in passing
+
+Two real defects that do not belong in any of the prompt's four risk domains:
+
+- **`afterHours.js:82-92`** — `captureProbe` snapshots `[hands, figure, snow]`
+  visibility and restores them, and restores the reflector, but sets
+  `steam.visible = false` at `:85` and **never restores it**. It self-heals
+  because `update()` rewrites `steam.visible` at `:144` before calling
+  `captureProbe()` at `:151`, so steam is missing for the capture frame only.
+  Harmless today; a trap for anyone who moves the probe call. *Fix:* add
+  `steam.visible` to the array at `:82` and restore at `:91`.
+- **`afterHours.js:11`** — `lastLamp = -1`, and `setSky` at `:154` reads
+  `probes.get(lastLamp ? 'on' : 'off')`. `-1` is truthy, so a `setSky('night')`
+  before the first `update()` requests the **`on`** probe regardless of the
+  actual lamp state, installing the wrong environment or `null`. *Fix:*
+  initialise to `0`, or test `lastLamp === 1`.
+
+Also considered and cut: the probe's six synchronous scene renders inside a rAF
+tick (`afterHours.js:80-88`) — bounded to at most two captures per session by
+the `probes` cache, so a one-off spike rather than a sustained cost, and
+covered structurally by risk 6.2.
 
 ---
 
 ## Handback
 
-**Files inspected (read-only):** `AGENTS.md`; `docs/HANDOFF.md` (indexed, not
-read in full); `docs/AFTER-HOURS-HANDOFF.md`; `docs/AFTER-HOURS-PLAN.md`;
+**Files inspected (read-only):** `AGENTS.md`; `docs/HANDOFF.md` (lines 1-150
+read in full, remainder searched by keyword for scale, lighting and monitor
+decisions); `docs/FABLE-NOTES.md` (searched, not read in full);
+`docs/AFTER-HOURS-HANDOFF.md`; `docs/AFTER-HOURS-PLAN.md`;
 `docs/ASSET-REGISTER.md`; `docs/AFTER-HOURS-ACCEPTANCE.md`;
 `src/v3/desktop/buildWorkspace.js`; `buildRoomInteractions.js` (listing only);
 `seatedHands.js`; `handSurface.js`; `handAssets.js` (listing only);
@@ -580,7 +646,14 @@ receivers); `scripts/shots/after-hours-{overview,seat,window}.png`;
   §1.2 uses the snow volume's `z` extent as a proxy and says so.
 - No GPU, frame-time, draw-call or triangle measurement was taken. All cost
   statements in §3 are structural (passes, draw calls, texture bytes), not timed.
-- `docs/HANDOFF.md` was not read line by line.
+- `docs/HANDOFF.md` lines 151-438 and `docs/FABLE-NOTES.md` were searched by
+  keyword rather than read line by line. If a deliberate decision about desk or
+  monitor scale is recorded in a passage my searches missed, §1.1 is wrong about
+  intent (though not about the measurements).
+- No verification suite was run. `verify-after-hours.mjs`,
+  `verify-after-hours-audio.mjs`, `verify-v3.mjs`, `verify-studio.mjs`,
+  `verify-held-objects.mjs`, `verify-room-interactions.mjs`,
+  `verify-reduced-hands.mjs` and `verify-real-apps.mjs` are all unrun by me.
 
 **No code was edited.** No commit, stash, reset, dependency install, build,
 server, browser, GPU or Blender process was run. The only file written by this

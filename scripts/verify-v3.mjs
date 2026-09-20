@@ -95,6 +95,7 @@ const pinSurface = (page, surface) =>
     } catch {}
   }, surface);
 
+try {
 // ---------------------------------------------------------------------------
 // 0. capability fallback — software GPU must never get the 3D surface
 // ---------------------------------------------------------------------------
@@ -509,8 +510,10 @@ const pinSurface = (page, surface) =>
   await ctx.close();
 }
 
-await browser.close();
-await fallbackBrowser.close();
+} finally {
+  await browser.close();
+  await fallbackBrowser.close();
+}
 
 const failed = results.filter((r) => !r.pass);
 writeFileSync(`${SHOTS}/v3-results.json`, JSON.stringify(results, null, 2));

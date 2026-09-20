@@ -67,17 +67,23 @@ function installAudioProbe(page) {
 
     const origAdd = EventTarget.prototype.addEventListener;
     const origRemove = EventTarget.prototype.removeEventListener;
-    EventTarget.prototype.addEventListener = function (type, ...rest) {
+    EventTarget.prototype.addEventListener = function (type, listener, ...rest) {
       if ((this === document || this === window) && TRACKED_TYPES.includes(type)) {
-        probe.listeners[type] = (probe.listeners[type] || 0) + 1;
+        const stack = (new Error()).stack || '';
+        if (!stack.includes('InjectedScript') && !stack.includes('addHitTargetInterceptorListeners')) {
+          probe.listeners[type] = (probe.listeners[type] || 0) + 1;
+        }
       }
-      return origAdd.call(this, type, ...rest);
+      return origAdd.call(this, type, listener, ...rest);
     };
-    EventTarget.prototype.removeEventListener = function (type, ...rest) {
+    EventTarget.prototype.removeEventListener = function (type, listener, ...rest) {
       if ((this === document || this === window) && TRACKED_TYPES.includes(type)) {
-        probe.listeners[type] = (probe.listeners[type] || 0) - 1;
+        const stack = (new Error()).stack || '';
+        if (!stack.includes('InjectedScript') && !stack.includes('addHitTargetInterceptorListeners')) {
+          probe.listeners[type] = (probe.listeners[type] || 0) - 1;
+        }
       }
-      return origRemove.call(this, type, ...rest);
+      return origRemove.call(this, type, listener, ...rest);
     };
 
     const origDispatch = EventTarget.prototype.dispatchEvent;
@@ -391,12 +397,15 @@ async function runHiddenTabAndLifecycle(browser) {
     await setHidden(page, false);
     await page.waitForTimeout(150);
     const afterUnhide = await probeSnapshot(page);
-    record('hidden-tab: returning to the foreground does NOT auto-resume the suspended context (see findings)',
-      afterUnhide.contextStates[0] === 'suspended', `states=${JSON.stringify(afterUnhide.contextStates)}`);
-    await page.mouse.click(6, 6); // the next gesture is what actually resumes it
+    record('hidden-tab: returning to the foreground auto-resumes the suspended context',
+      afterUnhide.contextStates[0] === 'running', `states=${JSON.stringify(afterUnhide.contextStates)}`);
+    const cityPlayingAfterUnhide = await page.evaluate(() => window.__cityAmbience?.playing());
+    record('hidden-tab: returning to the foreground resumes city ambience when window is open',
+      cityPlayingAfterUnhide === true, `playing=${cityPlayingAfterUnhide}`);
+    await page.mouse.click(6, 6); // ensure subsequent gesture maintains running context
     await page.waitForTimeout(200);
     const afterNextGesture = await probeSnapshot(page);
-    record('hidden-tab: the next pointer/keyboard gesture resumes the context',
+    record('hidden-tab: subsequent pointer/keyboard gesture maintains running context',
       afterNextGesture.contextStates[0] === 'running', `states=${JSON.stringify(afterNextGesture.contextStates)}`);
 
     // Lifecycle: unmount Scan (navigate to /work), confirm every doc/window
@@ -442,7 +451,9 @@ async function runHiddenTabAndLifecycle(browser) {
 
 // ---------------------------------------------------------------------------
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.GPU === '1'
+  ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] }
+  : {});
 try {
   await runGestureGate(browser);
   await runMuteAndIndependence(browser);

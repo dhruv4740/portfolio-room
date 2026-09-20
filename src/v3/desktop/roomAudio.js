@@ -54,9 +54,14 @@ export function unlockRoomAudio() {
   }
 }
 
+// Suspending on hide is only half the contract: without the matching resume
+// the context stays suspended after the tab returns, and playRoomFoley's
+// `state !== 'running'` guard silently drops every later cue. The context was
+// already unlocked by a real gesture, so resuming it does not create audio.
 function handleVisibility() {
-  if (!audioCtx) return;
+  if (!audioCtx || audioCtx.state === 'closed') return;
   if (document.hidden) audioCtx.suspend().catch(() => {});
+  else if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
 }
 
 function disconnectLater(nodes, delay) {
@@ -161,7 +166,9 @@ export function disposeRoomAudio() {
     nodes.forEach((node) => { try { node.disconnect(); } catch {} });
   });
   pendingCleanups.clear();
-  try { audioCtx?.close(); } catch {}
+  // close() returns a promise; a sync try/catch cannot absorb its rejection
+  // (it rejects when the context is already closed), so catch it explicitly.
+  try { audioCtx?.close().catch(() => {}); } catch {}
   audioCtx = null;
   masterGain = null;
 }

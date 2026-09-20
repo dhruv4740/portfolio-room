@@ -43,5 +43,8 @@ async function session(tier) {
   }
   await ctx.close();
 }
-for (const t of TIERS) await session(t);
-await b.close();
+try {
+  for (const t of TIERS) await session(t);
+} finally {
+  await b.close();
+}

@@ -11,7 +11,7 @@ import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
-import { startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted } from './cityAudio.js';
+import { startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted, suspendCityAmbience } from './cityAudio.js';
 import { disposeRoomAudio, isRoomMuted, playRoomFoley, setRoomMuted, unlockRoomAudio } from './roomAudio.js';
 import { anchors, projects, identity } from '../content/index.js';
 import {
@@ -92,11 +92,21 @@ export default function Scan() {
   const dhruvRef = useRef(null);
   const windowIntent = useRef(false);
 
-  arrivalTokenRef.current = arrivalToken;
+  // arrivalTokenRef is the authoritative live token, written synchronously at
+  // every mutation site. It used to be assigned during render from
+  // `arrivalToken`, which left a window between a user action and React's
+  // re-render in which the ref still held the old token: a natural completion
+  // landing in that window passed the guard below and re-settled the camera on
+  // top of whatever the user had just chosen, and a second Escape pressed
+  // inside it was swallowed by the still-active arrival branch.
+  const setArrival = useCallback((token) => {
+    arrivalTokenRef.current = token;
+    setArrivalToken(token);
+  }, []);
 
   const cancelArrival = useCallback(() => {
-    if (arrivalTokenRef.current !== 0) setArrivalToken(0);
-  }, []);
+    if (arrivalTokenRef.current !== 0) setArrival(0);
+  }, [setArrival]);
 
   const replayArrival = useCallback(() => {
     if (screenPhase !== 'room' || !seated || activeId) return;
@@ -106,9 +116,8 @@ export default function Scan() {
     setOverviewOpen(true);
     returnOrigin.current = 'room';
     launchLocked.current = false;
-    const token = nextArrivalToken.current++;
-    setArrivalToken(token);
-  }, [activeId, screenPhase, seated]);
+    setArrival(nextArrivalToken.current++);
+  }, [activeId, screenPhase, seated, setArrival]);
 
   const handleArrivalComplete = useCallback((token) => {
     if (token !== arrivalTokenRef.current) return;
@@ -118,8 +127,8 @@ export default function Scan() {
     setOverviewOpen(true);
     returnOrigin.current = 'room';
     launchLocked.current = false;
-    setArrivalToken(0);
-  }, []);
+    setArrival(0);
+  }, [setArrival]);
 
   const handleScreenRect = useCallback((rect) => {
     dhruvRef.current?.setScreenRect(rect);
@@ -146,11 +155,9 @@ export default function Scan() {
     setIntroDone(true);
     if (!reduced && !hasSeenArrival()) {
       markArrivalSeen();
-      const token = nextArrivalToken.current++;
-      arrivalTokenRef.current = token;
-      setArrivalToken(token);
+      setArrival(nextArrivalToken.current++);
     }
-  }, [reduced]);
+  }, [reduced, setArrival]);
 
   const handleSelect = useCallback((id, meta) => {
     if (screenPhase !== 'room') return;
@@ -242,19 +249,35 @@ export default function Scan() {
     const onPointerDown = () => unlockRoomAudio();
     const onKeyDown = () => unlockRoomAudio();
     const onFoley = (event) => playRoomFoley(event.detail);
-    const onVisibility = () => { if (document.hidden) stopCityAmbience(); };
     document.addEventListener('pointerdown', onPointerDown, { passive: true });
     document.addEventListener('keydown', onKeyDown, { passive: true });
     window.addEventListener('workspace:foley', onFoley);
-    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       document.removeEventListener('pointerdown', onPointerDown);
       document.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('workspace:foley', onFoley);
-      document.removeEventListener('visibilitychange', onVisibility);
       disposeRoomAudio();
     };
   }, []);
+
+  // Hidden tabs stop ambience and suspend its oscillators; returning restores
+  // it only when the sash is still open and the room is still the live view.
+  // Own effect so it reads current `seated`/`screenPhase` rather than the
+  // values captured when the gesture listeners above were bound.
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.hidden) {
+        stopCityAmbience();
+        suspendCityAmbience();
+        return;
+      }
+      // startCityAmbience resumes the context itself. If the sash is shut the
+      // context stays suspended, which is the point of suspending it.
+      if (windowIntent.current && seated && screenPhase === 'room') startCityAmbience();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [seated, screenPhase]);
 
   useEffect(() => {
     setCityAmbienceMuted(roomMuted);
