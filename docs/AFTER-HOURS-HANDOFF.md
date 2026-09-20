@@ -1,5 +1,21 @@
 # After Hours — live continuation ledger
 
+## Current Codex correction — hands/body/contact
+
+Owner requested parallel Codex hands / Opus environment. New exact Opus brief:
+PROMPT-OPUS-ROOM-COMPOSITION.md. Codex accepts the new bare BAMEN source for
+continued correction, repairs shared torso lean, cuff overlap, F/J rest
+registration and skin-versus-key clearance. Full details and limitations:
+reviews/CODEX-HAND-SUPPORT-PASS.md. Do not confuse the older DJMaesen glove
+prototype with the later BAMEN download. Source credit now includes BAMEN.
+
+Checkpoint validation: build, procedural asset validation, real-GPU hand
+support (rest/F/J/coffee) and all8 reduced-motion actions pass. GPU screenshots
+show remaining coffee wrist/sleeve seam; this is not final art acceptance.
+Authored gzip now625,368 bytes; normal texture still1.52MB. Room proportions
+still force about24cm of torso lean at rest; Opus candidate must resolve that.
+GPU/build slot released to Opus. No full app regression or new FPS claim.
+
 ## Latest: integration lead transferred to Opus
 
 Owner authorized several autonomous Opus/Gemini passes. Current execution

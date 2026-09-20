@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { loadHandAssets } from './handAssets.js';
 import { applyHandAppearance } from './handAppearance.js';
-const authored=typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('hands')==='authored';
+const handsParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('hands') : null;
+const authored = typeof window !== 'undefined' && handsParam !== 'procedural' && handsParam !== 'v1';
 const prebuilt = typeof window === 'undefined' ? null : await loadHandAssets(authored?'hands-authored':'hands-v1').catch(error => { console.warn(error.message + '; generating local fallback'); return null; });
 const authoredMaps=authored&&prebuilt?await Promise.all(['color.jpg','normal.png','roughness.jpg'].map(async(name,i)=>{
   const texture=await new THREE.TextureLoader().loadAsync(`${import.meta.env.BASE_URL}models/hands-authored/${name}`);
@@ -40,17 +41,25 @@ export function bindHandSurface(h, root, skin, cloth) {
     if(authoredMaps){
       skin.bumpMap?.dispose();skin.bumpMap=null;
       [skin.map,skin.normalMap,skin.roughnessMap]=authoredMaps;
-      skin.color.set('#ffffff');skin.vertexColors=false;skin.roughness=.85;skin.normalScale.set(.65,.65);skin.needsUpdate=true;
+      skin.color.set('#ffffff');skin.vertexColors=false;skin.roughness=1.0;skin.normalScale.set(1.0,1.0);skin.needsUpdate=true;
+      skin.onBeforeCompile=shader=>{shader.fragmentShader=shader.fragmentShader.replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor = max(roughnessFactor, 0.58);');};
+      skin.customProgramCacheKey=()=> 'authored-skin-roughness-floor';
     }
     const skeleton=new THREE.Skeleton(bones), offset=h.side===-1?0:2;
     h.skinMesh=new THREE.SkinnedMesh(prebuilt[offset].clone(),skin);
     h.clothMesh=new THREE.SkinnedMesh(prebuilt[offset+1].clone(),cloth);
-    for(const source of h.clothParts){source.removeFromParent();source.geometry.dispose();}
+    // Keep the fitted shirt sleeve and elbow cover; authored skin ends under
+    // the sleeve, with a bare wrist exposed. No disconnected short-sleeve ring.
+    const toRemove = authoredMaps ? [] : h.clothParts;
+    for(const source of toRemove){source.removeFromParent();source.geometry.dispose();}
     for(const mesh of [h.skinMesh,h.clothMesh]){root.add(mesh);mesh.bind(skeleton,new THREE.Matrix4());mesh.frustumCulled=false;mesh.castShadow=false;mesh.receiveShadow=true;mesh.raycast=()=>{};}
     h.skeleton=skeleton;
     if(!authoredMaps)applyHandAppearance(h);
     bindNails(h,root,bones);
-    if(authoredMaps)h.nailMesh.visible=false; // Nails are part of the authored skin.
+    if(authoredMaps){
+      h.nailMesh.visible=false; // Nails are part of the authored skin.
+      h.clothMesh.visible=false;h.clothMesh.userData={hidden:true}; // Bare arms: hide cloth sleeve mesh.
+    }
     return;
   }
 

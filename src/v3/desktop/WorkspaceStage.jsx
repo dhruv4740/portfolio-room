@@ -10,6 +10,7 @@ import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
 import { createAfterHours } from './afterHours.js';
 import { createSceneDirector } from './sceneDirector.js';
+import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
 export function resolveSkyState() {
   const parseSky = (str) => {
@@ -123,6 +124,7 @@ export default function WorkspaceStage({
         },
       });
       const originalSetSky = model.setSky;
+      model.hands.setKeyboard(model.keys);
       model.setSky = (skyState) => {
         originalSetSky(skyState);
         afterHours?.setSky(skyState);
@@ -229,6 +231,8 @@ export default function WorkspaceStage({
         // stretch so you are never inside your own skull.
         const inTheSeat = state.current.seated && seatDistance < 0.9;
         model.figure.root.visible = inTheSeat;
+        if(!host.dataset.actionState||host.dataset.actionState==='idle')model.hands.refreshKeyboardSupport();
+        model.figure.setUpperBodyOffset(new THREE.Vector3().copy(model.hands.lean).add(model.hands.torsoOffset));
         // The hands are a separate group from the body. Left ungated they lie
         // on the keyboard above an empty chair — the exact disembodied-arms
         // problem the figure was added to solve.
@@ -278,7 +282,7 @@ export default function WorkspaceStage({
       // shoulders together) instead of stretching the arm.
       const SEAT = new THREE.Vector3(...WORKSPACE.seat.position), look = new THREE.Vector3();
       const REST = [-1, 1].map(s => ({ p: new THREE.Vector3(s * HAND_REST.x, HAND_REST.y, HAND_REST.z), q: new THREE.Quaternion(), pose: POSES.rest }));
-      const restOf = h => REST[h === model.hands.left ? 0 : 1];
+      const restOf = h => {const rest=REST[h === model.hands.left ? 0 : 1];rest.p.set(h.restX??h.side*HAND_REST.x,HAND_REST.y+(h.restLift||0),h.restZ??HAND_REST.z);return rest;};
       const poseA = { p: new THREE.Vector3(), q: new THREE.Quaternion(), pose: POSES.rest }, poseB = { p: new THREE.Vector3(), q: new THREE.Quaternion(), pose: POSES.rest };
       // A grip is { obj, p, r, pose } in the object's frame (r: Euler array or
       // quaternion; pose: a POSES name) or a snapshot { p, q, pose } in world space.
@@ -583,16 +587,25 @@ export default function WorkspaceStage({
         } else lastInk = null;
         invalidate();
       }
-      const KEY_TOP = 1.2375;
       function pressKey(key,index) {
         if(!state.current.seated || state.current.phase !== 'room' || state.current.activeAnchorId) return;
         callbacks.current.onTypeKey?.(key);
-        // The finger over that column dips until its tip meets the keycap top, then both come back up.
-        const col=index%12,h=col<6?model.hands.left:model.hands.right,finger=h.fingers[Math.min(3,Math.floor((col<6?col:col-6)*4/6))];
-        const tip=finger.localToWorld(finger.userData.tip.clone().sub(finger.position)),length=finger.userData.tip.distanceTo(finger.position);
-        const dip=Math.asin(THREE.MathUtils.clamp((tip.y-KEY_TOP)/length,0,0.9));
-        const depression={y:0};gsap.to(depression,{y:0.009,duration:0.07,repeat:1,yoyo:true,
-          onUpdate(){model.roomActions.setKey(index,depression.y);finger.rotation.x=-dip*depression.y/0.009-(depression.y>0?Math.asin(Math.min(0.9,depression.y/length)):0);invalidate();},
+        const boxes=keySurfaceBoxes(model.keys),center=boxes[index]?.getCenter(new THREE.Vector3());if(!center)return;
+        let h,finger,digit,distance=Infinity;
+        for(const hand of [model.hands.left,model.hands.right])hand.digits.forEach((f,i)=>{
+          const tip=f.localToWorld(f.userData.tip.clone().sub(f.position));const d=(tip.x-center.x)**2+(tip.z-center.z)**2;
+          if(d<distance){distance=d;h=hand;finger=f;digit=i;}
+        });
+        // Solve once against skin and each cap's real top, not a bone tip and
+        // one hardcoded plane. Limit travel to 3mm; 9mm buried the old fingers.
+        h.typingTween?.kill();h.digits.forEach(f=>{f.rotation.x=0;});
+        if(h.typingKey!==undefined)model.roomActions.setKey(h.typingKey,0);h.typingKey=index;
+        boxes[index].max.y-=.003;let lo=0,hi=.45;
+        for(let n=0;n<9;n++){const mid=(lo+hi)/2;finger.rotation.x=-mid;
+          const {clearance}=skinKeyClearance(h,boxes,digit);if(clearance>=.0004)lo=mid;else hi=mid;
+        }
+        finger.rotation.x=0;const dip=lo,depression={y:0};h.typingTween=gsap.to(depression,{y:.003,duration:.09,repeat:1,yoyo:true,
+          onUpdate(){model.roomActions.setKey(index,depression.y);finger.rotation.x=-dip*depression.y/.003;invalidate();},
           onComplete(){model.roomActions.setKey(index,0);finger.rotation.x=0;invalidate();}});
         gsap.ticker.wake();
       }
@@ -1127,7 +1140,11 @@ export default function WorkspaceStage({
             if (name === 'coffeeMug') return boxToPlain(box3.setFromObject(model.roomActions.objects.coffee));
             if (['handL','handR','armL','armR'].includes(name)) {
               const hand = name.endsWith('L') ? model.hands.left : model.hands.right;
-              const mesh = (name.startsWith('hand') || hand.clothMesh?.userData?.hidden) ? hand.skinMesh : hand.clothMesh;
+              if(name.startsWith('arm')&&hand.clothMesh?.userData?.hidden){
+                model.hands.root.updateMatrixWorld(true);box3.makeEmpty();
+                hand.clothParts.filter(o=>o.parent).forEach(o=>box3.expandByObject(o));return boxToPlain(box3);
+              }
+              const mesh = name.startsWith('hand') ? hand.skinMesh : hand.clothMesh;
               model.hands.root.updateMatrixWorld(true);
               mesh.computeBoundingBox();
               return boxToPlain(box3.setFromObject(mesh));
@@ -1141,6 +1158,8 @@ export default function WorkspaceStage({
             return null;
           },
           timeline() { return action || null; },
+          keyboardSkinContact(){return [model.hands.left,model.hands.right].map(h=>({restLift:h.restLift,...skinKeyClearance(h,keySurfaceBoxes(model.keys))}));},
+          bodyAttachment(){return {torsoOffset:model.hands.torsoOffset.toArray(),upperArmLengths:[model.hands.left.sleeve.scale.y,model.hands.right.sleeve.scale.y]};},
           showHands(v) { model.hands.root.visible = !!v; invalidate(); },
           // Real-GPU cost probes (scripts/measure-gpu.mjs): governor state, live pixel ratio, draw calls.
           perf() { const i = renderer.info.render, s = renderer.getSize(new THREE.Vector2()); return { ...gov.getStats(), pixelRatio: renderer.getPixelRatio(), calls: i.calls, triangles: i.triangles, w: s.x, h: s.y, shadows: renderer.shadowMap.enabled }; },

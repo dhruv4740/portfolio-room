@@ -3,6 +3,7 @@ import * as THREE from 'three';
 // Static seated silhouette; only the separate arm assembly changes pose.
 export function buildSeatedFigure() {
   const root = new THREE.Group(); root.name = 'Seated figure';
+  const upperParts=[];
   const shirt = new THREE.MeshStandardMaterial({color:'#3c4949',roughness:1});
   const trousers = new THREE.MeshStandardMaterial({color:'#242c36',roughness:1});
   const shoe = new THREE.MeshStandardMaterial({color:'#242321',roughness:0.9});
@@ -35,13 +36,23 @@ export function buildSeatedFigure() {
     ellipsoid('Knee',[x+side*0.025,0.68,0.76],[0.094,0.093,0.096],trousers);
     limb('Trouser leg',[x+side*0.025,0.68,0.76],[x+side*0.03,0.17,0.70],0.091,0.061,trousers);
     ellipsoid('Shoe',[x+side*0.03,0.12,0.63],[0.078,0.055,0.16],shoe);
-    ellipsoid('Shoulder',[0.05+side*0.225,1.40,1.23],[0.062,0.083,0.078],shirt);
+    upperParts.push(ellipsoid('Shoulder',[0.05+side*0.225,1.40,1.23],[0.062,0.083,0.078],shirt));
   }
   const head=new THREE.Group();head.name='Head hidden at first person';root.add(head);
   ellipsoid('Neck',[0.05,1.51,1.23],[0.063,0.095,0.065],skin,head);
   ellipsoid('Head silhouette',[0.05,1.69,1.21],[0.112,0.147,0.114],skin,head);
   // A continuous hair cap covers the back and sides; there are no face features.
   ellipsoid('Hair',[0.05,1.735,1.23],[0.117,0.112,0.116],hair,head);
-  ellipsoid('Shirt neckline',[0.05,1.46,1.23],[0.17,0.045,0.085],shirt);
-  return {root,head};
+  upperParts.push(ellipsoid('Shirt neckline',[0.05,1.46,1.23],[0.17,0.045,0.085],shirt),head);
+  const homes=upperParts.map(o=>o.position.clone()),last=new THREE.Vector3(Infinity,0,0);
+  return {root,head,setUpperBodyOffset(offset){
+    if(last.distanceToSquared(offset)<1e-10)return;last.copy(offset);
+    const p=geometry.attributes.position;
+    for(let i=0;i<p.count;i++){
+      const y=positions[i*3+1],weight=THREE.MathUtils.smoothstep(y,.79,1.37);
+      p.setXYZ(i,positions[i*3]+offset.x*weight,y+offset.y*weight,positions[i*3+2]+offset.z*weight);
+    }
+    p.needsUpdate=true;geometry.computeVertexNormals();geometry.computeBoundingSphere();
+    upperParts.forEach((o,i)=>o.position.copy(homes[i]).add(offset));
+  }};
 }

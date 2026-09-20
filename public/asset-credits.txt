@@ -25,13 +25,22 @@ of the footprint, scaled to 72.7 x 124 x 38 mm (including an 0.85 narrowing in
 X), texture coordinates dropped and parts batched by material. Original source
 and changes recorded in repository.
 
-FP arms — DJMaesen (bumstrum)
+FREE GameReady [FPS Female Arms] — BAMEN (bamenwo05)
+https://sketchfab.com/3d-models/free-gameready-fps-female-arms-007f5dd998ad4376943ed6fb3dfa2e15
+https://sketchfab.com/bamenwo05
+Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+Changes: mirrored winding correction, rig retargeting, forearm clipping inside
+an overlapping sleeve, indexed geometry and 1K texture downsampling.
+Current authored bare hand/forearm asset.
+
+Historical prototype: FP arms — DJMaesen (bumstrum)
 https://sketchfab.com/3d-models/fp-arms-06ee1407117d4e5ab343becb4ee44bb6
 https://sketchfab.com/bumstrum
 Creative Commons Attribution 4.0 International:
 https://creativecommons.org/licenses/by/4.0/
 Changes: rig retargeting, hidden arm clipping, texture downsampling, binary
-packaging. Used only by the opt-in authored-hands comparison prototype.
+packaging. Previously used by the opt-in comparison prototype; now superseded.
 This asset depicts fingerless gloves, not bare hands.
 
 Additional room materials are credited in the repository's docs/ASSET-REGISTER.md.

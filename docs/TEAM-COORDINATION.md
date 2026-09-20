@@ -1,5 +1,18 @@
 # Active team contract — Opus leads the next multi-pass run
 
+## Latest override: Codex hands / Opus environment, in parallel
+
+Owner authorized the corrective pass. Codex owns current hand,
+body and keyboard-contact code, WorkspaceStage, buildSeatedFigure and hand
+assets/scripts. Final hand checks have completed; build/browser/GPU slot is
+RELEASED to Opus. Codex writes only its explicit checkpoint paths to Git, then
+releases Git to Opus. Opus works in NEW candidate environment files specified in
+PROMPT-OPUS-ROOM-COMPOSITION.md; no live builder or coordinate edits. This
+supersedes the older ownership/paused/slot paragraphs below until released.
+New shared metre-scale contract is in that prompt. Gemini's bare BAMEN edits
+were reviewed and retained by Codex; they are a different asset from the older
+gloves. See reviews/CODEX-HAND-SUPPORT-PASS.md for the remaining coffee seam.
+
 Owner explicitly authorized Opus + Gemini to work together on 2026-09-20.
 Opus may prompt and coordinate Gemini. Codex is preserving usage for the hardest
 3D/anatomy decisions and will review after several passes. No internal agents.

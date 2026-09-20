@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { bindHandSurface } from './handSurface.js';
 import { createHandSkin } from './handAppearance.js';
+import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
 // Connected skin driven by finger bones and an analytic two-bone arm solve. Hand frame (both hands): fingers
 // point -z, palm faces -y, wrist at +z, thumb on the side nearer the body's
@@ -77,8 +78,10 @@ export function seatedHands() {
     m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3().subVectors(b, a).normalize());
   };
   const hands = [];
+  let keyboard=null,keyboardGeometry=null;
   // Leaning in moves both shoulders (the camera moves with them in WorkspaceStage).
   const lean = new THREE.Vector3();
+  const torsoOffset=new THREE.Vector3(),reachWrist=new THREE.Vector3(),reachDelta=new THREE.Vector3();
   for (const side of [-1, 1]) {
     const hand = new THREE.Bone(); root.add(hand);
 
@@ -136,7 +139,7 @@ export function seatedHands() {
     applyPose(h);
     h.hand.updateMatrixWorld(true);
     wristW.copy(WRIST); h.hand.localToWorld(wristW);
-    s0.copy(h.shoulder).add(lean); s.copy(s0);
+    s0.copy(h.shoulder).add(lean).add(torsoOffset); s.copy(s0);
     dir.subVectors(wristW, s); let distance = dir.length(); dir.normalize();
     if (distance > REACH) { s.addScaledVector(dir, distance - REACH); distance = REACH; }
     pole.set(h.side * 0.25, -1, 0.1); pole.addScaledVector(dir, -pole.dot(dir)).normalize();
@@ -155,11 +158,22 @@ export function seatedHands() {
     // The upper arm runs from the real shoulder (behind the camera) so its end never floats in view.
     fit(h.sleeve, s0, elbowW);
   }
-  function update() { hands.forEach(updateHand); }
+  function update() {
+    // Both arms share one real torso lean. Previously each solve invented a
+    // forward shoulder while its sleeve remained attached to the old torso.
+    // Project a common translation into each reachable shoulder volume.
+    torsoOffset.set(0,0,0);
+    for(let pass=0;pass<12;pass++)for(const h of hands){
+      h.hand.updateWorldMatrix(true,false);reachWrist.copy(WRIST).applyMatrix4(h.hand.matrixWorld);
+      reachDelta.copy(reachWrist).sub(h.shoulder).sub(lean).sub(torsoOffset);
+      const distance=reachDelta.length();if(distance>REACH)torsoOffset.addScaledVector(reachDelta,(distance-REACH)/distance);
+    }
+    hands.forEach(updateHand);
+  }
   function reset() {
     lean.set(0, 0, 0);
     for (const h of hands) {
-      h.hand.position.set(h.side * HAND_REST.x, HAND_REST.y, HAND_REST.z); h.hand.rotation.set(0, 0, 0);
+      h.hand.position.set(h.restX??h.side*HAND_REST.x, HAND_REST.y+(h.restLift||0), h.restZ??HAND_REST.z); h.hand.rotation.set(0, 0, 0);
       Object.assign(h.pose, POSES.rest); for (const f of h.fingers) f.rotation.x = 0;
       h.hand.visible = h.arm.visible = h.sleeve.visible = h.elbow.visible = true;
     }
@@ -189,5 +203,21 @@ export function seatedHands() {
     bindHandSurface(h, root, skin, cloth);
   }
   reset();
-  return { root, left: hands[0], right: hands[1], lean, update, reset, localTips, pinchFrame };
+  function refreshKeyboardSupport(){
+    if(!keyboard||keyboardGeometry===keyboard.geometry)return;
+    keyboardGeometry=keyboard.geometry;
+    hands.forEach(h=>{h.restLift=0;});reset();
+    const boxes=keySurfaceBoxes(keyboard);
+    // Index fingers rest on F/J, not symmetric positions across a full-size
+    // keyboard: the numeric/navigation block shifts the letter area left.
+    for(const [i,h] of hands.entries()){
+      const home=boxes[i===0?27:30]?.getCenter(new THREE.Vector3());if(!home)continue;
+      const tip=localTips(h).digits[0];h.restX=home.x-tip.x;h.restZ=home.z-tip.z;
+    }
+    reset();
+    for(const h of hands){const {clearance}=skinKeyClearance(h,boxes);h.restLift=Number.isFinite(clearance)?Math.max(0,.002-clearance):0;}
+    reset();
+  }
+  return { root, left: hands[0], right: hands[1], lean, torsoOffset, update, reset, localTips, pinchFrame,
+    setKeyboard(keys){keyboard=keys;refreshKeyboardSupport();},refreshKeyboardSupport };
 }

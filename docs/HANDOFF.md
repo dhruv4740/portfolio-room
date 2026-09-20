@@ -1,5 +1,13 @@
 # Active work — After Hours realism upgrade
 
+## Latest correction: hands/body versus environment
+
+Codex resumed at owner request. Read reviews/CODEX-HAND-SUPPORT-PASS.md for
+the current bare BAMEN hand correction, contact solver and verification limits.
+Opus has PROMPT-OPUS-ROOM-COMPOSITION.md for an isolated new metre-scale room
+candidate. This supersedes old asset-integration queues and gloved-default
+descriptions. See TEAM for live ownership and GPU slot. No internal agents.
+
 ## Latest handoff: Opus + Gemini multi-pass integration
 
 The owner authorized Opus to lead integration and direct Gemini while Codex
