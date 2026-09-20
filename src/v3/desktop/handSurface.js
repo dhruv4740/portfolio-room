@@ -57,6 +57,9 @@ export function bindHandSurface(h, root, skin, cloth) {
   }
   // The end is buried under the cuff; wrist weights blend over the palm heel.
   segment(h.arm, point(h.arm, [0, 0, 0]), point(h.arm, [0, .23, 0]), .018, .016);
+  // A wrist is an oval section, not a round tube. Keep the long axis and
+  // bone weights unchanged; flatten only the local forearm depth near the cuff.
+  parts[parts.length-1].depthAxis = point(h.arm,[0,0,1]).sub(point(h.arm,[0,0,0])).normalize();
   const distance = (part, x, y, z) => {
     if (part.palm) {
       const t = THREE.MathUtils.smoothstep(z, -.040, .050);
@@ -64,7 +67,18 @@ export function bindHandSurface(h, root, skin, cloth) {
       const thickness = THREE.MathUtils.lerp(.012, .011, t);
       const radius = .008;
       const qx = Math.abs(x) - (width-radius);
-      const qy = Math.abs(y+.001) - (thickness-radius);
+      // Shallow dorsal arch and metacarpal ridges break the former flat,
+      // mitten-like back. The palm-facing side keeps its existing grip surface.
+      const lateral = Math.min(1, Math.abs(x)/width);
+      let dorsal = .0018*(1-lateral*lateral)*(1-t);
+      const ridgeEnvelope = Math.exp(-Math.pow((z+.023)/.034,4));
+      for (const digit of h.digits) {
+        const target = digit.position.x * THREE.MathUtils.lerp(1,.50,t);
+        dorsal += .0009*Math.exp(-Math.pow((x-target)/.0055,2))*ridgeEnvelope;
+      }
+      const qy = y >= -.001
+        ? y+.001-(thickness-radius+dorsal)
+        : -y-.001-(thickness-radius);
       // Knuckles follow an arch: middle finger starts farther forward than
       // index/pinky. Stop the palm at their roots, not over their first joints.
       const front = -.067 + .015 * Math.min(1, Math.pow(x/.044,2));
@@ -75,7 +89,14 @@ export function bindHandSurface(h, root, skin, cloth) {
     }
     const px=x-part.a.x, py=y-part.a.y, pz=z-part.a.z;
     const t = THREE.MathUtils.clamp((px*part.d.x+py*part.d.y+pz*part.d.z)/part.lengthSq,0,1);
-    return Math.hypot(px-part.d.x*t,py-part.d.y*t,pz-part.d.z*t) - THREE.MathUtils.lerp(part.r0,part.r1,t);
+    const rx=px-part.d.x*t, ry=py-part.d.y*t, rz=pz-part.d.z*t;
+    let radiusSq=rx*rx+ry*ry+rz*rz;
+    if(part.depthAxis){
+      const depth=rx*part.depthAxis.x+ry*part.depthAxis.y+rz*part.depthAxis.z;
+      const flatten=THREE.MathUtils.lerp(.72,1,THREE.MathUtils.smoothstep(t,0,.35));
+      radiusSq+=depth*depth*(1/(flatten*flatten)-1);
+    }
+    return Math.sqrt(radiusSq) - THREE.MathUtils.lerp(part.r0,part.r1,t);
   };
   const field = (x,y,z) => {
     let d = 1;

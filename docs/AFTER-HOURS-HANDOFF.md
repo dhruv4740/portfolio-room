@@ -15,6 +15,23 @@ it as achieving the GTA/RDR realism target.
 
 ## Next exact actions
 
+### Hand form study — 2026-09-20
+
+Updated handSurface.js implicit field: shallow dorsal arch (up to 1.8mm),
+subtle metacarpal ridges (0.9mm), oval wrist depth taper returning to the
+original section under the sleeve. Bone positions, pose controls, finger lengths
+and palm-facing grip surface unchanged. Regenerated hands-v1.bin and .gz;
+raw asset is 1,326,664 bytes. This is an incremental procedural form study,
+NOT the planned authored realistic hand replacement or completed skin work.
+
+Build passed. Real-GPU shots-hands coffee/pen/award/typing completed with no
+page errors; rest, award-held and coffee-sip frames inspected. All eight
+verify-reduced-hands actions passed. No night/high-tier visual review or full
+regression this pass. Close-ups still expose pinched wrist blending and overly
+smooth skin; these require further topology/weight and material work. The
+existing Blender hand reference predates this form study: regenerate it before
+using it as an exact current geometry reference. No new external assignments.
+
 ### Speaker integration and hand-loader confirmation — 2026-09-20
 
 Integrated Opus speakerDetails.js; removed the two old flat discs in the same
