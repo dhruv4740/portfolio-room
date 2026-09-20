@@ -1,0 +1,157 @@
+<!doctype html>
+<!--
+  Standalone review entry for the cinematic room candidate.
+
+  Lives under scripts/ so vite build never sees it (the build's only input is
+  index.html) while the dev server still serves it at
+  /scripts/review-cinematic-room.html. No Vite config change, no app route.
+
+  Query parameters:
+    builder=cinematic|live   which builder to instantiate (default cinematic)
+    view=seated|overview     which fixed camera to sit at (default seated)
+    sky=night|dusk|day       passed to model.setSky (default night)
+    power=0..1               setEntryPower value (default 1)
+    hands=0|1                show the seated figure/hands (default 0 — this is
+                             an environment-only study; the figure is built at
+                             live-room reach and does not fit the candidate)
+
+  Renderer settings are copied from WorkspaceStage.jsx so a frame shot here is
+  comparable to the app's. shadowMap.autoUpdate is false there, so every async
+  asset landing must flip needsUpdate — that is what onShadowNeedsUpdate does.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>review-cinematic-room</title>
+    <style>
+      html, body { margin: 0; height: 100%; background: #0A0A0B; overflow: hidden; }
+      canvas { display: block; }
+    </style>
+  </head>
+  <body>
+    <script type="module">
+      import * as THREE from 'three';
+      import { buildCinematicWorkspace } from '/src/v3/desktop/buildCinematicWorkspace.js';
+      import { CAMERA } from '/src/v3/desktop/cinematicLayout.js';
+      import { buildWorkspace, WORKSPACE as LIVE_WORKSPACE } from '/src/v3/desktop/buildWorkspace.js';
+
+      const q = new URLSearchParams(location.search);
+      const which = q.get('builder') || 'cinematic';
+      const view = q.get('view') || 'seated';
+      const sky = q.get('sky') || 'night';
+      const power = q.get('power') === null ? 1 : Number(q.get('power'));
+      const showHands = q.get('hands') === '1';
+
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(1);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.shadowMap.autoUpdate = false;
+      renderer.shadowMap.needsUpdate = true;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.5;
+      document.body.appendChild(renderer.domElement);
+
+      const scene = new THREE.Scene();
+      const build = which === 'live' ? buildWorkspace : buildCinematicWorkspace;
+      const model = build(scene, {
+        onShadowNeedsUpdate: () => { renderer.shadowMap.needsUpdate = true; },
+      });
+      model.setSky(sky);
+      model.setEntryPower(power);
+      // The blinds default to closed in both rooms. The brief asks for "a
+      // useful opening", so the review shoots the hero both ways rather than
+      // changing a default that belongs to the interaction, not the geometry.
+      if (q.has('blinds') && model.roomActions?.state) {
+        model.roomActions.state.blinds = Number(q.get('blinds'));
+        model.roomActions.apply();
+      }
+      if (!showHands) {
+        model.setHandsVisible(false);
+        // The seated figure is authored at live-room reach; in the candidate it
+        // would dominate the frame and is not what this study is judging.
+        if (model.figure?.root) model.figure.root.visible = false;
+        else if (model.figure?.visible !== undefined) model.figure.visible = false;
+      }
+      renderer.shadowMap.needsUpdate = true;
+
+      const cams = which === 'live'
+        ? { seated: LIVE_WORKSPACE.seat, overview: LIVE_WORKSPACE.overview }
+        : { seated: CAMERA.seated, overview: CAMERA.overview };
+      const chosen = cams[view] || cams.seated;
+      const camera = new THREE.PerspectiveCamera(56, window.innerWidth / window.innerHeight, 0.025, 140);
+      camera.position.set(...chosen.position);
+      camera.lookAt(new THREE.Vector3(...chosen.target));
+
+      renderer.render(scene, camera);
+      let frames = 1;
+      const tick = () => { renderer.render(scene, camera); frames++; requestAnimationFrame(tick); };
+      requestAnimationFrame(tick);
+
+      // The four authored GLBs each expose {state:{status}}; the shot script
+      // polls this instead of guessing a timeout, so a fallback box is never
+      // photographed and then reported as a defect.
+      const assets = () => ({
+        keyboard: model.keyboard?.state?.status ?? 'absent',
+        mouse: model.mouse?.state?.status ?? 'absent',
+        taskLamp: model.taskLamp?.state?.status ?? 'absent',
+        ceilingFixture: model.ceilingFixture?.state?.status ?? 'absent',
+      });
+
+      window.__review = {
+        builder: which, view, sky, power, handsVisible: showHands,
+        assets,
+        ready: () => Object.values(assets()).every((s) => s === 'ready' || s === 'absent'),
+        frames: () => frames,
+        stats: () => {
+          const i = renderer.info.render;
+          return { calls: i.calls, triangles: i.triangles, shadows: renderer.shadowMap.enabled, gl: renderer.getContext().getParameter(renderer.getContext().VERSION) };
+        },
+        // Screen-space projection of a world point, so the report can state
+        // where the window aperture actually lands in the frame.
+        project: (p) => {
+          const v = new THREE.Vector3(p[0], p[1], p[2]).project(camera);
+          return { x: (v.x * 0.5 + 0.5) * renderer.domElement.width, y: (-v.y * 0.5 + 0.5) * renderer.domElement.height, z: v.z };
+        },
+        camera: { position: chosen.position, target: chosen.target, fov: 56 },
+        // World-space bounding box of the first object whose name contains
+        // `needle`, so contact gaps can be measured instead of eyeballed off a
+        // screenshot. Returns null when nothing matches.
+        box: (needle) => {
+          let hit = null;
+          scene.traverse((o) => { if (!hit && o.name && o.name.toLowerCase().includes(needle.toLowerCase())) hit = o; });
+          if (!hit) return null;
+          const b = new THREE.Box3().setFromObject(hit);
+          if (b.isEmpty()) return { name: hit.name, empty: true };
+          return {
+            name: hit.name,
+            min: b.min.toArray().map((n) => +n.toFixed(4)),
+            max: b.max.toArray().map((n) => +n.toFixed(4)),
+            size: b.getSize(new THREE.Vector3()).toArray().map((n) => +n.toFixed(4)),
+          };
+        },
+        names: (needle) => {
+          const out = [];
+          scene.traverse((o) => { if (o.name && (!needle || o.name.toLowerCase().includes(needle.toLowerCase()))) out.push(o.name); });
+          return out;
+        },
+        modelBox: (key) => {
+          const target = key.split('.').reduce((o, k) => o?.[k], model);
+          const obj = target?.root ?? target?.mount ?? target;
+          if (!obj?.isObject3D) return null;
+          const b = new THREE.Box3().setFromObject(obj);
+          if (b.isEmpty()) return { empty: true };
+          return {
+            min: b.min.toArray().map((n) => +n.toFixed(4)),
+            max: b.max.toArray().map((n) => +n.toFixed(4)),
+            size: b.getSize(new THREE.Vector3()).toArray().map((n) => +n.toFixed(4)),
+          };
+        },
+      };
+      window.__reviewError = null;
+      window.addEventListener('error', (e) => { window.__reviewError = String(e.message); });
+    </script>
+  </body>
+</html>

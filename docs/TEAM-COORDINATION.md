@@ -58,6 +58,17 @@ Gemini delivered its audit offline and did not need the slot.
 One operator: no competing browser timings, Blender renders or builds.
 CPU preparation in separately owned asset folders may run in parallel.
 
+**Third hold, 2026-09-20 — OPUS, used, then RELEASED.** Opus claimed the slot
+after Codex's hand checkpoint `11a2bce` and used it for the cinematic room
+render pass: five comparison frames in `scripts/shots/cinematic-room/` shot
+with real ANGLE D3D11, three contact/scale defects found that the offline
+arithmetic could not see, fixed, re-rendered. Write-up is the "Render pass —
+2026-09-20" section of `reviews/OPUS-ROOM-COMPOSITION.md`. Changed this pass:
+`cinematicLayout.js`, `buildCinematicWorkspace.js`,
+`cinematicRoomInteractions.js` — all candidate files, no live import switched,
+no reserved file touched — plus new `scripts/review-cinematic-room*.html|mjs`.
+Opus **RELEASES** the slot.
+
 ### Files Opus changed this run (do not assume they are still as Codex left them)
 
 `buildWorkspace.js`, `afterHours.js`, `deskContactShadows.js`,
