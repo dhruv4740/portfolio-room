@@ -18,11 +18,35 @@
   Gemini's prior anatomical description is incorrect. Credit/modifications:
   public/asset-credits.txt. Not approved for default scene.
 - **A4Tech Bloody V7**, Prokyovec, local CC BY 4.0 license.txt with source URL:
-  art/candidates/mouse/computer_mouse_a4tech_bloody_v7/. Not integrated.
-  Opus to simplify, inspect and credit before runtime integration.
-- Keyboard, chair and ceiling-fixture candidate README descriptions do not
-  establish provenance or visual acceptance. Gemini must verify original
-  source and license and count true triangles before runtime use.
+  art/candidates/mouse/computer_mouse_a4tech_bloody_v7/. **INTEGRATED**
+  2026-09-20 (commit 539311f). Source measured at 136,520 triangles with
+  **zero textures** (5 flat PBR materials; the logo and button seams are
+  modelled geometry). Derived runtime public/models/after-hours/mouse.glb
+  (597,652 bytes, 11,601 tris, 72.7 x 124 x 38 mm). Provenance, measurements,
+  modifications and accepted degradation: art/vendor/sketchfab/a4tech_bloody_v7/.
+  Credit shipped in public/asset-credits.txt. No performance claim: unmeasured.
+- **Hanging Industrial Lamp**, Kuutti Siitonen, Poly Haven CC0.
+  https://polyhaven.com/a/hanging_industrial_lamp . **INTEGRATED** 2026-09-20
+  (commit 44efcdf) as the ceiling pendant. Source measured at 9,530 true
+  triangles; runtime public/models/after-hours/ceiling-fixture.glb
+  (803,352 bytes, 7,990 tris) after trimming the chain to a 0.889 m drop and
+  resizing 4K maps to 1K JPEG. Records: art/vendor/polyhaven/hanging_industrial_lamp/.
+- **Caged Hanging Light**, Ulan Cabanilla, Poly Haven CC0. Measured 22,893 true
+  triangles, 1.162 x 0.315 x 0.750 m. **Not integrated.** Rendered elevation
+  shows a 1.16 m linear caged batten (vapour-tight strip light), not the
+  "exposed filament bulb inside an iron cage" the candidate README describes.
+  It cannot replace a bare bulb on a cord. See scripts/shots/fixture-*.png.
+- **Keyboard and chair remain BLOCKED for runtime: no license evidence exists
+  in the repository for either.** Independently confirmed 2026-09-20: neither
+  art/candidates/keyboard/ nor art/candidates/chair/ contains any license file,
+  and Gemini's audit found no author or license metadata in the FBX binaries
+  (keyboard tagged `zidan`, 3ds Max 2018; chair a Blender 2.93.1 export). The
+  owner must supply the original download page and license grant. Gemini also
+  reports the keyboard is a single monolithic mesh with all keycaps fused,
+  which would break the existing key-depression contract even if licensed.
+- Candidate README triangle counts are **polygon faces, not triangles**.
+  Verified on both ceiling fixtures by re-measuring in Blender 5.2.2:
+  README 11,955 / 4,931 are faces; true triangles are 22,893 / 9,530.
 
 Every imported runtime asset must have provenance here before integration.
 No purchased assets or hotlinks. Existing source-project demos are documented

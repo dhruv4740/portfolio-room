@@ -19,6 +19,23 @@ keyboard/chair/fixture as contracts permit; Gemini audits provenance and finds
 visually verified bare hands. Fix coherent scale/composition before rebaking.
 Older entries below retain their original snapshot scope.
 
+### 2026-09-20 later — Opus multi-pass run complete (df304fe, 539311f, 44efcdf)
+
+Done: task lamp accepted (its spotlight sat inside the shade and was clipping
+its own cone against the rim; source moved below the measured rim plane);
+licensed A4Tech mouse integrated at true scale with real contact geometry;
+CC0 Poly Haven industrial pendant integrated in place of the emissive sphere.
+Gemini's asset audit was delivered and reviewed; its mouse and ceiling-fixture
+measurements were independently reproduced and agree.
+
+Not done, and why: keyboard and chair remain blocked — **no license evidence
+exists in the repo for either**, independently confirmed. Room scale is not
+corrected; the measured proposal is ROOM-SCALE-PROPOSAL.md and the uniform
+correction is deferred to Codex because hand poses are world-space. The
+indirect bake is still keyed to the task light's older placement.
+
+Full report, including every skipped check: reviews/OPUS-MULTIPASS-HANDOFF.md.
+
 ## Current checkpoint
 
 2026-09-20: documentation committed FIRST as 09fe88f; Blender/material assets

@@ -13,7 +13,7 @@ reviews/TEAM-CONTRACT-PRE-OPUS-LEAD.md, not an active instruction set.
 | Owner | Authority / exclusive writes |
 |---|---|
 | Opus | Integration lead; relevant live scene code outside reserved hands, asset integration/export, main docs; sole local Git writer |
-| Gemini | Initially docs/reviews/GEMINI-ASSET-AUDIT-V2.md and metadata under art/candidates; further bounded files/tasks assigned explicitly by Opus |
+| Gemini | docs/reviews/GEMINI-ASSET-AUDIT-V2.md **delivered 2026-09-20** and reviewed by Opus; metadata under art/candidates; further bounded files/tasks assigned explicitly by Opus |
 | Codex | Reserved hand anatomy/retarget files below; paused after checkpoint, no concurrent runtime edits |
 
 Reserved for Codex: seatedHands.js, handSurface.js, handAppearance.js,
@@ -28,13 +28,21 @@ Assign Gemini new paths in a named prompt and record them here before overlap.
 
 ## Build / browser / GPU slot
 
-**OWNER: OPUS — available after Codex checkpoint handoff.**
-Codex has released the slot. This records permission, not evidence Opus started.
-Gemini begins with offline research/provenance. Opus can transfer the slot for
-verification, recording commit/dirty state/build timestamp and freezing runtime
-and public assets. Recipient explicitly writes RELEASED on completion.
+**OWNER: OPUS — held and used 2026-09-20, then RELEASED.**
+Opus took the slot after Codex's handoff and used it for the lamp acceptance,
+mouse and ceiling-fixture integration, Blender preparation and the regression
+run recorded in reviews/OPUS-MULTIPASS-HANDOFF.md. Opus has finished with it
+and **RELEASES** the slot. Next holder should claim it here before using it.
+Gemini delivered its audit offline and did not need the slot.
 One operator: no competing browser timings, Blender renders or builds.
 CPU preparation in separately owned asset folders may run in parallel.
+
+### Files Opus changed this run (do not assume they are still as Codex left them)
+
+`buildWorkspace.js`, `afterHours.js`, `deskContactShadows.js`,
+`WorkspaceStage.jsx` (one dataset line), `authoredTaskLamp.js`, plus new
+`authoredMouse.js` and `authoredCeilingFixture.js`. Codex-reserved hand files
+were not touched. Commits `df304fe`, `539311f`, `44efcdf` on feat/v3.
 
 ## Git and files
 

@@ -12,6 +12,17 @@ are in REALISM-ASSET-CHECKPOINT.md. The master continuation is
 OPUS-GEMINI-CONTINUATION.md. Update this file after integrated checkpoints;
 do not duplicate stale claims from older reviews.
 
-Important limits: final lamp shadow/fallback/performance acceptance pending;
-mixed scene scale remains; default hands procedural; downloaded FP arms
-prototype is gloved; other downloaded props require provenance and acceptance.
+2026-09-20, later: Opus ran three integration passes on feat/v3 (`df304fe`,
+`539311f`, `44efcdf`). Task lamp accepted against a new focused suite; the
+licensed A4Tech mouse and the CC0 Poly Haven industrial pendant replaced their
+procedural stand-ins. Full record: reviews/OPUS-MULTIPASS-HANDOFF.md.
+
+Important limits: **mixed scene scale remains and is now the main blocker** —
+measured audit and a proposal with exact dimensions are in
+ROOM-SCALE-PROPOSAL.md; the uniform correction needs Codex because seated hand
+poses are world-space. The indirect bake still reflects the task light's older
+placement and must not be called accurate. Default hands remain procedural;
+the downloaded FP arms prototype is gloved. **Keyboard and chair stay blocked:
+no license evidence exists in the repository for either.** `verify-v3` and
+`verify-after-hours` fail on clicks that trigger a route change; this was
+reproduced at commit `f1b9aa9`, before this pass, so it is pre-existing.
