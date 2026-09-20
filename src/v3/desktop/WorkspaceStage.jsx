@@ -1131,6 +1131,8 @@ export default function WorkspaceStage({
           // Real-GPU cost probes (scripts/measure-gpu.mjs): governor state, live pixel ratio, draw calls.
           perf() { const i = renderer.info.render, s = renderer.getSize(new THREE.Vector2()); return { ...gov.getStats(), pixelRatio: renderer.getPixelRatio(), calls: i.calls, triangles: i.triangles, w: s.x, h: s.y, shadows: renderer.shadowMap.enabled }; },
           setPixelRatio(v) { gov.pinPixelRatio(v); invalidate(); },
+          contacts() { return afterHours?.contactStats(); },
+          setContactsEnabled(v) { afterHours?.setContactsEnabled(v); },
           gpuSamples(clear=false) {const out=gpuSamples.slice();if(clear)gpuSamples.length=0;return out;},
           projectKey(index) {
             const m = new THREE.Matrix4(); model.keys.getMatrixAt(index, m);

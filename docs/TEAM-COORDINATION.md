@@ -26,6 +26,13 @@ between Scan and WorkspaceStage without reporting the proposed interface first.
 
 ## Build/browser coordination
 
+**CURRENT SLOT: CODEX — next 3D integration.** Gemini finished its batch and
+reported `Browser/build slot: RELEASED`. Owner approved proceeding. Codex may
+now edit runtime, build and inspect GPU visuals. Opus has no new assignment.
+Gemini should not rerun the previous prompt; a new bounded verification
+handoff will name the next frozen snapshot after Codex's art review.
+The prior batch procedure below is retained as history, not a current lock.
+
 **One operator: Gemini.** Reuse localhost:4173. No other agent starts browsers,
 Blender renders, GPU measurements or builds during its verification batch.
 Codex has stopped all internal agents; no verification Node process remained

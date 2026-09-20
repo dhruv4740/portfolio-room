@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
+import { createDeskContactShadows } from './deskContactShadows.js';
 
 const ROOT = `${import.meta.env.BASE_URL}materials/after-hours/`;
 
@@ -73,6 +74,11 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   }
 
   const pmrem=new THREE.PMREMGenerator(renderer), probes=new Map();
+  const contacts=createDeskContactShadows({renderer,root:model.root,staticGeometry:model.contactGeometry,
+    objects:[model.phone,model.notebook,model.hands.root,...['coffee','award','headphones','pen'].map(key=>model.roomActions.objects[key]).filter(Boolean)],
+    center:model.contactSurfaces.desk.center,size:model.contactSurfaces.desk.size,
+    raisedReceivers:[model.contactSurfaces.mat],resolution:tier==='low'?256:512,
+    updatesPerSecond:tier==='low'?10:15,invalidate});
   function captureProbe(){
     if(disposed||sky!=='night')return;
     const key=model.roomActions.state.lamp>.5?'on':'off';
@@ -82,14 +88,17 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     const visible=[model.hands.root.visible,model.figure.root.visible,snow.visible];
     model.hands.root.visible=false;model.figure.root.visible=false;snow.visible=false;
     const reflectVisible=glassReflection?.visible;if(glassReflection)glassReflection.visible=false;
-    steam.visible=false;
+    const steamVisible=steam.visible;steam.visible=false;
     scene.environment=null;
     const oldShadow=renderer.shadowMap.enabled;renderer.shadowMap.enabled=false;
-    cube.update(renderer,scene);renderer.shadowMap.enabled=oldShadow;
+    try{contacts.withoutReceivers(()=>cube.update(renderer,scene));}
+    finally{
+      renderer.shadowMap.enabled=oldShadow;
+      model.hands.root.visible=visible[0];model.figure.root.visible=visible[1];snow.visible=visible[2];
+      steam.visible=steamVisible;if(glassReflection)glassReflection.visible=reflectVisible;
+    }
     const filtered=pmrem.fromCubemap(target.texture);target.dispose();targets.push(filtered);probes.set(key,filtered);
     scene.environment=filtered.texture;scene.environmentIntensity=.35;
-    model.hands.root.visible=visible[0];model.figure.root.visible=visible[1];snow.visible=visible[2];
-    if(glassReflection)glassReflection.visible=reflectVisible;
   }
   const status={city:'loading',materials:'loading',bake:'loading'};
   const report=()=>onStatus?.({...status});
@@ -150,11 +159,14 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
       if(probeDirty&&status.city!=='loading'&&status.materials!=='loading'&&status.bake!=='loading'){
         probeDirty=false;captureProbe();
       }
+      contacts.update(performance.now());
     },
+    contactStats:()=>contacts.stats(),
+    setContactsEnabled:value=>contacts.setEnabled(value),
     setSky(value){sky=value;snow.visible=value==='night';scene.environment=value==='night'?(probes.get(lastLamp?'on':'off')?.texture||null):null;
       for(const m of Object.values(model.bakedMaterials))m.lightMapIntensity=value==='night'?.7:0;probeDirty=true;},
     setWeather(active){snow.visible=active&&sky==='night';},
-    dispose(){disposed=true;scene.environment=null;scene.remove(snow,steam);snowGeometry.dispose();snowMaterial.dispose();steamGeometry.dispose();steamMaterial.dispose();
+    dispose(){disposed=true;contacts.dispose();scene.environment=null;scene.remove(snow,steam);snowGeometry.dispose();snowMaterial.dispose();steamGeometry.dispose();steamMaterial.dispose();
       if(glassReflection){glassReflection.removeFromParent();glassReflection.geometry.dispose();glassReflection.dispose();}
       city?.traverse(o=>{o.geometry?.dispose();if(o.material){o.material.map?.dispose();o.material.normalMap?.dispose();o.material.roughnessMap?.dispose();o.material.dispose();}});if(city)scene.remove(city);
       resources.forEach(t=>t.dispose());targets.forEach(t=>t.dispose());pmrem.dispose();},

@@ -1,8 +1,31 @@
-# Staged 3D work — desk contact occlusion
+# Integrated 3D work — desk contact occlusion
 
 Owner: Codex. Source: src/v3/desktop/deskContactShadows.js.
-Status: implemented in an UNIMPORTED module; syntax checked, no GPU execution
-or visual acceptance. It does not change Gemini's current runtime snapshot.
+Status: integrated and production-built after Gemini released its snapshot.
+Real-GPU diagnostic passed; seat on/off and lifted-cup frames inspected.
+The original integration checklist below is retained as design history.
+
+## Implementation and evidence — 2026-09-20
+
+afterHours.js owns the effect. buildWorkspace.js supplies cloned merged static
+geometry and shared desk/mat surfaces; actual dynamic meshes/skeletons are
+borrowed without rebinding. Four keyboard feet bridge its 9.5mm support gap.
+Rounded receiver masks avoid rectangular bleed. Probe capture hides receivers
+and restores visibility/state with try/finally. Architectural shadows retain
+their existing static update policy. Low uses 256px/10Hz; mid/high 512px/15Hz.
+
+scripts/review-contact-shadows.mjs passed on the real GPU: idle capture count
+stayed fixed, moving cup/hands refreshed captures, zero page/console errors.
+Fixed mid/1536x864/DPR1.25 comparison: disabled 10.236/12.221ms median/p95
+(75 samples), enabled 10.475/13.304ms (76 samples). Two added receiver draws,
+four triangles; 23 dynamic caster meshes. This is one short seated comparison.
+Frames: scripts/shots/contact-seat-on.png, contact-seat-off.png,
+contact-coffee-lift.png, contact-coffee-return.png. First three inspected.
+
+Still pending: all other held poses, reduced-motion/low tier, final idle render
+counts and full regressions on this new integration. A startup hand-asset fetch
+warning triggers local fallback; root cause unverified. Initial 15-second asset
+waits timed out; the normal 30-second readiness deadline completed successfully.
 
 ## Why this pass
 
@@ -21,9 +44,9 @@ The mat needs a receiver at its own top height or the shadow is hidden beneath i
 
 Resources: three 512x211 RGBA8/depth targets at the default desk aspect ratio,
 one merged static caster draw, selected dynamic mesh draws, two blur draws,
-two receiver draws. Actual GPU time is unmeasured. Capture only on changes,
+two receiver draws. See measured comparison above. Capture only on changes,
 capped at 15Hz; one final invalidation handles the last throttled movement.
-Do not claim this cost fits the budget before measuring it.
+Do not generalize that short measurement to all interactions or devices.
 
 ## Integration after Gemini releases its build/browser slot
 
@@ -58,7 +81,6 @@ integration; do not use a dark shadow to disguise unsupported geometry.
 
 ## What remains uncertain
 
-Shader compilation on the target GPU, softness/strength, hand occlusion quality,
-moving source visibility, overhead, and probe interactions are unverified.
+Remaining uncertainty is listed in the latest implementation entry above.
 The implementation is not permission for Gemini/Opus to edit 3D files; Codex
 integrates and owns art acceptance. Do not mark the overall realism plan done.

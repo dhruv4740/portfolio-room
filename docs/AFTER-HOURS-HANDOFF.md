@@ -15,6 +15,30 @@ it as achieving the GTA/RDR realism target.
 
 ## Next exact actions
 
+### Latest checkpoint — contact pass integrated, 2026-09-20
+
+This entry supersedes the staged-module and ownership history below.
+Opus lifecycle fixes and Gemini's completed verification were checkpointed in
+9ec8984. No internal agents; Opus has no new assignment. Codex owns the browser.
+Desk contact occlusion is now imported by afterHours.js, with shared desk/mat
+receivers, real caster geometry, moving skinned hands/props and keyboard feet.
+See DESK-CONTACT-PASS.md for evidence and limitations.
+
+Production build passed. Real-GPU review-contact-shadows.mjs passed: settled
+capture count stayed fixed; lifting coffee refreshed it; no page/console errors.
+Seat on/off and lifted cup screenshots were inspected. At fixed mid tier,
+1536x864, DPR 1.25: off median/p95 10.236/12.221 ms (75 samples), on
+10.475/13.304 ms (76 samples). This short single sequence is not an FPS promise.
+New full regression and low-tier/reduced-motion contact checks remain pending.
+Earlier Gemini suites passed on the PRE-CONTACT baseline: audio 35, After Hours
+26, core 41, studio 23; real apps, held/reduced hands and room checks also passed.
+
+Next: exterior recess/depth and atmospheric separation, then authored hand
+anatomy using the saved rig reference. Delegate only a bounded verification
+batch to Gemini when the next snapshot freezes. Investigate the startup hand
+asset warning ("Failed to fetch; generating local fallback"); current procedural
+fallback renders, but loading behavior is not resolved. Do not infer a cause.
+
 Parent resumed isolated 3D work on owner request: deskContactShadows.js is
 authored but deliberately UNIMPORTED so the verification snapshot stays stable.
 Read DESK-CONTACT-PASS.md for its underside capture design, desk/mat receiver

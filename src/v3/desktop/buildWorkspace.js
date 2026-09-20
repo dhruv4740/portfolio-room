@@ -24,6 +24,8 @@ export const WORKSPACE = {
   seat: { position: [0.05, 1.72, 1.16], target: [0, 1.42, -0.37] },
   chair: [0.05, 1.08, 1.414],
   screen: { center: [0, 1.79, -0.362], width: 1.28, height: 0.79 },
+  deskSurface: { center: [0,1.165,-.04], size: [3.52,1.45], radius: .028 },
+  matSurface: { center: [.11,1.174,.25], size: [.95,.52], radius: .025 },
 };
 
 function drawBlankPage(ctx, w, h) {
@@ -357,7 +359,8 @@ export function buildWorkspace(scene, options = {}) {
   box('Window sill', [1.7, 0.065, 0.32], [1.39, 0.99, -1.54], bone, 0.012);
 
   // Desk: solid oak, a thin edge, and a black steel trestle.
-  const oakDesktop = box('Oak desktop', [3.52, 0.12, 1.45], [0, 1.105, -0.04], wood, 0.028, 'desk');
+  const deskSurface=WORKSPACE.deskSurface,matSurface=WORKSPACE.matSurface;
+  const oakDesktop = box('Oak desktop', [deskSurface.size[0],.12,deskSurface.size[1]], [deskSurface.center[0],deskSurface.center[1]-.06,deskSurface.center[2]], wood, deskSurface.radius, 'desk');
   const deskBox = new THREE.Box3().setFromObject(oakDesktop);
   box('Desk edge inlay', [3.42, 0.012, 0.012], [0, 1.071, 0.687], dark);
   for (const x of [-1.46, 1.46]) {
@@ -365,7 +368,7 @@ export function buildWorkspace(scene, options = {}) {
     box('Desk foot rail', [0.055, 0.055, 1.12], [x, 0.19, -0.025], dark, 0.008);
   }
   box('Rear stretcher', [2.94, 0.07, 0.045], [0, 0.84, -0.54], dark);
-  box('Felt desk mat', [.95, 0.008, 0.52], [.11, 1.170, 0.25], mat('felt', '#303533'), 0.025, 'desk');
+  box('Felt desk mat', [matSurface.size[0],.008,matSurface.size[1]], [matSurface.center[0],matSurface.center[1]-.004,matSurface.center[2]], mat('felt', '#303533'), matSurface.radius, 'desk');
 
   // Real screen geometry gives the entrance a destination and a known plane.
   box('Monitor foot', [0.5, 0.035, 0.29], [0, 1.18, -0.35], steel, 0.02, 'monitor');
@@ -386,6 +389,9 @@ export function buildWorkspace(scene, options = {}) {
 
   // A compact mechanical keyboard: instanced keycaps, an orange escape key.
   box('Keyboard case', [.48, .035, .20], [0, 1.201, .28], bone, .009, 'desk');
+  // Rubber feet bridge the real 9.5mm gap above the felt mat.
+  for(const x of [-.17,.17])for(const z of [.215,.345])
+    box('Keyboard foot',[.036,.010,.025],[x,WORKSPACE.matSurface.center[1]+.005,z],dark,.003,'desk');
   const keyGeometry = new RoundedBoxGeometry(.029, .017, .027, 2, .002);
   const keys = new THREE.InstancedMesh(keyGeometry, mat('keycaps', '#d3d0c3'), 60);
   const transform = new THREE.Object3D();
@@ -567,6 +573,18 @@ export function buildWorkspace(scene, options = {}) {
   // Bake static transforms and batch by material + interaction target. A room
   // contains many small pieces, but each key/slat need not cost a draw call.
   // Keep targets separate so first-hit raycasting still selects real objects.
+  // Contact casters retain actual geometry before the visible meshes are
+  // batched. No duplicated proxy dimensions and no tabletop self-shadow.
+  const contactNames=new Set(['Keyboard case','Keyboard foot','Mouse','Book page block','Book cover','Book spine','Nearfield speaker','Lamp base','Monitor foot','Monitor stand']);
+  const contactParts=[];root.updateMatrixWorld(true);
+  for(const mesh of root.children){
+    if(!mesh.isMesh||!contactNames.has(mesh.name))continue;
+    const g=mesh.geometry.index?mesh.geometry.toNonIndexed():mesh.geometry.clone();
+    g.applyMatrix4(mesh.matrixWorld);
+    for(const name of Object.keys(g.attributes))if(name!=='position')g.deleteAttribute(name);
+    contactParts.push(g);
+  }
+  const contactGeometry=mergeGeometries(contactParts,false);contactParts.forEach(g=>g.dispose());
   const batches = new Map();
   for (const mesh of [...root.children]) {
     if (!mesh.isMesh || mesh.isInstancedMesh) continue;
@@ -596,7 +614,8 @@ export function buildWorkspace(scene, options = {}) {
   const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
-    root, interactive, materials, bakedMaterials, city, bulb, hemiLight,
+    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry,
+    contactSurfaces: {desk:deskSurface,mat:matSurface},
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
     notePage: notePlane, notes,
@@ -627,6 +646,7 @@ export function buildWorkspace(scene, options = {}) {
       options.onShadowNeedsUpdate?.();
     },
     dispose() {
+      contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {
         if (object.skeleton) skeletons.add(object.skeleton);

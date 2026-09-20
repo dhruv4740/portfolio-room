@@ -3,14 +3,13 @@ import * as THREE from 'three';
 // Local contact occlusion, not a replacement for architectural light shadows.
 // A camera under the desk sees the nearest underside of each selected caster.
 // Height attenuates its silhouette, then two small separable passes soften it.
-// This module is deliberately not imported by the stage until visual QA.
 export function createDeskContactShadows({
   renderer, root, staticGeometry = null, objects = [], invalidate,
   center = [0, 1.165, -.04], size = [3.52, 1.45],
   raisedReceivers = [],
   resolution = 512, maxHeight = .5, strength = .46, updatesPerSecond = 15,
 }) {
-  let disposed = false, dirty = true, timer = null, lastCapture = -Infinity;
+  let disposed = false, dirty = true, timer = null, lastCapture = -Infinity, enabled=true, captures=0;
   const interval = 1000 / updatesPerSecond;
   const casters = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-size[0]/2,size[0]/2,size[1]/2,-size[1]/2,.001,maxHeight);
@@ -170,7 +169,7 @@ export function createDeskContactShadows({
       blurMaterial.uniforms.source.value=horizontal.texture;
       blurMaterial.uniforms.step.value.set(0,.003/size[1]);
       renderer.setRenderTarget(softened);renderer.clear();renderer.render(blurScene,blurCamera);
-      receivers.forEach(mesh=>{mesh.visible=true;});dirty=false;
+      receivers.forEach(mesh=>{mesh.visible=true;});dirty=false;captures++;
     }finally{
       renderer.setRenderTarget(target,face,mip);renderer.setViewport(savedViewport);
       renderer.setScissor(savedScissor);renderer.setScissorTest(scissor);
@@ -180,7 +179,7 @@ export function createDeskContactShadows({
   }
   return {
     update(now){
-      if(disposed)return;sync();if(!dirty)return;
+      if(disposed||!enabled)return;sync();if(!dirty)return;
       const remaining=interval-(now-lastCapture);
       if(remaining>0){
         if(timer===null)timer=setTimeout(()=>{timer=null;if(!disposed)invalidate();},Math.ceil(remaining));
@@ -190,6 +189,12 @@ export function createDeskContactShadows({
       capture();lastCapture=now;
     },
     markDirty(){dirty=true;},
+    setEnabled(value){enabled=!!value;receivers.forEach(mesh=>{mesh.visible=enabled&&captures>0;});if(enabled)dirty=true;invalidate();},
+    withoutReceivers(callback){
+      const visibility=receivers.map(mesh=>mesh.visible);receivers.forEach(mesh=>{mesh.visible=false;});
+      try{return callback();}finally{receivers.forEach((mesh,i)=>{mesh.visible=visibility[i];});}
+    },
+    stats(){return {enabled,captures,resolution:[resolution,height],dynamicMeshes:mirrors.length};},
     dispose(){
       if(disposed)return;disposed=true;if(timer!==null)clearTimeout(timer);
       receivers.forEach(mesh=>{mesh.removeFromParent();mesh.geometry.dispose();mesh.material.dispose();});
