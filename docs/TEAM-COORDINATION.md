@@ -13,6 +13,28 @@ Git writes: Codex performs checkpoints; other agents report ready files.
 
 ## Exclusive write ownership
 
+### Current assignments — realism asset preparation
+
+These supersede the historical ownership table and closed assignments below.
+Prompts are prepared for the owner to forward; this does not mean either
+external model has started. No internal subagents.
+
+| Owner | Current exclusive writes |
+|---|---|
+| Codex | Live scene, hands, phone grip, lighting, integration, main documentation; all files outside the two exceptions below |
+| Gemini | `art/candidates/hands/`, `docs/reviews/GEMINI-HAND-ASSETS.md`, per `PROMPT-GEMINI-REALISM-ASSETS.md` |
+| Opus | `art/vendor/polyhaven/desk_lamp_arm_01/`, `docs/reviews/OPUS-LAMP-ASSET.md`, per `PROMPT-OPUS-LAMP-ASSET.md` |
+
+Codex retains the build/browser/GPU slot. Peers may download and inspect assets
+offline, including CPU Blender imports/exports, but must not render, build,
+run localhost tests, commit, or touch runtime files. Previous runtime and
+verification assignments are closed. No automatic continuation of old scopes.
+
+The target remains cinematic realism; current procedural improvements are
+not evidence of GTA/RDR-level quality. Next acceptance gate is a coherent,
+physically scaled hero view with authored assets and convincing lighting.
+Codex owns that judgment and hand/animation compatibility, not asset research.
+
 Latest owner direction: Opus may implement bounded 3D tasks from exact Codex
 specifications. Current exception: ONLY new speakerDetails.js and
 docs/reviews/OPUS-SPEAKERS-HANDOFF.md, as specified in PROMPT-OPUS-SPEAKERS.md.
