@@ -8,6 +8,14 @@ Read OPUS-GEMINI-CONTINUATION.md and REALISM-ASSET-CHECKPOINT.md. They supersede
 old prompt scopes and ownership restrictions. Previous contract is archived at
 reviews/TEAM-CONTRACT-PRE-OPUS-LEAD.md, not an active instruction set.
 
+## Status for Codex — read first
+
+`reviews/STATUS-FOR-CODEX-2026-09-20.md` is the current handover. It covers
+everything Opus and Gemini did while Codex was paused, and flags one item that
+needs a decision before further work: **Gemini's hand retarget is uncommitted,
+edits two Codex-reserved files, and has made `?hands=authored` the default**,
+against the "keep it opt-in" rule below. Opus neither committed nor reverted it.
+
 ## Current ownership
 
 | Owner | Authority / exclusive writes |
@@ -28,7 +36,7 @@ Assign Gemini new paths in a named prompt and record them here before overlap.
 
 ## Build / browser / GPU slot
 
-**OWNER: OPUS — held and used 2026-09-20, then RELEASED.**
+**OWNER: OPUS — held and used 2026-09-20, then RELEASED (second time).**
 Opus took the slot after Codex's handoff and used it for the lamp acceptance,
 mouse and ceiling-fixture integration, Blender preparation and the regression
 run recorded in reviews/OPUS-MULTIPASS-HANDOFF.md. Opus has finished with it
@@ -40,9 +48,16 @@ CPU preparation in separately owned asset folders may run in parallel.
 ### Files Opus changed this run (do not assume they are still as Codex left them)
 
 `buildWorkspace.js`, `afterHours.js`, `deskContactShadows.js`,
-`WorkspaceStage.jsx` (one dataset line), `authoredTaskLamp.js`, plus new
-`authoredMouse.js` and `authoredCeilingFixture.js`. Codex-reserved hand files
-were not touched. Commits `df304fe`, `539311f`, `44efcdf` on feat/v3.
+`WorkspaceStage.jsx`, `authoredTaskLamp.js`, `buildRoomInteractions.js`, plus new
+`authoredMouse.js`, `authoredCeilingFixture.js`, `authoredKeyboard.js` and the
+generated `keyboardLayout.js`. Codex-reserved hand files were not touched.
+Commits `df304fe`, `539311f`, `44efcdf`, `921397f` (chair reverted), `a50730a`
+(keyboard), `08a0204` on feat/v3.
+
+Gemini additionally has **uncommitted** edits to `handSurface.js` and
+`scripts/build-authored-hands.mjs` — both reserved to Codex — plus the
+`public/models/hands-authored*` payloads. Left exactly as found; see the status
+document above.
 
 ## Git and files
 
