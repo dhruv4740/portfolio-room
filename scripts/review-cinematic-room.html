@@ -150,6 +150,12 @@
           };
         },
       };
+      // Raw handles for ad-hoc probes. Review harness only; nothing in the app
+      // reads these.
+      window.__scene = scene;
+      window.__model = model;
+      window.__renderer = renderer;
+      window.__camera = camera;
       window.__reviewError = null;
       window.addEventListener('error', (e) => { window.__reviewError = String(e.message); });
     </script>

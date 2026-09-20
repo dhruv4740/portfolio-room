@@ -393,7 +393,8 @@ rather than a claim about them:
 | Aperture | x 1117 to 1638, y -141 to 480 | clipped 38 px by the right frame edge; the top 141 px is above frame, as designed |
 | Middle-distance block | x 1109 to 1323 | **44% of the visible aperture width** — a building with sky beside it, which is what the harness asserts and what the frame shows |
 | Far skyline plane | x 946 to 1802 | covers the aperture; supplies the remaining 56% |
-| Near parapet | top edge at y = 492 | **below the aperture's bottom at y 480, so it contributes nothing to the seated frame.** It does not occlude — which was the goal — but it is also not the foreground layer the brief asked for. The sill and its snow ledge are the only near value in shot. |
+| Near parapet | top edge at y = 492 | **below the aperture's bottom at y 480, so it contributes nothing to the seated frame.** It does not occlude — which was the goal — but it is not the foreground layer either. |
+| Sill + snow ledge | snow top spans x 1127 to 1593 at y 480 | **measured, in shot.** Both are built (`Window sill`, `Sill snow` in the builder) and then merged into the batched `Workspace architecture` mesh, which is why a name search does not find them; their authored extents project onto the aperture's bottom edge. This is the near value in the window. |
 
 The depth separation is real and it is legible: the middle block's lit windows
 are large and warm, the far skyline's are small and cool, and the sill is a
@@ -435,7 +436,55 @@ run and never again — it did not reproduce when the run was repeated while
 logging response URLs, and no scene asset is missing: all four authored GLBs
 report `ready` in every frame. Not chased further.
 
-## Not claimed
+## Three claims checked after the first write-up
+
+Run with `node scripts/review-cinematic-room-checks.mjs`.
+
+### Correction: "the parapet still reads from the overview" is not confirmed
+
+The offline study says the near parapet "still reads when you look down through
+the glass and **from the overview**". The first render pass only measured it
+against the seated frame, so that half stood unchecked. Measured now, in the
+1600 x 900 overview: the parapet's front face projects to x 575-922, y 331-590,
+and the aperture to x 814-991, y 72-398. They overlap in roughly a 108 x 67 px
+patch at the aperture's bottom corner.
+
+So it is geometrically capable of being seen there — but it is unlit dark
+facade at night, and **I could not identify it in the rendered overview frame.**
+Treat the inherited claim as unproven rather than true. If the parapet is meant
+to carry near-depth it needs either a lit face or a different placement; that is
+a composition call, not a defect fix, so nothing was changed.
+
+### Latent bug: the ceiling fixture's emissive is not driven by the first `setEntryPower`
+
+`createAuthoredCeilingFixture`'s `update(power)` iterates an `emission` array
+that stays empty until the GLB's `.then` populates it. The harness (and
+`WorkspaceStage`) call `setEntryPower` immediately after build, which is before
+that. Measured: one emissive material, sitting at `baseEmissive` = 1 as shot;
+an explicit `setEntryPower(0.2)` after the asset lands drives it to 0.2, and
+back to 1.
+
+**No effect on these frames** — they are shot at power 1, which is the same
+value. It matters for the arrival ramp, where a fixture asked for 0.2 would
+render at 1 until the next call. In the live app the ramp calls repeatedly so
+it self-corrects within a frame or two. Not fixed here: the helper is a live
+file and this pass does not edit live files.
+
+### Checks not run, and why
+
+No verification suite was run this pass. Nothing this pass touched is on the
+app's path: `git status` shows only the three candidate modules, the new
+`review-cinematic-room*` harness files and docs, and `buildWorkspace.js` still
+runs the app. The evidence that the live path still builds and renders is the
+`live-seated-night.png` / `live-overview-night.png` pair, which were produced
+from `buildWorkspace` + `buildRoomInteractions` in the same run as the
+candidate frames, with all four authored assets reporting `ready`.
+
+Screenshots are not committed: `scripts/shots/` is gitignored by design
+(".gitignore: Playwright verification screenshots (throwaway)"). Re-run the
+shots script to regenerate them.
+
+## Not claimed (render pass)
 
 Still a composition study of one room at one time of day, with the hands hidden.
 Not an acceptance of the final scene, and no comparison to any shipped game.
