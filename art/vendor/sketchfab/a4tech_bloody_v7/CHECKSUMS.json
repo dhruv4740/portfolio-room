@@ -1,0 +1,17 @@
+{
+  "source_gltf": {
+    "path": "art/candidates/mouse/computer_mouse_a4tech_bloody_v7/scene.gltf",
+    "bytes": 12358,
+    "sha256": "caf4516f39de6aec1cdf10ea8ee5a3c87b309c32819473657735fe5f061d704a"
+  },
+  "source_bin": {
+    "path": "art/candidates/mouse/computer_mouse_a4tech_bloody_v7/scene.bin",
+    "bytes": 6888768,
+    "sha256": "435fe884df4d348fc7f4dfb573ea9f5f8d7122ce418b9dd5d2204e4025251898"
+  },
+  "export_glb": {
+    "path": "art/vendor/sketchfab/a4tech_bloody_v7/export/mouse.glb",
+    "bytes": 597652,
+    "sha256": "1075f7dcefce173783b46de0efdac7fbbd6229138224c35f7699e6d20323444e"
+  }
+}

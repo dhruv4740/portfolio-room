@@ -7,6 +7,16 @@ CC0: https://polyhaven.com/license
 Changes: working pose, material export adaptation, clamp screw placement and
 static material batching. Original sources and changes recorded in repository.
 
+Computer mouse A4Tech bloody V7 — Prokyovec
+https://sketchfab.com/3d-models/computer-mouse-a4tech-bloody-v7-69e3f3ec5cc44b14afaa85c53db09c1f
+https://sketchfab.com/fipro333
+Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+Changes: decimated from 136,520 to 11,601 triangles, origin moved to the base
+of the footprint, scaled to 72.7 x 124 x 38 mm (including an 0.85 narrowing in
+X), texture coordinates dropped and parts batched by material. Original source
+and changes recorded in repository.
+
 FP arms — DJMaesen (bumstrum)
 https://sketchfab.com/3d-models/fp-arms-06ee1407117d4e5ab343becb4ee44bb6
 https://sketchfab.com/bumstrum

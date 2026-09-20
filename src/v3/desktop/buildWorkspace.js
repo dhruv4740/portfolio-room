@@ -4,6 +4,7 @@ import { buildSeatedFigure } from './buildSeatedFigure.js';
 import { seatedHands } from './seatedHands.js';
 import { createSpeakerDetails } from './speakerDetails.js';
 import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
+import { createAuthoredMouse } from './authoredMouse.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -405,8 +406,12 @@ export function buildWorkspace(scene, options = {}) {
   keys.castShadow = false; root.add(keys); tag(keys, 'keyboard');
   box('Escape key', [.030, .018, .028], [-.187, 1.230, .214], orange, .002);
   box('Spacebar', [.16, .019, .028], [0, 1.231, .342], bone, .003);
-  box('Mouse', [.070, .037, .12], [.37, 1.195, .30], bone, .022, 'desk');
-  box('Mouse wheel', [.009, .007, .018], [.37, 1.216, .274], dark, .002);
+  // The procedural boxes are now only the licensed mouse's load fallback.
+  // Grouping keeps them out of static batching so they can be hidden, and out
+  // of the static contact set — the loaded asset supplies real contact geometry.
+  const mouseFallback=new THREE.Group();mouseFallback.name='Mouse fallback';root.add(mouseFallback);
+  mouseFallback.add(box('Mouse', [.070, .037, .12], [.37, 1.195, .30], bone, .022));
+  mouseFallback.add(box('Mouse wheel', [.009, .007, .018], [.37, 1.216, .274], dark, .002));
 
   // Keep the complete phone out of static batching and out of baked shadows.
   const phone = new THREE.Group(); phone.name = 'Animated phone';
@@ -584,7 +589,7 @@ export function buildWorkspace(scene, options = {}) {
   // Keep targets separate so first-hit raycasting still selects real objects.
   // Contact casters retain actual geometry before the visible meshes are
   // batched. No duplicated proxy dimensions and no tabletop self-shadow.
-  const contactNames=new Set(['Keyboard case','Keyboard foot','Mouse','Book page block','Book cover','Book spine','Nearfield speaker','Lamp base','Monitor foot','Monitor stand']);
+  const contactNames=new Set(['Keyboard case','Keyboard foot','Book page block','Book cover','Book spine','Nearfield speaker','Monitor foot','Monitor stand']);
   const contactParts=[];root.updateMatrixWorld(true);
   for(const mesh of root.children){
     if(!mesh.isMesh||!contactNames.has(mesh.name))continue;
@@ -620,11 +625,15 @@ export function buildWorkspace(scene, options = {}) {
   root.add(fx);
   const roomActions=buildRoomInteractions({root,materials:{bone,dark,wood,paper},canvasTexture,anchors:WORKSPACE.anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys,keyConfig,windowLight});
   const taskLamp=createAuthoredTaskLamp({root,fallback:lampFallback,bulb,pool:lampPool,desktop:deskSurface,onReady:()=>{roomActions.apply();options.onShadowNeedsUpdate?.();}});
+  const mouse=createAuthoredMouse({root,fallback:mouseFallback,
+    // Sitting on the felt mat (top y=1.174), squared roughly to the keyboard.
+    anchor:{position:[.37,1.174,.30],rotationY:-.08},
+    onReady:()=>{options.onShadowNeedsUpdate?.();}});
   const hands = seatedHands(); root.add(hands.root); hands.root.visible = true;
   const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
-    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp,
+    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp, mouse,
     contactSurfaces: {desk:deskSurface,mat:matSurface},
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
@@ -659,6 +668,7 @@ export function buildWorkspace(scene, options = {}) {
       // Clears its children before the general traversal to avoid double disposal.
       speakerDetails.dispose();
       taskLamp.dispose();
+      mouse.dispose();
       contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {

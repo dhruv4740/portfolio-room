@@ -75,6 +75,13 @@ export function createDeskContactShadows({
     mirror.matrixAutoUpdate=false;mirror.frustumCulled=false;
     casters.add(mirror);mirrors.push({source,mirror});
   });
+  const addedStatic=[];
+  const addStatic=geometry=>{
+    if(disposed||!geometry)return;
+    const fixed=new THREE.Mesh(geometry,casterMaterial);
+    fixed.frustumCulled=false;casters.add(fixed);addedStatic.push(fixed);
+    dirty=true;invalidate();
+  };
   if(staticGeometry){
     const fixed=new THREE.Mesh(staticGeometry,casterMaterial);
     fixed.frustumCulled=false;casters.add(fixed);
@@ -189,6 +196,8 @@ export function createDeskContactShadows({
       capture();lastCapture=now;
     },
     markDirty(){dirty=true;},
+    // Asynchronous desk assets own their geometry and hand it over on load.
+    addStatic,
     setEnabled(value){enabled=!!value;receivers.forEach(mesh=>{mesh.visible=enabled&&captures>0;});if(enabled)dirty=true;invalidate();},
     withoutReceivers(callback){
       const visibility=receivers.map(mesh=>mesh.visible);receivers.forEach(mesh=>{mesh.visible=false;});
@@ -197,6 +206,7 @@ export function createDeskContactShadows({
     stats(){return {enabled,captures,resolution:[resolution,height],dynamicMeshes:mirrors.length};},
     dispose(){
       if(disposed)return;disposed=true;if(timer!==null)clearTimeout(timer);
+      addedStatic.forEach(mesh=>{mesh.removeFromParent();mesh.geometry.dispose();});
       receivers.forEach(mesh=>{mesh.removeFromParent();mesh.geometry.dispose();mesh.material.dispose();});
       quad.geometry.dispose();blurMaterial.dispose();casterMaterial.dispose();
       raw.dispose();horizontal.dispose();softened.dispose();matrixSnapshots.clear();casters.clear();
