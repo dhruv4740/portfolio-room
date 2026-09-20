@@ -19,6 +19,10 @@ docs/reviews/OPUS-SPEAKERS-HANDOFF.md, as specified in PROMPT-OPUS-SPEAKERS.md.
 Keep it unimported; Codex owns integration and visual acceptance. No Opus
 browser/build use. This does not transfer hand anatomy or general 3D ownership.
 
+Update: speaker task completed and integrated by Codex; seated/overview visual
+review passed. That assignment is closed. Neither Opus nor Gemini has a new
+task; do not keep editing the speaker module under the earlier permission.
+
 | Owner | Files |
 |---|---|
 | Codex | All 3D: WorkspaceStage.jsx, buildWorkspace.js, buildRoomInteractions.js, seatedHands.js, handSurface.js, handAssets.js, afterHours.js, sceneDirector.js, cameraRig.js, perfGovernor.js; art/, runtime models/materials, Blender/export scripts; this contract and main handoff |

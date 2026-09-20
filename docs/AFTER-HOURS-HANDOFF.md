@@ -15,6 +15,27 @@ it as achieving the GTA/RDR realism target.
 
 ## Next exact actions
 
+### Speaker integration and hand-loader confirmation — 2026-09-20
+
+Integrated Opus speakerDetails.js; removed the two old flat discs in the same
+change. Three material meshes, 2,784 detail triangles; geometry stays in its
+own group outside root static batching. Explicit dispose clears its children
+before general scene traversal so resources are not disposed twice. Cabinet
+placement/contact geometry unchanged. Opus handoff retained as original evidence.
+
+Production build and real-GPU shots-after-hours passed with no page/console
+errors. Codex inspected seated and overview frames: woofer/tweeter definition
+reads without excessive metal highlights or a visible cabinet gap. No broad
+performance acceptance: governor selected DPR1.1 and flow medians varied
+(seat 16.51ms/window 14.09ms); these cannot isolate speaker cost.
+
+Separate production-browser check confirmed hands-v1.bin.gz HTTP200 with
+Content-Encoding gzip and no hand/fetch/fallback warnings after readiness.
+This confirms the loader fix from 49fd86e on the actual preview server.
+All-pose regression after loader/speaker integration has not been rerun.
+No new Opus/Gemini assignment needed at this checkpoint. Codex owns browser;
+next major art work remains hand anatomy and skin response.
+
 ### Gemini reviewed; bounded Opus 3D assignment — 2026-09-20
 
 Gemini reports contact review, held objects, reduced hands, room interactions,

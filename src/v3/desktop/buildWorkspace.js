@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { buildRoomInteractions } from './buildRoomInteractions.js';
 import { buildSeatedFigure } from './buildSeatedFigure.js';
 import { seatedHands } from './seatedHands.js';
+import { createSpeakerDetails } from './speakerDetails.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -454,8 +455,9 @@ export function buildWorkspace(scene, options = {}) {
   // Small speaker pair and vented workstation beneath the desk.
   for (const x of [-0.96, 0.95]) {
     box('Nearfield speaker', [0.18, 0.28, 0.16], [x, 1.305, -0.45], dark, 0.02);
-    const cone = new THREE.Mesh(new THREE.CircleGeometry(0.059, 24), black); cone.position.set(x, 1.3, -0.362); root.add(cone);
   }
+  const speakerDetails = createSpeakerDetails();
+  root.add(speakerDetails.root);
   box('Workstation tower', [0.35, 0.64, 0.64], [1.0, 0.405, -0.38], dark, 0.025);
   for (let i = 0; i < 12; i++) box('Tower vent', [0.24, 0.009, 0.009], [1.0, 0.27 + i * 0.027, -0.054], black);
 
@@ -646,6 +648,8 @@ export function buildWorkspace(scene, options = {}) {
       options.onShadowNeedsUpdate?.();
     },
     dispose() {
+      // Clears its children before the general traversal to avoid double disposal.
+      speakerDetails.dispose();
       contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {
