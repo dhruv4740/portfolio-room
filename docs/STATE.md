@@ -17,10 +17,20 @@ do not duplicate stale claims from older reviews.
 licensed A4Tech mouse and the CC0 Poly Haven industrial pendant replaced their
 procedural stand-ins. Full record: reviews/OPUS-MULTIPASS-HANDOFF.md.
 
-Important limits: **mixed scene scale remains and is now the main blocker** —
-measured audit and a proposal with exact dimensions are in
-ROOM-SCALE-PROPOSAL.md; the uniform correction needs Codex because seated hand
-poses are world-space. The indirect bake still reflects the task light's older
+2026-09-20, later still: Codex repaired hand/body/keyboard contact (`11a2bce`)
+and released the slot; Opus used it for the cinematic room render pass
+(`1a10d16`, `5dcea66`). **The true-scale room now exists as a rendered,
+corrected candidate** — `cinematicLayout.js`, `buildCinematicWorkspace.js`,
+`cinematicRoomInteractions.js` plus a `scripts/review-cinematic-room*` harness.
+Five comparison frames on a real GPU; three contact/scale defects found and
+fixed. **Not adopted**: no live import is switched, because adoption and the
+hand kinematics are one edit and that edit is Codex's. Full record and the
+old-to-new mapping table: reviews/OPUS-ROOM-COMPOSITION.md.
+
+Important limits: **mixed scene scale is still the main blocker in the live
+room** — the audit is in ROOM-SCALE-PROPOSAL.md and the candidate above is the
+proposed answer; the uniform correction needs Codex because seated hand poses
+are world-space. The indirect bake still reflects the task light's older
 placement and must not be called accurate. Default hands remain procedural;
 the downloaded FP arms prototype is gloved. **Keyboard and chair stay blocked:
 no license evidence exists in the repository for either.** `verify-v3` and
