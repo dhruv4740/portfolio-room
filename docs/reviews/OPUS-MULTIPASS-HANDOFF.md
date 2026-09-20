@@ -248,10 +248,87 @@ another agent during this run; they were left exactly as found.
    realism direction is downstream of it, including the bake. Codex owns the
    hand-kinematics half.
 2. **Rebake the indirect lighting** once, after that decision — not before.
-3. **Get licences for the keyboard and chair**, or drop them and source CC0
-   replacements. Both are owner actions.
+3. **Get the Sketchfab model URL for the keyboard.** The owner directed that
+   it ships on a personal, non-commercial basis, and it is now integrated, but
+   the licence class is still unverified. CC BY-ND is the one class that would
+   force a removal, because the cap is decimated and that makes a derivative.
 4. **Fix or quarantine the pre-existing `verify-v3` / `verify-after-hours`
    click hang.** It currently hides real regressions in those suites, which is
    worse than the failure itself.
 5. Only then: measure. A single `measure-gpu.mjs` run after the layout settles
    is worth more than one now against geometry that is about to change.
+
+
+---
+
+## 7. Addendum - after the owner's decisions (2026-09-20)
+
+**Chair: reverted** (`921397f`). It was integrated correctly - scaled so the
+seating surface lands on the room's existing seat height, with the orientation
+measured from the export rather than guessed - but the asset is an ornate
+Victorian captain's chair, not the worn leather office chair its README
+described. Owner's call on style, not licence. `prepare_chair.py` and the
+provenance are kept so it can be redone.
+
+**Keyboard: integrated** (`a50730a`). Two things recorded earlier in this run
+were wrong and mattered:
+
+- The candidate README's "monolithic mesh, keys cannot be depressed" blocker is
+  false. It is one mesh *object* but 94 loose parts: a 6600-vert chassis, 92
+  keycaps of **identical 333-vert topology**, and one junk plane. Identical
+  topology is the instancing case, not an obstacle.
+- Because of that, the "substantial, contract-touching rewrite" I flagged to the
+  owner was unnecessary. The room already drew keycaps as an `InstancedMesh`, so
+  the asset swaps the cap geometry underneath that same object. `instanceId`,
+  `setKey`, `KEY_ROWS`, `pressKey` and the hit path are unchanged.
+
+Instances 0-59 are the KEY_ROWS grid in row-major order, mapped onto the real
+caps that carry those legends (including the genuine backslash key, which on
+this board sits on the qwerty row where a real one does). The other 32 are
+modifiers; `setKey`'s existing `index >= 60` bounds check already ignores them,
+and they point at a sixth, blank row added to the label atlas.
+
+Verified by `scripts/verify-keyboard.mjs`: GLB 200, 92 instances, 92 label
+slots, 164 tris/cap, clicking cap 17 gives `hitKey=17` and depresses that
+instance 8.9 mm before it returns to rest, and blocking the GLB leaves
+`status: fallback` with no console errors.
+
+**Known simplifications, stated rather than discovered later:**
+
+- One instanced cap cannot carry the source's per-row sculpt. The per-row height
+  stagger is preserved in the instance matrices (cap tops run 1.2349 to 1.2438,
+  centred on the 1.2375 that `KEY_TOP` assumes), but every cap uses the home-row
+  profile and tilt. Wide keys are that cap stretched in x, up to 6.5x for the
+  spacebar.
+- Uniform 0.54203 scale puts the board on the room's .48 x .20 case, which left
+  the chassis underside 13.7 mm above the felt mat. The rubber feet were grown
+  from 10 mm to 23.2 mm to bridge it rather than distorting the model's height.
+  The real board is proportionally much flatter than the procedural one it
+  replaced; this is the room-scale inflation showing up again.
+- The keycaps are now at real pitch (23.2 mm) instead of the procedural 34 mm,
+  which makes the **hands visibly oversized** relative to them in the seated
+  view - a finger covers roughly two keys. That is the hand/room scale question
+  in `ROOM-SCALE-PROPOSAL.md`, not a keyboard defect, and it is now much easier
+  to see. See `scripts/shots/keyboard-seated.png`.
+
+**Click hang: diagnosed, not a code defect.** `verify-v3` passes **41/41** with
+`GPU=1` on the real-GPU Chromium and times out clicking `desktop-projects`
+without it. `verify-room-interactions` likewise passes end to end with `GPU=1`.
+
+The mechanism is worth recording, because the obvious guess is wrong. It is
+**not** Playwright's actionability check: sampled six times over 1.5 s, the
+button's bounding box is byte-identical (`48.00, 863.81, 230.00, 84.19`), so it
+is visible, enabled and stable. And `click({force: true})`, which skips
+actionability entirely, **also** times out at 15 s, after which
+`data-entrance-state` is still `room` - the input event never landed. That
+leaves renderer main-thread starvation: under the software rasteriser a frame
+costs so much that queued input dispatch never gets serviced. Consistent with
+the earlier isolated probe, where the same button clicked in 78 ms against an
+otherwise idle page.
+
+Practical consequence: run these suites with `GPU=1`, and do not read a run
+without it as a regression. The open question, if someone wants to make the
+suites work headless-software too, is why the render loop stays busy enough to
+starve input - this scene is supposed to render on demand, and
+`verify-room-interactions`' own `idle()` assertions prove it does settle on a
+real GPU.
