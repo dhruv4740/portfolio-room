@@ -13,6 +13,12 @@ Git writes: Codex performs checkpoints; other agents report ready files.
 
 ## Exclusive write ownership
 
+Latest owner direction: Opus may implement bounded 3D tasks from exact Codex
+specifications. Current exception: ONLY new speakerDetails.js and
+docs/reviews/OPUS-SPEAKERS-HANDOFF.md, as specified in PROMPT-OPUS-SPEAKERS.md.
+Keep it unimported; Codex owns integration and visual acceptance. No Opus
+browser/build use. This does not transfer hand anatomy or general 3D ownership.
+
 | Owner | Files |
 |---|---|
 | Codex | All 3D: WorkspaceStage.jsx, buildWorkspace.js, buildRoomInteractions.js, seatedHands.js, handSurface.js, handAssets.js, afterHours.js, sceneDirector.js, cameraRig.js, perfGovernor.js; art/, runtime models/materials, Blender/export scripts; this contract and main handoff |
@@ -26,7 +32,12 @@ between Scan and WorkspaceStage without reporting the proposed interface first.
 
 ## Build/browser coordination
 
-**CURRENT SLOT: RESERVED FOR GEMINI — contact/exterior verification.** Codex
+**CURRENT SLOT: CODEX.** Gemini released its contact/exterior batch; report in
+docs/reviews/GEMINI-CONTACT-VERIFICATION.md. Codex is correcting the confirmed
+hand gzip double-decode and reviewing the next art work. No new Gemini batch.
+The previous reservation below is historical.
+
+**PREVIOUS SLOT: RESERVED FOR GEMINI — contact/exterior verification.** Codex
 finished its GPU visual review and froze runtime/assets for the new task in
 PROMPT-GEMINI-CONTACT-VERIFY.md. This reservation does not mean Gemini has
 started; the owner must forward that prompt. No new Opus assignment. Codex may

@@ -6,7 +6,14 @@ export async function loadHandAssets() {
   const compressed = typeof DecompressionStream !== 'undefined';
   const response = await fetch(`${import.meta.env?.BASE_URL || '/'}models/hands-v1.bin${compressed ? '.gz' : ''}`);
   if (!response.ok) throw new Error('Hand geometry could not be loaded');
-  const buffer = compressed ? await new Response(response.body.pipeThrough(new DecompressionStream('gzip'))).arrayBuffer() : await response.arrayBuffer(), view = new DataView(buffer);
+  // Fetch may already decode Content-Encoding. Inspect delivered bytes so both
+  // encoded HTTP responses and ordinary static .gz downloads work correctly.
+  let buffer = await response.arrayBuffer();
+  const signature = new Uint8Array(buffer, 0, Math.min(2, buffer.byteLength));
+  if (signature[0] === 0x1f && signature[1] === 0x8b) {
+    buffer = await new Response(new Blob([buffer]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
+  }
+  const view = new DataView(buffer);
   let offset = 0;
   const uint = () => { const n=view.getUint32(offset,true);offset+=4;return n; };
   if(uint()!==0x48414e44 || uint()!==1)throw new Error('Unsupported hand geometry');

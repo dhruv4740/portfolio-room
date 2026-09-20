@@ -15,6 +15,26 @@ it as achieving the GTA/RDR realism target.
 
 ## Next exact actions
 
+### Gemini reviewed; bounded Opus 3D assignment — 2026-09-20
+
+Gemini reports contact review, held objects, reduced hands, room interactions,
+After Hours 26/26 and low-contact 11/11 passed on 7c86166, slot RELEASED.
+Low-contact JSON and harness were inspected by Codex. Capture counters prove
+refresh/settling, not by themselves absence of visual ghosting. Gemini's broader
+visual claims remain subject to parent art review.
+
+Confirmed loader issue: HTTP gzip auto-decode followed by manual gzip decode
+caused procedural hand fallback. Codex now checks delivered gzip magic bytes
+before decoding, supporting both encoded HTTP and plain .gz delivery. Direct
+loader checks on both asset representations yielded the same four valid meshes.
+Production/browser confirmation of this fix remains pending.
+
+Owner permits Opus for bounded 3D implementation. PROMPT-OPUS-SPEAKERS.md
+assigns one unimported speaker-front module with exact geometry/performance
+constraints. Codex retains hand anatomy, integration and art acceptance.
+No new Gemini work is needed now. User must forward the Opus prompt; drafting
+it is not evidence that Opus has started.
+
 ### Latest checkpoint — exterior depth, 2026-09-20
 
 Contact pass committed as 1fb9ddf. City generator now builds facade openings
