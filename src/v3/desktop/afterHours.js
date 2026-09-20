@@ -100,8 +100,9 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     const filtered=pmrem.fromCubemap(target.texture);target.dispose();targets.push(filtered);probes.set(key,filtered);
     scene.environment=filtered.texture;scene.environmentIntensity=.35;
   }
-  const status={city:'loading',materials:'loading',bake:'loading'};
+  const status={city:'loading',materials:'loading',bake:'loading',lamp:'loading'};
   const report=()=>onStatus?.({...status});
+  const lampPromise=model.taskLamp.ready.then(()=>{if(disposed)return;status.lamp=model.taskLamp.state.status;probeDirty=true;invalidate();report();});
   const cityPromise=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/winter-city.glb`).then(gltf=>{
     if(disposed){gltf.scene.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});return;}
     city=gltf.scene;city.name='After Hours winter city';
@@ -146,8 +147,9 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   })).then(()=>{status.bake='ready';probeDirty=true;invalidate();report();}).catch(e=>{status.bake='fallback';console.warn('Room bake fallback:',e.message);report();});
 
   return {
-    ready:Promise.allSettled([cityPromise,mapsPromise,bakePromise]),
+    ready:Promise.allSettled([cityPromise,mapsPromise,bakePromise,lampPromise]),
     update(time,cost=0){uniforms.time.value=time;uniforms.lamp.value=model.roomActions.state.lamp;
+      model.taskLamp.update(uniforms.lamp.value);
       model.roomActions.objects.coffee.updateWorldMatrix(true,false);
       steamOrigin.set(0,.079,0).applyMatrix4(model.roomActions.objects.coffee.matrixWorld);
       steam.visible=model.roomActions.state.coffeeLevel>.01 && time!==0;
@@ -156,7 +158,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
       if(glassReflection&&costlyFrames>=10)glassReflection.visible=false;
       const lamp=uniforms.lamp.value>.5?1:0;
       if(lamp!==lastLamp){probeDirty=true;lastLamp=lamp;}
-      if(probeDirty&&status.city!=='loading'&&status.materials!=='loading'&&status.bake!=='loading'){
+      if(probeDirty&&status.city!=='loading'&&status.materials!=='loading'&&status.bake!=='loading'&&status.lamp!=='loading'){
         probeDirty=false;captureProbe();
       }
       contacts.update(performance.now());

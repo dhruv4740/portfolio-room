@@ -3,6 +3,7 @@ import { buildRoomInteractions } from './buildRoomInteractions.js';
 import { buildSeatedFigure } from './buildSeatedFigure.js';
 import { seatedHands } from './seatedHands.js';
 import { createSpeakerDetails } from './speakerDetails.js';
+import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -19,14 +20,15 @@ export const WORKSPACE = {
     drawer: [1.10,0.99,0.62], blinds: [2.16,1.75,-1.48], headphones: [0.67,1.24,-0.05], keyboard: [0,1.2375,0.20],
     notebook: [1.14, 1.21, 0.30], pen: [1.47, 1.218, 0.06],
     window: [1.4, 2.12, -1.75],
-    phone: [-0.80, 1.196, -0.03],
+    phone: [-0.80, 1.174, -0.03],
     windowOpen: [1.74, 1.99, -1.63],
   },
   seat: { position: [0.05, 1.72, 1.16], target: [0, 1.42, -0.37] },
   chair: [0.05, 1.08, 1.414],
   screen: { center: [0, 1.79, -0.362], width: 1.28, height: 0.79 },
-  deskSurface: { center: [0,1.165,-.04], size: [3.52,1.45], radius: .028 },
+  deskSurface: { center: [0,1.165,-.04], size: [3.52,1.45], radius: .008, thickness:.035 },
   matSurface: { center: [.11,1.174,.25], size: [.95,.52], radius: .025 },
+  phoneSize: {width:.078,height:.166,depth:.009},
 };
 
 function drawBlankPage(ctx, w, h) {
@@ -361,11 +363,11 @@ export function buildWorkspace(scene, options = {}) {
 
   // Desk: solid oak, a thin edge, and a black steel trestle.
   const deskSurface=WORKSPACE.deskSurface,matSurface=WORKSPACE.matSurface;
-  const oakDesktop = box('Oak desktop', [deskSurface.size[0],.12,deskSurface.size[1]], [deskSurface.center[0],deskSurface.center[1]-.06,deskSurface.center[2]], wood, deskSurface.radius, 'desk');
+  const oakDesktop = box('Oak desktop', [deskSurface.size[0],deskSurface.thickness,deskSurface.size[1]], [deskSurface.center[0],deskSurface.center[1]-deskSurface.thickness/2,deskSurface.center[2]], wood, deskSurface.radius, 'desk');
   const deskBox = new THREE.Box3().setFromObject(oakDesktop);
-  box('Desk edge inlay', [3.42, 0.012, 0.012], [0, 1.071, 0.687], dark);
+  box('Desk edge inlay', [3.42, 0.006, 0.006], [0, 1.139, 0.687], dark);
   for (const x of [-1.46, 1.46]) {
-    for (const z of [-0.54, 0.49]) box('Steel desk leg', [0.052, 1.0, 0.052], [x, 0.565, z], dark, 0.008);
+    for (const z of [-0.54, 0.49]) box('Steel desk leg', [0.052, 1.065, 0.052], [x, 0.5975, z], dark, 0.008);
     box('Desk foot rail', [0.055, 0.055, 1.12], [x, 0.19, -0.025], dark, 0.008);
   }
   box('Rear stretcher', [2.94, 0.07, 0.045], [0, 0.84, -0.54], dark);
@@ -409,14 +411,15 @@ export function buildWorkspace(scene, options = {}) {
   // Keep the complete phone out of static batching and out of baked shadows.
   const phone = new THREE.Group(); phone.name = 'Animated phone';
   phone.position.set(...WORKSPACE.anchors.phone); root.add(phone);
-  const phoneBody = new THREE.Mesh(new RoundedBoxGeometry(0.16, 0.023, 0.33, 2, 0.012), dark);
-  phoneBody.position.y = -0.016; phone.add(phoneBody); tag(phoneBody, 'phone');
+  const phoneSize=WORKSPACE.phoneSize;
+  const phoneBody = new THREE.Mesh(new RoundedBoxGeometry(phoneSize.width, phoneSize.depth, phoneSize.height, 2, 0.004), dark);
+  phoneBody.position.y = -phoneSize.depth*.5; phone.add(phoneBody); tag(phoneBody, 'phone');
   const phoneTextures = { home: phoneHomeTexture(), hover: phoneHomeTexture(true), focuslock: phoneFocusLockTexture() };
   const phoneMaterial = new THREE.MeshBasicMaterial({ map: phoneTextures.home, toneMapped: false });
-  const phoneDisplay = new THREE.Mesh(new THREE.PlaneGeometry(0.135, 0.30), phoneMaterial);
-  phoneDisplay.rotation.x = -Math.PI / 2; phone.add(phoneDisplay); tag(phoneDisplay, 'phone');
-  const earpiece = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.002, 0.003), black);
-  earpiece.position.set(0, 0.001, -0.157); phone.add(earpiece); tag(earpiece, 'phone');
+  const phoneDisplay = new THREE.Mesh(new THREE.PlaneGeometry(phoneSize.width-.006, phoneSize.height-.012), phoneMaterial);
+  phoneDisplay.rotation.x = -Math.PI / 2; phoneDisplay.position.y=.0004; phone.add(phoneDisplay); tag(phoneDisplay, 'phone');
+  const earpiece = new THREE.Mesh(new THREE.BoxGeometry(0.018, 0.001, 0.0015), black);
+  earpiece.position.set(0, 0.0005, -phoneSize.height*.5+.004); phone.add(earpiece); tag(earpiece, 'phone');
   const phoneGlow = new THREE.Object3D(); phoneGlow.color = new THREE.Color('#d4d5d8'); phoneGlow.intensity = .07;
   phoneGlow.position.set(-0.80, 1.24, -0.03); root.add(phoneGlow);
 
@@ -437,12 +440,16 @@ export function buildWorkspace(scene, options = {}) {
   }
 
   // Task light, books and a ceramic cup give the room a human scale.
-  cylinder('Lamp base', 0.13, 0.035, [-1.28, 1.185, -0.48], dark);
-  rod('Lamp lower arm', [-1.28, 1.2, -0.48], [-1.39, 1.69, -0.43], 0.017, dark);
-  rod('Lamp upper arm', [-1.39, 1.69, -0.43], [-1.05, 1.95, -0.4], 0.017, dark);
+  const lampFallback=new THREE.Group();lampFallback.name='Task lamp fallback';root.add(lampFallback);
+  lampFallback.add(cylinder('Lamp base', 0.13, 0.035, [-1.28, 1.185, -0.48], dark));
+  lampFallback.add(rod('Lamp lower arm', [-1.28, 1.2, -0.48], [-1.39, 1.69, -0.43], 0.017, dark));
+  lampFallback.add(rod('Lamp upper arm', [-1.39, 1.69, -0.43], [-1.05, 1.95, -0.4], 0.017, dark));
   const shade = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.15, 32, 1, true), dark);
-  shade.position.set(-1.03, 1.89, -0.4); shade.rotation.z = -0.3; root.add(shade);
-  const bulb = new THREE.PointLight('#ffe4b1', 0.75, 2.2, 2); bulb.position.set(-1.02, 1.82, -0.39); root.add(bulb);
+  shade.position.set(-1.03, 1.89, -0.4); shade.rotation.z = -0.3; lampFallback.add(shade);
+  const bulb = new THREE.SpotLight('#ffe4b1', 1.85, 3, .8, .7, 2);
+  bulb.castShadow=true;bulb.shadow.mapSize.set(512,512);
+  bulb.shadow.camera.near=.025;bulb.shadow.camera.far=3;bulb.shadow.bias=-.0002;bulb.shadow.normalBias=.001;
+  bulb.position.set(-1.02, 1.82, -0.39);bulb.target.position.set(-1.02,1.165,-.39);root.add(bulb,bulb.target);
   for (let i = 0; i < 3; i++) {
     const width=.48-i*.025,y=1.197+i*.055,cover=[bone,dark,mat('bookTaupe','#858070')][i];
     box('Book page block',[width-.012,.041,.325],[-1.25,y,.15],paper,.003,'desk');
@@ -502,7 +509,7 @@ export function buildWorkspace(scene, options = {}) {
   const lampInterior = new THREE.Mesh(new THREE.CircleGeometry(0.115, 24),
     new THREE.MeshBasicMaterial({ color: '#d6a26b' }));
   lampInterior.rotation.x = Math.PI / 2;
-  lampInterior.position.set(-1.03, 1.818, -0.4); root.add(lampInterior);
+  lampInterior.position.set(-1.03, 1.818, -0.4); lampFallback.add(lampInterior);
 
   // Static pendant; only its local emission changes during the entry stutter.
   cylinder('Ceiling rose', 0.10, 0.025, [-0.65, 3.1075, 0.5], dark);
@@ -612,11 +619,12 @@ export function buildWorkspace(scene, options = {}) {
   }
   root.add(fx);
   const roomActions=buildRoomInteractions({root,materials:{bone,dark,wood,paper},canvasTexture,anchors:WORKSPACE.anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys,keyConfig,windowLight});
+  const taskLamp=createAuthoredTaskLamp({root,fallback:lampFallback,bulb,pool:lampPool,desktop:deskSurface,onReady:()=>{roomActions.apply();options.onShadowNeedsUpdate?.();}});
   const hands = seatedHands(); root.add(hands.root); hands.root.visible = true;
   const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
-    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry,
+    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp,
     contactSurfaces: {desk:deskSurface,mat:matSurface},
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
@@ -650,6 +658,7 @@ export function buildWorkspace(scene, options = {}) {
     dispose() {
       // Clears its children before the general traversal to avoid double disposal.
       speakerDetails.dispose();
+      taskLamp.dispose();
       contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {

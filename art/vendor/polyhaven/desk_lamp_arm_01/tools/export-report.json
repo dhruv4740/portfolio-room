@@ -1,0 +1,199 @@
+{
+ "blender": [
+  5,
+  2,
+  2
+ ],
+ "source_evaluated_bounds": {
+  "min": [
+   -0.27231,
+   -0.197188,
+   -0.087994
+  ],
+  "max": [
+   0.326287,
+   0.155409,
+   0.718556
+  ],
+  "size": [
+   0.598596,
+   0.352597,
+   0.80655
+  ],
+  "eval_tris": 25710
+ },
+ "emissive_warm_color": [
+  1.0,
+  0.983789,
+  0.649111,
+  1.0
+ ],
+ "materials_retargeted": [
+  "desk_lamp_arm_01",
+  "desk_lamp_arm_01_light"
+ ],
+ "images_after": [
+  {
+   "name": "desk_lamp_arm_01_arm",
+   "filepath": "C:\\Users\\hp\\OneDrive\\Desktop\\random sites\\portfolio\\art\\vendor\\polyhaven\\desk_lamp_arm_01\\source\\gltf\\textures\\desk_lamp_arm_01_arm_1k.jpg",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color"
+  },
+  {
+   "name": "desk_lamp_arm_01_diff.png",
+   "filepath": "//..\\gltf\\textures\\desk_lamp_arm_01_diff_1k.jpg",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "sRGB"
+  },
+  {
+   "name": "desk_lamp_arm_01_mask01.png",
+   "filepath": "//textures\\desk_lamp_arm_01_mask01_1k.png",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "sRGB"
+  },
+  {
+   "name": "desk_lamp_arm_01_metal.png",
+   "filepath": "//textures\\desk_lamp_arm_01_metal_1k.exr",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color"
+  },
+  {
+   "name": "desk_lamp_arm_01_nor_gl.png",
+   "filepath": "//..\\gltf\\textures\\desk_lamp_arm_01_nor_gl_1k.jpg",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color"
+  },
+  {
+   "name": "desk_lamp_arm_01_rough.png",
+   "filepath": "//textures\\desk_lamp_arm_01_rough_1k.exr",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color"
+  }
+ ],
+ "pose_controls_zeroed": {
+  "ctrl_top_rotation_A": {
+   "was": [
+    2.92329,
+    0.50238,
+    -0.64106
+   ]
+  },
+  "ctrl_top_rotation_B": {
+   "was": [
+    0.0,
+    -0.02575,
+    -0.96976
+   ]
+  }
+ },
+ "contact_face_measured": {
+  "centroid": [
+   -0.003158,
+   -0.003473,
+   0.00041
+  ],
+  "area_mm2": 910.49
+ },
+ "rerooted_objects": 42,
+ "contact_offset_applied": [
+  0.003158,
+  0.003473,
+  -0.00041
+ ],
+ "rerooted_evaluated_bounds": {
+  "min": [
+   -0.251981,
+   -0.175097,
+   -0.088403
+  ],
+  "max": [
+   0.329444,
+   0.158882,
+   0.686365
+  ],
+  "size": [
+   0.581426,
+   0.333979,
+   0.774768
+  ],
+  "eval_tris": 26158
+ },
+ "contact_after_reroot": [
+  0.0,
+  0.0,
+  0.0
+ ],
+ "emitter_delivered": {
+  "area_mm2": 16031.83,
+  "centroid_blender_zup": [
+   -0.14886,
+   -0.07183,
+   0.56546
+  ],
+  "aim_blender_zup": [
+   0.00459,
+   0.00213,
+   -0.99999
+  ],
+  "centroid_gltf_yup": [
+   -0.14886,
+   0.56546,
+   0.07183
+  ],
+  "aim_gltf_yup": [
+   0.00459,
+   -0.99999,
+   -0.00213
+  ]
+ },
+ "exported_objects": [
+  "geo_arm_1_a",
+  "geo_arm_1_b",
+  "geo_arm_1_c",
+  "geo_arm_2_a",
+  "geo_arm_2_b",
+  "geo_base_pivot",
+  "geo_lamp-base-pivot",
+  "geo_lamp-head",
+  "geo_lamp-head-button",
+  "geo_lower-spring_a",
+  "geo_lower-spring_a_bottom-hook",
+  "geo_lower-spring_a_top-hook",
+  "geo_lower-spring_b",
+  "geo_lower-spring_b_bottom-hook",
+  "geo_lower-spring_b_top-hook",
+  "geo_lower-spring_top-bar",
+  "geo_middle-pivot",
+  "geo_middle_wire",
+  "geo_pivot-holder",
+  "geo_top-pivot",
+  "geo_top-spring_a",
+  "geo_top-spring_a_bottom-hook",
+  "geo_top-spring_a_top-hook",
+  "geo_top-spring_b",
+  "geo_top-spring_b_bottom-hook",
+  "geo_top-spring_b_top-hook",
+  "geo_top_wire"
+ ],
+ "glb_bytes": 2989048,
+ "work_blend": "C:/Users/hp/OneDrive/Desktop/random sites/portfolio/art/vendor/polyhaven/desk_lamp_arm_01/work/desk_lamp_arm_01_work.blend",
+ "work_bytes": 781980
+}

@@ -292,12 +292,12 @@ export default function WorkspaceStage({
         return out;
       }
       // `via` routes the hand around an edge instead of through the object.
-      function hold(h, a, b = a, w = 0, via = null) {
+      function hold(h, a, b = a, w = 0, via = null, arc = true) {
         if (via) { if (w < 0.5) { b = via; w *= 2; } else { a = via; w = (w - 0.5) * 2; } }
         gripPose(a, poseA); gripPose(b, poseB);
         h.hand.position.lerpVectors(poseA.p, poseB.p, w);
         // A reach arcs up and over rather than tracking a straight line.
-        h.hand.position.y += Math.min(0.06, poseA.p.distanceTo(poseB.p) * 0.3) * Math.sin(Math.PI * w);
+        if(arc)h.hand.position.y += Math.min(0.06, poseA.p.distanceTo(poseB.p) * 0.3) * Math.sin(Math.PI * w);
         h.hand.quaternion.slerpQuaternions(poseA.q, poseB.q, w);
         // From an open hand the fingers spread on the way to a grip, then close on it.
         const closing = curlSum(poseB.pose) > curlSum(poseA.pose) + 0.2 && curlSum(poseA.pose) < 1.7;
@@ -331,15 +331,18 @@ export default function WorkspaceStage({
       // Phone: palm down on the glass, thumb on the edge, then the hand rolls
       // under to hold it from behind: palm behind the phone, fingers wrapping
       // its far edge, thumb over the screen's near edge.
-      const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.07], r: [0, 0, 0], pose: 'flat' };
-      const PHONE_SIDE = { obj: model.phone, p: [-0.10, -0.005, 0.05], r: [0, 0, Math.PI / 2], pose: 'cup' };
+      const PHONE_TOP = { obj: model.phone, p: [-0.125, 0.042, 0.035], r: [0, 0, 0], pose: 'open' };
+      const PHONE_SIDE = { obj: model.phone, p: [-0.12, -0.070, 0.035], r: [0, 0, Math.PI / 2], pose: 'open' };
       const PHONE_BACK = (() => {
-        const y = new THREE.Vector3(0, -1, 0), z = new THREE.Vector3(-Math.cos(0.6), 0, Math.sin(0.6)); // fingers to the far edge and up, wrist down
-        return { obj: model.phone, p: [-0.02, -0.03, 0.02], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z), pose: 'wrap' };
+        const y = new THREE.Vector3(0, -1, 0), z = new THREE.Vector3(-Math.cos(0.35), 0, Math.sin(0.35));
+        return { obj: model.phone, p: [-0.040, -0.035, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
+          pose: {...POSES.cup,c0:.3,c1:.3,c2:.3,c3:.34} };
       })();
       const PHONE_LEAN = { x: -0.28, y: -0.08, z: -0.42 };
       let phoneGrip = 1, phoneVisited = false;
-      function followPhone() { hold(model.hands.left, PHONE_TOP, PHONE_BACK, phoneGrip, PHONE_SIDE); }
+      // A world-up reach arc cuts through a tilted phone during the underhand
+      // roll. The explicitly authored side waypoint already supplies clearance.
+      function followPhone() { hold(model.hands.left, PHONE_TOP, PHONE_BACK, phoneGrip, PHONE_SIDE, false); }
       // PhoneScreen drives these. The texture under the DOM screen follows it,
       // so pulling back out of the zoom never pops to a different screen.
       function showFocusLock() {
@@ -1075,7 +1078,7 @@ export default function WorkspaceStage({
       resizeObserver = new ResizeObserver(resize); resizeObserver.observe(host);
       resize(); place(home); render();
       afterHours=createAfterHours({scene,model,renderer,invalidate,tier:gov.tier,onStatus:s=>{
-        host.dataset.winterCity=s.city;host.dataset.roomMaterials=s.materials;host.dataset.roomBake=s.bake;
+        host.dataset.winterCity=s.city;host.dataset.roomMaterials=s.materials;host.dataset.roomBake=s.bake;host.dataset.taskLamp=s.lamp;
       }});
       afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });
@@ -1152,6 +1155,21 @@ export default function WorkspaceStage({
           // Wrist bend in degrees (forearm against the hand's own axis) and the live pose, per hand.
           hands() {
             return [model.hands.left, model.hands.right].map(h => ({ wristDeg: +h.wristDeg.toFixed(1), pose: Object.fromEntries(Object.keys(POSES.rest).map(k => [k, +h.pose[k].toFixed(2)])), p: h.hand.position.toArray().map(v => +v.toFixed(3)) }));
+          },
+          phoneGripGeometry() {
+            model.root.updateMatrixWorld(true);
+            const h=model.hands.left,mesh=h.skinMesh,p=new THREE.Vector3();
+            const inverse=model.phone.matrixWorld.clone().invert();
+            const size=WORKSPACE.phoneSize;let inside=0,screen=0;
+            for(let i=0;i<mesh.geometry.attributes.position.count;i++){
+              p.fromBufferAttribute(mesh.geometry.attributes.position,i);
+              mesh.applyBoneTransform(i,p).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);
+              if(Math.abs(p.x)<size.width*.5-.001&&Math.abs(p.z)<size.height*.5-.001){
+                if(p.y<-.001&&p.y>-size.depth+.001)inside++;
+                if(p.y>.001&&Math.abs(p.x)<size.width*.5-.005)screen++;
+              }
+            }
+            return {inside,screen};
           },
         };
       }

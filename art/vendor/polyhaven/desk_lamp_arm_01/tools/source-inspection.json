@@ -1,0 +1,4831 @@
+{
+ "blender": [
+  5,
+  2,
+  2
+ ],
+ "units": {
+  "system": "METRIC",
+  "scale_length": 1.0,
+  "length_unit": "METERS"
+ },
+ "collections": [
+  {
+   "name": "desk_lamp_arm_01",
+   "objects": [
+    "geo_lamp-head",
+    "geo_top-pivot",
+    "geo_top-spring_a_bottom-hook",
+    "geo_middle-pivot",
+    "geo_arm_2_a",
+    "geo_arm_2_b",
+    "geo_arm_1_c",
+    "geo_arm_1_b",
+    "geo_arm_1_a",
+    "geo_lamp-base-pivot",
+    "geo_lower-spring_b",
+    "geo_base_pivot",
+    "geo_pivot-holder",
+    "geo_middle_wire",
+    "geo_top_wire",
+    "geo_lower-spring_top-bar",
+    "geo_lower-spring_a_bottom-hook",
+    "geo_lower-spring_a_top-hook",
+    "geo_lower-spring_a",
+    "geo_lower-spring_b_bottom-hook",
+    "geo_lower-spring_b_top-hook",
+    "geo_top-spring_b_bottom-hook",
+    "geo_top-spring_a",
+    "geo_top-spring_b",
+    "geo_top-spring_a_top-hook",
+    "geo_top-spring_b_top-hook",
+    "geo_lamp-head-button",
+    "rig_lamp",
+    "cur_top_wire",
+    "cur_middle_wire"
+   ],
+   "children": [
+    "hlp_helpers",
+    "wdg_widgets"
+   ]
+  },
+  {
+   "name": "hlp_helpers",
+   "objects": [],
+   "children": [
+    "hooks"
+   ]
+  },
+  {
+   "name": "hooks",
+   "objects": [
+    "hlp_top-wire_end",
+    "hlp_top-wire_start",
+    "hlp_top-wire_middle",
+    "hlp_middle_wire_end",
+    "hlp_middle_wire_start",
+    "hlp_middle_wire_middle",
+    "hlp_top-wire_control"
+   ],
+   "children": []
+  },
+  {
+   "name": "wdg_widgets",
+   "objects": [
+    "wdg_bone_arrows_6",
+    "wdg_bone_root",
+    "wdg_bone_up_down",
+    "wdg_bone_rotation_6",
+    "wdg_bone_rotation",
+    "wdg_bone_up_down_1_rotation"
+   ],
+   "children": []
+  }
+ ],
+ "scene_objects": [
+  "geo_lamp-head",
+  "geo_top-pivot",
+  "geo_top-spring_a_bottom-hook",
+  "geo_middle-pivot",
+  "geo_arm_2_a",
+  "geo_arm_2_b",
+  "geo_arm_1_c",
+  "geo_arm_1_b",
+  "geo_arm_1_a",
+  "geo_lamp-base-pivot",
+  "geo_lower-spring_b",
+  "geo_base_pivot",
+  "geo_pivot-holder",
+  "geo_middle_wire",
+  "geo_top_wire",
+  "geo_lower-spring_top-bar",
+  "geo_lower-spring_a_bottom-hook",
+  "geo_lower-spring_a_top-hook",
+  "geo_lower-spring_a",
+  "geo_lower-spring_b_bottom-hook",
+  "geo_lower-spring_b_top-hook",
+  "geo_top-spring_b_bottom-hook",
+  "geo_top-spring_a",
+  "geo_top-spring_b",
+  "geo_top-spring_a_top-hook",
+  "geo_top-spring_b_top-hook",
+  "geo_lamp-head-button",
+  "rig_lamp",
+  "cur_top_wire",
+  "cur_middle_wire",
+  "hlp_top-wire_end",
+  "hlp_top-wire_start",
+  "hlp_top-wire_middle",
+  "hlp_middle_wire_end",
+  "hlp_middle_wire_start",
+  "hlp_middle_wire_middle",
+  "hlp_top-wire_control",
+  "wdg_bone_arrows_6",
+  "wdg_bone_root",
+  "wdg_bone_up_down",
+  "wdg_bone_rotation_6",
+  "wdg_bone_rotation",
+  "wdg_bone_up_down_1_rotation"
+ ],
+ "materials": [
+  {
+   "name": "desk_lamp_arm_01",
+   "users": 27,
+   "use_nodes": true,
+   "blend_method": "HASHED",
+   "images": [
+    {
+     "node": "Image Texture",
+     "image": "desk_lamp_arm_01_diff.png",
+     "filepath": "//textures\\desk_lamp_arm_01_diff_1k.jpg",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "sRGB",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Base Color",
+       "via_channel": null
+      }
+     ]
+    },
+    {
+     "node": "Image Texture.001",
+     "image": "desk_lamp_arm_01_metal.png",
+     "filepath": "//textures\\desk_lamp_arm_01_metal_1k.exr",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "Non-Color",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Metallic",
+       "via_channel": null
+      }
+     ]
+    },
+    {
+     "node": "Image Texture.002",
+     "image": "desk_lamp_arm_01_rough.png",
+     "filepath": "//textures\\desk_lamp_arm_01_rough_1k.exr",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "Non-Color",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Roughness",
+       "via_channel": null
+      }
+     ]
+    },
+    {
+     "node": "Image Texture.003",
+     "image": "desk_lamp_arm_01_nor_gl.png",
+     "filepath": "//textures\\desk_lamp_arm_01_nor_gl_1k.exr",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "Non-Color",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Normal Map",
+       "type": "NORMAL_MAP",
+       "socket": "Color",
+       "via_channel": null,
+       "passthrough": true
+      },
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Normal",
+       "via_channel": null
+      }
+     ]
+    }
+   ],
+   "nodes": [
+    "BSDF_PRINCIPLED",
+    "FRAME",
+    "MAPPING",
+    "NORMAL_MAP",
+    "OUTPUT_MATERIAL",
+    "REROUTE",
+    "TEX_COORD",
+    "TEX_IMAGE"
+   ],
+   "emission_defaults": {
+    "Principled BSDF": {
+     "Emission Color": [
+      0.0,
+      0.0,
+      0.0,
+      1.0
+     ],
+     "Emission Strength": 1.0
+    }
+   }
+  },
+  {
+   "name": "desk_lamp_arm_01_light",
+   "users": 27,
+   "use_nodes": true,
+   "blend_method": "HASHED",
+   "images": [
+    {
+     "node": "Image Texture.003",
+     "image": "desk_lamp_arm_01_nor_gl.png",
+     "filepath": "//textures\\desk_lamp_arm_01_nor_gl_1k.exr",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "Non-Color",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Normal Map",
+       "type": "NORMAL_MAP",
+       "socket": "Color",
+       "via_channel": null,
+       "passthrough": true
+      },
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Normal",
+       "via_channel": null
+      }
+     ]
+    },
+    {
+     "node": "Image Texture.002",
+     "image": "desk_lamp_arm_01_rough.png",
+     "filepath": "//textures\\desk_lamp_arm_01_rough_1k.exr",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "Non-Color",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Roughness",
+       "via_channel": null
+      }
+     ]
+    },
+    {
+     "node": "Image Texture.001",
+     "image": "desk_lamp_arm_01_metal.png",
+     "filepath": "//textures\\desk_lamp_arm_01_metal_1k.exr",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "Non-Color",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Metallic",
+       "via_channel": null
+      }
+     ]
+    },
+    {
+     "node": "Image Texture",
+     "image": "desk_lamp_arm_01_diff.png",
+     "filepath": "//textures\\desk_lamp_arm_01_diff_1k.jpg",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "sRGB",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Base Color",
+       "via_channel": null
+      }
+     ]
+    },
+    {
+     "node": "Image Texture.004",
+     "image": "desk_lamp_arm_01_mask01.png",
+     "filepath": "//textures\\desk_lamp_arm_01_mask01_1k.png",
+     "source": "FILE",
+     "size": [
+      1024,
+      1024
+     ],
+     "colorspace": "Non-Color",
+     "packed": false,
+     "drives": [
+      {
+       "node": "Principled BSDF",
+       "type": "BSDF_PRINCIPLED",
+       "socket": "Emission Strength",
+       "via_channel": null
+      }
+     ]
+    }
+   ],
+   "nodes": [
+    "BSDF_PRINCIPLED",
+    "FRAME",
+    "MAPPING",
+    "NORMAL_MAP",
+    "OUTPUT_MATERIAL",
+    "REROUTE",
+    "TEX_COORD",
+    "TEX_IMAGE"
+   ],
+   "emission_defaults": {
+    "Principled BSDF": {
+     "Emission Color": [
+      1.0,
+      0.9837890267372131,
+      0.649111270904541,
+      1.0
+     ],
+     "Emission Strength": 1.0
+    }
+   }
+  }
+ ],
+ "objects": [
+  {
+   "name": "cur_middle_wire",
+   "type": "CURVE",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    2.6e-05,
+    -0.303142,
+    0.388752
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    2.6e-05,
+    -0.303142,
+    0.388752
+   ],
+   "dimensions": [
+    0.028043,
+    0.013031,
+    0.035026
+   ],
+   "modifiers": [
+    {
+     "name": "Hook-start",
+     "type": "HOOK",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Hook-End",
+     "type": "HOOK",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Hook-HLP_middle_wire_middle",
+     "type": "HOOK",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true
+  },
+  {
+   "name": "cur_top_wire",
+   "type": "CURVE",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -5.3e-05,
+    0.056283,
+    0.710176
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -5.3e-05,
+    0.056283,
+    0.710176
+   ],
+   "dimensions": [
+    0.061945,
+    0.012423,
+    0.038625
+   ],
+   "modifiers": [
+    {
+     "name": "Hook-HLP_top-wire_start",
+     "type": "HOOK",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Hook-HLP_top-wire_control",
+     "type": "HOOK",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Hook-HLP_top-wire_middle",
+     "type": "HOOK",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Hook-HLP_top-wire_end",
+     "type": "HOOK",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true
+  },
+  {
+   "name": "geo_arm_1_a",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.146723,
+    0.30124,
+    0.321204
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_arm_1_a"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 130,
+   "raw_tris": 244,
+   "eval_polys": 130,
+   "eval_tris": 244,
+   "world_bbox_min": [
+    0.021014,
+    0.004672,
+    0.03583
+   ],
+   "world_bbox_max": [
+    0.322254,
+    0.151396,
+    0.357034
+   ]
+  },
+  {
+   "name": "geo_arm_1_b",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.137974,
+    0.301665,
+    0.317118
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_arm_1_b-c"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 69,
+   "raw_tris": 124,
+   "eval_polys": 69,
+   "eval_tris": 124,
+   "world_bbox_min": [
+    -0.016963,
+    0.011736,
+    0.019998
+   ],
+   "world_bbox_max": [
+    0.284701,
+    0.149709,
+    0.337116
+   ]
+  },
+  {
+   "name": "geo_arm_1_c",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.0,
+    -0.134298,
+    0.193218
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.0,
+    -0.134298,
+    0.193218
+   ],
+   "dimensions": [
+    0.152696,
+    0.294783,
+    0.317118
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_arm_1_b-c"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 70,
+   "raw_tris": 124,
+   "eval_polys": 70,
+   "eval_tris": 124,
+   "world_bbox_min": [
+    0.002013,
+    -0.02896,
+    0.019998
+   ],
+   "world_bbox_max": [
+    0.296797,
+    0.123736,
+    0.337116
+   ]
+  },
+  {
+   "name": "geo_arm_2_a",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.176768,
+    0.36567,
+    0.264079
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_arm_2_a"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 206,
+   "raw_tris": 396,
+   "eval_polys": 206,
+   "eval_tris": 396,
+   "world_bbox_min": [
+    -0.070483,
+    -0.037994,
+    0.36366
+   ],
+   "world_bbox_max": [
+    0.295186,
+    0.138774,
+    0.62774
+   ]
+  },
+  {
+   "name": "geo_arm_2_b",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.176245,
+    0.364549,
+    0.262449
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_arm_2_b"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 196,
+   "raw_tris": 376,
+   "eval_polys": 196,
+   "eval_tris": 376,
+   "world_bbox_min": [
+    -0.074263,
+    -0.039756,
+    0.328186
+   ],
+   "world_bbox_max": [
+    0.290286,
+    0.136489,
+    0.590635
+   ]
+  },
+  {
+   "name": "geo_base_pivot",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    -0.002,
+    0.000407
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    -0.002,
+    0.000407
+   ],
+   "dimensions": [
+    0.044194,
+    0.063757,
+    0.075834
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_root"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 452,
+   "raw_tris": 852,
+   "eval_polys": 452,
+   "eval_tris": 852,
+   "world_bbox_min": [
+    -0.024169,
+    -0.021057,
+    -0.063076
+   ],
+   "world_bbox_max": [
+    0.039587,
+    0.023137,
+    0.012758
+   ]
+  },
+  {
+   "name": "geo_lamp-base-pivot",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.0,
+    -0.031389,
+    0.004583
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.0,
+    -0.031389,
+    0.004583
+   ],
+   "dimensions": [
+    0.05216,
+    0.054751,
+    0.091639
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lamp-base-pivot"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 702,
+   "raw_tris": 1296,
+   "eval_polys": 702,
+   "eval_tris": 1296,
+   "world_bbox_min": [
+    -0.015546,
+    -0.028916,
+    0.00362
+   ],
+   "world_bbox_max": [
+    0.039206,
+    0.023244,
+    0.095259
+   ]
+  },
+  {
+   "name": "geo_lamp-head",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.100875,
+    0.694937
+   ],
+   "rotation_euler": [
+    0.272024,
+    -0.425121,
+    -1.554592
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.100875,
+    0.694937
+   ],
+   "dimensions": [
+    0.19991,
+    0.219608,
+    0.210626
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lamp_head",
+    "def_lamp_head_attach"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 6941,
+   "raw_tris": 13862,
+   "eval_polys": 6941,
+   "eval_tris": 13862,
+   "world_bbox_min": [
+    -0.291023,
+    -0.252613,
+    0.470001
+   ],
+   "world_bbox_max": [
+    -0.019021,
+    0.039985,
+    0.791025
+   ]
+  },
+  {
+   "name": "geo_lamp-head-button",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.100875,
+    0.694937
+   ],
+   "rotation_euler": [
+    0.272024,
+    -0.425121,
+    -1.554592
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.100875,
+    0.694937
+   ],
+   "dimensions": [
+    0.010125,
+    0.011745,
+    0.010905
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lamp_button"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 60,
+   "raw_tris": 120,
+   "eval_polys": 60,
+   "eval_tris": 120,
+   "world_bbox_min": [
+    -0.101143,
+    -0.004158,
+    0.684012
+   ],
+   "world_bbox_max": [
+    -0.086702,
+    0.010833,
+    0.700632
+   ]
+  },
+  {
+   "name": "geo_lower-spring_a",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.012315,
+    -0.064798,
+    0.141485
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.012315,
+    -0.064798,
+    0.141485
+   ],
+   "dimensions": [
+    0.06899,
+    0.134566,
+    0.086004
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lower-spring_middle"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 132,
+   "raw_tris": 264,
+   "eval_polys": 132,
+   "eval_tris": 264,
+   "world_bbox_min": [
+    -0.006255,
+    0.00526,
+    0.08976
+   ],
+   "world_bbox_max": [
+    0.128312,
+    0.074251,
+    0.175764
+   ]
+  },
+  {
+   "name": "geo_lower-spring_a_bottom-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.0,
+    -0.004288,
+    0.095345
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.0,
+    -0.004288,
+    0.095345
+   ],
+   "dimensions": [
+    0.004817,
+    0.008212,
+    0.013401
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lower-spring_bottom"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 232,
+   "raw_tris": 232,
+   "eval_polys": 232,
+   "eval_tris": 232,
+   "world_bbox_min": [
+    -0.011968,
+    0.006884,
+    0.085251
+   ],
+   "world_bbox_max": [
+    -0.003756,
+    0.011701,
+    0.098653
+   ]
+  },
+  {
+   "name": "geo_lower-spring_a_top-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.00599,
+    0.0111,
+    0.01275
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lower-spring_top"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 256,
+   "raw_tris": 256,
+   "eval_polys": 256,
+   "eval_tris": 256,
+   "world_bbox_min": [
+    0.126363,
+    0.069879,
+    0.166754
+   ],
+   "world_bbox_max": [
+    0.137463,
+    0.075869,
+    0.179504
+   ]
+  },
+  {
+   "name": "geo_lower-spring_b",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.012315,
+    -0.064798,
+    0.141485
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.012315,
+    -0.064798,
+    0.141485
+   ],
+   "dimensions": [
+    0.06899,
+    0.134566,
+    0.086004
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lower-spring_middle"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 132,
+   "raw_tris": 264,
+   "eval_polys": 132,
+   "eval_tris": 264,
+   "world_bbox_min": [
+    0.003932,
+    -0.016585,
+    0.08976
+   ],
+   "world_bbox_max": [
+    0.138498,
+    0.052406,
+    0.175764
+   ]
+  },
+  {
+   "name": "geo_lower-spring_b_bottom-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.0,
+    -0.004288,
+    0.095345
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.0,
+    -0.004288,
+    0.095345
+   ],
+   "dimensions": [
+    0.004816,
+    0.008212,
+    0.013401
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lower-spring_bottom"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 232,
+   "raw_tris": 232,
+   "eval_polys": 232,
+   "eval_tris": 232,
+   "world_bbox_min": [
+    -0.00051,
+    -0.017687,
+    0.085251
+   ],
+   "world_bbox_max": [
+    0.007702,
+    -0.012871,
+    0.098653
+   ]
+  },
+  {
+   "name": "geo_lower-spring_b_top-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.00599,
+    0.0111,
+    0.01275
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_lower-spring_top"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 256,
+   "raw_tris": 256,
+   "eval_polys": 256,
+   "eval_tris": 256,
+   "world_bbox_min": [
+    0.136534,
+    0.048069,
+    0.166754
+   ],
+   "world_bbox_max": [
+    0.147634,
+    0.054059,
+    0.179504
+   ]
+  },
+  {
+   "name": "geo_lower-spring_top-bar",
+   "type": "MESH",
+   "parent": "geo_arm_1_c",
+   "parent_type": "OBJECT",
+   "parent_bone": "",
+   "location": [
+    0.134298,
+    -0.0,
+    0.193218
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.0,
+    -0.134298,
+    0.193218
+   ],
+   "dimensions": [
+    0.037051,
+    0.022502,
+    0.007367
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_arm_1_b-c"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 138,
+   "raw_tris": 260,
+   "eval_polys": 138,
+   "eval_tris": 260,
+   "world_bbox_min": [
+    0.126953,
+    0.04392,
+    0.171292
+   ],
+   "world_bbox_max": [
+    0.149455,
+    0.080971,
+    0.17866
+   ]
+  },
+  {
+   "name": "geo_middle-pivot",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.052455,
+    0.053505,
+    0.048942
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_middle_pivot"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 400,
+   "raw_tris": 724,
+   "eval_polys": 400,
+   "eval_tris": 724,
+   "world_bbox_min": [
+    0.272781,
+    0.102954,
+    0.32472
+   ],
+   "world_bbox_max": [
+    0.326287,
+    0.155409,
+    0.373662
+   ]
+  },
+  {
+   "name": "geo_middle_wire",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    2.6e-05,
+    -0.303142,
+    0.388752
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    2.6e-05,
+    -0.303142,
+    0.388752
+   ],
+   "dimensions": [
+    0.031607,
+    0.016671,
+    0.037804
+   ],
+   "modifiers": [
+    {
+     "name": "Array",
+     "type": "ARRAY",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Curve",
+     "type": "CURVE",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "DEF_arm-joint"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 32,
+   "raw_tris": 64,
+   "eval_polys": 552,
+   "eval_tris": 1104,
+   "world_bbox_min": [
+    0.280404,
+    0.127826,
+    0.351377
+   ],
+   "world_bbox_max": [
+    0.312011,
+    0.144498,
+    0.38918
+   ]
+  },
+  {
+   "name": "geo_pivot-holder",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.021882,
+    0.040611,
+    0.06783
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_pivot-holder"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 620,
+   "raw_tris": 1200,
+   "eval_polys": 620,
+   "eval_tris": 1200,
+   "world_bbox_min": [
+    -0.013499,
+    -0.010777,
+    -0.087994
+   ],
+   "world_bbox_max": [
+    0.027112,
+    0.011105,
+    -0.020163
+   ]
+  },
+  {
+   "name": "geo_top-pivot",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.032966,
+    0.046613,
+    0.047694
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_top_pivot"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 190,
+   "raw_tris": 308,
+   "eval_polys": 190,
+   "eval_tris": 308,
+   "world_bbox_min": [
+    -0.102273,
+    -0.054951,
+    0.579877
+   ],
+   "world_bbox_max": [
+    -0.055661,
+    -0.021985,
+    0.627571
+   ]
+  },
+  {
+   "name": "geo_top-spring_a",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.083682,
+    0.165639,
+    0.087311
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_upper-spring_middle"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 144,
+   "raw_tris": 288,
+   "eval_polys": 144,
+   "eval_tris": 288,
+   "world_bbox_min": [
+    0.116254,
+    0.062406,
+    0.366837
+   ],
+   "world_bbox_max": [
+    0.281893,
+    0.146088,
+    0.454148
+   ]
+  },
+  {
+   "name": "geo_top-spring_a_bottom-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.006464,
+    0.011679,
+    0.010595
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_upper-spring_bottom"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 244,
+   "raw_tris": 244,
+   "eval_polys": 244,
+   "eval_tris": 244,
+   "world_bbox_min": [
+    0.277062,
+    0.13995,
+    0.363665
+   ],
+   "world_bbox_max": [
+    0.288741,
+    0.146414,
+    0.37426
+   ]
+  },
+  {
+   "name": "geo_top-spring_a_top-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.00646,
+    0.011685,
+    0.010595
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_upper-spring_top"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 244,
+   "raw_tris": 244,
+   "eval_polys": 244,
+   "eval_tris": 244,
+   "world_bbox_min": [
+    0.109317,
+    0.061763,
+    0.446404
+   ],
+   "world_bbox_max": [
+    0.121002,
+    0.068223,
+    0.456999
+   ]
+  },
+  {
+   "name": "geo_top-spring_b",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.083682,
+    0.165639,
+    0.087311
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_upper-spring_middle"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 144,
+   "raw_tris": 288,
+   "eval_polys": 144,
+   "eval_tris": 288,
+   "world_bbox_min": [
+    0.126533,
+    0.040363,
+    0.366837
+   ],
+   "world_bbox_max": [
+    0.292172,
+    0.124046,
+    0.454148
+   ]
+  },
+  {
+   "name": "geo_top-spring_b_bottom-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.00646,
+    0.011685,
+    0.010595
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_upper-spring_bottom"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 244,
+   "raw_tris": 244,
+   "eval_polys": 244,
+   "eval_tris": 244,
+   "world_bbox_min": [
+    0.287233,
+    0.11814,
+    0.363665
+   ],
+   "world_bbox_max": [
+    0.298918,
+    0.1246,
+    0.37426
+   ]
+  },
+  {
+   "name": "geo_top-spring_b_top-hook",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.006464,
+    0.011679,
+    0.010595
+   ],
+   "modifiers": [
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Armature",
+     "type": "ARMATURE",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "def_upper-spring_top"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 244,
+   "raw_tris": 244,
+   "eval_polys": 244,
+   "eval_tris": 244,
+   "world_bbox_min": [
+    0.119494,
+    0.039949,
+    0.446404
+   ],
+   "world_bbox_max": [
+    0.131172,
+    0.046413,
+    0.456999
+   ]
+  },
+  {
+   "name": "geo_top_wire",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    -0.0,
+    -1.570796
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.016275,
+    0.065981,
+    0.042492
+   ],
+   "modifiers": [
+    {
+     "name": "Array",
+     "type": "ARRAY",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Curve",
+     "type": "CURVE",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "Auto Smooth",
+     "type": "NODES",
+     "levels": null,
+     "viewport_levels": null
+    },
+    {
+     "name": "WeightedNormal",
+     "type": "WEIGHTED_NORMAL",
+     "levels": null,
+     "viewport_levels": null
+    }
+   ],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [
+    "DEF_lamp-head-wire",
+    "DEF_arm-2-a"
+   ],
+   "material_slots": [
+    "desk_lamp_arm_01",
+    "desk_lamp_arm_01_light"
+   ],
+   "raw_polys": 32,
+   "raw_tris": 64,
+   "eval_polys": 832,
+   "eval_tris": 1664,
+   "world_bbox_min": [
+    -0.113695,
+    -0.039283,
+    0.61307
+   ],
+   "world_bbox_max": [
+    -0.047713,
+    -0.023008,
+    0.655562
+   ]
+  },
+  {
+   "name": "hlp_middle_wire_end",
+   "type": "EMPTY",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.000142,
+    -0.273661,
+    0.416703
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.282358,
+    0.129509,
+    0.378403
+   ],
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [
+    {
+     "name": "Child Of",
+     "type": "CHILD_OF"
+    }
+   ],
+   "in_scene": true
+  },
+  {
+   "name": "hlp_middle_wire_middle",
+   "type": "EMPTY",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    3.2e-05,
+    -0.293796,
+    0.40657
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.301883,
+    0.138806,
+    0.369263
+   ],
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [
+    {
+     "name": "Child Of",
+     "type": "CHILD_OF"
+    }
+   ],
+   "in_scene": true
+  },
+  {
+   "name": "hlp_middle_wire_start",
+   "type": "EMPTY",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    2.6e-05,
+    -0.303142,
+    0.388752
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.310313,
+    0.14273,
+    0.352244
+   ],
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [
+    {
+     "name": "Child Of",
+     "type": "CHILD_OF"
+    }
+   ],
+   "in_scene": true
+  },
+  {
+   "name": "hlp_top-wire_control",
+   "type": "EMPTY",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.001388,
+    0.082079,
+    0.740077
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.059385,
+    -0.031223,
+    0.620738
+   ],
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [
+    {
+     "name": "Child Of",
+     "type": "CHILD_OF"
+    }
+   ],
+   "in_scene": true
+  },
+  {
+   "name": "hlp_top-wire_end",
+   "type": "EMPTY",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -0.003163,
+    0.15142,
+    0.715937
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.111996,
+    -0.036934,
+    0.653863
+   ],
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [
+    {
+     "name": "Child Of",
+     "type": "CHILD_OF"
+    }
+   ],
+   "in_scene": true
+  },
+  {
+   "name": "hlp_top-wire_middle",
+   "type": "EMPTY",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -9e-05,
+    0.130001,
+    0.719061
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.099143,
+    -0.030664,
+    0.637327
+   ],
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [
+    {
+     "name": "Child Of",
+     "type": "CHILD_OF"
+    }
+   ],
+   "in_scene": true
+  },
+  {
+   "name": "hlp_top-wire_start",
+   "type": "EMPTY",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    -5.3e-05,
+    0.056283,
+    0.710176
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    -0.052529,
+    -0.026554,
+    0.620239
+   ],
+   "dimensions": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [
+    {
+     "name": "Child Of",
+     "type": "CHILD_OF"
+    }
+   ],
+   "in_scene": true
+  },
+  {
+   "name": "rig_lamp",
+   "type": "ARMATURE",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.574944,
+    0.528616,
+    0.936555
+   ],
+   "modifiers": [],
+   "constraints": [],
+   "in_scene": true,
+   "bones": [
+    {
+     "name": "def_root",
+     "parent": null,
+     "head_local": [
+      0.0,
+      -0.002,
+      0.000407
+     ],
+     "tail_local": [
+      0.0,
+      0.498,
+      0.000407
+     ],
+     "length": 0.5,
+     "deform": true
+    },
+    {
+     "name": "def_pivot-holder",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.001726,
+      -0.103553
+     ],
+     "tail_local": [
+      -0.0,
+      -0.001726,
+      -0.020163
+     ],
+     "length": 0.083389,
+     "deform": true
+    },
+    {
+     "name": "def_arm_1_a",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.03172,
+      0.040401
+     ],
+     "tail_local": [
+      -0.0,
+      -0.309401,
+      0.389633
+     ],
+     "length": 0.446173,
+     "deform": true
+    },
+    {
+     "name": "def_middle_pivot",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.309401,
+      0.389633
+     ],
+     "tail_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "length": 0.039782,
+     "deform": true
+    },
+    {
+     "name": "def_arm_2_a",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.279568,
+      0.406116
+     ],
+     "tail_local": [
+      0.0,
+      0.068228,
+      0.714364
+     ],
+     "length": 0.464735,
+     "deform": true
+    },
+    {
+     "name": "def_top_pivot",
+     "parent": "def_root",
+     "head_local": [
+      0.0,
+      0.068228,
+      0.714364
+     ],
+     "tail_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "length": 0.037307,
+     "deform": true
+    },
+    {
+     "name": "def_lamp_head_attach",
+     "parent": "def_root",
+     "head_local": [
+      0.0,
+      0.100875,
+      0.694937
+     ],
+     "tail_local": [
+      0.0,
+      0.128595,
+      0.683823
+     ],
+     "length": 0.029865,
+     "deform": true
+    },
+    {
+     "name": "def_lamp_head",
+     "parent": "def_root",
+     "head_local": [
+      0.0,
+      0.100875,
+      0.694937
+     ],
+     "tail_local": [
+      0.0,
+      0.211754,
+      0.650481
+     ],
+     "length": 0.11946,
+     "deform": true
+    },
+    {
+     "name": "def_lamp_button",
+     "parent": "def_root",
+     "head_local": [
+      -0.002183,
+      0.166853,
+      0.76685
+     ],
+     "tail_local": [
+      -0.002183,
+      0.166853,
+      0.781493
+     ],
+     "length": 0.014644,
+     "deform": true
+    },
+    {
+     "name": "def_arm_2_b",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "tail_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "length": 0.464372,
+     "deform": true
+    },
+    {
+     "name": "def_lamp-base-pivot",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.031389,
+      0.004583
+     ],
+     "tail_local": [
+      -0.0,
+      -0.031389,
+      0.154583
+     ],
+     "length": 0.15,
+     "deform": true
+    },
+    {
+     "name": "def_arm_1_b-c",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -2.2e-05,
+      0.024285
+     ],
+     "tail_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "length": 0.441668,
+     "deform": true
+    },
+    {
+     "name": "def_lower-spring_bottom",
+     "parent": "def_root",
+     "head_local": [
+      0.0,
+      -0.000626,
+      0.089992
+     ],
+     "tail_local": [
+      -0.0,
+      -0.004144,
+      0.092709
+     ],
+     "length": 0.004445,
+     "deform": true
+    },
+    {
+     "name": "def_lower-spring_top",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.134298,
+      0.193218
+     ],
+     "tail_local": [
+      -0.0,
+      -0.127387,
+      0.187881
+     ],
+     "length": 0.008732,
+     "deform": true
+    },
+    {
+     "name": "def_lower-spring_middle",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.127387,
+      0.187881
+     ],
+     "tail_local": [
+      -0.0,
+      -0.004144,
+      0.092709
+     ],
+     "length": 0.155713,
+     "deform": true
+    },
+    {
+     "name": "def_upper-spring_bottom",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.279568,
+      0.406116
+     ],
+     "tail_local": [
+      -0.0,
+      -0.275111,
+      0.40899
+     ],
+     "length": 0.005302,
+     "deform": true
+    },
+    {
+     "name": "def_upper-spring_top",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.111358,
+      0.514574
+     ],
+     "tail_local": [
+      -0.0,
+      -0.116154,
+      0.511482
+     ],
+     "length": 0.005706,
+     "deform": true
+    },
+    {
+     "name": "def_upper-spring_middle",
+     "parent": "def_root",
+     "head_local": [
+      -0.0,
+      -0.116154,
+      0.511482
+     ],
+     "tail_local": [
+      -0.0,
+      -0.275111,
+      0.40899
+     ],
+     "length": 0.189135,
+     "deform": true
+    },
+    {
+     "name": "tgt_lower-spring_top",
+     "parent": null,
+     "head_local": [
+      -0.0,
+      -0.134298,
+      0.193218
+     ],
+     "tail_local": [
+      -0.0,
+      -0.127387,
+      0.187881
+     ],
+     "length": 0.008732,
+     "deform": false
+    },
+    {
+     "name": "tgt_lower-spring_middle",
+     "parent": "tgt_lower-spring_top",
+     "head_local": [
+      -0.0,
+      -0.127387,
+      0.187881
+     ],
+     "tail_local": [
+      -0.0,
+      -0.004144,
+      0.092709
+     ],
+     "length": 0.155713,
+     "deform": false
+    },
+    {
+     "name": "ctrl_root",
+     "parent": null,
+     "head_local": [
+      0.0,
+      -0.002,
+      0.000407
+     ],
+     "tail_local": [
+      0.0,
+      0.498,
+      0.000407
+     ],
+     "length": 0.5,
+     "deform": false
+    },
+    {
+     "name": "ctrl_pivot-holder",
+     "parent": "ctrl_root",
+     "head_local": [
+      -0.0,
+      -0.001726,
+      -0.103553
+     ],
+     "tail_local": [
+      -0.0,
+      -0.001726,
+      -0.020163
+     ],
+     "length": 0.083389,
+     "deform": false
+    },
+    {
+     "name": "ctrl_lamp_base_pivot",
+     "parent": "ctrl_root",
+     "head_local": [
+      -0.0,
+      -0.031389,
+      0.004583
+     ],
+     "tail_local": [
+      -0.0,
+      -0.031389,
+      0.154583
+     ],
+     "length": 0.15,
+     "deform": false
+    },
+    {
+     "name": "tech_bottom",
+     "parent": "ctrl_lamp_base_pivot",
+     "head_local": [
+      -0.0,
+      -2.2e-05,
+      0.024285
+     ],
+     "tail_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "length": 0.441668,
+     "deform": false
+    },
+    {
+     "name": "tech_arm_1",
+     "parent": "tech_bottom",
+     "head_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "tail_local": [
+      -0.0,
+      -2.2e-05,
+      0.024285
+     ],
+     "length": 0.441668,
+     "deform": false
+    },
+    {
+     "name": "ctrl_top-position",
+     "parent": "ctrl_lamp_base_pivot",
+     "head_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "tail_local": [
+      0.0,
+      0.38805,
+      0.67742
+     ],
+     "length": 0.314626,
+     "deform": false
+    },
+    {
+     "name": "ctrl_top_rotation_B",
+     "parent": "ctrl_top-position",
+     "head_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "tail_local": [
+      0.0,
+      0.38805,
+      0.67742
+     ],
+     "length": 0.314626,
+     "deform": false
+    },
+    {
+     "name": "ctrl_top_rotation_A",
+     "parent": "ctrl_top_rotation_B",
+     "head_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "tail_local": [
+      0.0,
+      0.38805,
+      0.67742
+     ],
+     "length": 0.314626,
+     "deform": false
+    },
+    {
+     "name": "tech_lower-spring_bottom-hook",
+     "parent": "ctrl_lamp_base_pivot",
+     "head_local": [
+      0.0,
+      -0.000626,
+      0.089992
+     ],
+     "tail_local": [
+      0.0,
+      -0.003264,
+      0.09203
+     ],
+     "length": 0.003334,
+     "deform": false
+    },
+    {
+     "name": "tgt_arm_1_b-c",
+     "parent": "ctrl_lamp_base_pivot",
+     "head_local": [
+      -0.0,
+      -2.2e-05,
+      0.024285
+     ],
+     "tail_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "length": 0.441668,
+     "deform": true
+    },
+    {
+     "name": "tech_top",
+     "parent": "tgt_arm_1_b-c",
+     "head_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "tail_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "length": 0.464372,
+     "deform": false
+    },
+    {
+     "name": "tech_lower-spring_top-hook",
+     "parent": "tgt_arm_1_b-c",
+     "head_local": [
+      -0.0,
+      -0.134298,
+      0.193218
+     ],
+     "tail_local": [
+      -0.0,
+      -0.129115,
+      0.189215
+     ],
+     "length": 0.006549,
+     "deform": false
+    },
+    {
+     "name": "tgt_arm_1_a",
+     "parent": "ctrl_lamp_base_pivot",
+     "head_local": [
+      -0.0,
+      -0.03172,
+      0.040401
+     ],
+     "tail_local": [
+      -0.0,
+      -0.309401,
+      0.389633
+     ],
+     "length": 0.446173,
+     "deform": true
+    },
+    {
+     "name": "tgt_middle_pivot",
+     "parent": "tgt_arm_1_a",
+     "head_local": [
+      -0.0,
+      -0.309401,
+      0.389633
+     ],
+     "tail_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "length": 0.039782,
+     "deform": true
+    },
+    {
+     "name": "tech_upper-spring_bottom-hook",
+     "parent": "tgt_middle_pivot",
+     "head_local": [
+      -0.0,
+      -0.279568,
+      0.406116
+     ],
+     "tail_local": [
+      -0.0,
+      -0.276225,
+      0.408271
+     ],
+     "length": 0.003977,
+     "deform": false
+    },
+    {
+     "name": "tgt_arm_2_b",
+     "parent": "tgt_middle_pivot",
+     "head_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "tail_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "length": 0.464372,
+     "deform": true
+    },
+    {
+     "name": "tech_arm_2_b-inverse_child",
+     "parent": "tgt_arm_2_b",
+     "head_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "tail_local": [
+      -0.0,
+      -0.27473,
+      0.370126
+     ],
+     "length": 0.464372,
+     "deform": true
+    },
+    {
+     "name": "tech_upper-spring_top-hook",
+     "parent": "tgt_arm_2_b",
+     "head_local": [
+      -0.0,
+      -0.111358,
+      0.514574
+     ],
+     "tail_local": [
+      -0.0,
+      -0.114955,
+      0.512255
+     ],
+     "length": 0.00428,
+     "deform": false
+    },
+    {
+     "name": "tgt_upper-spring_top",
+     "parent": "tgt_arm_2_b",
+     "head_local": [
+      -0.0,
+      -0.111358,
+      0.514574
+     ],
+     "tail_local": [
+      -0.0,
+      -0.116154,
+      0.511482
+     ],
+     "length": 0.005706,
+     "deform": false
+    },
+    {
+     "name": "tgt_upper-spring_middle",
+     "parent": "tgt_upper-spring_top",
+     "head_local": [
+      -0.0,
+      -0.116154,
+      0.511482
+     ],
+     "tail_local": [
+      -0.0,
+      -0.275111,
+      0.40899
+     ],
+     "length": 0.189135,
+     "deform": false
+    },
+    {
+     "name": "tgt_arm_2_a",
+     "parent": "tgt_middle_pivot",
+     "head_local": [
+      -0.0,
+      -0.279568,
+      0.406116
+     ],
+     "tail_local": [
+      0.0,
+      0.068228,
+      0.714364
+     ],
+     "length": 0.464734,
+     "deform": true
+    },
+    {
+     "name": "tgt_top_pivot",
+     "parent": "tgt_arm_2_a",
+     "head_local": [
+      0.0,
+      0.068228,
+      0.714364
+     ],
+     "tail_local": [
+      0.0,
+      0.073425,
+      0.67742
+     ],
+     "length": 0.037307,
+     "deform": true
+    },
+    {
+     "name": "tgt_lamp_head_attach",
+     "parent": "tgt_top_pivot",
+     "head_local": [
+      0.0,
+      0.100875,
+      0.694937
+     ],
+     "tail_local": [
+      0.0,
+      0.128595,
+      0.683823
+     ],
+     "length": 0.029865,
+     "deform": true
+    },
+    {
+     "name": "tgt_lamp_head",
+     "parent": "tgt_lamp_head_attach",
+     "head_local": [
+      0.0,
+      0.100875,
+      0.694937
+     ],
+     "tail_local": [
+      0.0,
+      0.211754,
+      0.650481
+     ],
+     "length": 0.11946,
+     "deform": true
+    },
+    {
+     "name": "ctrl_lamp_button",
+     "parent": "tgt_lamp_head",
+     "head_local": [
+      -0.002183,
+      0.166853,
+      0.76685
+     ],
+     "tail_local": [
+      -0.002183,
+      0.166853,
+      0.781493
+     ],
+     "length": 0.014644,
+     "deform": false
+    },
+    {
+     "name": "ctrl_top-wire_control",
+     "parent": "tgt_lamp_head_attach",
+     "head_local": [
+      -0.001388,
+      0.094464,
+      0.735261
+     ],
+     "tail_local": [
+      -0.001388,
+      0.094464,
+      0.842344
+     ],
+     "length": 0.107083,
+     "deform": true
+    },
+    {
+     "name": "tgt_upper-spring_bottom",
+     "parent": "tgt_arm_2_a",
+     "head_local": [
+      -0.0,
+      -0.279568,
+      0.406116
+     ],
+     "tail_local": [
+      -0.0,
+      -0.275111,
+      0.40899
+     ],
+     "length": 0.005302,
+     "deform": false
+    },
+    {
+     "name": "ctrl_middle_wire",
+     "parent": "tgt_middle_pivot",
+     "head_local": [
+      3.2e-05,
+      -0.293796,
+      0.40657
+     ],
+     "tail_local": [
+      3.2e-05,
+      -0.293796,
+      0.521336
+     ],
+     "length": 0.114766,
+     "deform": true
+    },
+    {
+     "name": "tgt_lower-spring_bottom",
+     "parent": null,
+     "head_local": [
+      0.0,
+      -0.000626,
+      0.089992
+     ],
+     "tail_local": [
+      -0.0,
+      -0.004144,
+      0.092709
+     ],
+     "length": 0.004445,
+     "deform": false
+    },
+    {
+     "name": "tgt_root",
+     "parent": null,
+     "head_local": [
+      0.0,
+      -0.002,
+      0.000407
+     ],
+     "tail_local": [
+      0.0,
+      0.498,
+      0.000407
+     ],
+     "length": 0.5,
+     "deform": false
+    },
+    {
+     "name": "tgt_pivot-holder",
+     "parent": null,
+     "head_local": [
+      -0.0,
+      -0.001726,
+      -0.103553
+     ],
+     "tail_local": [
+      -0.0,
+      -0.001726,
+      -0.020163
+     ],
+     "length": 0.083389,
+     "deform": false
+    },
+    {
+     "name": "tgt_lamp-base-pivot",
+     "parent": null,
+     "head_local": [
+      -0.0,
+      -0.031389,
+      0.004583
+     ],
+     "tail_local": [
+      -0.0,
+      -0.031389,
+      0.154583
+     ],
+     "length": 0.15,
+     "deform": false
+    },
+    {
+     "name": "tgt_lamp_button",
+     "parent": null,
+     "head_local": [
+      -0.002183,
+      0.166853,
+      0.76685
+     ],
+     "tail_local": [
+      -0.002183,
+      0.166853,
+      0.781493
+     ],
+     "length": 0.014644,
+     "deform": false
+    }
+   ],
+   "pose_constraints": [
+    {
+     "bone": "def_root",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_root",
+       "influence": 1.0
+      },
+      {
+       "name": "Copy Transforms.001",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_root",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_pivot-holder",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_pivot-holder",
+       "influence": 1.0
+      },
+      {
+       "name": "Copy Transforms.001",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_pivot-holder",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_arm_1_a",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_arm_1_a",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_middle_pivot",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_middle_pivot",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_arm_2_a",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_arm_2_a",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_top_pivot",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_top_pivot",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_lamp_head_attach",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lamp_head_attach",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_lamp_head",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lamp_head",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_lamp_button",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lamp_button",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_arm_2_b",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_arm_2_b",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_lamp-base-pivot",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lamp-base-pivot",
+       "influence": 1.0
+      },
+      {
+       "name": "Copy Transforms.001",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lamp-base-pivot",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_arm_1_b-c",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_arm_1_b-c",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_lower-spring_bottom",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lower-spring_bottom",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_lower-spring_top",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lower-spring_top",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_lower-spring_middle",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lower-spring_middle",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_upper-spring_bottom",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_upper-spring_bottom",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_upper-spring_top",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_upper-spring_top",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "def_upper-spring_middle",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "tgt_upper-spring_middle",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_lower-spring_top",
+     "constraints": [
+      {
+       "name": "Copy Location",
+       "type": "COPY_LOCATION",
+       "target": "rig_lamp",
+       "subtarget": "tech_lower-spring_top-hook",
+       "influence": 1.0
+      },
+      {
+       "name": "Copy Rotation",
+       "type": "COPY_ROTATION",
+       "target": "rig_lamp",
+       "subtarget": "tech_lower-spring_top-hook",
+       "influence": 1.0
+      },
+      {
+       "name": "Damped Track",
+       "type": "DAMPED_TRACK",
+       "target": "rig_lamp",
+       "subtarget": "tech_lower-spring_bottom-hook",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_lower-spring_middle",
+     "constraints": [
+      {
+       "name": "Stretch To",
+       "type": "STRETCH_TO",
+       "target": "rig_lamp",
+       "subtarget": "tgt_lower-spring_bottom",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "ctrl_pivot-holder",
+     "constraints": [
+      {
+       "name": "Limit Location",
+       "type": "LIMIT_LOCATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      },
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "ctrl_lamp_base_pivot",
+     "constraints": [
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tech_bottom",
+     "constraints": [
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      },
+      {
+       "name": "Copy Rotation",
+       "type": "COPY_ROTATION",
+       "target": "rig_lamp",
+       "subtarget": "tgt_arm_1_b-c",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "ctrl_top-position",
+     "constraints": [
+      {
+       "name": "Limit Location",
+       "type": "LIMIT_LOCATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      },
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "ctrl_top_rotation_B",
+     "constraints": [
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      },
+      {
+       "name": "Limit Location",
+       "type": "LIMIT_LOCATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "ctrl_top_rotation_A",
+     "constraints": [
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      },
+      {
+       "name": "Limit Location",
+       "type": "LIMIT_LOCATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_arm_1_b-c",
+     "constraints": [
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tech_top",
+     "constraints": [
+      {
+       "name": "IK",
+       "type": "IK",
+       "target": "rig_lamp",
+       "subtarget": "ctrl_top-position",
+       "influence": 1.0
+      },
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_middle_pivot",
+     "constraints": [
+      {
+       "name": "IK",
+       "type": "IK",
+       "target": "rig_lamp",
+       "subtarget": "tech_arm_1",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_arm_2_b",
+     "constraints": [
+      {
+       "name": "Copy Rotation",
+       "type": "COPY_ROTATION",
+       "target": "rig_lamp",
+       "subtarget": "tech_top",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_upper-spring_top",
+     "constraints": [
+      {
+       "name": "Copy Location",
+       "type": "COPY_LOCATION",
+       "target": "rig_lamp",
+       "subtarget": "tech_upper-spring_top-hook",
+       "influence": 1.0
+      },
+      {
+       "name": "Damped Track",
+       "type": "DAMPED_TRACK",
+       "target": "rig_lamp",
+       "subtarget": "tech_upper-spring_bottom-hook",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_upper-spring_middle",
+     "constraints": [
+      {
+       "name": "Stretch To",
+       "type": "STRETCH_TO",
+       "target": "rig_lamp",
+       "subtarget": "tgt_upper-spring_bottom",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_top_pivot",
+     "constraints": [
+      {
+       "name": "IK",
+       "type": "IK",
+       "target": "rig_lamp",
+       "subtarget": "tech_arm_2_b-inverse_child",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_lamp_head_attach",
+     "constraints": [
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      },
+      {
+       "name": "Transformation",
+       "type": "TRANSFORM",
+       "target": "rig_lamp",
+       "subtarget": "ctrl_top_rotation_B",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_lamp_head",
+     "constraints": [
+      {
+       "name": "Copy Rotation A",
+       "type": "COPY_ROTATION",
+       "target": "rig_lamp",
+       "subtarget": "ctrl_top_rotation_A",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "ctrl_lamp_button",
+     "constraints": [
+      {
+       "name": "Limit Location",
+       "type": "LIMIT_LOCATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      },
+      {
+       "name": "Limit Rotation",
+       "type": "LIMIT_ROTATION",
+       "target": null,
+       "subtarget": null,
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_upper-spring_bottom",
+     "constraints": [
+      {
+       "name": "Copy Location",
+       "type": "COPY_LOCATION",
+       "target": "rig_lamp",
+       "subtarget": "tech_upper-spring_bottom-hook",
+       "influence": 1.0
+      },
+      {
+       "name": "Damped Track",
+       "type": "DAMPED_TRACK",
+       "target": "rig_lamp",
+       "subtarget": "tech_upper-spring_top-hook",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_lower-spring_bottom",
+     "constraints": [
+      {
+       "name": "Copy Location",
+       "type": "COPY_LOCATION",
+       "target": "rig_lamp",
+       "subtarget": "tech_lower-spring_bottom-hook",
+       "influence": 1.0
+      },
+      {
+       "name": "Copy Rotation",
+       "type": "COPY_ROTATION",
+       "target": "rig_lamp",
+       "subtarget": "tech_lower-spring_bottom-hook",
+       "influence": 1.0
+      },
+      {
+       "name": "Damped Track",
+       "type": "DAMPED_TRACK",
+       "target": "rig_lamp",
+       "subtarget": "tech_lower-spring_top-hook",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_root",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "ctrl_root",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_pivot-holder",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "ctrl_pivot-holder",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_lamp-base-pivot",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "ctrl_lamp_base_pivot",
+       "influence": 1.0
+      }
+     ]
+    },
+    {
+     "bone": "tgt_lamp_button",
+     "constraints": [
+      {
+       "name": "Copy Transforms",
+       "type": "COPY_TRANSFORMS",
+       "target": "rig_lamp",
+       "subtarget": "ctrl_lamp_button",
+       "influence": 1.0
+      }
+     ]
+    }
+   ],
+   "custom_shapes": [
+    "ctrl_root",
+    "ctrl_pivot-holder",
+    "ctrl_lamp_base_pivot",
+    "ctrl_top-position",
+    "ctrl_top_rotation_B",
+    "ctrl_top_rotation_A",
+    "ctrl_lamp_button",
+    "ctrl_top-wire_control",
+    "ctrl_middle_wire"
+   ]
+  },
+  {
+   "name": "wdg_bone_arrows_6",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.654909,
+    0.654909,
+    0.654909
+   ],
+   "modifiers": [],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [],
+   "material_slots": [],
+   "raw_polys": 0,
+   "raw_tris": 0,
+   "eval_polys": 0,
+   "eval_tris": 0,
+   "world_bbox_min": [
+    -0.327455,
+    -0.327455,
+    -0.327455
+   ],
+   "world_bbox_max": [
+    0.327455,
+    0.327455,
+    0.327455
+   ]
+  },
+  {
+   "name": "wdg_bone_root",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    1.060738,
+    1.060738,
+    0.0
+   ],
+   "modifiers": [],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [],
+   "material_slots": [],
+   "raw_polys": 0,
+   "raw_tris": 0,
+   "eval_polys": 0,
+   "eval_tris": 0,
+   "world_bbox_min": [
+    -0.530369,
+    -0.530369,
+    -0.0
+   ],
+   "world_bbox_max": [
+    0.530369,
+    0.530369,
+    0.0
+   ]
+  },
+  {
+   "name": "wdg_bone_rotation",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.0,
+    1.089265,
+    0.397809
+   ],
+   "modifiers": [],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [],
+   "material_slots": [],
+   "raw_polys": 0,
+   "raw_tris": 0,
+   "eval_polys": 0,
+   "eval_tris": 0,
+   "world_bbox_min": [
+    -0.0,
+    -0.544633,
+    0.187831
+   ],
+   "world_bbox_max": [
+    0.0,
+    0.544633,
+    0.58564
+   ]
+  },
+  {
+   "name": "wdg_bone_rotation_6",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.424295,
+    0.424295,
+    0.424295
+   ],
+   "modifiers": [],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [],
+   "material_slots": [],
+   "raw_polys": 0,
+   "raw_tris": 0,
+   "eval_polys": 0,
+   "eval_tris": 0,
+   "world_bbox_min": [
+    -0.212148,
+    -0.212148,
+    -0.212148
+   ],
+   "world_bbox_max": [
+    0.212148,
+    0.212148,
+    0.212148
+   ]
+  },
+  {
+   "name": "wdg_bone_up_down",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.234909,
+    0.23491,
+    0.654909
+   ],
+   "modifiers": [],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [
+    "UVMap"
+   ],
+   "vertex_groups": [],
+   "material_slots": [],
+   "raw_polys": 0,
+   "raw_tris": 0,
+   "eval_polys": 0,
+   "eval_tris": 0,
+   "world_bbox_min": [
+    -0.117455,
+    -0.117455,
+    -0.327455
+   ],
+   "world_bbox_max": [
+    0.117455,
+    0.117455,
+    0.327455
+   ]
+  },
+  {
+   "name": "wdg_bone_up_down_1_rotation",
+   "type": "MESH",
+   "parent": null,
+   "parent_type": null,
+   "parent_bone": null,
+   "location": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "rotation_euler": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "scale": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "world_translation": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "dimensions": [
+    0.702768,
+    0.653559,
+    0.654909
+   ],
+   "modifiers": [],
+   "constraints": [],
+   "in_scene": true,
+   "uv_layers": [],
+   "vertex_groups": [],
+   "material_slots": [],
+   "raw_polys": 0,
+   "raw_tris": 0,
+   "eval_polys": 0,
+   "eval_tris": 0,
+   "world_bbox_min": [
+    -0.351384,
+    -0.32678,
+    -0.327455
+   ],
+   "world_bbox_max": [
+    0.351384,
+    0.32678,
+    0.327455
+   ]
+  }
+ ],
+ "images": [
+  {
+   "name": "desk_lamp_arm_01_diff.png",
+   "filepath": "//textures\\desk_lamp_arm_01_diff_1k.jpg",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "sRGB",
+   "packed": false,
+   "users": 2
+  },
+  {
+   "name": "desk_lamp_arm_01_mask01.png",
+   "filepath": "//textures\\desk_lamp_arm_01_mask01_1k.png",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color",
+   "packed": false,
+   "users": 1
+  },
+  {
+   "name": "desk_lamp_arm_01_metal.png",
+   "filepath": "//textures\\desk_lamp_arm_01_metal_1k.exr",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color",
+   "packed": false,
+   "users": 2
+  },
+  {
+   "name": "desk_lamp_arm_01_nor_gl.png",
+   "filepath": "//textures\\desk_lamp_arm_01_nor_gl_1k.exr",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color",
+   "packed": false,
+   "users": 2
+  },
+  {
+   "name": "desk_lamp_arm_01_rough.png",
+   "filepath": "//textures\\desk_lamp_arm_01_rough_1k.exr",
+   "size": [
+    1024,
+    1024
+   ],
+   "colorspace": "Non-Color",
+   "packed": false,
+   "users": 2
+  },
+  {
+   "name": "Render Result",
+   "filepath": "",
+   "size": [
+    0,
+    0
+   ],
+   "colorspace": "",
+   "packed": false,
+   "users": 1
+  }
+ ],
+ "cameras": [],
+ "lights": [],
+ "actions": [],
+ "model_world_bbox": {
+  "min": [
+   -0.530369,
+   -0.544633,
+   -0.327455
+  ],
+  "max": [
+   0.530369,
+   0.544633,
+   0.791025
+  ],
+  "size": [
+   1.060738,
+   1.089265,
+   1.11848
+  ]
+ }
+}

@@ -87,7 +87,7 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   const levelRotation=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,0));
   function updateLiquid(time,energy) {liquidUniforms.time.value=time;liquidUniforms.amplitude.value=energy*0.004;liquid.visible=state.coffeeLevel>0;liquid.position.y=-0.043+0.092*state.coffeeLevel;liquid.quaternion.copy(coffee.quaternion).invert().multiply(levelRotation);}
   function apply() {
-    bulb.intensity=1.85*state.lamp;lampPool.material.opacity=0.38*state.lamp;lampInterior.material.color.set(state.lamp>0.5?'#d6a26b':'#29251e');toggle.rotation.x=(1-state.lamp)*0.28;
+    bulb.intensity=(bulb.userData.onIntensity??1.85)*state.lamp;lampPool.material.opacity=0.38*state.lamp;lampInterior.material.color.set(state.lamp>0.5?'#d6a26b':'#29251e');toggle.rotation.x=(1-state.lamp)*0.28;
     // Blend two pre-baked shadow states; neither map is updated during a pull.
     blindsGroup.children.forEach((s,i)=>{s.rotation.x=THREE.MathUtils.lerp(-0.22,-1.42,state.blinds);s.position.y=2.88-i*THREE.MathUtils.lerp(0.145,0.024,state.blinds);});
     const closed=keyConfig?.closed??1.15;const open=keyConfig?.open??1.60;
