@@ -6,6 +6,7 @@ import { createSpeakerDetails } from './speakerDetails.js';
 import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
 import { createAuthoredMouse } from './authoredMouse.js';
 import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
+import { createAuthoredChair } from './authoredChair.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -474,14 +475,24 @@ export function buildWorkspace(scene, options = {}) {
   box('Workstation tower', [0.35, 0.64, 0.64], [1.0, 0.405, -0.38], dark, 0.025);
   for (let i = 0; i < 12; i++) box('Tower vent', [0.24, 0.009, 0.009], [1.0, 0.27 + i * 0.027, -0.054], black);
 
-  // Chair with timber seat, perforated back and tubular steel frame.
-  box('Chair seat', [0.6, 0.07, 0.55], [0.05, 0.63, 1.2], wood, 0.055, 'chair');
+  // Chair with timber seat, perforated back and tubular steel frame. Now the
+  // licensed chair's load fallback: grouped so it stays out of static batching
+  // and can be hidden wholesale. Its parts keep their 'chair' anchor id, so
+  // clicking to sit works during the load window too.
+  const chairFallback=new THREE.Group();chairFallback.name='Chair fallback';root.add(chairFallback);
+  chairFallback.add(box('Chair seat', [0.6, 0.07, 0.55], [0.05, 0.63, 1.2], wood, 0.055, 'chair'));
   for (const x of [-0.19, 0.29]) {
-    rod('Chair front leg', [x, 0.12, 0.98], [x, 0.62, 1.0], 0.019, dark);
-    rod('Chair rear leg', [x, 0.12, 1.48], [x, 1.2, 1.4], 0.019, dark);
+    chairFallback.add(rod('Chair front leg', [x, 0.12, 0.98], [x, 0.62, 1.0], 0.019, dark));
+    chairFallback.add(rod('Chair rear leg', [x, 0.12, 1.48], [x, 1.2, 1.4], 0.019, dark));
   }
-  box('Chair back', [0.57, 0.29, 0.045], [0.05, 1.08, 1.414], wood, 0.04, 'chair');
-  for (let i = 0; i < 7; i++) box('Chair back slot', [0.025, 0.18, 0.005], [-0.145 + i * 0.064, 1.08, 1.441], dark, 0.009);
+  chairFallback.add(box('Chair back', [0.57, 0.29, 0.045], [0.05, 1.08, 1.414], wood, 0.04, 'chair'));
+  for (let i = 0; i < 7; i++) chairFallback.add(box('Chair back slot', [0.025, 0.18, 0.005], [-0.145 + i * 0.064, 1.08, 1.441], dark, 0.009));
+  const chair=createAuthoredChair({root,fallback:chairFallback,
+    // Footprint centre on the floor; the asset puts its seat top at y=.665.
+    // Measured from the export: the seat and "Wood Front" panel run to -Z and
+    // the backrest to +Z, so the asset already faces the desk unrotated.
+    position:[0.05,0,1.20],rotationY:0,
+    onReady:()=>{options.onShadowNeedsUpdate?.();}});
 
   // A faint cool rim is the only shadow-casting source. Depth is baked once.
   const hemiLight = new THREE.HemisphereLight('#8294b2', '#21160e', 0.42);
@@ -640,7 +651,7 @@ export function buildWorkspace(scene, options = {}) {
   const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
-    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp, mouse, ceilingFixture,
+    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp, mouse, ceilingFixture, chair,
     contactSurfaces: {desk:deskSurface,mat:matSurface},
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
@@ -677,6 +688,7 @@ export function buildWorkspace(scene, options = {}) {
       taskLamp.dispose();
       mouse.dispose();
       ceilingFixture.dispose();
+      chair.dispose();
       contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {

@@ -222,7 +222,7 @@ export default function WorkspaceStage({
         });
         phoneScreenRef.current?.setRect(pts.some((pt) => pt.z > 1) ? null : quadMatrix(pts, PHONE_SCREEN.width, PHONE_SCREEN.height));
       }
-      function render() { for (const h of [model.hands.left, model.hands.right]) { if(h.skinMesh)h.skinMesh.visible=h.clothMesh.visible=h.hand.visible; } if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
+      function render() { for (const h of [model.hands.left, model.hands.right]) { if(h.skinMesh){h.skinMesh.visible=h.hand.visible;if(!h.clothMesh?.userData?.hidden)h.clothMesh.visible=h.hand.visible;} } if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
         // The chair reads as empty until you are in it. The body only exists
         // once the camera has arrived at the seat, so the approach never shows
         // someone already sitting there — and the head is dropped at the last
@@ -1105,6 +1105,15 @@ export default function WorkspaceStage({
         const boxToPlain = (b) => ({ min: b.min.toArray(), max: b.max.toArray() });
         window.__v3test = {
           arrival:()=>director.snapshot(),
+          // Test-only free camera. Several room assets (the chair, the
+          // fixture's underside) sit outside every authored view, so asset
+          // verification needs a way to actually look at them.
+          lookFrom(position, target) {
+            director.cancel?.();
+            camera.position.set(...position);
+            controls.target.set(...target);
+            controls.update(); camera.updateMatrixWorld(); invalidate();
+          },
           projectAnchor(id) {
             const point = id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id];
             if (!point) return null;
@@ -1118,7 +1127,7 @@ export default function WorkspaceStage({
             if (name === 'coffeeMug') return boxToPlain(box3.setFromObject(model.roomActions.objects.coffee));
             if (['handL','handR','armL','armR'].includes(name)) {
               const hand = name.endsWith('L') ? model.hands.left : model.hands.right;
-              const mesh = name.startsWith('hand') ? hand.skinMesh : hand.clothMesh;
+              const mesh = (name.startsWith('hand') || hand.clothMesh?.userData?.hidden) ? hand.skinMesh : hand.clothMesh;
               model.hands.root.updateMatrixWorld(true);
               mesh.computeBoundingBox();
               return boxToPlain(box3.setFromObject(mesh));

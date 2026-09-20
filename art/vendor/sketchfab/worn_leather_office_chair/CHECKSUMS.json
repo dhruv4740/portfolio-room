@@ -1,0 +1,12 @@
+{
+  "source_fbx": {
+    "path": "art/candidates/chair/worn-leather-office-chair/source/Leather Chair.fbx",
+    "bytes": 844332,
+    "sha256": "13173fee24529f7b9bd41689b96b3a5449c69f9084da48656e20c4afd9e40dc1"
+  },
+  "export_glb": {
+    "path": "art/vendor/sketchfab/worn_leather_office_chair/export/chair.glb",
+    "bytes": 2664872,
+    "sha256": "eb649b715d7660b81fbcfc28528139f0c1ed2f889a7c5e66730c30c6ae79d2fa"
+  }
+}
