@@ -6,7 +6,8 @@ import { createSpeakerDetails } from './speakerDetails.js';
 import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
 import { createAuthoredMouse } from './authoredMouse.js';
 import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
-import { createAuthoredChair } from './authoredChair.js';
+import { createAuthoredKeyboard } from './authoredKeyboard.js';
+import { KEYCAPS } from './keyboardLayout.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -393,21 +394,26 @@ export function buildWorkspace(scene, options = {}) {
   led.position.set(0.58, 1.35, -0.345); root.add(led);
   cable([[0, 1.55, -0.47], [0.12, 1.17, -0.5], [0.7, 1.17, -0.67], [1.3, 0.75, -0.7]]);
 
-  // A compact mechanical keyboard: instanced keycaps, an orange escape key.
-  box('Keyboard case', [.48, .035, .20], [0, 1.201, .28], bone, .009, 'desk');
-  // Rubber feet bridge the real 9.5mm gap above the felt mat.
+  // A mechanical keyboard: 92 instanced keycaps at the measured layout, with an
+  // orange escape cap. The first 60 instances are the KEY_ROWS grid in
+  // row-major order, which is what setKey and the instanceId hit path index by.
+  // The procedural case is the authored chassis's load fallback, so it is
+  // grouped out of static batching and can be hidden wholesale.
+  const keyboardFallback=new THREE.Group();keyboardFallback.name='Keyboard fallback';root.add(keyboardFallback);
+  keyboardFallback.add(box('Keyboard case', [.48, .035, .20], [0, 1.201, .28], bone, .009, 'desk'));
+  // Rubber feet bridge the gap between the felt mat and the case underside.
   for(const x of [-.17,.17])for(const z of [.215,.345])
-    box('Keyboard foot',[.036,.010,.025],[x,WORKSPACE.matSurface.center[1]+.005,z],dark,.003,'desk');
-  const keyGeometry = new RoundedBoxGeometry(.029, .017, .027, 2, .002);
-  const keys = new THREE.InstancedMesh(keyGeometry, mat('keycaps', '#d3d0c3'), 60);
-  const transform = new THREE.Object3D();
-  for (let row = 0; row < 5; row++) for (let col = 0; col < 12; col++) {
-    transform.position.set(-.187 + col * .034, 1.229, .214 + row * .032);
-    transform.updateMatrix(); keys.setMatrixAt(row * 12 + col, transform.matrix);
-  }
+    box('Keyboard foot',[.036,.0232,.025],[x,WORKSPACE.matSurface.center[1]+.0116,z],dark,.003,'desk');
+  // Matches the canonical cap in keyboard.glb, so the fallback reads the same.
+  const keyGeometry = new RoundedBoxGeometry(.0211, .0210, .0219, 2, .0018);
+  const keys = new THREE.InstancedMesh(keyGeometry, mat('keycaps', '#d3d0c3'), KEYCAPS.length);
+  const transform = new THREE.Object3D(), keyColor = new THREE.Color();
+  KEYCAPS.forEach((cap, i) => {
+    transform.position.set(...cap.p); transform.scale.set(cap.w, 1, 1);
+    transform.updateMatrix(); keys.setMatrixAt(i, transform.matrix);
+    keys.setColorAt(i, keyColor.set(cap.esc ? '#ff5f1f' : '#ffffff'));
+  });
   keys.castShadow = false; root.add(keys); tag(keys, 'keyboard');
-  box('Escape key', [.030, .018, .028], [-.187, 1.230, .214], orange, .002);
-  box('Spacebar', [.16, .019, .028], [0, 1.231, .342], bone, .003);
   // The procedural boxes are now only the licensed mouse's load fallback.
   // Grouping keeps them out of static batching so they can be hidden, and out
   // of the static contact set — the loaded asset supplies real contact geometry.
@@ -475,24 +481,14 @@ export function buildWorkspace(scene, options = {}) {
   box('Workstation tower', [0.35, 0.64, 0.64], [1.0, 0.405, -0.38], dark, 0.025);
   for (let i = 0; i < 12; i++) box('Tower vent', [0.24, 0.009, 0.009], [1.0, 0.27 + i * 0.027, -0.054], black);
 
-  // Chair with timber seat, perforated back and tubular steel frame. Now the
-  // licensed chair's load fallback: grouped so it stays out of static batching
-  // and can be hidden wholesale. Its parts keep their 'chair' anchor id, so
-  // clicking to sit works during the load window too.
-  const chairFallback=new THREE.Group();chairFallback.name='Chair fallback';root.add(chairFallback);
-  chairFallback.add(box('Chair seat', [0.6, 0.07, 0.55], [0.05, 0.63, 1.2], wood, 0.055, 'chair'));
+  // Chair with timber seat, perforated back and tubular steel frame.
+  box('Chair seat', [0.6, 0.07, 0.55], [0.05, 0.63, 1.2], wood, 0.055, 'chair');
   for (const x of [-0.19, 0.29]) {
-    chairFallback.add(rod('Chair front leg', [x, 0.12, 0.98], [x, 0.62, 1.0], 0.019, dark));
-    chairFallback.add(rod('Chair rear leg', [x, 0.12, 1.48], [x, 1.2, 1.4], 0.019, dark));
+    rod('Chair front leg', [x, 0.12, 0.98], [x, 0.62, 1.0], 0.019, dark);
+    rod('Chair rear leg', [x, 0.12, 1.48], [x, 1.2, 1.4], 0.019, dark);
   }
-  chairFallback.add(box('Chair back', [0.57, 0.29, 0.045], [0.05, 1.08, 1.414], wood, 0.04, 'chair'));
-  for (let i = 0; i < 7; i++) chairFallback.add(box('Chair back slot', [0.025, 0.18, 0.005], [-0.145 + i * 0.064, 1.08, 1.441], dark, 0.009));
-  const chair=createAuthoredChair({root,fallback:chairFallback,
-    // Footprint centre on the floor; the asset puts its seat top at y=.665.
-    // Measured from the export: the seat and "Wood Front" panel run to -Z and
-    // the backrest to +Z, so the asset already faces the desk unrotated.
-    position:[0.05,0,1.20],rotationY:0,
-    onReady:()=>{options.onShadowNeedsUpdate?.();}});
+  box('Chair back', [0.57, 0.29, 0.045], [0.05, 1.08, 1.414], wood, 0.04, 'chair');
+  for (let i = 0; i < 7; i++) box('Chair back slot', [0.025, 0.18, 0.005], [-0.145 + i * 0.064, 1.08, 1.441], dark, 0.009);
 
   // A faint cool rim is the only shadow-casting source. Depth is baked once.
   const hemiLight = new THREE.HemisphereLight('#8294b2', '#21160e', 0.42);
@@ -643,6 +639,11 @@ export function buildWorkspace(scene, options = {}) {
   root.add(fx);
   const roomActions=buildRoomInteractions({root,materials:{bone,dark,wood,paper},canvasTexture,anchors:WORKSPACE.anchors,achievements,bulb,lampInterior,lampPool,moon,moonOpen,blindsGroup,keys,keyConfig,windowLight});
   const taskLamp=createAuthoredTaskLamp({root,fallback:lampFallback,bulb,pool:lampPool,desktop:deskSurface,onReady:()=>{roomActions.apply();options.onShadowNeedsUpdate?.();}});
+  const keyboard=createAuthoredKeyboard({root,keys,fallback:keyboardFallback,
+    // The chassis origin is its own underside at the board centre; the export
+    // puts the home-row cap tops on KEY_TOP from there.
+    position:[0,1.19723,.28],
+    onReady:()=>{options.onShadowNeedsUpdate?.();}});
   const mouse=createAuthoredMouse({root,fallback:mouseFallback,
     // Sitting on the felt mat (top y=1.174), squared roughly to the keyboard.
     anchor:{position:[.37,1.174,.30],rotationY:-.08},
@@ -651,7 +652,7 @@ export function buildWorkspace(scene, options = {}) {
   const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
-    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp, mouse, ceilingFixture, chair,
+    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp, mouse, ceilingFixture, keyboard,
     contactSurfaces: {desk:deskSurface,mat:matSurface},
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
@@ -688,7 +689,7 @@ export function buildWorkspace(scene, options = {}) {
       taskLamp.dispose();
       mouse.dispose();
       ceilingFixture.dispose();
-      chair.dispose();
+      keyboard.dispose();
       contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {
