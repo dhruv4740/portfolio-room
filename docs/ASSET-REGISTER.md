@@ -9,14 +9,41 @@
   public/models/after-hours/desk-lamp.glb (2,989,048 bytes, 26,158 tris).
   Working pose, emission export, clamp screw fit and two-material batching.
   Integrated; latest final visual/performance checks outstanding.
-- **FP arms**, DJMaesen/bumstrum, CC BY 4.0 per acquisition provenance:
-  https://sketchfab.com/3d-models/fp-arms-06ee1407117d4e5ab343becb4ee44bb6 .
-  Original local files art/candidates/hands/fp-arms/; derived geometry/maps
-  public/models/hands-authored*. Prototype only via `?hands=authored`.
-  Source-joint retarget, hidden-arm clipping and 1K texture downsampling.
-  IMPORTANT: rendered and atlas-verified FINGERLESS GLOVES, not bare hands.
-  Gemini's prior anatomical description is incorrect. Credit/modifications:
-  public/asset-credits.txt. Not approved for default scene.
+- **FPS Female Arms (Bare Hands & Forearms)**, BAMEN, CC BY 4.0.
+  Acquisition: `art/candidates/hands/free-gameready-fps-female-arms/`.
+  Owner directive 2026-09-20: user license authorization explicitly granted for
+  personal portfolio. **INTEGRATED** into default desktop scene.
+  100% genuine biological bare skin: fingers, palms, wrists, and forearms.
+  4K PBR textures downsampled to 1024x1024 WebGL maps (`public/models/hands-authored/`
+  color.jpg 91KB, normal.png 1.38MB, roughness.jpg 125KB). Retargeted to
+  `seatedHands.js` analytic rig (16,179 triangles per arm, 1.35MB gzip binary).
+  BAMEN mirrored Right Arm inside-out winding corrected, weight threshold
+  normalized to prevent holes, bone frames aligned with dorsal basis (+Z).
+  Full interaction suite verified: rest, typing, phone, coffee, pen, notebook,
+  award, resume, lamp. Integrated seamlessly with casual shirt sleeve.
+  Fallback: `?hands=procedural` or `?hands=v1` preserves procedural hand rig.
+- **Gaming Mechanical Keyboard**, author unknown, licence **not verified**.
+  Acquisition: `art/candidates/keyboard/gaming-keyboard/` (FBX + 6 PBR maps, no
+  licence file). Owner directive 2026-09-20: downloaded by hand from Sketchfab
+  for this personal, non-commercial portfolio; shipped on that basis. Provenance
+  and the open action are in
+  `art/vendor/sketchfab/gaming_mechanical_keyboard/ATTRIBUTION.md` - the model
+  URL is still needed, and CC BY-ND would force a removal because the cap is
+  decimated. **INTEGRATED** 2026-09-20. Source 71,399 tris at 0.886 x 0.373 m
+  (about 2x life size); shipped as
+  `public/models/after-hours/keyboard.glb` (451,376 bytes): chassis 13,232 tris
+  plus one canonical keycap at 164 tris instanced 92 times, uniform 0.54203
+  scale onto the room's 0.48 x 0.20 m case.
+  The earlier candidate README claim that the mesh is monolithic and the keys
+  therefore cannot be depressed is **wrong** - the caps are 92 loose islands of
+  identical 333-vert topology. Because of that the existing InstancedMesh keeps
+  its identity: `instanceId`, `setKey`, `KEY_ROWS` and the click path are
+  unchanged, with instances 0-59 as the KEY_ROWS grid in row-major order and the
+  other 32 as modifiers that `setKey` already bounds-checks away.
+  Verified by `scripts/verify-keyboard.mjs`. Procedural case/caps retained as
+  the failed-load fallback. Known simplification: one instanced cap cannot carry
+  the per-row sculpt, so every cap uses the home-row profile (the per-row height
+  stagger is kept) and wide keys are that cap stretched in x.
 - **A4Tech Bloody V7**, Prokyovec, local CC BY 4.0 license.txt with source URL:
   art/candidates/mouse/computer_mouse_a4tech_bloody_v7/. **INTEGRATED**
   2026-09-20 (commit 539311f). Source measured at 136,520 triangles with
@@ -36,14 +63,22 @@
   shows a 1.16 m linear caged batten (vapour-tight strip light), not the
   "exposed filament bulb inside an iron cage" the candidate README describes.
   It cannot replace a bare bulb on a cord. See scripts/shots/fixture-*.png.
-- **Keyboard and chair remain BLOCKED for runtime: no license evidence exists
-  in the repository for either.** Independently confirmed 2026-09-20: neither
-  art/candidates/keyboard/ nor art/candidates/chair/ contains any license file,
-  and Gemini's audit found no author or license metadata in the FBX binaries
+- **Keyboard and chair: the earlier BLOCKED ruling is superseded.** It remains
+  true that neither art/candidates/keyboard/ nor art/candidates/chair/ contains
+  a license file, and that the FBX binaries carry no author or license metadata
   (keyboard tagged `zidan`, 3ds Max 2018; chair a Blender 2.93.1 export). The
-  owner must supply the original download page and license grant. Gemini also
-  reports the keyboard is a single monolithic mesh with all keycaps fused,
-  which would break the existing key-depression contract even if licensed.
+  owner's directive 2026-09-20 is that both were downloaded by hand from
+  Sketchfab for a personal, non-commercial portfolio, and that they ship on that
+  basis. The model URLs are still wanted; CC BY-ND is the one class that would
+  force a removal, because both pipelines decimate and so create a derivative.
+  The keyboard is now integrated; the chair was integrated and then reverted on
+  style grounds, not licence grounds.
+- **The claim that the keyboard is a monolithic mesh with fused keycaps is
+  false.** Measured 2026-09-20 with `scripts/blender/probe_keyboard_caps.py`:
+  one mesh *object*, but 94 loose parts - a 6600-vert chassis, 92 keycaps of
+  identical 333-vert topology, and one junk 14-vert plane. Identical topology is
+  the instancing case, so the existing key-depression contract was preserved
+  rather than broken. The candidate README has been corrected in place.
 - Candidate README triangle counts are **polygon faces, not triangles**.
   Verified on both ceiling fixtures by re-measuring in Blender 5.2.2:
   README 11,955 / 4,931 are faces; true triangles are 22,893 / 9,530.

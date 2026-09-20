@@ -1148,6 +1148,16 @@ export default function WorkspaceStage({
           contacts() { return afterHours?.contactStats(); },
           setContactsEnabled(v) { afterHours?.setContactsEnabled(v); },
           gpuSamples(clear=false) {const out=gpuSamples.slice();if(clear)gpuSamples.length=0;return out;},
+          // Keycap state for scripts/verify-keyboard.mjs: the authored asset
+          // swaps geometry underneath this InstancedMesh, so a harness needs to
+          // see the count, the label slots and the live instance height.
+          keyboard() {
+            const k = model.keys, g = k.geometry;
+            return { count: k.count, status: model.keyboard.state.status,
+              slots: g.getAttribute('keySlot')?.count ?? 0, tinted: !!k.instanceColor,
+              tris: (g.index ? g.index.count : g.attributes.position.count) / 3 };
+          },
+          keyY(index) { const m = new THREE.Matrix4(); model.keys.getMatrixAt(index, m); return m.elements[13]; },
           projectKey(index) {
             const m = new THREE.Matrix4(); model.keys.getMatrixAt(index, m);
             const rect = host.getBoundingClientRect();

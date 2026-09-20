@@ -78,11 +78,13 @@ export function buildRoomInteractions({root,materials:m,canvasTexture,anchors,ac
   mesh(sash,new THREE.PlaneGeometry(0.64,1.85),glassMat,[0,0,sashZ]);
   const state={lamp:1,blinds:0,drawer:0,headphones:0,coffeeLevel:1,windowOpen:0};
   const homes=Object.fromEntries(Object.entries(objects).map(([id,g])=>[id,g.position.clone()]));
-  const labels=canvasTexture((ctx,w,h)=>{ctx.fillStyle='#d3d0c3';ctx.fillRect(0,0,w,h);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#353936';ctx.font='36px sans-serif';for(let row=0;row<5;row++)for(let col=0;col<12;col++)ctx.fillText(KEY_ROWS[row][col].toUpperCase(),(col+0.5)*w/12,(4-row+0.5)*h/5);},1536,640);
+  const labels=canvasTexture((ctx,w,h)=>{ctx.fillStyle='#d3d0c3';ctx.fillRect(0,0,w,h);ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#353936';ctx.font='36px sans-serif';for(let row=0;row<5;row++)for(let col=0;col<12;col++)ctx.fillText(KEY_ROWS[row][col].toUpperCase(),(col+0.5)*w/12,(5-row+0.5)*h/6);},1536,768);
   keys.material.map=labels;keys.material.color.set('#ffffff');
-  keys.geometry.setAttribute('keySlot',new THREE.InstancedBufferAttribute(Float32Array.from({length:60},(_,i)=>i),1));
-  keys.material.onBeforeCompile=shader=>{shader.vertexShader='attribute float keySlot;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\n vMapUv = (vMapUv + vec2(mod(keySlot,12.0),floor(keySlot/12.0))) / vec2(12.0,5.0);');};
-  const keyMatrix=new THREE.Matrix4();const keyHomes=[];for(let i=0;i<60;i++){keys.getMatrixAt(i,keyMatrix);keyHomes.push(keyMatrix.clone());}
+  // A sixth atlas row is left blank: caps past the 60-key grid are modifiers
+  // with no legend, and they all point at that blank cell.
+  keys.geometry.setAttribute('keySlot',new THREE.InstancedBufferAttribute(Float32Array.from({length:keys.count},(_,i)=>i<60?i:60),1));
+  keys.material.onBeforeCompile=shader=>{shader.vertexShader='attribute float keySlot;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <uv_vertex>','#include <uv_vertex>\n vMapUv = (vMapUv + vec2(mod(keySlot,12.0),floor(keySlot/12.0))) / vec2(12.0,6.0);');};
+  const keyMatrix=new THREE.Matrix4();const keyHomes=[];for(let i=0;i<keys.count;i++){keys.getMatrixAt(i,keyMatrix);keyHomes.push(keyMatrix.clone());}
   function setKey(index,depth) {if(index<0||index>=60)return;keyMatrix.copy(keyHomes[index]);keyMatrix.elements[13]-=depth;keys.setMatrixAt(index,keyMatrix);keys.instanceMatrix.needsUpdate=true;}
   const levelRotation=new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI/2,0,0));
   function updateLiquid(time,energy) {liquidUniforms.time.value=time;liquidUniforms.amplitude.value=energy*0.004;liquid.visible=state.coffeeLevel>0;liquid.position.y=-0.043+0.092*state.coffeeLevel;liquid.quaternion.copy(coffee.quaternion).invert().multiply(levelRotation);}

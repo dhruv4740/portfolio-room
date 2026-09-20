@@ -1,0 +1,62 @@
+{
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard.FBX": {
+    "sha256": "e072da7b1ee63cb7476ed2f2a62a9b0642ce98289215caea16d9d2882358e1c9",
+    "bytes": 1816096
+  },
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard_13 - Default_AO.jpg": {
+    "sha256": "f5c16f044fdf85ec4e12730f526f17d472ee045022f9c8166a1314cef864c59b",
+    "bytes": 1203909
+  },
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard_13 - Default_BaseColor.jpg": {
+    "sha256": "96f5401702c34005e6c83aab60d395a112cbd1d073a79bc9e3a1422a39a1da9d",
+    "bytes": 613918
+  },
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard_13 - Default_Emissive.jpg": {
+    "sha256": "32250e1e27e35a36d1b548b0d0d93858dd0023e4f814f571ae88716e3823cec1",
+    "bytes": 441361
+  },
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard_13 - Default_Height.jpg": {
+    "sha256": "890d16706601325202e8d241a0bd1a40c4f1bef3467ad588edacb0f111b15454",
+    "bytes": 249074
+  },
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard_13 - Default_Metallic.jpg": {
+    "sha256": "f11908bfae7e5605ededb88ee7122c3c92e812512cb45c7c7b1b791a558a0873",
+    "bytes": 302561
+  },
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard_13 - Default_Normal.jpg": {
+    "sha256": "8679a72541536d32ce49549622ce05db7ec87e9ace5ac201f380aa066893d634",
+    "bytes": 638051
+  },
+  "art/candidates/keyboard/gaming-keyboard/source/keyboard_13 - Default_Roughness.jpg": {
+    "sha256": "1deb2c19f00c621bc7530e5379fae02a141bc99f9e53d2c84570cea6c405144d",
+    "bytes": 1328684
+  },
+  "art/candidates/keyboard/gaming-keyboard/textures/keyboard_13 - Default_AO.jpeg": {
+    "sha256": "3050ca5289927cd392a45e73cae4aee09832274c269344edae96bfe65204f732",
+    "bytes": 1157240
+  },
+  "art/candidates/keyboard/gaming-keyboard/textures/keyboard_13 - Default_BaseColor.jpeg": {
+    "sha256": "9538c437a9a34ec2b043bf4d452082984948c73af7c93374794c87685318d8ff",
+    "bytes": 494608
+  },
+  "art/candidates/keyboard/gaming-keyboard/textures/keyboard_13 - Default_Emissive.jpeg": {
+    "sha256": "233343a80e6b47d5aba5eb8dea177658804a1828477bbb1bd2791e28ada92276",
+    "bytes": 291888
+  },
+  "art/candidates/keyboard/gaming-keyboard/textures/keyboard_13 - Default_Metallic.jpeg": {
+    "sha256": "f704cecb268d94b211e3c90dfb481d24000c20c3479210b6be6dd626ed94a58b",
+    "bytes": 176747
+  },
+  "art/candidates/keyboard/gaming-keyboard/textures/keyboard_13 - Default_Normal.jpeg": {
+    "sha256": "97fba777635d534caa2650d3ed0ef671ad5d60aa9d78c373b61f6fccd09cef2b",
+    "bytes": 529134
+  },
+  "art/candidates/keyboard/gaming-keyboard/textures/keyboard_13 - Default_Roughness.jpeg": {
+    "sha256": "3a6ef991551e3214e5a971e567eedf109e9dd8ce3b0ab2dab554fb15c8554d78",
+    "bytes": 1270912
+  },
+  "public/models/after-hours/keyboard.glb": {
+    "sha256": "e5e03f3cb05a0d4cc0763d871253d78af088d9b277aec487be54ce2c47b070e8",
+    "bytes": 451376
+  }
+}
