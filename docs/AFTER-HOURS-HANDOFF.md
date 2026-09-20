@@ -15,6 +15,17 @@ it as achieving the GTA/RDR realism target.
 
 ## Next exact actions
 
+### Larger hand pass in progress — 2026-09-20
+
+See HAND-REALISM-PASS.md for implementation, caught defects and exact evidence.
+Palm/forearm overlap, continuous wrist weights preserving thumb influence,
+thenar pad, finer 3.5mm surface sampling, shallow palm folds and regional skin
+colour/microrelief are implemented. No pose-control or bone contract changes.
+Build and binary/fallback geometry checks pass. Complete night capture and
+corrected cup/award review passed without browser errors. Full final daylight,
+held/reduced/contact regression and GPU measurement are being completed by
+Codex. External agents have no current assignment; Codex owns build/browser.
+
 ### Hand form study — 2026-09-20
 
 Updated handSurface.js implicit field: shallow dorsal arch (up to 1.8mm),

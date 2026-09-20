@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { bindHandSurface } from './handSurface.js';
+import { createHandSkin } from './handAppearance.js';
 
 // Connected skin driven by finger bones and an analytic two-bone arm solve. Hand frame (both hands): fingers
 // point -z, palm faces -y, wrist at +z, thumb on the side nearer the body's
@@ -57,7 +58,7 @@ function sleeveGeometry() {
 
 export function seatedHands() {
   const root = new THREE.Group(); root.name = 'Seated hands and forearms'; root.visible = false;
-  const skin = new THREE.MeshStandardMaterial({ color: '#b9896e', roughness: 0.82 });
+  const skin = createHandSkin();
   const cloth = new THREE.MeshStandardMaterial({ color: '#3c4949', roughness: 1 });
   function mesh(geometry, material, parent) {
     const m = new THREE.Mesh(geometry, material); m.castShadow = false; m.receiveShadow = true; m.raycast = () => {}; parent.add(m); return m;
