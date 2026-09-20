@@ -100,7 +100,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     const filtered=pmrem.fromCubemap(target.texture);target.dispose();targets.push(filtered);probes.set(key,filtered);
     scene.environment=filtered.texture;scene.environmentIntensity=.35;
   }
-  const status={city:'loading',materials:'loading',bake:'loading',lamp:'loading'};
+  const status={city:'loading',materials:'loading',bake:'loading',lamp:'loading',fixture:'loading'};
   const report=()=>onStatus?.({...status});
   // The licensed mouse loads after the static contact set is merged, so it
   // hands its real geometry to the contact pass once it is in the scene.
@@ -109,6 +109,8 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     const geometry=model.mouse.contactGeometry();
     if(geometry)contacts.addStatic(geometry);
   });
+  const fixturePromise=model.ceilingFixture.ready.then(()=>{
+    if(disposed)return;status.fixture=model.ceilingFixture.state.status;invalidate();report();});
   const lampPromise=model.taskLamp.ready.then(()=>{if(disposed)return;status.lamp=model.taskLamp.state.status;probeDirty=true;invalidate();report();});
   const cityPromise=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/winter-city.glb`).then(gltf=>{
     if(disposed){gltf.scene.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});return;}
@@ -154,7 +156,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   })).then(()=>{status.bake='ready';probeDirty=true;invalidate();report();}).catch(e=>{status.bake='fallback';console.warn('Room bake fallback:',e.message);report();});
 
   return {
-    ready:Promise.allSettled([cityPromise,mapsPromise,bakePromise,lampPromise,mousePromise]),
+    ready:Promise.allSettled([cityPromise,mapsPromise,bakePromise,lampPromise,mousePromise,fixturePromise]),
     update(time,cost=0){uniforms.time.value=time;uniforms.lamp.value=model.roomActions.state.lamp;
       model.taskLamp.update(uniforms.lamp.value);
       model.roomActions.objects.coffee.updateWorldMatrix(true,false);

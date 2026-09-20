@@ -1078,7 +1078,7 @@ export default function WorkspaceStage({
       resizeObserver = new ResizeObserver(resize); resizeObserver.observe(host);
       resize(); place(home); render();
       afterHours=createAfterHours({scene,model,renderer,invalidate,tier:gov.tier,onStatus:s=>{
-        host.dataset.winterCity=s.city;host.dataset.roomMaterials=s.materials;host.dataset.roomBake=s.bake;host.dataset.taskLamp=s.lamp;
+        host.dataset.winterCity=s.city;host.dataset.roomMaterials=s.materials;host.dataset.roomBake=s.bake;host.dataset.taskLamp=s.lamp;host.dataset.ceilingFixture=s.fixture;
       }});
       afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });

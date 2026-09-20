@@ -5,6 +5,7 @@ import { seatedHands } from './seatedHands.js';
 import { createSpeakerDetails } from './speakerDetails.js';
 import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
 import { createAuthoredMouse } from './authoredMouse.js';
+import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
@@ -518,11 +519,17 @@ export function buildWorkspace(scene, options = {}) {
 
   // Static pendant; only its local emission changes during the entry stutter.
   cylinder('Ceiling rose', 0.10, 0.025, [-0.65, 3.1075, 0.5], dark);
-  rod('Pendant cord', [-0.65, 3.12, 0.5], [-0.65, 2.58, 0.5], 0.008, black);
-  cylinder('Pendant socket', 0.036, 0.09, [-0.65, 2.55, 0.5], dark);
+  // Cord, socket and bulb are now the licensed fixture's load fallback.
+  // Grouping keeps them out of static batching so they can be hidden.
+  const pendantFallback=new THREE.Group();pendantFallback.name='Pendant fallback';root.add(pendantFallback);
+  pendantFallback.add(rod('Pendant cord', [-0.65, 3.12, 0.5], [-0.65, 2.58, 0.5], 0.008, black));
+  pendantFallback.add(cylinder('Pendant socket', 0.036, 0.09, [-0.65, 2.55, 0.5], dark));
   const pendantMaterial = new THREE.MeshStandardMaterial({ color: '#ad8860', emissive: '#e0ac68', emissiveIntensity: 0.7 });
   const pendant = new THREE.Mesh(new THREE.SphereGeometry(0.052, 16, 12), pendantMaterial);
-  pendant.position.set(-0.65, 2.47, 0.5); pendant.scale.y = 1.35; root.add(pendant);
+  pendant.position.set(-0.65, 2.47, 0.5); pendant.scale.y = 1.35; pendantFallback.add(pendant);
+  const ceilingFixture=createAuthoredCeilingFixture({root,fallback:pendantFallback,
+    // Hung from the existing ceiling rose; the asset drops .584 m from here.
+    position:[-0.65,3.0975,0.5],onReady:()=>{options.onShadowNeedsUpdate?.();}});
   const pendantLight = new THREE.Object3D(); pendantLight.intensity = .85;
   pendantLight.position.copy(pendant.position); root.add(pendantLight);
 
@@ -633,7 +640,7 @@ export function buildWorkspace(scene, options = {}) {
   const figure = buildSeatedFigure(); root.add(figure.root);
 
   return {
-    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp, mouse,
+    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry, taskLamp, mouse, ceilingFixture,
     contactSurfaces: {desk:deskSurface,mat:matSurface},
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
@@ -643,7 +650,7 @@ export function buildWorkspace(scene, options = {}) {
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
     setHandsVisible(visible) { hands.root.visible = visible; },
-    setEntryPower(value) { pendantLight.intensity = 0.85 * value; pendantMaterial.emissiveIntensity = 0.7 * value; },
+    setEntryPower(value) { pendantLight.intensity = 0.85 * value; pendantMaterial.emissiveIntensity = 0.7 * value; ceilingFixture.update(value); },
     setSky(skyState) {
       if (!SKY_CONFIGS[skyState]) return;
       const cfg = SKY_CONFIGS[skyState];
@@ -669,6 +676,7 @@ export function buildWorkspace(scene, options = {}) {
       speakerDetails.dispose();
       taskLamp.dispose();
       mouse.dispose();
+      ceilingFixture.dispose();
       contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();
       scene.traverse(object => {

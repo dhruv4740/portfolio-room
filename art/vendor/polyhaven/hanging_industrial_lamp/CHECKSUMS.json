@@ -1,0 +1,12 @@
+{
+  "source_fbx": {
+    "path": "art/candidates/ceiling-lamp/hanging-industrial-lamp/hanging_industrial_lamp_4k.fbx",
+    "bytes": 329244,
+    "sha256": "c7e6c825bf451d69932c825b749c60d99bcf9c1a6bfe35d22eb6303de5ae24bb"
+  },
+  "export_glb": {
+    "path": "art/vendor/polyhaven/hanging_industrial_lamp/export/ceiling-fixture.glb",
+    "bytes": 803352,
+    "sha256": "9f77775caf41f54e92080a7dd8c6ac40529bad6520c8ce64f96600558909d433"
+  }
+}

@@ -7,6 +7,14 @@ CC0: https://polyhaven.com/license
 Changes: working pose, material export adaptation, clamp screw placement and
 static material batching. Original sources and changes recorded in repository.
 
+Hanging Industrial Lamp
+Kuutti Siitonen, via Poly Haven.
+https://polyhaven.com/a/hanging_industrial_lamp
+CC0: https://polyhaven.com/license
+Changes: chain trimmed to a short drop, origin moved to the mount point,
+4K maps resized to 1K and exported as JPEG. Original sources and changes
+recorded in repository.
+
 Computer mouse A4Tech bloody V7 — Prokyovec
 https://sketchfab.com/3d-models/computer-mouse-a4tech-bloody-v7-69e3f3ec5cc44b14afaa85c53db09c1f
 https://sketchfab.com/fipro333
