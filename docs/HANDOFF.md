@@ -16,6 +16,19 @@ retarget works as an opt-in comparison, but the asset is GLOVED despite the
 earlier report. Default hands stay procedural. No GTA/RDR quality claim.
 The exact tested-versus-untested boundary is in REALISM-ASSET-CHECKPOINT.md.
 
+**Opus's run is finished (commits `df304fe`, `539311f`, `44efcdf`, `db98ae2`).**
+The lamp's spotlight was sitting inside its own shade and clipping its cone
+against the rim; fixed and now covered by `scripts/verify-task-lamp.mjs`. The
+licensed A4Tech mouse and the CC0 Poly Haven industrial pendant replaced their
+procedural stand-ins, both with provenance under `art/vendor/`. Room scale is
+**audited but not corrected** — see [ROOM-SCALE-PROPOSAL.md](ROOM-SCALE-PROPOSAL.md);
+the uniform correction needs Codex because hand poses are world-space, and the
+indirect bake must not be called accurate until it happens. Keyboard and chair
+stay blocked on missing licences. `verify-v3` and `verify-after-hours` fail on
+route-changing clicks, reproduced at `f1b9aa9`, so that failure predates the
+run and is still open. Full record with every skipped check:
+[reviews/OPUS-MULTIPASS-HANDOFF.md](reviews/OPUS-MULTIPASS-HANDOFF.md).
+
 Read [AFTER-HOURS-HANDOFF.md](AFTER-HOURS-HANDOFF.md) first, then
 [AFTER-HOURS-PLAN.md](AFTER-HOURS-PLAN.md). Owner approved execution on
 2026-09-20. Those documents distinguish the new target from completed work.
