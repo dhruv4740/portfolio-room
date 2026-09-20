@@ -13,6 +13,9 @@ def mat(name,color,roughness):
     p=m.node_tree.nodes.get('Principled BSDF');p.inputs['Base Color'].default_value=(*color,1);p.inputs['Roughness'].default_value=roughness
     return m
 materials={'skin':mat('Reference skin',(.45,.25,.16),.82),'sleeve':mat('Reference cloth',(.045,.066,.066),1),'nails':mat('Reference nails',(.40,.23,.17),.58)}
+skin_nodes=materials['skin'].node_tree
+region=skin_nodes.nodes.new('ShaderNodeVertexColor');region.layer_name='skin_region'
+skin_nodes.links.new(region.outputs['Color'],skin_nodes.nodes.get('Principled BSDF').inputs['Base Color'])
 for hand in data['hands']:
     armature=bpy.data.armatures.new(hand['name']+' runtime bones')
     rig=bpy.data.objects.new(hand['name']+' bind reference',armature);bpy.context.collection.objects.link(rig)
@@ -29,6 +32,13 @@ for hand in data['hands']:
         mesh.from_pydata([xyz(p[i:i+3]) for i in range(0,len(p),3)],[],[indices[i:i+3] for i in range(0,len(indices),3)]);mesh.update()
         obj=bpy.data.objects.new(mesh.name,mesh);bpy.context.collection.objects.link(obj);obj.data.materials.append(materials[part['name']])
         for poly in mesh.polygons: poly.use_smooth=True
+        if part.get('uv'):
+            uv=mesh.uv_layers.new(name='UVMap')
+            for loop in mesh.loops:
+                i=loop.vertex_index*2;uv.data[loop.index].uv=part['uv'][i:i+2]
+        if part.get('color'):
+            colors=mesh.color_attributes.new(name='skin_region',type='FLOAT_COLOR',domain='POINT')
+            for i,c in enumerate(colors.data): c.color=(*part['color'][i*3:i*3+3],1)
         groups=[obj.vertex_groups.new(name=b['name']) for b in hand['bones']]
         for vertex in range(len(p)//3):
             for lane in range(4):

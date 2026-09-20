@@ -1,7 +1,12 @@
 import * as THREE from 'three';
 import { loadHandAssets } from './handAssets.js';
 import { applyHandAppearance } from './handAppearance.js';
-const prebuilt = typeof window === 'undefined' ? null : await loadHandAssets().catch(error => { console.warn(error.message + '; generating local fallback'); return null; });
+const authored=typeof window!=='undefined'&&new URLSearchParams(window.location.search).get('hands')==='authored';
+const prebuilt = typeof window === 'undefined' ? null : await loadHandAssets(authored?'hands-authored':'hands-v1').catch(error => { console.warn(error.message + '; generating local fallback'); return null; });
+const authoredMaps=authored&&prebuilt?await Promise.all(['color.jpg','normal.png','roughness.jpg'].map(async(name,i)=>{
+  const texture=await new THREE.TextureLoader().loadAsync(`${import.meta.env.BASE_URL}models/hands-authored/${name}`);
+  texture.colorSpace=i===0?THREE.SRGBColorSpace:THREE.NoColorSpace;texture.flipY=true;texture.anisotropy=4;return texture;
+})).catch(error=>{console.warn('Authored hand texture preview unavailable:',error.message);return null;}):null;
 
 import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
@@ -32,14 +37,20 @@ export function bindHandSurface(h, root, skin, cloth) {
   const bones = [h.hand, h.arm, ...h.digits.flatMap(f => f.userData.joints), ...h.thumb.userData.joints, h.sleeve, h.elbow];
   root.updateMatrixWorld(true);
   if (prebuilt) {
+    if(authoredMaps){
+      skin.bumpMap?.dispose();skin.bumpMap=null;
+      [skin.map,skin.normalMap,skin.roughnessMap]=authoredMaps;
+      skin.color.set('#ffffff');skin.vertexColors=false;skin.roughness=.85;skin.normalScale.set(.65,.65);skin.needsUpdate=true;
+    }
     const skeleton=new THREE.Skeleton(bones), offset=h.side===-1?0:2;
     h.skinMesh=new THREE.SkinnedMesh(prebuilt[offset].clone(),skin);
     h.clothMesh=new THREE.SkinnedMesh(prebuilt[offset+1].clone(),cloth);
     for(const source of h.clothParts){source.removeFromParent();source.geometry.dispose();}
     for(const mesh of [h.skinMesh,h.clothMesh]){root.add(mesh);mesh.bind(skeleton,new THREE.Matrix4());mesh.frustumCulled=false;mesh.castShadow=false;mesh.receiveShadow=true;mesh.raycast=()=>{};}
     h.skeleton=skeleton;
-    applyHandAppearance(h);
+    if(!authoredMaps)applyHandAppearance(h);
     bindNails(h,root,bones);
+    if(authoredMaps)h.nailMesh.visible=false; // Nails are part of the authored skin.
     return;
   }
 

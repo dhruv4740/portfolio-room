@@ -11,7 +11,7 @@ for(const [name,h] of [['left',rig.left],['right',rig.right]]){
     let parent=bone.parent;while(parent&&!bones.includes(parent))parent=parent.parent;
     return {name:labels[i],parent:bones.indexOf(parent),bindWorld:h.skeleton.boneInverses[i].clone().invert().toArray()};
   }),meshes:[['skin',h.skinMesh],['sleeve',h.clothMesh],['nails',h.nailMesh]].map(([part,mesh])=>{
-    const g=mesh.geometry;return {name:part,position:Array.from(g.attributes.position.array),index:Array.from(g.index.array),skinIndex:Array.from(g.attributes.skinIndex.array),skinWeight:Array.from(g.attributes.skinWeight.array)};
+    const g=mesh.geometry;return {name:part,position:Array.from(g.attributes.position.array),index:Array.from(g.index.array),skinIndex:Array.from(g.attributes.skinIndex.array),skinWeight:Array.from(g.attributes.skinWeight.array),uv:g.attributes.uv?Array.from(g.attributes.uv.array):null,color:g.attributes.color?Array.from(g.attributes.color.array):null};
   })});
 }
 await mkdir('art/after-hours',{recursive:true});

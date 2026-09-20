@@ -1,0 +1,19 @@
+After Hours — third-party asset credits
+
+Desk Lamp Arm 01
+Modeling/texturing: Kuutti Siitonen; rigging: Yann Kervran, via Poly Haven.
+https://polyhaven.com/a/desk_lamp_arm_01
+CC0: https://polyhaven.com/license
+Changes: working pose, material export adaptation, clamp screw placement and
+static material batching. Original sources and changes recorded in repository.
+
+FP arms — DJMaesen (bumstrum)
+https://sketchfab.com/3d-models/fp-arms-06ee1407117d4e5ab343becb4ee44bb6
+https://sketchfab.com/bumstrum
+Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+Changes: rig retargeting, hidden arm clipping, texture downsampling, binary
+packaging. Used only by the opt-in authored-hands comparison prototype.
+This asset depicts fingerless gloves, not bare hands.
+
+Additional room materials are credited in the repository's docs/ASSET-REGISTER.md.

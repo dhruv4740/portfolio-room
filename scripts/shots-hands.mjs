@@ -5,6 +5,7 @@ const BASE = process.env.BASE || 'http://localhost:4173';
 const ONLY = process.argv.slice(2);
 const SKY = process.env.SKY || 'day';
 const TIER = process.env.TIER || 'low';
+const HANDS = process.env.HANDS || '';
 // GPU=1 runs on the machine's real GPU (new headless + ANGLE D3D11) at the owner's 1536x864@1.25 laptop size.
 const GPU = process.env.GPU === '1';
 const b = await chromium.launch(GPU ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } : {});
@@ -13,12 +14,12 @@ try {
   const errors = []; p.on('pageerror', e => errors.push(e.message));
   p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await p.addInitScript(tier => { localStorage.setItem('v3:test', '1'); localStorage.setItem('v3:surface-override', 'scan'); localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', tier); sessionStorage.setItem('v3:arrival-seen', '1'); sessionStorage.setItem('v3:controls', 'open'); },TIER);
-  await p.goto(BASE + '/?sky='+SKY);
+  await p.goto(BASE + '/?sky='+SKY+(HANDS?'&hands='+encodeURIComponent(HANDS):''));
   await p.locator('.workspace-stage[data-winter-city="ready"][data-room-materials="ready"][data-room-bake="ready"]').waitFor({state:'attached',timeout:30000});
   await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(2500);
   const stage = () => p.locator('.workspace-stage');
 const diag = async label => console.log(label, JSON.stringify(await p.evaluate(() => window.__v3test.hands())));
-const shot = async name => { await p.waitForTimeout(150); await p.screenshot({ path: `scripts/shots/hands-${GPU ? 'gpu-' : ''}${SKY==='day'?'':SKY+'-'}${name}.png`,style:'.seat-exit,.telemetry-root{visibility:hidden!important}' }); await diag(name); };
+const shot = async name => { await p.waitForTimeout(150); await p.screenshot({ path: `scripts/shots/hands-${HANDS?HANDS+'-':''}${GPU ? 'gpu-' : ''}${SKY==='day'?'':SKY+'-'}${name}.png`,style:'.seat-exit,.telemetry-root{visibility:hidden!important}' }); await diag(name); };
 const button = name => p.getByRole('button', { name, exact: true });
 const data = (k, v) => p.waitForFunction(([k, v]) => document.querySelector('.workspace-stage')?.dataset[k] === v, [k, v], { polling: 100, timeout: 20000 });
 const mark = () => p.evaluate(() => { window.__oldTl = window.__v3test?.timeline(); });
