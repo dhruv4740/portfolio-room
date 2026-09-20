@@ -1,5 +1,24 @@
 # After Hours — live continuation ledger
 
+## Latest: integration lead transferred to Opus
+
+Owner authorized several autonomous Opus/Gemini passes. Current execution
+brief: OPUS-GEMINI-CONTINUATION.md; precise current implementation and tests:
+REALISM-ASSET-CHECKPOINT.md; ownership/slot: TEAM-COORDINATION.md. Opus may
+assign Gemini and commit locally. Codex pauses after this checkpoint.
+
+New: CC0 articulated lamp replaces fallback after load, 35mm desk edge,
+two-material batching, aimed warm spot and pending final cached-shadow review.
+Phone 78x166x9mm and fixed underhand roll: 23 real-GPU vertex-volume samples
+pass. Optional DJMaesen hand retarget uses actual source weights/UVs; room
+render reveals fingerless gloves, contrary to Gemini's bare-skin claims.
+Do not make that experiment the default. No final integrated GPU acceptance.
+
+Next: Opus validates latest lamp changes and integrates mouse, then licensed
+keyboard/chair/fixture as contracts permit; Gemini audits provenance and finds
+visually verified bare hands. Fix coherent scale/composition before rebaking.
+Older entries below retain their original snapshot scope.
+
 ## Current checkpoint
 
 2026-09-20: documentation committed FIRST as 09fe88f; Blender/material assets

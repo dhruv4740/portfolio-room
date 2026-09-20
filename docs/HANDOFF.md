@@ -1,5 +1,21 @@
 # Active work — After Hours realism upgrade
 
+## Latest handoff: Opus + Gemini multi-pass integration
+
+The owner authorized Opus to lead integration and direct Gemini while Codex
+preserves usage for the hardest work. Start with
+[OPUS-GEMINI-CONTINUATION.md](OPUS-GEMINI-CONTINUATION.md),
+[REALISM-ASSET-CHECKPOINT.md](REALISM-ASSET-CHECKPOINT.md) and
+[TEAM-COORDINATION.md](TEAM-COORDINATION.md). Opus receives build/browser/GPU
+and local commit authority. No internal subagents. Earlier "no assignment"
+and "Codex-only integration" statements below are superseded.
+
+Lamp integrated; final shadow/fallback/performance review pending. Physical
+phone correction passes 23 sampled vertex-interior checks. Downloaded hand
+retarget works as an opt-in comparison, but the asset is GLOVED despite the
+earlier report. Default hands stay procedural. No GTA/RDR quality claim.
+The exact tested-versus-untested boundary is in REALISM-ASSET-CHECKPOINT.md.
+
 Read [AFTER-HOURS-HANDOFF.md](AFTER-HOURS-HANDOFF.md) first, then
 [AFTER-HOURS-PLAN.md](AFTER-HOURS-PLAN.md). Owner approved execution on
 2026-09-20. Those documents distinguish the new target from completed work.

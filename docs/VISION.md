@@ -2,6 +2,12 @@
 
 ## Current direction — 2026-09-20
 
+Delivery emphasis: coherent physical scale and one convincing cinematic room,
+not a catalogue of detailed props. Licensed assets are a means, not acceptance
+by themselves. Keep the creator's work and fast project access central.
+Latest execution: OPUS-GEMINI-CONTINUATION.md; current truth:
+REALISM-ASSET-CHECKPOINT.md. The existing screenshots remain below the target.
+
 After Hours is the approved next direction: a physically believable warm
 studio overlooking a fictional snowy city at night, with an interruptible
 first-person arrival. No dialogue. GTA V/RDR2 are artistic references across

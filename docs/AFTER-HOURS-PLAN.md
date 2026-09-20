@@ -1,5 +1,12 @@
 # After Hours — approved execution specification
 
+**Execution update:** the owner now authorizes Opus to lead multi-pass scene
+integration and direct Gemini. OPUS-GEMINI-CONTINUATION.md and
+TEAM-COORDINATION.md supersede older delegation/ownership paragraphs here.
+Codex retains difficult hand/anatomy decisions and later art review. No
+internal subagents. REALISM-ASSET-CHECKPOINT.md records the current work;
+functional success must not be confused with final visual acceptance.
+
 Approved 2026-09-20. This supersedes the floating-room/toy aesthetic in older
 vision documents. Read AFTER-HOURS-HANDOFF.md for actual progress. A checked
 functional test does not establish that an artistic target has been achieved.

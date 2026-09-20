@@ -1,5 +1,14 @@
 # Design — "Technical Instrument"
 
+## Current scene art direction
+
+UI rules below apply to interface chrome. Scene materials use physical
+material colors and authored textures; they are not all CSS tokens. The room
+is a warm night studio against a cold snowy exterior. AFTER-HOURS-PLAN.md and
+OPUS-GEMINI-CONTINUATION.md govern scene composition and realism. Avoid
+oversized props, plastic skin, arbitrary gloss and effects used to hide weak
+geometry. An imported asset must be inspected in context before acceptance.
+
 The rules exist because "make it impressive" with no constraints converges on
 the same gradient-and-glassmorphism page every AI generates. Constraint is what
 makes it look authored.

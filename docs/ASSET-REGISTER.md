@@ -1,5 +1,29 @@
 # After Hours asset register
 
+## Current additions and audit corrections — 2026-09-20
+
+- **Desk Lamp Arm 01**, Kuutti Siitonen / Yann Kervran, Poly Haven CC0.
+  Source: https://polyhaven.com/a/desk_lamp_arm_01 ; license:
+  https://polyhaven.com/license . Source/work/export/integrity files:
+  art/vendor/polyhaven/desk_lamp_arm_01/. Runtime:
+  public/models/after-hours/desk-lamp.glb (2,989,048 bytes, 26,158 tris).
+  Working pose, emission export, clamp screw fit and two-material batching.
+  Integrated; latest final visual/performance checks outstanding.
+- **FP arms**, DJMaesen/bumstrum, CC BY 4.0 per acquisition provenance:
+  https://sketchfab.com/3d-models/fp-arms-06ee1407117d4e5ab343becb4ee44bb6 .
+  Original local files art/candidates/hands/fp-arms/; derived geometry/maps
+  public/models/hands-authored*. Prototype only via `?hands=authored`.
+  Source-joint retarget, hidden-arm clipping and 1K texture downsampling.
+  IMPORTANT: rendered and atlas-verified FINGERLESS GLOVES, not bare hands.
+  Gemini's prior anatomical description is incorrect. Credit/modifications:
+  public/asset-credits.txt. Not approved for default scene.
+- **A4Tech Bloody V7**, Prokyovec, local CC BY 4.0 license.txt with source URL:
+  art/candidates/mouse/computer_mouse_a4tech_bloody_v7/. Not integrated.
+  Opus to simplify, inspect and credit before runtime integration.
+- Keyboard, chair and ceiling-fixture candidate README descriptions do not
+  establish provenance or visual acceptance. Gemini must verify original
+  source and license and count true triangles before runtime use.
+
 Every imported runtime asset must have provenance here before integration.
 No purchased assets or hotlinks. Existing source-project demos are documented
 in their individual apps/*/PORTFOLIO.md manifests, not this art register.

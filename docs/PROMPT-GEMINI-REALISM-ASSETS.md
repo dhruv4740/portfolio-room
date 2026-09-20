@@ -1,5 +1,9 @@
 # Gemini: realistic hand asset research and acquisition
 
+**SUPERSEDED:** follow PROMPT-GEMINI-ASSET-AUDIT-V2.md and Opus's current
+assignments. The earlier report misclassified the acquired fingerless gloves
+as bare hands; see REALISM-ASSET-CHECKPOINT.md for rendered evidence and limits.
+
 Read AGENTS.md, docs/HANDOFF.md and docs/TEAM-COORDINATION.md. Work in this
 shared repository on feat/v3. This is research/acquisition, not scene coding.
 The owner wants convincing bare first-person hands, not swollen procedural

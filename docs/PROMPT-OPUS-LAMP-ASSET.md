@@ -1,5 +1,9 @@
 # Opus: prepare an authored articulated desk lamp
 
+**CLOSED:** delivered and integrated as recorded in REALISM-ASSET-CHECKPOINT.md.
+New authority and task: PROMPT-OPUS-MULTIPASS.md. Restrictions below describe
+the completed preparation task, not the current integration scope.
+
 Read AGENTS.md, docs/HANDOFF.md and docs/TEAM-COORDINATION.md. The speaker task
 is closed. This new task is isolated asset preparation, not live integration.
 

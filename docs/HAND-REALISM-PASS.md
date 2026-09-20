@@ -40,6 +40,15 @@ was confirmed with a focused night cup/award capture. Rest, award, cup and pen
 night frames inspected. Full final daylight capture is running. Existing night
 lighting leaves the raised hands quite dark; do not hide that limitation.
 
+## Current continuation — authored asset audit
+
+See REALISM-ASSET-CHECKPOINT.md. Existing procedural pass remains default.
+New optional `?hands=authored` retarget uses DJMaesen source skin/UVs and
+retains the control rig, but actual rendering reveals fingerless gloves.
+It is NOT an approved bare-skin upgrade. Codex owns this experiment; Gemini
+must find a genuinely bare candidate with visual evidence. Opus can continue
+other asset integration without modifying the hand pipeline.
+
 ## Remaining artistic limits
 
 Implicit geometry still lacks a sculpted anatomical topology and detailed

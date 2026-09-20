@@ -1,5 +1,10 @@
 # After Hours acceptance harness
 
+Current integration baseline and gaps: REALISM-ASSET-CHECKPOINT.md. Historical
+passes do not cover the latest task-lamp shadows, mouse/furniture work or the
+opt-in hand prototype. Opus owns the slot and may delegate a frozen verification
+batch to Gemini per TEAM-COORDINATION.md. Keep source/build identity in reports.
+
 `scripts/verify-after-hours.mjs` is the bounded acceptance pass for the new
 arrival and asset-loading work. It covers the stateful edges that the existing
 room, hand, studio and real-project suites do not own:

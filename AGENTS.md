@@ -6,6 +6,14 @@ invariants, traps. Narrative and rationale live in `docs/`.
 **Start with [docs/HANDOFF.md](docs/HANDOFF.md)** — it records the live state
 and what is genuinely unverified.
 
+**Current execution authority (2026-09-20):** Opus leads the next multi-pass
+integration run and may coordinate Gemini. Read
+[docs/OPUS-GEMINI-CONTINUATION.md](docs/OPUS-GEMINI-CONTINUATION.md) and
+[docs/TEAM-COORDINATION.md](docs/TEAM-COORDINATION.md) for live ownership,
+reserved hand files, Git writer and exclusive GPU slot. Older prompt scopes
+are historical. No internal subagents. Codex's authored-hand prototype is
+opt-in and depicts fingerless gloves; it is not a bare-hand replacement.
+
 **Active parallel work:** read [docs/TEAM-COORDINATION.md](docs/TEAM-COORDINATION.md)
 before editing. The owner now uses Codex for 3D, external Claude Opus for
 application logic, and external Gemini 3.8 Flash for tests/docs. No internal
