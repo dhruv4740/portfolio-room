@@ -55,7 +55,10 @@ def box(key, center, size):
 def building(x,z,width,depth,floors,ground=-8,style=0):
     height=floors*2.9+.5; top=ground+height; front=z+depth*.5
     wall='Winter masonry' if style%2==0 else 'Winter limestone'
-    box(wall,(x,ground+height*.5,z),(width,height,depth))
+    # Leave the front 42cm open. Facade piers and spandrels below surround
+    # actual apertures, so angled views reveal jambs and recessed rooms.
+    recess=.42
+    box(wall,(x,ground+height*.5,z-recess*.5),(width,height,depth-recess))
     box('Winter dark roof',(x,top+.06,z),(width+.18,.14,depth+.18))
     box('Winter snow',(x,top+.14,z),(width+.12,.09,depth+.12))
     # Cornice, parapet and shaded recesses establish thickness at roof line.
@@ -65,14 +68,30 @@ def building(x,z,width,depth,floors,ground=-8,style=0):
         box(wall,(x,top+.30,z+dz),(width,.46,.16))
         box('Winter snow',(x,top+.55,z+dz),(width+.04,.07,.23))
     cols=max(2,int(width/1.65)); spacing=width/(cols+.35)
+    ww=.76 if style%2 else .86
+    centers=[x+(col-(cols-1)*.5)*spacing for col in range(cols)]
+    edges=[x-width*.5]+[v for cx in centers for v in (cx-ww*.5,cx+ww*.5)]+[x+width*.5]
+    for left,right in zip(edges[::2],edges[1::2]):
+        box(wall,((left+right)*.5,ground+height*.5,front-recess*.5),(right-left,height,recess))
+    bottom=ground
+    for row in range(floors):
+        sill=ground+1.5+row*2.9-.64
+        box(wall,(x,(bottom+sill)*.5,front-recess*.5),(width,sill-bottom,recess))
+        bottom=sill+1.28
+    box(wall,(x,(bottom+top)*.5,front-recess*.5),(width,top-bottom,recess))
     for row in range(floors):
         cy=ground+1.5+row*2.9
         for col in range(cols):
             cx=x+(col-(cols-1)*.5)*spacing; ww=.76 if style%2 else .86
-            box('Winter dark roof',(cx,cy,front+.016),(ww+.24,1.55,.038))
             lit=random.random()<.29
             key=random.choice(['Window amber','Window ivory']) if lit else 'Winter glass'
-            box(key,(cx,cy,front+.048),(ww,1.28,.02))
+            # A back wall, floor and ceiling behind each open aperture create
+            # parallax. No transparency sorting or per-window lights required.
+            box(key,(cx,cy,front-.405),(ww,1.28,.02))
+            for yy in [cy-.625,cy+.625]:
+                box('Window shade',(cx,yy,front-.22),(ww,.03,.37))
+            for dx in [-ww*.5+.018,ww*.5-.018]:
+                box('Window shade',(cx+dx,cy,front-.22),(.036,1.28,.37))
             for dx in [-ww*.5-.045,ww*.5+.045]:
                 box('Winter limestone',(cx+dx,cy,front+.082),(.075,1.47,.15))
             box('Winter limestone',(cx,cy-.72,front+.12),(ww+.32,.11,.32))
@@ -80,10 +99,20 @@ def building(x,z,width,depth,floors,ground=-8,style=0):
             box('Winter metal',(cx,cy,front+.095),(.035,1.28,.05))
             box('Winter metal',(cx,cy+.04,front+.095),(ww,.038,.05))
             if lit:
-                # Unequal curtain coverage, not repeated glowing rectangles.
+                # Curtains sit forward of the room, with small separate folds.
                 curtain=ww*random.uniform(.12,.42)
-                box('Window shade',(cx-ww*.5+curtain*.5,cy,front+.069),(curtain,1.28,.014))
-                box('Window shade',(cx,cy+random.uniform(.25,.48),front+.071),(ww,.11,.018))
+                side=random.choice([-1,1])
+                curtain_x=cx+side*(ww*.5-curtain*.5)
+                box('Window shade',(curtain_x,cy,front-.095),(curtain,1.28,.025))
+                for fold in range(3):
+                    box('Winter glass',(curtain_x+(fold-1)*curtain*.27,cy,front-.07),(.018,1.26,.024))
+                drop=random.uniform(.08,.42)
+                box('Window shade',(cx,cy+.64-drop*.5,front-.085),(ww,drop,.025))
+                # A few interiors expose a dark cabinet or horizontal shelf.
+                if random.random()<.45:
+                    box('Winter dark roof',(cx+ww*.17,cy-.42,front-.29),(ww*.32,.42,.16))
+                if random.random()<.28:
+                    box('Window shade',(cx,cy+.15,front-.31),(ww*.8,.035,.12))
         if row and style%2==0:
             box('Winter limestone',(x,ground+row*2.9,front+.035),(width,.095,.12))
     # Vertical drain pipe and brackets.

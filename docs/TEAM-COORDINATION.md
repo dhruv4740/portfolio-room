@@ -26,11 +26,14 @@ between Scan and WorkspaceStage without reporting the proposed interface first.
 
 ## Build/browser coordination
 
-**CURRENT SLOT: CODEX — next 3D integration.** Gemini finished its batch and
-reported `Browser/build slot: RELEASED`. Owner approved proceeding. Codex may
-now edit runtime, build and inspect GPU visuals. Opus has no new assignment.
-Gemini should not rerun the previous prompt; a new bounded verification
-handoff will name the next frozen snapshot after Codex's art review.
+**CURRENT SLOT: RESERVED FOR GEMINI — contact/exterior verification.** Codex
+finished its GPU visual review and froze runtime/assets for the new task in
+PROMPT-GEMINI-CONTACT-VERIFY.md. This reservation does not mean Gemini has
+started; the owner must forward that prompt. No new Opus assignment. Codex may
+work on new offline hand-source files, but must not rebuild or change runtime
+until Gemini reports release (or the owner cancels the assignment).
+The latest contact and exterior entries in AFTER-HOURS-HANDOFF.md supersede
+the old snapshot information below.
 The prior batch procedure below is retained as history, not a current lock.
 
 **One operator: Gemini.** Reuse localhost:4173. No other agent starts browsers,

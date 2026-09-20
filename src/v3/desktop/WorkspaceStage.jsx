@@ -92,7 +92,9 @@ export default function WorkspaceStage({
       // The room stays warm/naturalistic and drops into the --void black at
       // its edges — that contrast against the app's black chrome is intentional.
       scene.background = new THREE.Color('#0a0a0b');
-      scene.fog = new THREE.Fog('#15202b', 24, 105);
+      // Start beyond the room: nearby facades keep contrast while successive
+      // blocks recede into winter haze instead of sharing one flat silhouette.
+      scene.fog = new THREE.Fog('#15202b', 8, 90);
       // Owner's open question: what replaces the black void around the room in
       // the standing view. Prototypes behind ?void=studio | block so each can
       // be judged live; the default stays black until he chooses.

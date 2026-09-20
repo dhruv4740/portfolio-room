@@ -15,6 +15,28 @@ it as achieving the GTA/RDR realism target.
 
 ## Next exact actions
 
+### Latest checkpoint — exterior depth, 2026-09-20
+
+Contact pass committed as 1fb9ddf. City generator now builds facade openings
+around 42cm recesses, inset back walls, jambs, ceilings/floors, curtain folds
+and occasional cabinets/shelves. No transparent window layers or new lights.
+Still nine material objects; 66,996 triangles, GLB 4,699,372 bytes (previously
+45,660 triangles / 3,205,820 bytes). Night fog now starts at 8m, ends at 90m;
+room distances remain clear while successive exterior blocks lose contrast.
+
+Production build and shots-after-hours.mjs passed with zero page/console errors.
+Mid-tier seated and window frames inspected; recesses and depth separation
+read in the close-up. Transient GPU medians were seated 11.25ms and window
+12.86ms at DPR1.25; these are flow samples, not controlled performance acceptance.
+Window return and coffee capture completed. Full regression remains pending.
+The city still has repeated procedural facades; no claim of photorealism.
+
+Next: Gemini can run PROMPT-GEMINI-CONTACT-VERIFY.md on this frozen snapshot,
+including diagnosis (not runtime edits) of the hand-asset fallback warning.
+No Opus task needed. Codex's next substantial art task is hand anatomy and skin
+response; preserve the existing grip/bone contract and keep runtime frozen while
+Gemini owns the browser. Offline source work can proceed in separate new files.
+
 ### Latest checkpoint — contact pass integrated, 2026-09-20
 
 This entry supersedes the staged-module and ownership history below.
