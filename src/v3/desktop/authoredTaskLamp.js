@@ -56,7 +56,9 @@ export function createAuthoredTaskLamp({root, fallback, bulb, pool, desktop, onR
     emission=[...emissiveMaterials];mount.add(asset);
     fallback.visible=false;pool.visible=false;
     mount.updateMatrixWorld(true);
-    bulb.position.copy(mount.localToWorld(new THREE.Vector3(-.14886,.55746,.07183)));
+    // The shade casts shadows, so a source inside the dish clips its own cone
+    // against the rim. Measured rim plane is local y=.4995; sit just below it.
+    bulb.position.copy(mount.localToWorld(new THREE.Vector3(-.14886,.49100,.07183)));
     bulb.target.position.copy(mount.localToWorld(new THREE.Vector3(-.14886,0,.07183)));
     bulb.userData.onIntensity=5.5;
     state.status='ready';onReady?.();
