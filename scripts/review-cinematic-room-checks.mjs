@@ -64,4 +64,29 @@ console.log(await seated.evaluate(async () => {
   return `  emissive materials found: ${before.length}\n  as shot (power=1 called before the GLB landed): ${JSON.stringify(before)}\n  after an explicit setEntryPower(0.2): ${JSON.stringify(at02)}\n  after setEntryPower(1): ${JSON.stringify(at1)}`;
 }));
 
+// 4. Regression for the fix to check 3. The check above cannot tell a working
+//    fixture from a broken one, because it shoots at power 1 and the authored
+//    emissive is already 1 — the two answers are identical. Ask for a power
+//    that differs, before the GLB has landed, and read the value it settles at.
+//    Pre-fix this reports 1 (the request was dropped); post-fix it reports 0.2.
+console.log('\n== entry power requested before the asset lands ==');
+{
+  // Built here rather than through open(), which already pins power=1 —
+  // appending a second power= leaves URLSearchParams.get() returning the first.
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/scripts/review-cinematic-room.html?builder=cinematic&view=seated&sky=night&power=0.2`, { waitUntil: 'load' });
+  await page.waitForFunction(() => window.__review?.ready?.(), null, { timeout: 45000 }).catch(() => {});
+  await page.waitForTimeout(1200);
+  console.log(await page.evaluate(() => {
+    const out = [];
+    window.__model.ceilingFixture.mount.traverse(o => {
+      if (!o.isMesh) return;
+      for (const m of (Array.isArray(o.material) ? o.material : [o.material])) {
+        if (m?.emissiveMap) out.push(+m.emissiveIntensity.toFixed(4));
+      }
+    });
+    return `  requested 0.2 at build, settled at: ${JSON.stringify(out)}  (expected [0.2])`;
+  }));
+}
+
 await browser.close();

@@ -9,7 +9,14 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 // The arrival power stutter drives emissive intensity here exactly as it drove
 // the procedural bulb's: no extra dynamic light is introduced.
 export function createAuthoredCeilingFixture({root, fallback, position, onReady}) {
-  let disposed=false, asset=null, emission=[], baseEmissive=1;
+  // The arrival ramp calls update() from the moment the room is built, which is
+  // before the GLB resolves and populates `emission`. Those calls used to be
+  // silently dropped, so a fixture asked for 0.2 rendered at its full authored
+  // emissive until the next call. Remember the last requested power and apply
+  // it once the materials exist. Safe against double-scaling: `baseEmissive` is
+  // captured from the freshly loaded material, and update() cannot have touched
+  // it while `emission` was still empty.
+  let disposed=false, asset=null, emission=[], baseEmissive=1, power=1;
   const mount=new THREE.Group();mount.name='Authored ceiling fixture';
   mount.position.set(...position);root.add(mount);
   const state={status:'loading'};
@@ -34,11 +41,12 @@ export function createAuthoredCeilingFixture({root, fallback, position, onReady}
     });
     emission=[...emissiveMaterials];
     baseEmissive=emission[0]?.emissiveIntensity??1;
+    for(const material of emission)material.emissiveIntensity=baseEmissive*power;
     mount.add(asset);fallback.visible=false;
     state.status='ready';onReady?.();
   }).catch(error=>{if(!disposed){state.status='fallback';console.warn('Ceiling fixture fallback:',error.message);onReady?.();}});
   return {ready,state,mount,
-    update(power){for(const material of emission)material.emissiveIntensity=baseEmissive*power;},
+    update(value){power=value;for(const material of emission)material.emissiveIntensity=baseEmissive*power;},
     dispose(){disposed=true;if(asset)release(asset);mount.removeFromParent();},
   };
 }
