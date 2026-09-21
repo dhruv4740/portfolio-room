@@ -41,6 +41,19 @@ Gemini was assigned PROMPT-GEMINI-LICENCE-AND-DIMENSIONS.md (licence provenance
 for keyboard and chair plus CC0 replacements, and sourced prop dimensions); as
 of this checkpoint it has not reported.
 
+2026-09-21 later: the authored hand surface was the default for every visitor
+despite four documents calling it opt-in; restored (`0e79071`). The owner then
+reported the hands still fused, and that is correct: the *procedural* surface
+regressed at `6a13047`, which raised the smooth-union blend radius. Proven by
+swapping `dd85216`'s baked hands-v1.bin back in - 37,780 triangles with
+separated fingers against 75,860 today with merged ones. The shipped hands are
+baked, so the fix needs a rebake, not a source edit. The body shift was traced
+to `11a2bce` and measured: no anchor is within the 0.575 m reach, and the
+window lifts the torso +0.486 m. Adoption would NOT fix it. Keyboard and chair
+licences resolved (both CC BY 4.0, confirmed against the Sketchfab API) and the
+keyboard credited, which it had lacked since `a50730a`. Full evidence:
+reviews/OPUS-HANDS-AND-REACH.md. Next-session handoff: HANDOFF-NEXT-SESSION.md.
+
 Important limits: **mixed scene scale is still the main blocker in the live
 room** — the audit is in ROOM-SCALE-PROPOSAL.md and the candidate above is the
 proposed answer; the uniform correction needs Codex because seated hand poses

@@ -129,6 +129,89 @@ rotation rather than a torso translation. Even with a perfect room, a target
 above shoulder height will keep lifting the whole body while that translation
 is unconstrained. Both are Codex's files; neither was changed here.
 
+## 4. Regression archaeology — the fusion predates the assets, and there IS a good state
+
+Added 2026-09-21 after the owner reported the hands **still** looked fused
+after the default was restored. They were right, and it changes the diagnosis:
+the fusion is in the procedural surface, not the authored asset.
+
+### The shipped procedural hands are baked, not generated at runtime
+
+`handSurface.js:46` returns early when `prebuilt` loads. The implicit-union
+code below it only runs when the `.bin` fails to fetch. So the surface every
+visitor sees comes from `public/models/hands-v1.bin`, baked offline by
+`scripts/build-hand-assets.mjs`. **Editing the blend constants in
+`handSurface.js` changes nothing at runtime** — the asset has to be rebuilt.
+(I set up exactly that wrong experiment first; it would have rendered
+identically and looked like a disproof.)
+
+### Baked hand geometry across history
+
+| Commit | Subject | `hands-v1.bin` |
+|---|---|---|
+| fce4507 | flatten hand proportions | 1,325,368 |
+| dd85216 | refine dorsal hand form | 1,326,664 |
+| **6a13047** | **rebuild wrist blending** | **2,939,632** |
+| 11a2bce | align hand support | 2,948,832 |
+
+`6a13047` is where the surface changed. Its source diff raises the smooth-union
+blend radius from a uniform 3 mm:
+
+```js
+const b = distance(part,x,y,z), k = .003;                                  // before
+const b = distance(part,x,y,z), k = part.depthAxis?.012:part.pad?.006:.003; // after
+```
+
+`depthAxis` is the forearm (`handSurface.js:92`), `pad` the thenar pad
+(`:79`). A larger smin radius blends neighbouring parts together — which is
+what "melted and merged" is.
+
+### Measured, by swapping the baked asset
+
+`dd85216`'s `hands-v1.bin` was checked out over the current one, rendered, and
+then restored with `git checkout --`. Nothing else was touched; the source is
+untouched and the working tree is clean.
+
+| | triangles in the hand rig | fingers |
+|---|---|---|
+| `dd85216` bake | **37,780** | visibly separated, knuckles read |
+| current bake | **75,860** | digits merge into a smooth mass |
+
+Crops: `scripts/shots/hands/crop-old-bake.png` vs `crop-current-bake.png`,
+same camera, same lighting, same crop rectangle.
+
+**The current bake has twice the triangles and worse finger definition.** More
+geometry was spent describing a smoother shape. The earlier surface is the
+better one, and it exists at `dd85216`.
+
+### For Codex — the decision, not the fix
+
+The fix is not a revert of `6a13047`: that commit also carries the dorsal arch,
+palmar folds and the `handAppearance.js` work, which are improvements. What
+wants re-examining is one constant. Suggested order:
+
+1. Re-run `scripts/build-hand-assets.mjs` with `k` back to a uniform `.003`,
+   keeping everything else in `6a13047`. Compare against the two crops above.
+2. If the wrist oval still needs its wider blend, scope the 12 mm to the
+   forearm only and leave `pad` at 3 mm, rather than raising both.
+3. Whatever lands, the `.bin`/`.bin.gz` pair must be regenerated together —
+   the loader prefers the `.gz`.
+
+`build-hand-assets.mjs` and `handSurface.js` are both reserved. Nothing in this
+section was applied.
+
+### Not verified: "the lighting was better before the assets"
+
+The owner also recalls the lighting reading better before asset integration. I
+have **not** tested that and will not assert it either way. The commits that
+would bracket it: `aad580e` introduced the winter studio lighting and cinematic
+arrival; the asset integrations follow at `1aa34c1` (task lamp), `df304fe`
+(lamp source below the shade rim), `539311f` (mouse), `44efcdf` (pendant),
+`a50730a` (keyboard). The lamp commits are the ones that changed actual light
+sources. A bisect over those five, shooting the same seated frame, would settle
+it — the harness to do it is `scripts/review-hands-crop.mjs` with a different
+clip, or `scripts/shots-hands.mjs` against a worktree.
+
 ## What was changed
 
 | File | Change |

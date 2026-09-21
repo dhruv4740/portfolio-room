@@ -16,7 +16,7 @@ import { chromium } from 'playwright';
 import { mkdir } from 'node:fs/promises';
 
 const BASE = process.env.BASE || 'http://localhost:4173';
-const OUT = 'scripts/shots/hands';
+const OUT = process.env.OUT || 'scripts/shots/hands';
 await mkdir(OUT, { recursive: true });
 
 const MODES = [
