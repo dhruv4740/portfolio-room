@@ -25,6 +25,17 @@ of the footprint, scaled to 72.7 x 124 x 38 mm (including an 0.85 narrowing in
 X), texture coordinates dropped and parts batched by material. Original source
 and changes recorded in repository.
 
+Gaming keyboard — ZxTulz (zxtulz)
+https://sketchfab.com/3d-models/gaming-keyboard-c1e5e07153d84978a1ad7256d720220a
+https://sketchfab.com/zxtulz
+Creative Commons Attribution 4.0 International:
+https://creativecommons.org/licenses/by/4.0/
+Changes: split into a chassis and one canonical keycap so the 92 caps can be
+instanced, keycap decimated to roughly a quarter of its triangles, uniformly
+scaled to a 0.48 m case width, asset UVs on the cap replaced with a top-down
+projection for the runtime legend atlas, and textures resized to 1K. Original
+source and changes recorded in repository.
+
 FREE GameReady [FPS Female Arms] — BAMEN (bamenwo05)
 https://sketchfab.com/3d-models/free-gameready-fps-female-arms-007f5dd998ad4376943ed6fb3dfa2e15
 https://sketchfab.com/bamenwo05
