@@ -484,6 +484,85 @@ Screenshots are not committed: `scripts/shots/` is gitignored by design
 (".gitignore: Playwright verification screenshots (throwaway)"). Re-run the
 shots script to regenerate them.
 
+## 2026-09-21 pass — three owed items closed, one defect found by rendering
+
+Opus held the build/browser/GPU slot (claimed in TEAM-COORDINATION before use).
+Everything below was rendered on real ANGLE D3D11, not asserted.
+
+**1. Ceiling fixture entry power — fixed, live file.** `update()` iterated a
+material list that is empty until the GLB lands, so every call before that was
+dropped. It now remembers the last requested power and applies it once the
+materials exist. Safe against double-scaling: `baseEmissive` is captured from
+the freshly loaded material and `update()` cannot have touched it while the
+list was empty.
+
+Verified by a new check in `review-cinematic-room-checks.mjs`. The existing
+check could not tell a working fixture from a broken one — it shoots at power 1
+and the authored emissive is already 1, so both answers are `[1]`. Asking for
+0.2 before the asset lands reports `[0.2]` with the fix and `[1]` without.
+(My first attempt at that check appended a second `power=` to a URL that
+already had one and read back the first; the harness now builds its own URL.)
+
+**2. `setSky` key-light positions — done.** `SKY_CONFIGS.key.position` is still
+ignored, correctly: those are live-room coordinates. `cinematicLayout.KEY_LIGHTS`
+supplies one per state, and they are not authored directly — each state names
+the point in the opening the light comes through, and the position is placed by
+extending the target→entry ray outward, so a key whose ray misses the window
+is not expressible. Read back out of the rendered scene:
+
+| State | Position | Elevation | Colour |
+|---|---|---|---|
+| night | 3.45, 3.26, −1.78 | 28.0° | `#8eadd8` |
+| dusk | 4.65, 2.25, −2.00 | 12.6° | `#e48652` |
+| day | 4.03, 4.09, −2.11 | 32.3° | `#fff4e0` |
+
+Both the closed and open keys move together, so the two-pose shadow pair stays
+consistent. Frames: `cinematic-seated-{night,dusk,day}.png`, shot by the new
+`scripts/review-cinematic-room-sky.mjs`.
+
+**3. Speaker drivers — built.** `cinematicSpeakerDetails.js` re-expresses the
+live lathe profiles as (radius, depth proud of the front face) and scales both
+by cabinet width, so an 84 mm flange sits on a 110 mm cabinet instead of the
+live 137 mm one. That is a 3″ woofer with a ~19 mm dome — what a nearfield this
+size actually carries. Cabinets now come from the same `SPEAKER` export the
+drivers derive from, so the two cannot drift apart. Visible and correctly
+proportioned in the seated frames.
+
+### The defect the harness could not catch
+
+The middle-distance block **passed every numeric check and still rendered
+wrong**. It was 1.8 × 5.0 m at 6.5 m with 135 mm windows: inside the sightline
+cone, covering 53% of its width — and reading as a wardrobe pressed against the
+glass, because its windows were the only thing the eye could scale it by.
+
+"Inside the cone" says nothing about whether a thing reads as a building. The
+checks now also require the block to be building-sized and its windows to be
+domestic-sized, and `block()` places windows on a real metre pitch instead of a
+fraction of the facade — a facade whose windows are a fixed percentage of it
+can never be the wrong size, which is exactly how this passed.
+
+The first correction was worse than the bug: a correctly sized 14 m building at
+the old 6.5 m depth left the opening showing a 3 m sliver of facade and an
+almost empty window. Depth has to follow from the angle. The old pillar
+subtended ~0.25 rad across and ~0.68 rad up, which was a good composition; a
+real tower filling those angles sits at ~57 m, so the block is now 16 × 40 m at
+57 m, and the far backdrop moved behind it to −90 m and was resized so its drawn
+skyline lands inside the cone rather than below it. With the blinds open the
+frame now reads at three depths: sill, tower, far skyline.
+
+Both intermediate states were rendered. Neither would have been caught by the
+geometry harness, which passed throughout.
+
+**Live regression:** the same run re-shot `live-seated-night` and
+`live-overview-night` with all four authored assets `ready` and no errors, so
+the ceiling-fixture edit did not disturb the live room.
+
+**Counts, this pass:** cinematic seated 88 draw calls / 92,421 triangles;
+overview 104 / 103,385. Live seated 74 / 89,227. Frame time still unmeasured.
+
+The one 404 on first navigation of a fresh browser session reappeared in this
+run too, again only once and with every asset `ready`. Still not chased.
+
 ## Not claimed (render pass)
 
 Still a composition study of one room at one time of day, with the hands hidden.

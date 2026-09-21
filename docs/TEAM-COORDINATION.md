@@ -1,5 +1,24 @@
 # Active team contract — Opus leads the next multi-pass run
 
+## Current split, 2026-09-21 — Opus code / Gemini research
+
+Owner asked for the work to be divided and started. **This pass is polish on an
+unadopted candidate plus one live bug fix. It does not move the adoption
+decision**, which still needs Codex: switching the live import and reworking
+world-space hand kinematics is one edit.
+
+| Owner | This pass |
+|---|---|
+| Opus | `authoredCeilingFixture.js` entry-power bug (live); `setSky` per-state key-light positions in the cinematic candidate; cinematic speaker drivers (last, may be deferred) |
+| Gemini | `docs/PROMPT-GEMINI-LICENCE-AND-DIMENSIONS.md` → two review docs: licence provenance for the keyboard and chair plus three CC0 keyboard candidates, and sourced real-world prop dimension ranges. Offline, no slot, no code. |
+| Codex | Unchanged: reserved hand files, and the adoption decision |
+
+**Build / browser / GPU slot: CLAIMED BY OPUS, 2026-09-21** (fourth hold). It
+was released after the render pass; claiming it here before use, not after.
+
+Gemini's prompt is written but **Gemini is not launched from here** — there is
+no cross-app messaging. The owner forwards it. No internal agents.
+
 ## Latest override: Codex hands / Opus environment, in parallel
 
 Owner authorized the corrective pass. Codex owns current hand,

@@ -27,6 +27,20 @@ fixed. **Not adopted**: no live import is switched, because adoption and the
 hand kinematics are one edit and that edit is Codex's. Full record and the
 old-to-new mapping table: reviews/OPUS-ROOM-COMPOSITION.md.
 
+2026-09-21: Opus closed three owed items on the candidate and fixed one live
+bug. The ceiling fixture's `setEntryPower` calls before the GLB landed were
+being dropped (live file, now remembered and applied on load, with a regression
+check that can actually distinguish the two states). `setSky` now has a key
+light per sky state whose ray is constructed to pass through the aperture.
+Speaker drivers exist for the cinematic cabinets. Rendering then exposed a
+defect no numeric check caught: the middle-distance block passed the sightline
+cone and still read as a wardrobe at the glass — it is now a 16 x 40 m tower at
+57 m, with the backdrop moved behind it. **Still not adopted**; this was polish
+on the candidate, not progress toward adoption. See reviews/OPUS-ROOM-COMPOSITION.md.
+Gemini was assigned PROMPT-GEMINI-LICENCE-AND-DIMENSIONS.md (licence provenance
+for keyboard and chair plus CC0 replacements, and sourced prop dimensions); as
+of this checkpoint it has not reported.
+
 Important limits: **mixed scene scale is still the main blocker in the live
 room** — the audit is in ROOM-SCALE-PROPOSAL.md and the candidate above is the
 proposed answer; the uniform correction needs Codex because seated hand poses
