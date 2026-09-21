@@ -11,9 +11,10 @@
 
 import {
   ROOM, DESK, DESK_BOUNDS, MAT, KEYBOARD, KEYBOARD_SOURCE, CINEMATIC_KEYCAPS,
-  SCREEN, MONITOR, CAMERA, BODY, WINDOW, BLINDS, EXTERIOR, ANCHORS,
+  SCREEN, MONITOR, CAMERA, BODY, WINDOW, BLINDS, EXTERIOR, ANCHORS, KEY_LIGHTS, KEY_TARGET, SPEAKER,
   sightlineAt, windowVisibilityBand, horizontalHalfAngle,
 } from '../src/v3/desktop/cinematicLayout.js';
+import { FLANGE_RADIUS, TWEETER_RADIUS } from '../src/v3/desktop/cinematicSpeakerDetails.js';
 
 let failures = 0;
 const m = (v) => (typeof v === 'number' ? v.toFixed(4) : v);
@@ -132,6 +133,16 @@ for (const [name, block] of Object.entries({
     check('middle-distance block is inside the cone', overlaps);
     const covered = (Math.min(bx[1], cone.maxX) - Math.max(bx[0], cone.minX)) / (cone.maxX - cone.minX);
     check('it does not fill the opening', covered < 0.75, `covers ${(covered * 100).toFixed(0)}% of the cone width`);
+    // "Inside the cone" was true of the old 1.8 x 5.0 pillar too, and it still
+    // rendered as a wardrobe pressed against the glass. Size is the check that
+    // was missing.
+    check('it is the size of a building', block.size[0] >= 8 && block.size[1] >= 12,
+      `${block.size[0]} x ${block.size[1]} m at ${Math.abs(block.center[2])} m`);
+    const w = block.window;
+    check('its windows are domestic size', w.width >= 0.8 && w.width <= 2.0 && w.height >= 1.0 && w.height <= 2.4,
+      `${w.width} x ${w.height} m on a ${w.pitchX} x ${w.pitchY} m pitch`);
+    check('the far skyline shows beside it', bx[1] > cone.maxX || bx[0] > cone.minX,
+      'one edge of the block falls inside the opening');
   }
 }
 const farCone = sightlineAt(EXTERIOR.farCity.center[2]);
@@ -142,6 +153,50 @@ check('far skyline plane covers the cone at its depth',
   EXTERIOR.farCity.center[0] + EXTERIOR.farCity.size[0] / 2 > farCone.maxX &&
   EXTERIOR.farCity.center[1] - EXTERIOR.farCity.size[1] / 2 < farCone.minY &&
   EXTERIOR.farCity.center[1] + EXTERIOR.farCity.size[1] / 2 > farCone.maxY);
+
+console.log('\n== speaker drivers, re-derived not rescaled ==');
+line('cabinet', `${SPEAKER.size[0]} x ${SPEAKER.size[1]} x ${SPEAKER.size[2]}`, `live was .18 x .28 x .16`);
+line('radial scale', SPEAKER.scale, `${SPEAKER.size[0]} / ${SPEAKER.sourceWidth}`);
+line('woofer flange diameter', FLANGE_RADIUS * 2, 'live 0.137 (a 5.25in driver)');
+line('tweeter waveguide diameter', TWEETER_RADIUS * 2, '~19 mm dome');
+line('woofer centre Y', SPEAKER.wooferY);
+line('tweeter centre Y', SPEAKER.tweeterY);
+line('cabinet front face Z', SPEAKER.frontZ);
+const halfW = SPEAKER.size[0] / 2, cabTop = SPEAKER.centerY + SPEAKER.size[1] / 2, cabBottom = SPEAKER.centerY - SPEAKER.size[1] / 2;
+check('woofer fits the cabinet face',
+  FLANGE_RADIUS < halfW && SPEAKER.wooferY - FLANGE_RADIUS > cabBottom && SPEAKER.wooferY + FLANGE_RADIUS < cabTop,
+  `flange r ${m(FLANGE_RADIUS)} vs half-width ${m(halfW)}`);
+check('tweeter fits above the woofer',
+  SPEAKER.tweeterY - TWEETER_RADIUS > SPEAKER.wooferY + FLANGE_RADIUS &&
+  SPEAKER.tweeterY + TWEETER_RADIUS < cabTop,
+  `gap ${m(SPEAKER.tweeterY - TWEETER_RADIUS - (SPEAKER.wooferY + FLANGE_RADIUS))} m`);
+check('cabinets stand on the desk', near(cabBottom, DESK.topY, 1e-9));
+check('cabinets are behind the mat', SPEAKER.z + SPEAKER.size[2] / 2 < MAT.center[1] - MAT.size[1] / 2);
+
+console.log('\n== key light, one per sky state ==');
+// Each key is placed by extending target -> entry outward, so the ray through
+// the aperture is true by construction. What still needs checking is that the
+// entry point is actually inside the opening, that the light ends up outside
+// the room, and that it is above the horizon.
+for (const [state, key] of Object.entries(KEY_LIGHTS)) {
+  const [ex, ey, ez] = key.entry;
+  const [px, py, pz] = key.position;
+  console.log(`  ${state}`);
+  line('  entry point', `${m(ex)}, ${m(ey)}`, `opening x ${WINDOW.opening.minX}..${WINDOW.opening.maxX}, y ${WINDOW.opening.minY}..${WINDOW.opening.maxY}`);
+  line('  position', `${m(px)}, ${m(py)}, ${m(pz)}`);
+  const elevation = (Math.atan2(py - KEY_TARGET[1], Math.hypot(px - KEY_TARGET[0], pz - KEY_TARGET[2])) * 180) / Math.PI;
+  line('  elevation over target', elevation, 'degrees');
+  check(`${state} key enters through the opening`,
+    ex > WINDOW.opening.minX && ex < WINDOW.opening.maxX &&
+    ey > WINDOW.opening.minY && ey < WINDOW.opening.maxY);
+  check(`${state} key sits outside the window wall`, pz < WINDOW.wallZ);
+  check(`${state} key is above the horizon`, elevation > 5, `${elevation.toFixed(1)}°`);
+  // Straight-line check: the entry point must lie on the target->position ray.
+  const t = (ez - KEY_TARGET[2]) / (pz - KEY_TARGET[2]);
+  check(`${state} ray passes through its entry point`,
+    near(KEY_TARGET[0] + (px - KEY_TARGET[0]) * t, ex, 1e-9) &&
+    near(KEY_TARGET[1] + (py - KEY_TARGET[1]) * t, ey, 1e-9));
+}
 
 console.log('\n== framing proportion ==');
 line('jamb / rail section', WINDOW.jambSection, 'live room used .065');

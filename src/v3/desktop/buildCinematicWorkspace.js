@@ -4,6 +4,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { buildCinematicRoomInteractions } from './cinematicRoomInteractions.js';
 import { buildSeatedFigure } from './buildSeatedFigure.js';
 import { seatedHands } from './seatedHands.js';
+import { createCinematicSpeakerDetails } from './cinematicSpeakerDetails.js';
 import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
 import { createAuthoredMouse } from './authoredMouse.js';
 import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
@@ -13,7 +14,7 @@ import { achievements } from '../content/index.js';
 import {
   WORKSPACE, ROOM, DESK, DESK_BOUNDS, MAT, KEYBOARD, KEYBOARD_CHASSIS, CINEMATIC_KEYCAPS,
   SCREEN, MONITOR, CAMERA, BODY, WINDOW, BLINDS, EXTERIOR, ANCHORS, MOUSE_ANCHOR,
-  CEILING_FIXTURE_SCALE,
+  CEILING_FIXTURE_SCALE, KEY_LIGHTS, KEY_TARGET, SPEAKER,
 } from './cinematicLayout.js';
 
 // Cinematic room — a replacement environment built at true metre scale.
@@ -259,23 +260,34 @@ export function buildCinematicWorkspace(scene, options = {}) {
 
   const facade = new THREE.MeshStandardMaterial({ color: '#232c35', roughness: 1 });
   const litWindows = new THREE.MeshBasicMaterial({ color: '#c9ab7c', toneMapped: false });
-  function block(center, size, cols, rows) {
+  // Windows are placed on a real metre pitch across the facade, so the window
+  // size is what sets the building's apparent scale — not a fraction of
+  // whatever the block happens to be. A facade whose windows are a fixed
+  // percentage of it can never read as the wrong size, which is exactly how
+  // the old 1.8 m block passed every numeric check and still looked wrong.
+  function block(center, size, win, lit = 0.45) {
     const b = new THREE.Mesh(new THREE.BoxGeometry(...size), facade);
     b.position.set(...center); city.add(b);
     let seed = 1201;
     const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+    const cols = Math.max(1, Math.floor((size[0] - win.pitchX * 0.5) / win.pitchX));
+    const rows = Math.max(1, Math.floor((size[1] - win.pitchY * 0.5) / win.pitchY));
+    const spanX = cols * win.pitchX, spanY = rows * win.pitchY;
     for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-      if (random() > 0.55) continue;
-      const win = new THREE.Mesh(new THREE.PlaneGeometry(size[0] * 0.075, size[1] * 0.028), litWindows);
-      win.position.set(
-        center[0] - size[0] * 0.38 + (col + 0.5) * (size[0] * 0.76) / cols,
-        center[1] - size[1] * 0.42 + (row + 0.5) * (size[1] * 0.84) / rows,
-        center[2] + size[2] / 2 + 0.005);
-      city.add(win);
+      if (random() > lit) continue;
+      const pane = new THREE.Mesh(new THREE.PlaneGeometry(win.width, win.height), litWindows);
+      pane.position.set(
+        center[0] - spanX / 2 + (col + 0.5) * win.pitchX,
+        center[1] - spanY / 2 + (row + 0.5) * win.pitchY,
+        center[2] + size[2] / 2 + 0.01);
+      city.add(pane);
     }
   }
-  block(EXTERIOR.midBlock.center, EXTERIOR.midBlock.size, 6, 22);
-  block(EXTERIOR.nearParapet.center, EXTERIOR.nearParapet.size, 5, 4);
+  block(EXTERIOR.midBlock.center, EXTERIOR.midBlock.size, EXTERIOR.midBlock.window);
+  // The parapet is a low roof structure, not a tower: a couple of service
+  // windows at domestic size, deliberately sparse.
+  block(EXTERIOR.nearParapet.center, EXTERIOR.nearParapet.size,
+    { width: 0.34, height: 0.42, pitchX: 0.62, pitchY: 0.60 }, 0.35);
   for (const material of [facade, litWindows]) {
     const parts = city.children.filter(o => o.material === material);
     const gs = parts.map(o => { o.updateMatrix(); const g = o.geometry.clone().applyMatrix4(o.matrix); o.removeFromParent(); o.geometry.dispose(); return g; });
@@ -401,12 +413,15 @@ export function buildCinematicWorkspace(scene, options = {}) {
   }
 
   // --- speakers, tower, chair ------------------------------------------------
-  for (const anchor of ANCHORS.speakers) box('Nearfield speaker', [0.11, 0.175, 0.10], [anchor[0], DESK.topY + 0.0875, anchor[2]], dark, 0.012);
-  // createSpeakerDetails() is deliberately not called. Its driver fronts are
+  // Cabinets come from SPEAKER, the same export the driver fronts are derived
+  // from, so the two cannot drift apart.
+  for (const x of SPEAKER.x) box('Nearfield speaker', SPEAKER.size, [x, SPEAKER.centerY, SPEAKER.z], dark, 0.012);
+  // The live createSpeakerDetails() is not called: its driver fronts are
   // authored in absolute world coordinates for the live room's .18 x .28 x .16
-  // cabinets at (±.955, 1.305, -.45); at true scale the cabinets are
-  // .11 x .175 x .10 at (±.80, .828, -.30), so the geometry neither lands nor
-  // fits. A cinematic driver set is owed — see the report.
+  // cabinets, so at true scale they neither land nor fit. The cinematic set
+  // re-expresses the same profiles against SPEAKER.
+  const speakerDetails = createCinematicSpeakerDetails();
+  root.add(speakerDetails.root);
   box('Workstation tower', [0.20, 0.40, 0.40], [0.66, 0.20, -0.30], dark, 0.015);
   for (let i = 0; i < 12; i++) box('Tower vent', [0.14, 0.006, 0.006], [0.66, 0.11 + i * 0.017, -0.10], black);
 
@@ -426,11 +441,14 @@ export function buildCinematicWorkspace(scene, options = {}) {
   const hemiLight = new THREE.HemisphereLight('#8294b2', '#21160e', 0.42);
   scene.add(hemiLight);
   const moon = new THREE.DirectionalLight('#8eadd8', 1.15);
-  moon.position.set(2.40, 3.05, -4.20); moon.castShadow = true;
+  moon.position.set(...KEY_LIGHTS.night.position); moon.castShadow = true;
   moon.shadow.mapSize.set(1024, 1024);
-  Object.assign(moon.shadow.camera, { left: -2.2, right: 2.2, top: 2.4, bottom: -1.2, near: 0.3, far: 9 });
+  // Bounds hold the room for all three key directions, not just night: the
+  // dusk key is the shallowest and needs the widest box. Sized from the room
+  // diagonal rather than tuned to one direction.
+  Object.assign(moon.shadow.camera, { left: -3.0, right: 3.0, top: 3.0, bottom: -1.6, near: 0.3, far: 12 });
   moon.shadow.bias = -0.00018;
-  moon.target.position.set(-0.45, 1.05, -0.35); scene.add(moon, moon.target);
+  moon.target.position.set(...KEY_TARGET); scene.add(moon, moon.target);
   const moonOpen = moon.clone(); moonOpen.intensity = 0; moonOpen.position.copy(moon.position); moonOpen.target = moon.target;
   moonOpen.shadow = moon.shadow.clone(); moonOpen.shadow.camera.userData.blindsOpen = true; scene.add(moonOpen);
   const windowLight = new THREE.PointLight('#9ab8d6', 0, 2.2, 2);
@@ -626,6 +644,12 @@ export function buildCinematicWorkspace(scene, options = {}) {
       hemiLight.groundColor.set(cfg.hemi.ground);
       hemiLight.intensity = cfg.hemi.intensity;
       moon.color.set(cfg.key.color); moonOpen.color.set(cfg.key.color);
+      // cfg.key.position is deliberately NOT used: those are live-room
+      // coordinates. KEY_LIGHTS supplies a position per state whose ray passes
+      // through the aperture. Both keys share one target, so moving them keeps
+      // the open/closed shadow pair consistent.
+      const key = KEY_LIGHTS[skyState];
+      if (key) { moon.position.set(...key.position); moonOpen.position.set(...key.position); }
       keyConfig.closed = cfg.key.closed; keyConfig.open = cfg.key.open; keyConfig.windowLight = cfg.windowLight;
       farPlane.material.map = cityTextures[skyState];
       farPlane.material.needsUpdate = true;
@@ -633,6 +657,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
       options.onShadowNeedsUpdate?.();
     },
     dispose() {
+      speakerDetails.dispose();
       taskLamp.dispose(); mouse.dispose(); ceilingFixture.dispose(); keyboard.dispose();
       contactGeometry?.dispose();
       const geometries = new Set(), mats = new Set(), textures = new Set(), skeletons = new Set();

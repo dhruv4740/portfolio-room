@@ -199,10 +199,97 @@ export const BLINDS = {
 // is large enough to fill the rest of the cone at its depth.
 export const EXTERIOR = {
   nearParapet: { center: [1.40, 0.10, -2.60], size: [2.40, 1.04, 0.70] },   // top y = 0.62
-  midBlock: { center: [3.30, 1.50, -6.50], size: [1.80, 5.00, 1.40] },
-  farCity: { center: [7.00, 3.00, -11.0], size: [11.0, 10.0] },
-  haze: { center: [6.00, 3.00, -9.0], size: [14.0, 12.0] },
+  // The middle-distance block was 1.8 x 5.0 at z = -6.5 with 135 mm windows.
+  // It passed the cone test — it was inside the sightline and covered 53% of
+  // its width — and still rendered wrong, because "inside the cone" says
+  // nothing about whether the thing reads as a building. At that size it was a
+  // 1.8 m pillar close to the glass, and its windows were the only thing the
+  // eye could scale it by.
+  //
+  // Now an actual building: 14 m wide, 20 m tall, 14 m away, positioned so its
+  // near corner falls inside the cone and the far skyline shows beside it.
+  // Windows are authored in metres, not as a fraction of the facade.
+  midBlock: {
+    // Depth follows from the angle, not the other way round. The old pillar
+    // subtended about 0.25 rad across and 0.68 rad up, which was a good window
+    // composition — it only failed because a 1.8 m object cannot carry it. A
+    // real tower filling the same angles sits at ~57 m: 16 m wide, 40 m tall.
+    // Putting a correctly sized building at the old 6.5 m depth instead leaves
+    // the opening showing a 3 m sliver of facade, which is worse than the bug.
+    center: [35.5, 14.0, -57.0], size: [16.0, 40.0, 12.0],
+    window: { width: 1.10, height: 1.50, pitchX: 2.40, pitchY: 3.20 },
+  },
+  // Far backdrop, behind the tower. Sized so its drawn skyline — which sits in
+  // the lower two thirds of the texture — lands inside the cone rather than
+  // below it; an oversized plane pushes the horizon out of shot entirely.
+  farCity: { center: [53.0, 16.0, -90.0], size: [52.0, 64.0] },
 };
+
+// --- speakers ----------------------------------------------------------------
+// The live driver set (speakerDetails.js) is authored in absolute world
+// coordinates for .18 x .28 x .16 cabinets at (±.955, 1.305, -.45), so it
+// cannot be reused here by moving a group. These are the cinematic cabinets;
+// cinematicSpeakerDetails.js re-derives the lathe profiles against them.
+//
+// Driver sizes follow the cabinet rather than being authored separately: the
+// live flange is 137 mm across on a 180 mm cabinet (a 5.25" woofer), and the
+// same proportion on a 110 mm cabinet gives an 84 mm flange — a 3" woofer with
+// a ~19 mm dome tweeter, which is what a nearfield this size actually carries.
+export const SPEAKER = {
+  size: [0.11, 0.175, 0.10],
+  x: [-0.80, 0.80],
+  z: -0.30,
+  // Source cabinet the live profiles were authored against, used as the divisor
+  // for the radial scale. Not a value to tune — it describes the old asset.
+  sourceWidth: 0.18,
+  sourceFrontZ: -0.37,
+  sourceCenterY: 1.305,
+  sourceHeight: 0.28,
+  sourceWooferY: 1.265,
+  sourceTweeterY: 1.385,
+};
+SPEAKER.centerY = DESK.topY + SPEAKER.size[1] / 2;
+SPEAKER.frontZ = SPEAKER.z + SPEAKER.size[2] / 2;
+SPEAKER.scale = SPEAKER.size[0] / SPEAKER.sourceWidth;
+// Driver heights keep their fraction of the cabinet height.
+SPEAKER.wooferY = SPEAKER.centerY +
+  ((SPEAKER.sourceWooferY - SPEAKER.sourceCenterY) / SPEAKER.sourceHeight) * SPEAKER.size[1];
+SPEAKER.tweeterY = SPEAKER.centerY +
+  ((SPEAKER.sourceTweeterY - SPEAKER.sourceCenterY) / SPEAKER.sourceHeight) * SPEAKER.size[1];
+
+// --- key light ---------------------------------------------------------------
+// The live SKY_CONFIGS carries a key position per sky state, but those are
+// live-room coordinates and would throw the light outside this room, so the
+// cinematic builder ignores them and uses these instead.
+//
+// A directional key is only believable if its ray actually passes through the
+// aperture — otherwise the blind slats cast a shadow from light that entered
+// through a wall. So the position is not authored directly: each state names a
+// point in the opening the light comes through, and the position is placed by
+// extending the target->entry ray outward. Passing through the aperture is then
+// true by construction, and the harness re-checks the entry point is inside the
+// opening.
+export const KEY_TARGET = [-0.45, 1.05, -0.35];
+
+/** Position a directional key so target -> entry -> position is one straight line. */
+export function keyPositionThrough(entry, reach) {
+  return [
+    entry[0] + (entry[0] - KEY_TARGET[0]) * reach,
+    entry[1] + (entry[1] - KEY_TARGET[1]) * reach,
+    entry[2] + (entry[2] - KEY_TARGET[2]) * reach,
+  ];
+}
+
+// entry: where the ray crosses the window wall. reach: how far outside to sit.
+export const KEY_LIGHTS = {
+  // High cool moon, entering through the upper half of the opening.
+  night: { entry: [1.05, 1.90, WINDOW.wallZ], reach: 1.6 },
+  // Low warm sun from the right: a shallow angle deep into the room.
+  dusk: { entry: [1.25, 1.45, WINDOW.wallZ], reach: 2.0 },
+  // High sun, steeper and nearer the mullion.
+  day: { entry: [0.95, 2.00, WINDOW.wallZ], reach: 2.2 },
+};
+for (const cfg of Object.values(KEY_LIGHTS)) cfg.position = keyPositionThrough(cfg.entry, cfg.reach);
 
 // --- object rests ------------------------------------------------------------
 // Every movable object's home position. buildCinematicWorkspace and
