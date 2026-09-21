@@ -2,7 +2,13 @@ import * as THREE from 'three';
 import { loadHandAssets } from './handAssets.js';
 import { applyHandAppearance } from './handAppearance.js';
 const handsParam = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('hands') : null;
-const authored = typeof window !== 'undefined' && handsParam !== 'procedural' && handsParam !== 'v1';
+// Opt-in, as TEAM-COORDINATION.md, ASSET-REGISTER.md, HAND-REALISM-PASS.md and
+// REALISM-ASSET-CHECKPOINT.md all describe it. This had been inverted to a
+// blocklist, which made the authored retarget the default for every visitor;
+// the owner asked for the procedural hands back on 2026-09-21. Only this line
+// changed — the authored surface and its anatomy are untouched and still
+// reachable with ?hands=authored.
+const authored = typeof window !== 'undefined' && (handsParam === 'authored' || handsParam === 'bamen');
 const prebuilt = typeof window === 'undefined' ? null : await loadHandAssets(authored?'hands-authored':'hands-v1').catch(error => { console.warn(error.message + '; generating local fallback'); return null; });
 const authoredMaps=authored&&prebuilt?await Promise.all(['color.jpg','normal.png','roughness.jpg'].map(async(name,i)=>{
   const texture=await new THREE.TextureLoader().loadAsync(`${import.meta.env.BASE_URL}models/hands-authored/${name}`);
