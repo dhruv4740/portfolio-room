@@ -13,8 +13,11 @@ world-space hand kinematics is one edit.
 | Gemini | `docs/PROMPT-GEMINI-LICENCE-AND-DIMENSIONS.md` → two review docs: licence provenance for the keyboard and chair plus three CC0 keyboard candidates, and sourced real-world prop dimension ranges. Offline, no slot, no code. |
 | Codex | Unchanged: reserved hand files, and the adoption decision |
 
-**Build / browser / GPU slot: CLAIMED BY OPUS, 2026-09-21** (fourth hold). It
-was released after the render pass; claiming it here before use, not after.
+**Build / browser / GPU slot: OPUS, fourth hold 2026-09-21 — used, then
+RELEASED.** Claimed here before use rather than after. Used for the entry-power
+regression, the per-sky key frames and two re-renders of the comparison set
+(`cinematic-seated-{night,dusk,day}`, plus the five-frame set). Commits
+`2f6ae8d`, `838043a`, `1ce303a`. Next holder should claim it here.
 
 Gemini's prompt is written but **Gemini is not launched from here** — there is
 no cross-app messaging. The owner forwards it. No internal agents.
