@@ -11,9 +11,13 @@
     view=seated|overview     which fixed camera to sit at (default seated)
     sky=night|dusk|day       passed to model.setSky (default night)
     power=0..1               setEntryPower value (default 1)
-    hands=0|1                show the seated figure/hands (default 0 — this is
-                             an environment-only study; the figure is built at
-                             live-room reach and does not fit the candidate)
+    hands=0|1|procedural|v1  show the seated figure/hands (default absent = off
+                             — the candidate is an environment-only study and
+                             the figure is built at live-room reach). The value
+                             also reaches handSurface.js, which reads the same
+                             parameter: 'procedural' or 'v1' select the
+                             procedural surface, anything else the authored one.
+                             So hands=1 is authored, hands=procedural is not.
 
   Renderer settings are copied from WorkspaceStage.jsx so a frame shot here is
   comparable to the app's. shadowMap.autoUpdate is false there, so every async
@@ -40,7 +44,14 @@
       const view = q.get('view') || 'seated';
       const sky = q.get('sky') || 'night';
       const power = q.get('power') === null ? 1 : Number(q.get('power'));
-      const showHands = q.get('hands') === '1';
+      // handSurface.js reads the same `hands` parameter to choose its surface
+      // ('procedural' or 'v1' select the procedural build, anything else the
+      // authored one), so a strict === '1' here made the procedural hands
+      // unreachable: asking for them switched the figure off. Any value but
+      // 0 or absent shows the figure, and the value passes through to
+      // handSurface unchanged.
+      const handsValue = q.get('hands');
+      const showHands = handsValue !== null && handsValue !== '0';
 
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
       renderer.setPixelRatio(1);
