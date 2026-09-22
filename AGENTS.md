@@ -3,7 +3,7 @@
 Operational guide for any coding agent in this repo. Setup, commands,
 invariants, traps. Narrative and rationale live in `docs/`.
 
-**Start with [docs/HANDOFF.md](docs/HANDOFF.md)** — it records the live state
+**Start with [docs/HANDOFF-OVERNIGHT.md](docs/HANDOFF-OVERNIGHT.md)** — it supersedes every ownership, team and handoff note below.
 and what is genuinely unverified.
 
 **Current execution authority (2026-09-20):** Opus leads the next multi-pass
