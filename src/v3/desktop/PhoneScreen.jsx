@@ -25,10 +25,8 @@ import { INSTAGRAM_ICON_UV_RECT } from './buildWorkspace.js';
 import ExpenseApp from './phone-apps/ExpenseApp.jsx';
 import BasketProofApp from './phone-apps/BasketProofApp.jsx';
 
-export const PHONE_SCREEN = Object.freeze({ width: 540, height: 1200 });
-// The stage uses a real portrait CSS viewport. PHONE_SCREEN remains the
-// projective surface contract used by the room's WebGL display.
-export const PHONE_STAGE = Object.freeze({ width: 390, height: 844 });
+import { PHONE_SCREEN, PHONE_STAGE } from './phoneScreenSize.js';
+export { PHONE_SCREEN, PHONE_STAGE };
 
 const STORAGE_KEY = 'v3:focuslock';
 const TARGET = 'com.instagram.android';

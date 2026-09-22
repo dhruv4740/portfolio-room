@@ -1,10 +1,16 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
 import { createRig } from './cameraRig.js';
 import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
-import PhoneScreen, { PHONE_SCREEN } from './PhoneScreen.jsx';
+import { PHONE_SCREEN } from './phoneScreenSize.js';
+import { reportProgress } from '../lib/loadProgress.js';
+
+// The phone UI and its apps load after the room is up (idle prefetch below),
+// not with the first paint.
+const loadPhoneScreen = () => import('./PhoneScreen.jsx');
+const PhoneScreen = lazy(loadPhoneScreen);
 import { KEY_ROWS, AWARD_REST, PEN_REST } from './buildRoomInteractions.js';
 import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
@@ -43,6 +49,7 @@ export default function WorkspaceStage({
   const api = useRef(null);
   const phoneScreenRef = useRef(null);
   const [phoneLive, setPhoneLive] = useState(false);
+  const [phoneWanted, setPhoneWanted] = useState(false);
   const callbacks = useRef({});
   callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onPhoneExit, onTypeKey, onArrivalComplete };
   const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent });
@@ -117,6 +124,8 @@ export default function WorkspaceStage({
           }
         }
       }
+      // Every GLTF/texture loader without its own manager reports here.
+      THREE.DefaultLoadingManager.onProgress = (_url, loaded, total) => reportProgress('room', loaded, total);
       model = buildWorkspace(scene, {
         onShadowNeedsUpdate: () => {
           renderer.shadowMap.needsUpdate = true;
@@ -373,7 +382,7 @@ export default function WorkspaceStage({
         const tan = Math.tan(THREE.MathUtils.degToRad(56 / 2));
         // Contain, not cover: the screen is portrait, so height usually decides.
         const distance = Math.max(h / (2 * tan), w / (2 * tan * camera.aspect)) * 1.06;
-        phoneZoom = 'in'; markPhone('zooming');
+        phoneZoom = 'in'; markPhone('zooming'); setPhoneWanted(true);
         rig.flyTo({ position: center.clone().addScaledVector(normal, distance).toArray(), target: center.toArray() }, {
           reduced, duration: phoneVisited ? .3 : .45,
           onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
@@ -1100,6 +1109,8 @@ export default function WorkspaceStage({
       afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });
       callbacks.current.onReady?.({ splatCount: null });
+      const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1500));
+      idle(() => loadPhoneScreen().then(() => setPhoneWanted(true), () => {}), { timeout: 4000 });
       let entryPlayed = false;
       function startEntryPower() {
         if (entryPlayed) return;
@@ -1244,8 +1255,10 @@ export default function WorkspaceStage({
   return (
     <div ref={hostRef} className="stage-root workspace-stage" data-scene="workspace">
       <style>{css}</style>
-      <PhoneScreen ref={phoneScreenRef} interactive={phoneLive} mode={phoneLive ? 'stage' : 'projected'} onExit={() => callbacks.current.onAnchorSelect?.('phone')}
-        onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
+      {phoneWanted && <Suspense fallback={null}>
+        <PhoneScreen ref={phoneScreenRef} interactive={phoneLive} mode={phoneLive ? 'stage' : 'projected'} onExit={() => callbacks.current.onAnchorSelect?.('phone')}
+          onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
+      </Suspense>}
       <button className="pen-clear" onClick={() => api.current?.clearNotes()}>CLEAR PAGE</button>
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker workspace-sit" data-object="chair" aria-label="Sit in the chair"

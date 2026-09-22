@@ -1,0 +1,60 @@
+// Real load progress: each tracked asset reports bytes (or 0/1 when it can
+// only say started/finished). Subscribers get the combined fraction.
+const tasks = new Map();
+const listeners = new Set();
+
+// Tasks report in different units (bytes, item counts), so each is reduced to
+// its own fraction; `progress` is their mean.
+function snapshot() {
+  const fractions = {};
+  for (const [name, t] of tasks) fractions[name] = Math.min(t.loaded / t.total, 1);
+  const values = Object.values(fractions);
+  return {
+    progress: values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0,
+    pending: values.filter(f => f < 1).length,
+    tasks: fractions,
+  };
+}
+
+function emit() {
+  const s = snapshot();
+  listeners.forEach(fn => fn(s));
+}
+
+export function reportProgress(name, loaded, total) {
+  tasks.set(name, { loaded, total: Math.max(total, 1) });
+  emit();
+}
+
+export function subscribeProgress(fn) {
+  listeners.add(fn);
+  fn(snapshot());
+  return () => listeners.delete(fn);
+}
+
+// Reads a fetch body while reporting bytes. Falls back to `estimate` when the
+// server sends no Content-Length (compressed transfer).
+export async function trackedArrayBuffer(name, response, estimate) {
+  const total = Number(response.headers.get('content-length')) || estimate;
+  if (!response.body?.getReader) {
+    const buffer = await response.arrayBuffer();
+    reportProgress(name, total, total);
+    return buffer;
+  }
+  const reader = response.body.getReader();
+  const chunks = [];
+  let loaded = 0;
+  reportProgress(name, 0, total);
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.byteLength;
+    reportProgress(name, loaded, Math.max(total, loaded));
+  }
+  reportProgress(name, loaded, loaded);
+  const out = new Uint8Array(loaded);
+  let o = 0;
+  for (const c of chunks) { out.set(c, o); o += c.byteLength; }
+  return out.buffer;
+}

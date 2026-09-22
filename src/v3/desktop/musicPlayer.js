@@ -10,7 +10,8 @@ class MusicPlayer {
       : null;
     if (this.audio) {
       this.audio.loop = true;
-      this.audio.preload = 'auto';
+      // 1.9 MB: only fetched once the headphones go on and play() is called.
+      this.audio.preload = 'none';
     }
 
     this.volume = 0.6;
