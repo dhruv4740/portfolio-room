@@ -3,6 +3,10 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+  // Production builds were emitting classic React.createElement with no React
+  // in scope ("React is not defined" on first paint) even though the resolved
+  // oxc config says automatic. Pinning esbuild's JSX mode fixes the output.
+  esbuild: { jsx: 'automatic' },
   build: {
     // Spark's renderer is ~5MB raw / ~1.8MB gzip and is dynamically imported by
     // SplatStage, so it lands in its own lazy chunk automatically. Nothing on
