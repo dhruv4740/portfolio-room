@@ -237,7 +237,10 @@ export default function WorkspaceStage({
         // on the keyboard above an empty chair — the exact disembodied-arms
         // problem the figure was added to solve.
         if (!inTheSeat) model.hands.root.visible = false;
-        model.figure.head.visible = seatDistance > 0.24;
+        // The body only renders in first person, where your own head is never
+        // in view. A distance gate showed it whenever a reach leaned the
+        // camera away from the seat (the pen view filled with hair).
+        model.figure.head.visible = false;
         afterHours?.update(state.current.reducedMotion ? 0 : performance.now()/1000,gov.getStats().medianMs||0);
         renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); updatePhoneAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
@@ -281,8 +284,9 @@ export default function WorkspaceStage({
       // length from an upright seat, so reaching leans the body in (camera and
       // shoulders together) instead of stretching the arm.
       const SEAT = new THREE.Vector3(...WORKSPACE.seat.position), look = new THREE.Vector3();
+      const REST_AXIS = new THREE.Vector3(0, 1, 0);
       const REST = [-1, 1].map(s => ({ p: new THREE.Vector3(s * HAND_REST.x, HAND_REST.y, HAND_REST.z), q: new THREE.Quaternion(), pose: POSES.rest }));
-      const restOf = h => {const rest=REST[h === model.hands.left ? 0 : 1];rest.p.set(h.restX??h.side*HAND_REST.x,HAND_REST.y+(h.restLift||0),h.restZ??HAND_REST.z);return rest;};
+      const restOf = h => {const rest=REST[h === model.hands.left ? 0 : 1];rest.p.set(h.restX??h.side*HAND_REST.x,HAND_REST.y+(h.restLift||0),h.restZ??HAND_REST.z);rest.q.setFromAxisAngle(REST_AXIS,h.side*(h.restYaw??HAND_REST.yaw));return rest;};
       const poseA = { p: new THREE.Vector3(), q: new THREE.Quaternion(), pose: POSES.rest }, poseB = { p: new THREE.Vector3(), q: new THREE.Quaternion(), pose: POSES.rest };
       // A grip is { obj, p, r, pose } in the object's frame (r: Euler array or
       // quaternion; pose: a POSES name) or a snapshot { p, q, pose } in world space.
@@ -1158,6 +1162,7 @@ export default function WorkspaceStage({
             return null;
           },
           timeline() { return action || null; },
+          keyBoxes(){return keySurfaceBoxes(model.keys).map(boxToPlain);},
           keyboardSkinContact(){return [model.hands.left,model.hands.right].map(h=>({restLift:h.restLift,...skinKeyClearance(h,keySurfaceBoxes(model.keys))}));},
           bodyAttachment(){return {torsoOffset:model.hands.torsoOffset.toArray(),upperArmLengths:[model.hands.left.sleeve.scale.y,model.hands.right.sleeve.scale.y]};},
           showHands(v) { model.hands.root.visible = !!v; invalidate(); },

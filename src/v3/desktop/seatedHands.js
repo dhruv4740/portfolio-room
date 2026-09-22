@@ -7,14 +7,16 @@ import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 // point -z, palm faces -y, wrist at +z, thumb on the side nearer the body's
 // centre line. Grips in WorkspaceStage are authored in this frame.
 
-export const HAND_REST = { x: 0.11, y: 1.278, z: 0.405 };
+// yaw (fallback until the keyboard loads) turns each hand inward, as a typist's
+// hands angle toward the home row; the index tips stay on F and J.
+export const HAND_REST = { x: 0.11, y: 1.278, z: 0.405, yaw: 0.30, ulnar: 0.10 };
 
 // Per-finger curl (index..pinky), finger fan, thumb opposition and thumb
 // curl, all 0..1. A pose is a flat object so GSAP and lerpPose can tween it.
 export const POSES = {
   // Relaxed keyboard posture: expose the proximal fingers instead of folding
   // them beneath the palm. Height is paired with HAND_REST above.
-  rest:  { c0: 0.18, c1: 0.16, c2: 0.19, c3: 0.26, spread: 0.50, tOpp: 0.25, tCurl: 0.25 },
+  rest:  { c0: 0.18, c1: 0.16, c2: 0.19, c3: 0.26, spread: 0.50, tOpp: 0.42, tCurl: 0.30 },
   open:  { c0: 0.08, c1: 0.08, c2: 0.10, c3: 0.12, spread: 0.90, tOpp: 0.10, tCurl: 0.08 },
   flat:  { c0: 0.22, c1: 0.24, c2: 0.26, c3: 0.30, spread: 0.35, tOpp: 0.55, tCurl: 0.15 },
   point: { c0: 0.06, c1: 0.78, c2: 0.88, c3: 0.94, spread: 0.20, tOpp: 0.45, tCurl: 0.55 },
@@ -33,6 +35,7 @@ export const POSE_KEYS = Object.keys(POSES.rest);
 export function lerpPose(out, a, b, w) { for (const k of POSE_KEYS) out[k] = a[k] + (b[k] - a[k]) * w; return out; }
 export function curlSum(p) { return p.c0 + p.c1 + p.c2 + p.c3 + p.tCurl * 0.5; }
 
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 const MCP = 1.5, PIP = 1.8, DIP = 1.0; // radians at full curl
 const T_MCP = 0.9, T_IP = 1.1;
 const WRIST = new THREE.Vector3(0, 0.001, 0.050);
@@ -41,6 +44,7 @@ const UPPER_ARM = 0.32, FOREARM = 0.27;
 // instead of the arm straightening into a rod. The keyboard sits ~76 cm from
 // the shoulders, so at rest the torso already leans ~19 cm.
 const REACH = UPPER_ARM + FOREARM - 0.015;
+const TORSO_RISE = 0.06, TORSO_DROP = 0.05;
 
 // [thumb-side x, z, length, radius factor, fan]: index, middle, ring, pinky.
 const FINGERS = [
@@ -124,7 +128,7 @@ export function seatedHands() {
       f.userData.tip.set(0, -(L[0] * Math.sin(a1) + L[1] * Math.sin(a2) + L[2] * Math.sin(a3)),
         -(L[0] * Math.cos(a1) + L[1] * Math.cos(a2) + L[2] * Math.cos(a3))).add(f.position);
     });
-    d0.set(-side * 0.80, -0.22, -0.55); d1.set(-side * 0.30, -0.85, -0.45);
+    d0.set(-side * 0.62, -0.22, -0.76); d1.set(-side * 0.30, -0.85, -0.45);
     p0.set(side * 0.35, -0.40, -0.85); p1.set(side * 0.90, -0.15, -0.40);
     tz.copy(d0).lerp(d1, p.tOpp).normalize().negate();           // long axis along -z
     ty.copy(p0).lerp(p1, p.tOpp); ty.addScaledVector(tz, -ty.dot(tz)).normalize().negate(); // curl toward -y
@@ -168,12 +172,15 @@ export function seatedHands() {
       reachDelta.copy(reachWrist).sub(h.shoulder).sub(lean).sub(torsoOffset);
       const distance=reachDelta.length();if(distance>REACH)torsoOffset.addScaledVector(reachDelta,(distance-REACH)/distance);
     }
+    // A seated torso leans; it does not rise out of the chair or sink into it.
+    // Unclamped, reaching the window lifted the whole body 0.49 m.
+    torsoOffset.y=THREE.MathUtils.clamp(torsoOffset.y,-TORSO_DROP,TORSO_RISE);
     hands.forEach(updateHand);
   }
   function reset() {
     lean.set(0, 0, 0);
     for (const h of hands) {
-      h.hand.position.set(h.restX??h.side*HAND_REST.x, HAND_REST.y+(h.restLift||0), h.restZ??HAND_REST.z); h.hand.rotation.set(0, 0, 0);
+      h.hand.position.set(h.restX??h.side*HAND_REST.x, HAND_REST.y+(h.restLift||0), h.restZ??HAND_REST.z); h.hand.rotation.set(0, h.side*(h.restYaw??HAND_REST.yaw), 0);
       Object.assign(h.pose, POSES.rest); for (const f of h.fingers) f.rotation.x = 0;
       h.hand.visible = h.arm.visible = h.sleeve.visible = h.elbow.visible = true;
     }
@@ -210,9 +217,19 @@ export function seatedHands() {
     const boxes=keySurfaceBoxes(keyboard);
     // Index fingers rest on F/J, not symmetric positions across a full-size
     // keyboard: the numeric/navigation block shifts the letter area left.
-    for(const [i,h] of hands.entries()){
-      const home=boxes[i===0?27:30]?.getCenter(new THREE.Vector3());if(!home)continue;
-      const tip=localTips(h).digits[0];h.restX=home.x-tip.x;h.restZ=home.z-tip.z;
+    // Each hand turns in along its own forearm line (shoulder to hand, seen
+    // from above) plus a slight ulnar tilt; the keyboard sits off-centre, so a
+    // single shared angle bent one wrist 18 degrees and the other 7.
+    for(let pass=0;pass<3;pass++){
+      for(const [i,h] of hands.entries()){
+        const home=boxes[i===0?27:30]?.getCenter(new THREE.Vector3());if(!home)continue;
+        const tip=localTips(h).digits[0].applyAxisAngle(Y_AXIS,h.side*(h.restYaw??HAND_REST.yaw));h.restX=home.x-tip.x;h.restZ=home.z-tip.z;
+      }
+      reset();
+      for(const h of hands){
+        const sx=h.shoulder.x+lean.x+torsoOffset.x,sz=h.shoulder.z+lean.z+torsoOffset.z;
+        h.restYaw=Math.atan2(-h.side*(h.restX-sx),sz-h.restZ)+HAND_REST.ulnar;
+      }
     }
     reset();
     for(const h of hands){const {clearance}=skinKeyClearance(h,boxes);h.restLift=Number.isFinite(clearance)?Math.max(0,.002-clearance):0;}

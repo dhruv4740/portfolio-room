@@ -16,6 +16,12 @@ const authoredMaps=authored&&prebuilt?await Promise.all(['color.jpg','normal.png
 })).catch(error=>{console.warn('Authored hand texture preview unavailable:',error.message);return null;}):null;
 
 import { mergeVertices, mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+// Surface constants. 6a13047 widened the forearm and thenar blends (12/6 mm)
+// and pushed the forearm 65 mm into the palm, which swelled the heel and fused
+// the hand into a paddle; dd85216's 3 mm unions are restored. A 2.5 mm weight
+// falloff keeps each finger's skin on its own bones, so the rest pose (narrower
+// spread than the bind pose) no longer smears neighbouring fingers together.
+const SURF = { pad: false, armStart: 0, armR: .018, kArm: .003, kPad: .003, k: .003, step: .0035, weightFalloff: .0025 };
 
 // One extra skinned draw per hand: thin nail plates follow the distal bones,
 // including thumb opposition, rather than floating above the animated fingers.
@@ -32,7 +38,7 @@ function bindNails(h,root,bones){
     g.setAttribute('skinWeight',new THREE.Float32BufferAttribute(weights,4));parts.push(g);
   }
   const geometry=mergeGeometries(parts);parts.forEach(g=>g.dispose());
-  const nails=new THREE.SkinnedMesh(geometry,new THREE.MeshStandardMaterial({color:'#ae8574',roughness:.58}));
+  const nails=new THREE.SkinnedMesh(geometry,new THREE.MeshPhysicalMaterial({color:'#d6a497',roughness:.38,clearcoat:.4,clearcoatRoughness:.3}));
   root.add(nails);nails.bind(h.skeleton,new THREE.Matrix4());nails.frustumCulled=false;nails.receiveShadow=true;nails.raycast=()=>{};
   h.nailMesh=nails;
 }
@@ -76,7 +82,7 @@ export function bindHandSurface(h, root, skin, cloth) {
   // Two overlapping ellipsoids produced a swollen heel and a pinched waist.
   parts.push({ palm: true, bone: 0 });
   // Thenar pad is part of the palm, not a second spherical thumb joint.
-  parts.push({pad:true,center:[-h.side*.021,-.006,.006],radii:[.021,.011,.031],bone:0});
+  if(SURF.pad)parts.push({pad:true,center:[-h.side*.021,-.006,.006],radii:[.021,.011,.031],bone:0});
   const segment = (bone, a, b, r0, r1) => {
     const d = b.clone().sub(a);
     parts.push({ a, d, lengthSq: d.lengthSq(), r0, r1, bone: bones.indexOf(bone) });
@@ -86,7 +92,7 @@ export function bindHandSurface(h, root, skin, cloth) {
     joints.forEach((j, i) => segment(j, point(j, [0, 0, 0]), point(j, [0, 0, -L[i]]), R[i], R[i + 1]));
   }
   // The end is buried under the cuff; wrist weights blend over the palm heel.
-  segment(h.arm, point(h.arm, [0, -.065, 0]), point(h.arm, [0, .23, 0]), .020, .016);
+  segment(h.arm, point(h.arm, [0, SURF.armStart, 0]), point(h.arm, [0, .23, 0]), SURF.armR, .016);
   // A wrist is an oval section, not a round tube. Keep the long axis and
   // bone weights unchanged; flatten only the local forearm depth near the cuff.
   parts[parts.length-1].depthAxis = point(h.arm,[0,0,1]).sub(point(h.arm,[0,0,0])).normalize();
@@ -142,7 +148,7 @@ export function bindHandSurface(h, root, skin, cloth) {
   const field = (x,y,z) => {
     let d = 1;
     for (const part of parts) {
-      const b = distance(part,x,y,z), k = part.depthAxis?.012:part.pad?.006:.003;
+      const b = distance(part,x,y,z), k = part.depthAxis?SURF.kArm:part.pad?SURF.kPad:SURF.k;
       const w = Math.max(k-Math.abs(d-b),0)/k;
       d = Math.min(d,b)-w*w*k*.25;
     }
@@ -150,7 +156,7 @@ export function bindHandSurface(h, root, skin, cloth) {
   };
   // 5mm sampling left only three cells across a fingertip, producing visible
   // angular silhouettes. 3.5mm keeps fingers smoother without subdividing cloth.
-  const step=.0035, min=[-.12,-.09,-.18], count=[70,58,100];
+  const step=SURF.step, min=[-.12,-.09,-.18], count=[.245,.203,.35].map(n=>Math.round(n/step));
   const [nx,ny,nz]=count, values=new Float32Array(nx*ny*nz);
   const index=(x,y,z)=>(z*ny+y)*nx+x;
   for(let z=0;z<nz;z++)for(let y=0;y<ny;y++)for(let x=0;x<nx;x++) values[index(x,y,z)]=field(min[0]+x*step,min[1]+y*step,min[2]+z*step);
@@ -186,7 +192,7 @@ export function bindHandSurface(h, root, skin, cloth) {
   for(let i=0;i<p.count;i++){
     const x=p.getX(i),y=p.getY(i),z=p.getZ(i), scores=new Map();
     const ds=parts.map(part=>distance(part,x,y,z)), best=Math.min(...ds);
-    parts.forEach((part,j)=>{const w=Math.exp(-Math.pow((ds[j]-best)/.006,2));scores.set(part.bone,(scores.get(part.bone)||0)+w);});
+    parts.forEach((part,j)=>{const w=Math.exp(-Math.pow((ds[j]-best)/SURF.weightFalloff,2));scores.set(part.bone,(scores.get(part.bone)||0)+w);});
     // Geometric proximity made a narrow 50/50 seam at the palm heel. Blend
     // across a 48mm longitudinal band, independent of the cap's distance.
     // Preserve any thumb contribution: replacing it at a z cutoff creates a

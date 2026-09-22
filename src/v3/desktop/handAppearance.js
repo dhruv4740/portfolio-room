@@ -16,8 +16,26 @@ export function createHandSkin() {
   texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
   texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps=true;texture.needsUpdate=true;
-  return new THREE.MeshStandardMaterial({name:'Hand skin',color:'#ffffff',
-    vertexColors:true,roughness:.76,roughnessMap:texture,bumpMap:texture,bumpScale:.00012});
+  // Skin, not clay: a dielectric at ior 1.4 (F0 ~0.028) with a soft sheen, and
+  // diffuse light that wraps past the terminator further in red than in blue,
+  // the cheap stand-in for light scattering under the surface.
+  const material=new THREE.MeshPhysicalMaterial({name:'Hand skin',color:'#ffffff',
+    vertexColors:true,roughness:.64,roughnessMap:texture,bumpMap:texture,bumpScale:.00012,
+    ior:1.4,sheen:.18,sheenRoughness:.6,sheenColor:new THREE.Color('#e6a58f')});
+  const chunk=THREE.ShaderChunk.lights_physical_pars_fragment;
+  const lambert='reflectedLight.directDiffuse += irradiance * BRDF_Lambert( material.diffuseContribution );';
+  if(chunk.includes(lambert)){
+    const wrapped=chunk.replace(lambert,`{
+      float nl = dot( geometryNormal, directLight.direction );
+      vec3 wrapNL = saturate( ( vec3( nl ) + SKIN_WRAP ) / ( 1.0 + SKIN_WRAP ) );
+      reflectedLight.directDiffuse += ( irradiance + ( wrapNL - saturate( nl ) ) * directLight.color ) * BRDF_Lambert( material.diffuseContribution );
+    }`);
+    material.onBeforeCompile=shader=>{
+      shader.fragmentShader='#define SKIN_WRAP vec3( 0.42, 0.20, 0.14 )\n'+shader.fragmentShader.replace('#include <lights_physical_pars_fragment>',wrapped);
+    };
+    material.customProgramCacheKey=()=>'hand-skin-wrap';
+  }
+  return material;
 }
 
 // Bake regional colour and microdetail coordinates into each neutral mesh.
@@ -32,6 +50,18 @@ export function applyHandAppearance(h) {
   const colors=[],uv=[];
   const jointPoints=h.digits.flatMap(d=>d.userData.joints.map(j=>
     new THREE.Vector3().setFromMatrixPosition(j.matrixWorld).applyMatrix4(inverse)));
+  // Each digit as capsules in hand space. A vertex belongs to its nearest digit;
+  // how close the second-nearest digit's surface comes is how shut-in that skin
+  // is, which darkens the webs and the seams between fingers so they read as
+  // separate digits instead of one smooth paddle.
+  const local=(joint,z=0)=>joint.localToWorld(new THREE.Vector3(0,0,z)).applyMatrix4(inverse);
+  const digits=[...h.digits,h.thumb].map(d=>{const {L,R,joints}=d.userData;
+    return joints.map((j,k)=>{const a=local(j),b=local(j,-L[k]);return {a,d:b.sub(a),r:R[k]};});});
+  const seg=new THREE.Vector3();
+  const gapTo=(segments)=>{let g=Infinity;for(const s of segments){
+    const t=THREE.MathUtils.clamp(seg.subVectors(point,s.a).dot(s.d)/s.d.lengthSq(),0,1);
+    g=Math.min(g,seg.subVectors(point,s.a).addScaledVector(s.d,-t).length()-s.r);}return g;};
+  const crease=new THREE.Color('#6a3a2e');
   for(let i=0;i<positions.count;i++){
     point.fromBufferAttribute(positions,i).applyMatrix4(inverse);
     normal.fromBufferAttribute(normals,i).transformDirection(inverse);
@@ -40,6 +70,8 @@ export function applyHandAppearance(h) {
     let jointWeight=0;
     for(const joint of jointPoints)jointWeight=Math.max(jointWeight,Math.exp(-point.distanceToSquared(joint)/.00013));
     color.lerp(jointColor,jointWeight*.18);
+    const gaps=digits.map(gapTo).sort((a,b)=>a-b);
+    color.lerp(crease,(1-THREE.MathUtils.smoothstep(gaps[1],.001,.009))*.42);
     const variation=Math.sin(point.x*193+point.z*71)*Math.sin(point.z*137-point.y*83);
     color.multiplyScalar(1+variation*.016);
     colors.push(color.r,color.g,color.b);
