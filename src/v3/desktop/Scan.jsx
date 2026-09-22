@@ -6,14 +6,14 @@
 // ============================================================================
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
 import { startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted, suspendCityAmbience } from './cityAudio.js';
 import { disposeRoomAudio, isRoomMuted, playRoomFoley, setRoomMuted, unlockRoomAudio } from './roomAudio.js';
-import { anchors, projects, identity } from '../content/index.js';
+import { anchors, projects, identity, contact, education, experience, achievements } from '../content/index.js';
 import {
   prefersReducedMotion,
   hasSeenIntro,
@@ -79,6 +79,8 @@ export default function Scan() {
   const [osReady, setOsReady] = useState(false);
   const [screenError, setScreenError] = useState(null);
   const [error, setError] = useState(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const navigate = useNavigate();
 
   const lastTrigger = useRef(null);
   const returnOrigin = useRef('room');
@@ -227,6 +229,48 @@ export default function Scan() {
     setActiveId('window');
     launchLocked.current = false;
   }, [beginLaunch]);
+
+  const handleRecruiter = useCallback(() => {
+    cancelArrival();
+    navigate('/work');
+  }, [cancelArrival, navigate]);
+
+  const closeAbout = useCallback(() => {
+    setAboutOpen(false);
+    setTimeout(() => document.querySelector('[data-launchpad-action="about"]')?.focus(), 0);
+  }, []);
+
+  // Keys 1–5 mirror the launchpad buttons while it is on screen.
+  useEffect(() => {
+    if (!introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen) return undefined;
+    const order = ['desktop-projects', 'mobile-projects', 'explore-room', 'recruiter', 'about'];
+    const onKey = (e) => {
+      if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
+      if (e.target?.closest?.('input, textarea, [contenteditable="true"]')) return;
+      const i = '12345'.indexOf(e.key);
+      if (i < 0) return;
+      const button = document.querySelector(`[data-launchpad-action="${order[i]}"]`);
+      if (!button) return;
+      e.preventDefault();
+      button.focus();
+      button.click();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [aboutOpen, introDone, overviewOpen, screenPhase]);
+
+  useEffect(() => {
+    if (!aboutOpen) return undefined;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      closeAbout();
+    };
+    window.addEventListener('keydown', onKey, true);
+    setTimeout(() => document.querySelector('.about-close')?.focus(), 0);
+    return () => window.removeEventListener('keydown', onKey, true);
+  }, [aboutOpen, closeAbout]);
 
   const handlePhoneExit = useCallback(() => {
     launchLocked.current = false;
@@ -499,20 +543,58 @@ export default function Scan() {
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
             <button data-launchpad-action="desktop-projects" onClick={handleLaunchDesktop}>
-              <span className="mono">DESKTOP PROJECTS</span><small>Open the computer</small>
+              <kbd className="mono">1</kbd><span className="mono">TRY MY PROJECTS</span><small>Sit at the computer and run the real apps · ~3 min</small>
             </button>
             <button data-launchpad-action="mobile-projects" onClick={handleOpenPhone}>
-              <span className="mono">MOBILE PROJECTS</span><small>Pick up the phone</small>
+              <kbd className="mono">2</kbd><span className="mono">PHONE APPS</span><small>Pick up the phone and try the Android apps · ~2 min</small>
             </button>
             <button data-launchpad-action="explore-room" onClick={handleExploreRoom}>
-              <span className="mono">EXPLORE THE ROOM</span><small>Sit at the desk</small>
+              <kbd className="mono">3</kbd><span className="mono">EXPLORE THE ROOM</span><small>Sit at the desk and play with everything on it · open-ended</small>
+            </button>
+            <button data-launchpad-action="recruiter" onClick={handleRecruiter}>
+              <kbd className="mono">4</kbd><span className="mono">RECRUITER? 30-SECOND VERSION</span><small>One page: projects, experience, skills · 30 s</small>
+            </button>
+            <button data-launchpad-action="about" onClick={() => setAboutOpen(true)}>
+              <kbd className="mono">5</kbd><span className="mono">ABOUT ME</span><small>Who I am, where I've worked, what I've won · 1 min</small>
             </button>
           </div>
           <nav className="launchpad-links mono" aria-label="Portfolio links">
             <Link to="/work" onClick={cancelArrival}>WORK</Link>
+            <a href={contact.github} target="_blank" rel="noreferrer">GITHUB</a>
             <button data-launchpad-action="contact" onClick={handleOpenContact}>CONTACT</button>
           </nav>
         </section>
+      )}
+
+      {aboutOpen && (
+        <div className="about-scrim" onClick={(e) => { if (e.target === e.currentTarget) closeAbout(); }}>
+          <section className="about-panel" role="dialog" aria-modal="true" aria-labelledby="about-name" data-testid="about-panel">
+            <button className="about-close mono" onClick={closeAbout} aria-label="Close about">ESC ✕</button>
+            <p className="mono about-kicker">ABOUT</p>
+            <h2 id="about-name">{identity.name}</h2>
+            <p className="mono about-role">{identity.role} · {identity.location}</p>
+            <p>{identity.statement}</p>
+            <p className="about-muted">{education.degree}, {education.school} · {education.year}</p>
+            <h3 className="mono">EXPERIENCE</h3>
+            <ul>
+              {experience.map((x) => (
+                <li key={x.id}><strong>{x.role}</strong> · {x.org} <span className="about-muted mono">{x.from} – {x.to}</span><br /><span className="about-muted">{x.detail}</span></li>
+              ))}
+            </ul>
+            <h3 className="mono">ACHIEVEMENTS</h3>
+            <ul>
+              {achievements.map((a) => (
+                <li key={a.id}><strong>{a.result}</strong> · {a.label}</li>
+              ))}
+            </ul>
+            <p className="mono about-links">
+              <a href={`mailto:${contact.email}`}>EMAIL</a>
+              <a href={contact.github} target="_blank" rel="noreferrer">GITHUB</a>
+              <a href={contact.linkedin} target="_blank" rel="noreferrer">LINKEDIN</a>
+              {contact.resume && <a href={contact.resume} download>RÉSUMÉ</a>}
+            </p>
+          </section>
+        </div>
       )}
 
       {screenPhase === 'room' && seated && !overviewOpen && (
@@ -621,17 +703,29 @@ const css = `
 .launchpad-kicker { top:32px; color:#b7b9b2; font-size:11px; letter-spacing:.18em; }
 .launchpad h1 { top:56px; margin:0; font-size:clamp(30px,3.5vw,52px); font-weight:500; line-height:1; letter-spacing:-.04em; text-shadow:0 2px 18px #000; }
 .launchpad-role { top:118px; color:#c0c2bd; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
-.launchpad-statement { bottom:164px; width:360px; max-width:calc(100vw - 64px); padding:14px 16px; border-left:1px solid #727872; background:rgba(10,10,11,.82); color:#d3d4cc; font-size:14px; line-height:1.6; }
-.launchpad-actions { bottom:52px; right:var(--gutter); display:flex; gap:10px; pointer-events:auto; }
-.launchpad-actions button { flex:0 1 230px; min-height:82px; padding:18px 20px; border:1px solid #555b59; color:var(--bone); background:#101415; text-align:left; transition:transform .18s,border-color .18s; }
-.launchpad-actions button:first-child { border-top:2px solid var(--signal); }
-.launchpad-actions button:hover,.launchpad-actions button:focus-visible { border-color:var(--bone); transform:translateY(-3px); }
-.launchpad-actions span { display:block; font-size:12px; letter-spacing:.10em; }
-.launchpad-actions small { display:block; margin-top:8px; color:#b2b7b4; font-size:12px; }
+.launchpad-statement { top:146px; width:420px; max-width:calc(100vw - 64px); margin:0; color:#d3d4cc; font-size:14px; line-height:1.55; text-shadow:0 1px 12px #000; }
+.launchpad-actions { top:222px; width:440px; max-width:calc(100vw - 2*var(--gutter)); display:flex; flex-direction:column; gap:8px; pointer-events:auto; }
+.launchpad-actions button { position:relative; min-height:64px; padding:13px 18px 13px 58px; border:1px solid #555b59; color:var(--bone); background:rgba(16,20,21,.92); text-align:left; transition:transform .18s,border-color .18s; }
+.launchpad-actions button:first-child { border-left:2px solid var(--signal); }
+.launchpad-actions button:hover,.launchpad-actions button:focus-visible { border-color:var(--bone); transform:translateX(4px); }
+.launchpad-actions kbd { position:absolute; left:16px; top:50%; transform:translateY(-50%); width:26px; height:26px; display:grid; place-items:center; border:1px solid #6b716e; color:#d3d4cc; font-size:12px; }
+.launchpad-actions span { display:block; font-size:14px; letter-spacing:.10em; }
+.launchpad-actions small { display:block; margin-top:5px; color:#b2b7b4; font-size:12.5px; }
+.about-scrim { position:fixed; inset:0; z-index:calc(var(--z-panel) + 5); background:rgba(0,0,0,.55); display:grid; place-items:center; padding:24px; }
+.about-panel { position:relative; width:min(620px,100%); max-height:calc(100vh - 48px); overflow:auto; padding:28px 30px; border:1px solid #555b59; border-left:2px solid var(--signal); background:#0d1011; color:#d3d4cc; font-size:14px; line-height:1.6; }
+.about-panel h2 { margin:4px 0 2px; color:var(--bone); font-size:30px; font-weight:500; letter-spacing:-.03em; }
+.about-panel h3 { margin:22px 0 8px; color:#b7b9b2; font-size:11px; font-weight:400; letter-spacing:.18em; }
+.about-panel ul { margin:0; padding:0; list-style:none; display:grid; gap:10px; }
+.about-panel strong { color:var(--bone); font-weight:500; }
+.about-kicker,.about-role { margin:0; color:#b7b9b2; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
+.about-muted { color:#9ea39f; }
+.about-close { position:absolute; top:14px; right:14px; color:#b7b9b2; font-size:11px; letter-spacing:.1em; min-height:32px; }
+.about-links { display:flex; gap:20px; margin-top:22px; font-size:12px; letter-spacing:.1em; }
+.about-links a { color:var(--bone); }
 .launchpad-links { top:36px; left:auto; right:var(--gutter); display:flex; gap:24px; font-size:12px; letter-spacing:.1em; pointer-events:auto; }
 .launchpad-links a,.launchpad-links button { color:var(--bone); min-height:32px; }
 @keyframes launchpad-in { from { opacity:0; } }
-@media(max-height:650px) { .launchpad-statement { display:none; } .launchpad-actions {bottom:20px;} .launchpad h1 {font-size:30px;} .launchpad-role {top:98px;} }
+@media(max-height:650px) { .launchpad-statement { display:none; } .launchpad-actions {top:136px;} .launchpad-actions button {min-height:52px;padding-top:8px;padding-bottom:8px;} .launchpad h1 {font-size:30px;} .launchpad-role {top:98px;} }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
 
 .seat-exit { display:flex; align-items:center; gap:10px; flex-wrap:wrap; max-width:calc(100% - 280px); position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:9px 12px; color:var(--bone); background:color-mix(in srgb, var(--void) 92%, transparent); border:1px solid var(--dim); }
@@ -764,7 +858,7 @@ const css = `
   .launchpad { inset:0; width:100%; }
   .launchpad-role {max-width:240px;line-height:1.6;}
   .launchpad-statement {display:none;}
-  .launchpad-actions { flex-direction:column; bottom:20px; }
-  .launchpad-actions button { flex:0 0 auto;min-height:64px; }
+  .launchpad-actions { top:auto; bottom:16px; gap:6px; }
+  .launchpad-actions button { min-height:52px; padding:8px 12px 8px 50px; } .launchpad-actions small { font-size:11.5px; }
 }
 `;
