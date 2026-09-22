@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 const BASE = process.env.BASE || 'http://localhost:4173';
 const baseOrigin = new URL(BASE).origin;
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.GPU === '1' ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } : {});
 const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
 const pageErrors = [];
 const failedRequests = [];
@@ -36,6 +36,9 @@ await page.goto(`${BASE}/#/`);
 await page.locator('[data-testid="room-overview"]').waitFor();
 await page.locator('[data-launchpad-action="explore-room"]').click();
 await page.waitForTimeout(1800);
+// The arrival collapses the Objects menu; expand it before using its buttons.
+const objectsToggle = page.locator('.seat-exit-toggle');
+if (await objectsToggle.getAttribute('aria-expanded') === 'false') await objectsToggle.click();
 
 const phoneState = (s) =>
   page.waitForFunction(

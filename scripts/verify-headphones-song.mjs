@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { chromium } from 'playwright';
 const BASE = process.env.BASE || 'http://localhost:4173';
-const b = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
+const b = await chromium.launch({ ...(process.env.GPU === '1' ? { channel: 'chromium' } : {}), args: ['--autoplay-policy=no-user-gesture-required', ...(process.env.GPU === '1' ? ['--use-angle=d3d11', '--ignore-gpu-blocklist'] : [])] });
 const p = await b.newPage({ viewport: { width: 1200, height: 900 } });
 const errors = []; p.on('pageerror', e => errors.push(e.message));
 await p.addInitScript(() => {
