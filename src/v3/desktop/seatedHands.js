@@ -9,7 +9,7 @@ import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
 // yaw (fallback until the keyboard loads) turns each hand inward, as a typist's
 // hands angle toward the home row; the index tips stay on F and J.
-export const HAND_REST = { x: 0.11, y: 1.278, z: 0.405, yaw: 0.30, ulnar: 0.10 };
+export const HAND_REST = { x: 0.11, y: 1.278, z: 0.405, yaw: 0.30, ulnar: 0.08 };
 
 // Per-finger curl (index..pinky), finger fan, thumb opposition and thumb
 // curl, all 0..1. A pose is a flat object so GSAP and lerpPose can tween it.
@@ -217,9 +217,9 @@ export function seatedHands() {
     const boxes=keySurfaceBoxes(keyboard);
     // Index fingers rest on F/J, not symmetric positions across a full-size
     // keyboard: the numeric/navigation block shifts the letter area left.
-    // Each hand turns in along its own forearm line (shoulder to hand, seen
-    // from above) plus a slight ulnar tilt; the keyboard sits off-centre, so a
-    // single shared angle bent one wrist 18 degrees and the other 7.
+    // Each hand continues its own forearm seen from above, less a slight ulnar
+    // tilt; the keyboard sits off-centre, so one shared angle bent one wrist
+    // 18 degrees and the other 7.
     for(let pass=0;pass<3;pass++){
       for(const [i,h] of hands.entries()){
         const home=boxes[i===0?27:30]?.getCenter(new THREE.Vector3());if(!home)continue;
@@ -227,8 +227,8 @@ export function seatedHands() {
       }
       reset();
       for(const h of hands){
-        const sx=h.shoulder.x+lean.x+torsoOffset.x,sz=h.shoulder.z+lean.z+torsoOffset.z;
-        h.restYaw=Math.atan2(-h.side*(h.restX-sx),sz-h.restZ)+HAND_REST.ulnar;
+        h.elbow.getWorldPosition(reachDelta);reachWrist.copy(WRIST).applyMatrix4(h.hand.matrixWorld).sub(reachDelta);
+        h.restYaw=h.side*Math.atan2(-reachWrist.x,-reachWrist.z)-HAND_REST.ulnar;
       }
     }
     reset();
