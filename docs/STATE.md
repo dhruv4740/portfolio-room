@@ -39,8 +39,8 @@ are in `archive/` and the git log.
 ## Known gaps
 
 - `verify-phone-grip` fails its skin-clipping assertion. It failed the same way
-  with the current uncommitted work stashed, but the lazy phone-UI loading change
-  hasn't been ruled out as a cause.
+  on `96bb322`, before the lazy phone-UI change, and the only code between that
+  and the handoff commit is DOM-only launchpad work.
 - `verify-focuslock-app` times out on the friction-step timing. This
   reproduces at the committed baseline.
 - On a local production build the launchpad appears about 5 s after load, with
