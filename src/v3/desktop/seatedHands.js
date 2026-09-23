@@ -9,7 +9,9 @@ import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
 // yaw (fallback until the keyboard loads) turns each hand inward, as a typist's
 // hands angle toward the home row; the index tips stay on F and J.
-export const HAND_REST = { x: 0.11, y: 1.278, z: 0.405, yaw: 0.30, ulnar: 0.08 };
+// True-scale room: y is the keyboard's home-row top (0.786) plus the palm's
+// clearance; x/z fall back near F/J until the keyboard's key boxes load.
+export const HAND_REST = { x: 0.10, y: 0.8265, z: 0.285, yaw: 0.30, ulnar: 0.08 };
 
 // Per-finger curl (index..pinky), finger fan, thumb opposition and thumb
 // curl, all 0..1. A pose is a flat object so GSAP and lerpPose can tween it.
@@ -41,8 +43,8 @@ const T_MCP = 0.9, T_IP = 1.1;
 const WRIST = new THREE.Vector3(0, 0.001, 0.050);
 const UPPER_ARM = 0.32, FOREARM = 0.27;
 // Past this wrist-to-shoulder distance the shoulder comes forward (torso lean)
-// instead of the arm straightening into a rod. The keyboard sits ~76 cm from
-// the shoulders, so at rest the torso already leans ~19 cm.
+// instead of the arm straightening into a rod. In the true-scale room the home
+// row is ~50 cm from the shoulders, so typing needs no lean.
 const REACH = UPPER_ARM + FOREARM - 0.015;
 const TORSO_RISE = 0.06, TORSO_DROP = 0.05;
 
@@ -109,7 +111,7 @@ export function seatedHands() {
     hands.push({
       clothParts: [cuff, elbowCover, upperCloth], hand, digits, fingers: side === 1 ? digits : digits.slice().reverse(), thumb, arm, sleeve, elbow, side,
       index: side === 1 ? 0 : 3, pose: { ...POSES.rest },
-      shoulder: new THREE.Vector3(0.05 + side * 0.225, 1.40, 1.23), wristDeg: 0,
+      shoulder: new THREE.Vector3(0.05 + side * 0.2025, 1.04, 0.69), wristDeg: 0,
     });
   }
 

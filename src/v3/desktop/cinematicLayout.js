@@ -144,16 +144,20 @@ MONITOR.standCenter = [0, DESK.topY + MONITOR.footSize[1] + MONITOR.standHeight 
 
 // --- camera and body ---------------------------------------------------------
 export const CAMERA = {
-  seated: { position: [0.05, 1.23, 0.83], target: SCREEN.center },   // CONTRACT
+  // Adopted 2026-09-23: 0.21 m further forward than the first contract (0.83)
+  // so the keyboard and mouse sit inside the 0.575 m arm reach. The window
+  // band still clears the monitor (review-cinematic-room-geometry).
+  seated: { position: [0.05, 1.23, 0.62], target: SCREEN.center },
   // Outside the front-right corner, looking back into the desk and the window.
   overview: { position: [-1.32, 2.02, 1.52], target: [0.18, 1.00, -0.42] },
   // Used only by the offline sightline check and the review harness.
   fov: 56,
 };
 export const BODY = {
-  shoulderMidpoint: [0.05, 1.10, 0.82],   // CONTRACT
+  shoulderMidpoint: [0.05, 1.04, 0.69],   // 0.19 m below and 7 cm behind the eye
+
   seatTopY: 0.45,                         // CONTRACT
-  chair: [0.05, 0, 0.86],                 // chair origin on the floor
+  chair: [0.05, 0, 0.72],                 // chair origin on the floor, under the hips
 };
 
 // --- window ------------------------------------------------------------------

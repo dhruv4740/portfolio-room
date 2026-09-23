@@ -19,12 +19,8 @@ import {
 
 // Cinematic room — a replacement environment built at true metre scale.
 //
-// CANDIDATE. Nothing imports this yet: the live app still calls
-// buildWorkspace.js, and this file exists so the room can be rebuilt without
-// racing the hand/body/keyboard contact repair happening in the live scene.
-// The return shape is the live builder's, key for key, so adopting it later is
-// an import swap plus the coordinate mapping in
-// docs/reviews/OPUS-ROOM-COMPOSITION.md — not a rewrite of WorkspaceStage.
+// Adopted on feat/true-scale-room: WorkspaceStage builds this instead of
+// buildWorkspace.js. The return shape is the live builder's, key for key.
 //
 // Every dimension comes from cinematicLayout.js. No literal below restates a
 // contract value, and the root group is never scaled: props that are already
@@ -610,14 +606,29 @@ export function buildCinematicWorkspace(scene, options = {}) {
     onReady: () => { options.onShadowNeedsUpdate?.(); },
   });
 
-  // Environment-only study: the hand and body rigs are built so the return
-  // shape and setHandsVisible survive, but they are driven in world space at
-  // the live room's scale and are hidden here. This is not a claim that the
-  // seated figure fits this room.
-  const hands = seatedHands(); root.add(hands.root); hands.root.visible = false;
-  const figure = buildSeatedFigure(); root.add(figure.root); figure.root.visible = false;
+  // The hand rig is authored in this room's coordinates (seatedHands.js). The
+  // seated figure is still modelled in the old room's, so its root maps the old
+  // shoulders (0.05, 1.40, 1.23) onto BODY.shoulderMidpoint with the floor fixed.
+  const hands = seatedHands(); root.add(hands.root); hands.root.visible = true;
+  const figure = buildSeatedFigure(); root.add(figure.root);
+  const FIG_XZ = 0.9, FIG_Y = BODY.shoulderMidpoint[1] / 1.40;
+  figure.root.scale.set(FIG_XZ, FIG_Y, FIG_XZ);
+  figure.root.position.set(BODY.shoulderMidpoint[0] - FIG_XZ * 0.05, 0, BODY.shoulderMidpoint[2] - FIG_XZ * 1.23);
 
   return {
+    // Old-room lightmaps and trim do not fit this geometry; afterHours skips them.
+    cinematic: true,
+    // Rain falls just outside this room's window (afterHours reads this).
+    rainVolume: { x: [WINDOW.opening.minX - 0.6, WINDOW.opening.maxX + 2.5], z: [WINDOW.wallZ - 0.35, WINDOW.wallZ - 3.55] },
+    // One line of live GitHub activity under the "Selected work" panel.
+    setGithubActivity(line) {
+      const texture = displayMaterial.map, ctx = texture.image.getContext('2d');
+      ctx.fillStyle = '#152028'; ctx.fillRect(72, 530, 900, 34);
+      ctx.fillStyle = '#3ecf8e'; ctx.beginPath(); ctx.arc(82, 547, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9ea39f'; ctx.font = '17px monospace';
+      ctx.fillText(`GITHUB  ${line}`.slice(0, 84), 96, 553);
+      texture.needsUpdate = true;
+    },
     root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry,
     taskLamp, mouse, ceilingFixture, keyboard,
     contactSurfaces: { desk: deskSurface, mat: matSurface },

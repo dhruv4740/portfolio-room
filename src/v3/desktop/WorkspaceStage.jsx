@@ -3,7 +3,9 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import gsap from 'gsap';
 import { createRig } from './cameraRig.js';
-import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
+// True-scale room (feat/true-scale-room). Old-room constants below were moved
+// with the seat (0,-0.49,-0.54); reach leans are halved with the shorter desk.
+import { buildCinematicWorkspace as buildWorkspace, WORKSPACE } from './buildCinematicWorkspace.js';
 import { PHONE_SCREEN } from './phoneScreenSize.js';
 import { reportProgress } from '../lib/loadProgress.js';
 import { fetchGithubActivity, formatActivity } from '../lib/githubActivity.js';
@@ -13,7 +15,7 @@ import { fetchMumbaiWeather, mumbaiSky } from '../lib/mumbai.js';
 // not with the first paint.
 const loadPhoneScreen = () => import('./PhoneScreen.jsx');
 const PhoneScreen = lazy(loadPhoneScreen);
-import { KEY_ROWS, AWARD_REST, PEN_REST } from './buildRoomInteractions.js';
+import { KEY_ROWS, AWARD_REST, PEN_REST } from './cinematicRoomInteractions.js';
 import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
 import { createAfterHours } from './afterHours.js';
@@ -41,7 +43,8 @@ export function resolveSkyState() {
   return mumbaiSky();
 }
 
-const MONITOR_MARKER_OFFSET = new THREE.Vector3(0.66, -0.40, 0.02);
+// Just outside the bezel's bottom-right corner, clear of the screen text.
+const MONITOR_MARKER_OFFSET = new THREE.Vector3(WORKSPACE.screen.width / 2 + 0.02, -WORKSPACE.screen.height / 2 - 0.005, 0.02);
 
 export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
@@ -154,7 +157,8 @@ export default function WorkspaceStage({
       controls.enablePan = false;
       controls.minPolarAngle = Math.PI * 0.2; controls.maxPolarAngle = Math.PI * 0.47;
       controls.minAzimuthAngle = -0.8; controls.maxAzimuthAngle = 0.85;
-      controls.minDistance = 2.2; controls.maxDistance = 11;
+      // The true-scale room is enclosed: keep the orbit inside its walls.
+      controls.minDistance = 1.4; controls.maxDistance = 2.8;
       controls.addEventListener('change', () => invalidate());
       // Camera flights share wall-clock deadlines with Scan. A slow render
       // must not stretch a one-second flight into many seconds of GPU work.
@@ -364,7 +368,7 @@ export default function WorkspaceStage({
         return { obj: model.phone, p: [-0.040, -0.035, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
           pose: {...POSES.cup,c0:.3,c1:.3,c2:.3,c3:.34} };
       })();
-      const PHONE_LEAN = { x: -0.28, y: -0.08, z: -0.42 };
+      const PHONE_LEAN = { x: -0.14, y: -0.08, z: -0.21 };
       let phoneGrip = 1, phoneVisited = false;
       // A world-up reach arc cuts through a tilted phone during the underhand
       // roll. The explicitly authored side waypoint already supplies clearance.
@@ -401,9 +405,9 @@ export default function WorkspaceStage({
       function animatePhone(reduced) {
         action?.kill(); phoneInHand = true;
         model.resetPhone(); model.hands.reset(); model.setHandsVisible(true);
-        const left = model.hands.left, held = new THREE.Vector3(0.08, 1.53, 0.59);
+        const left = model.hands.left, held = new THREE.Vector3(0.08, 1.04, 0.05);
         if (reduced) {
-          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, { reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); } });
+          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.02, 0.04] }, { reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); } });
           model.phone.position.copy(held); model.phone.rotation.x = 1.15; phoneGrip = 1;
           followPhone(); model.hands.update(); zoomPhone(true); return;
         }
@@ -421,7 +425,7 @@ export default function WorkspaceStage({
           .call(() => markPhone('lifting'), [], 0.7)
           .to(model.phone.position, { y: py + 0.12, duration: 0.35, ease: 'power2.out' }, 0.7)
           .to(model.hands.lean, { ...ZERO, duration: 0.85, ease: 'power2.inOut' }, 1.05)
-          .to(look, { x: 0.08, y: 1.51, z: 0.58, duration: 0.85, ease: 'power2.inOut' }, 1.05)
+          .to(look, { x: 0.08, y: 1.02, z: 0.04, duration: 0.85, ease: 'power2.inOut' }, 1.05)
           .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 0.85, ease: 'power2.inOut' }, 1.05)
           .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 1.05)
           .to(k, { grip: 1, duration: 0.85, ease: 'power2.inOut' }, 1.05)
@@ -439,7 +443,7 @@ export default function WorkspaceStage({
           // Pull back out of the screen first. PhoneScreen rides the quad until
           // the seat view, then the matching texture underneath takes over.
           phoneZoom = 'out';
-          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.51, 0.58] }, {
+          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.02, 0.04] }, {
             reduced, duration: 0.7,
             onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
             onComplete() { phoneZoom = null; phoneScreenRef.current?.setRect(null); returnPhone(reduced); },
@@ -474,7 +478,7 @@ export default function WorkspaceStage({
       const NB_SIDE = { obj: model.notebook, p: [0.29, -0.01, 0.12], r: [0, 0, -Math.PI / 2], pose: 'cup' };
       const NB_RIGHT = { obj: model.notebook, p: [0.25, -0.02, 0.1], r: edgeGrip(1), pose: 'hold' };
       const NB_LEFT = { obj: model.notebook, p: [-0.25, -0.02, 0.1], r: edgeGrip(-1), pose: 'hold' };
-      const NB_LEAN = { x: 0.45, y: -0.06, z: -0.2 };
+      const NB_LEAN = { x: 0.225, y: -0.06, z: -0.1 };
       const nb = { right: 1, left: 1 };
       function followNotebook() {
         hold(model.hands.right, NB_PICK, NB_RIGHT, nb.right, NB_SIDE);
@@ -483,10 +487,10 @@ export default function WorkspaceStage({
       }
       function animateNotebook(reduced) {
         action?.kill(); notebookInHand = true; model.resetNotebook(); model.hands.reset(); model.setHandsVisible(true);
-        const held = { x:0.05,y:1.60,z:0.61 };
+        const held = { x:0.05,y:1.11,z:0.07 };
         const finish=()=>{host.dataset.notebookState='reading';nb.right=nb.left=1;followNotebook();invalidate();};
         if(reduced){
-          rig.flyTo({position:WORKSPACE.seat.position,target:[0.05,1.60,0.61]},{reduced,duration:0.8,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+          rig.flyTo({position:WORKSPACE.seat.position,target:[0.05,1.11,0.07]},{reduced,duration:0.8,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           model.notebook.position.set(held.x,held.y,held.z);model.notebook.rotation.x=1.39;finish();return;
         }
         startLean(); host.dataset.notebookState='lifting';
@@ -534,8 +538,8 @@ export default function WorkspaceStage({
       }
       // Résumé: the right hand pulls the drawer by its handle and takes the page
       // from above; then both hands hold its side edges at reading distance.
-      const PAGE_HELD = { x: 0.05, y: 1.56, z: 0.82 };
-      const DRAWER_LEAN = { x: 0.3, y: -0.12, z: -0.05 };
+      const PAGE_HELD = { x: 0.05, y: 1.07, z: 0.28 };
+      const DRAWER_LEAN = { x: 0.15, y: -0.12, z: -0.025 };
       const drawerGrip = { handle: 0, pick: 0, right: 0, left: 0 };
       function poseDrawer() {
         const page = model.roomActions.resumePage, drawer = model.roomActions.objects.drawer, R = model.hands.right, k = drawerGrip;
@@ -550,7 +554,7 @@ export default function WorkspaceStage({
         model.hands.update();
       }
       // Awards frame: grips authored like the résumé page's, rotated into the upright frame (face +z, top +y).
-      const AWARD_LEAN = { x: -0.2, y: -0.08, z: -0.5 };
+      const AWARD_LEAN = { x: -0.1, y: -0.08, z: -0.25 };
       const AWARD_HELD_X = 1.13 - Math.PI / 2;
       const awardGrip = { pick: 0, left: 0, right: 0 };
       const upright = q => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2).multiply(q);
@@ -565,7 +569,7 @@ export default function WorkspaceStage({
         model.hands.update();
       }
       // Pen: the right hand holds the pencil near its tip while the tip follows the pointer on the notebook page.
-      const PEN_LEAN = { x: 0.42, y: -0.12, z: -0.22 };
+      const PEN_LEAN = { x: 0.21, y: -0.12, z: -0.11 };
       // The grip is derived from the pinch pose: the pencil passes through the
       // index and thumb pads and rests in the web of the thumb. The pencil's
       // held rotation follows from the writing hand's orientation (pronated,
@@ -656,7 +660,7 @@ export default function WorkspaceStage({
           if(target===r.state.windowOpen){end();return;}
           const opening=target>r.state.windowOpen;
           const raiseBlindsFirst=opening&&r.state.blinds<0.5;
-          rig.flyTo({position:opening?[1.12,1.93,-.45]:WORKSPACE.seat.position,target:opening?[1.45,2.02,-4.5]:o.position.toArray()},{reduced,duration:1.05,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+          rig.flyTo({position:opening?[1.15,1.50,-.35]:WORKSPACE.seat.position,target:opening?[1.40,1.62,-4.5]:o.position.toArray()},{reduced,duration:1.05,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           if(reduced){
             if(raiseBlindsFirst)r.state.blinds=1;
             r.state.windowOpen=target;update();if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();return;
@@ -756,7 +760,7 @@ export default function WorkspaceStage({
           // Both hands take the ear cups, palms in, and carry them up past the camera.
           const L=model.hands.left,R=model.hands.right,k={w:0};
           const CUP_L={obj:o,p:[-0.16,0.02,0.06],r:[0,0,Math.PI/2],pose:'cup'},CUP_R={obj:o,p:[0.16,0.02,0.06],r:[0,0,-Math.PI/2],pose:'cup'};
-          const LEAN={x:0.35,y:-0.08,z:-0.5},HOME_LOOK={x:home.x,y:home.y,z:home.z+0.1};
+          const LEAN={x:0.175,y:-0.08,z:-0.25},HOME_LOOK={x:home.x,y:home.y,z:home.z+0.1};
           let fromL=snapshot(L),fromR=snapshot(R),releasing=false;
           const release=()=>{releasing=true;fromL=snapshot(L);fromR=snapshot(R);k.w=0;};
           startLean();
@@ -808,7 +812,7 @@ export default function WorkspaceStage({
           if(reduced){finish();return;}
           // Left hand: fingers through the handle, thumb on top, palm toward the mug.
           const left=model.hands.left,MUG={obj:o,p:[-0.043,0.012,0.162],r:[0,Math.PI/4,Math.PI/2],pose:'mug'},SIP_TURN=-1.25;
-          const LEAN={x:-0.2,y:-0.05,z:-0.2},HOME_LOOK={x:home.x,y:home.y,z:home.z},k={reach:0,release:0};
+          const LEAN={x:-0.1,y:-0.05,z:-0.1},HOME_LOOK={x:home.x,y:home.y,z:home.z},k={reach:0,release:0};
           let from=snapshot(left);
           startLean();
           action=gsap.timeline({onUpdate(){
@@ -822,8 +826,8 @@ export default function WorkspaceStage({
             .call(()=>window.dispatchEvent(new CustomEvent('workspace:foley',{detail:{kind:'cup-lift',pan:-.25}})),[],.6)
             .to(o.position,{y:home.y+0.1,duration:0.35,ease:'power2.out'},0.6)
             .to(model.hands.lean,{...ZERO,duration:0.7,ease:'power2.inOut'},0.95)
-            .to(look,{x:-0.08,y:1.50,z:0.6,duration:0.7,ease:'power2.inOut'},0.95)
-            .to(o.position,{x:-0.10,y:1.52,z:0.78,duration:0.7,ease:'power2.inOut'},0.95)
+            .to(look,{x:-0.08,y:1.01,z:0.06,duration:0.7,ease:'power2.inOut'},0.95)
+            .to(o.position,{x:-0.10,y:1.03,z:0.24,duration:0.7,ease:'power2.inOut'},0.95)
             .to(o.rotation,{y:SIP_TURN,duration:0.7,ease:'power2.inOut'},0.95)
             .to(o.rotation,{x:0.45,duration:0.55},1.65).to(r.state,{coffeeLevel:level,duration:0.5},1.75)
             .call(()=>window.dispatchEvent(new CustomEvent('workspace:foley',{detail:{kind:'sip',pan:0}})),[],1.95)
@@ -936,14 +940,14 @@ export default function WorkspaceStage({
           if (selected === 'phone') { animatePhone(reduced); return; }
           if (selected === 'notebook') { animateNotebook(reduced); return; }
           const view = selected === 'window'
-            ? { position: [0.05,1.72,1.16], target: WORKSPACE.anchors.window }
+            ? { position: WORKSPACE.seat.position, target: WORKSPACE.anchors.window }
             : selected === 'desk'
-            ? { position: [0.05,1.72,1.16], target: WORKSPACE.anchors.desk }
+            ? { position: WORKSPACE.seat.position, target: WORKSPACE.anchors.desk }
             : selected === 'phone'
-            ? { position: [-0.80, 1.72, 0.10], target: WORKSPACE.anchors.phone }
+            ? { position: [-0.28, 1.23, 0.15], target: WORKSPACE.anchors.phone }
             : selected === 'notebook'
-            ? { position: [1.14, 1.99, 0.40], target: WORKSPACE.anchors.notebook }
-            : { position: [0.05, reduced ? 1.72 : 1.745, 1.16], target: WORKSPACE.seat.target };
+            ? { position: [0.60, 1.52, 0.28], target: WORKSPACE.anchors.notebook }
+            : { position: [WORKSPACE.seat.position[0], WORKSPACE.seat.position[1] + (reduced ? 0 : 0.025), WORKSPACE.seat.position[2]], target: WORKSPACE.seat.target };
           const startFov = camera.fov;
           const started = performance.now();
           rig.flyTo(view, { reduced, duration: 1.05, onUpdate() {
@@ -974,7 +978,7 @@ export default function WorkspaceStage({
         }
         controls.enableDamping = !state.current.seated;
         controls.minAzimuthAngle = -0.8; controls.maxAzimuthAngle = 0.85;
-        controls.maxDistance = 11;
+        controls.maxDistance = 2.8;
         camera.fov = currentPhase === 'room' && !state.current.seated ? 56 : BASE_FOV; camera.updateProjectionMatrix();
         let view = currentPhase === 'leaving' && state.current.seated
           ? { position: new THREE.Vector3(...WORKSPACE.seat.position), target: new THREE.Vector3(...WORKSPACE.seat.target) } : home;
@@ -991,8 +995,8 @@ export default function WorkspaceStage({
           const target = new THREE.Vector3(...WORKSPACE.anchors[selected]);
           const offset = selected === 'phone' ? new THREE.Vector3(0, 0.524, 0.13)
             : selected === 'notebook' ? new THREE.Vector3(0.0, 0.78, 0.10)
-            : selected === 'monitor' ? new THREE.Vector3(0.2, 0.17, 2.1)
-            : new THREE.Vector3(1.15, 0.95, 2.3);
+            : selected === 'monitor' ? new THREE.Vector3(0.12, 0.10, 1.2)
+            : new THREE.Vector3(0.65, 0.55, 1.3);
           view = { position: target.clone().add(offset), target };
         }
         if (reduced) {

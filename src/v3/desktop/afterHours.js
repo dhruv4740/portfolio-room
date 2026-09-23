@@ -22,8 +22,10 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   };
   const snowGeometry=new THREE.BufferGeometry(), positions=[], seeds=[];
   let seed=1926;const random=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+  // The true-scale room supplies its own volume just outside its window.
+  const rv=model.rainVolume||{x:[-.6,4],z:[-2.05,-5.25]};
   for(let i=0;i<(tier==='low'?180:tier==='high'?850:460);i++){
-    positions.push(-.6+random()*4.6,-1+random()*8,-2.05-random()*3.2);seeds.push(random());
+    positions.push(rv.x[0]+random()*(rv.x[1]-rv.x[0]),-1+random()*8,rv.z[0]+random()*(rv.z[1]-rv.z[0]));seeds.push(random());
   }
   snowGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   snowGeometry.setAttribute('seed',new THREE.Float32BufferAttribute(seeds,1));
@@ -42,7 +44,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   // A small, low-opacity glass reflection follows the actual sliding sash.
   // Mid/low retain the prefiltered room probe without a second scene render.
   let glassReflection=null, costlyFrames=0;
-  if(tier==='high'){
+  if(tier==='high'&&!model.cinematic){
     const shader={...Reflector.ReflectorShader,fragmentShader:Reflector.ReflectorShader.fragmentShader.replace('blendOverlay( base.rgb, color ), 1.0','blendOverlay( base.rgb, color ), 0.13')};
     glassReflection=new Reflector(new THREE.PlaneGeometry(.64,1.85),{textureWidth:384,textureHeight:512,multisample:0,clipBias:.003,color:0x7f7f7f,shader});
     glassReflection.name='Sash reflection';glassReflection.position.set(0,0,.091);
@@ -69,6 +71,9 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   const snowCap=new THREE.MeshStandardMaterial({color:'#4a4d4c',roughness:.62});
   const detailParts=[];
   function box(size,pos,mat){const g=new THREE.BoxGeometry(...size);g.translate(...pos);detailParts.push({g,mat});}
+  // Trim and sill are authored for the old room's window; the true-scale room
+  // models its own.
+  if(!model.cinematic){
   for(const x of [.56,2.21])box([.026,2.13,.045],[x,1.99,-1.565],trim);
   box([1.72,.045,.26],[1.385,.975,-1.89],snowCap);
   for(let i=0;i<13;i++)box([.045,.43,.10],[.85+i*.082,.50,-1.60],trim);
@@ -76,6 +81,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   for(const mat of [trim,snowCap]){
     const gs=detailParts.filter(p=>p.mat===mat).map(p=>p.g);
     const mesh=new THREE.Mesh(mergeGeometries(gs),mat);gs.forEach(g=>g.dispose());mesh.receiveShadow=true;detail.add(mesh);
+  }
   }
 
   const pmrem=new THREE.PMREMGenerator(renderer), probes=new Map();
@@ -118,7 +124,9 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     if(disposed)return;status.fixture=model.ceilingFixture.state.status;invalidate();report();});
   const lampPromise=model.taskLamp.ready.then(()=>{if(disposed)return;status.lamp=model.taskLamp.state.status;probeDirty=true;invalidate();report();});
   // The city GLB is meshopt-compressed (scripts: gltf-transform meshopt).
-  const cityPromise=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`${import.meta.env.BASE_URL}models/after-hours/winter-city.glb`).then(gltf=>{
+  // The city GLB is placed for the old window; the true-scale room keeps its
+  // own sightline-fitted exterior.
+  const cityPromise=model.cinematic?Promise.resolve().then(()=>{status.city='skipped';report();}):new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`${import.meta.env.BASE_URL}models/after-hours/winter-city.glb`).then(gltf=>{
     if(disposed){gltf.scene.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});return;}
     city=gltf.scene;city.name='After Hours winter city';
     city.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;o.raycast=()=>{};
@@ -151,7 +159,8 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     }});
     status.materials='ready';probeDirty=true;invalidate();report();
   }).catch(e=>{status.materials='fallback';console.warn('Room materials fallback:',e.message);report();});
-  const bakePromise=Promise.all(Object.entries(model.bakedMaterials).map(async([name,m])=>{
+  // Lightmaps were baked against the old room's UVs and geometry.
+  const bakePromise=model.cinematic?Promise.resolve().then(()=>{status.bake='skipped';report();}):Promise.all(Object.entries(model.bakedMaterials).map(async([name,m])=>{
     const [off,on]=await Promise.all(['off','on'].map(mode=>loadTexture(`${ROOT}baked/${name}-${mode}.png`)));
     off.channel=on.channel=1;m.lightMap=off;m.lightMapIntensity=sky==='night'?.7:0;
     m.onBeforeCompile=shader=>{
