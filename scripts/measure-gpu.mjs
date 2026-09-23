@@ -15,9 +15,11 @@ async function session(tier) {
   await p.goto(BASE + '/');
   await p.waitForFunction(() => {
     const stage = document.querySelector('.workspace-stage');
-    return stage?.dataset.winterCity === 'ready'
+    // The true-scale room skips the old window's city GLB and lightmap bake.
+    const done = (v) => v === 'ready' || v === 'skipped';
+    return done(stage?.dataset.winterCity)
       && stage?.dataset.roomMaterials === 'ready'
-      && stage?.dataset.roomBake === 'ready';
+      && done(stage?.dataset.roomBake);
   }, null, { timeout: 20000 });
   // Let the freshly loaded city/material/bake path submit a warm frame before
   // the first timed drag. The readiness gate replaces the old fixed delay.

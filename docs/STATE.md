@@ -47,6 +47,28 @@ are in `archive/` and the git log.
   the main thread busy. The cause hasn't been profiled.
 - Dead v1/v2 directories under `src/` still exist. Deletion is approved, but the
   agent's permission classifier blocked it.
-- Mixed scene scale remains the main realism blocker. The true-scale candidate
-  (`cinematic*.js`) is not adopted yet (queue item 12).
+- **This branch (`feat/true-scale-room`) adopts the true-scale room** (queue
+  item 12). The measurements below were taken on the real GPU and compare this
+  branch with `feat/v3`.
+  - Suites: the same results as `feat/v3`. `verify-phone-grip` still fails on
+    both branches.
+  - `verify-v3` also passes 41/41 on a production preview.
+  - Forward lean: 24.6 cm → 0 at rest, and 24.3 cm → 9.6 cm when holding the
+    phone.
+  - GPU median, mid tier, seated drag: 18.1 → 15.2 ms. Triangles:
+    231k → 151k.
+  - Lost or changed on this branch:
+    - The winter-city GLB is skipped, so wet streets have no effect.
+    - The old lightmap bake is skipped.
+    - The high-tier sash reflection is gone.
+    - `?hands=authored` is not rebaked and will be misplaced.
+    - The seated figure's root is scaled 0.9 × 0.743 × 0.9, and its torso
+      lean renders slightly short.
+    - Opening the window now looks from the seat instead of standing at the
+      glass.
+    - Test edits:
+      - `verify-after-hours`, `verify-phone-grip` and `measure-gpu` accept
+        `skipped` for the city and the bake.
+      - `verify-room-interactions` projects the window diff region from the
+        open view.
 - Suites that don't pass `?sky=` see day or dusk during Mumbai daytime.
