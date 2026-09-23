@@ -46,7 +46,7 @@ async function sheet(phase, frames, duration) {
   const cells = frames.map(f => `<figure><img src="data:image/png;base64,${f.buf.toString('base64')}"><figcaption>${f.time.toFixed(2)} s</figcaption></figure>`).join('');
   await s.setContent(`<style>body{margin:0;background:#111;color:#ddd;font:13px system-ui}h1{font-size:15px;margin:8px}
     main{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px}figure{margin:0}img{width:100%;display:block}figcaption{padding:2px 4px}</style>
-    <h1>${action} · ${phase} · ${tag} · ${duration.toFixed(2)} s timeline</h1><main>${cells}</main>`);
+    <h1>${action} · ${phase} · ${tag} · ${duration.toFixed(2)} s timeline · ${BASE}</h1><main>${cells}</main>`);
   await s.screenshot({ path: `${OUT}/${action}-${tag}-${phase}-sheet.png`, fullPage: true }); await s.close();
 }
 const button = name => p.getByRole('button', { name, exact: true });
@@ -62,6 +62,9 @@ if (action === 'resume') {
   for (let i = 0; i < 8; i++) { await p.mouse.wheel(0, 200); await p.waitForTimeout(40); }
   await mark(); await p.keyboard.press('Escape'); await sweep('putdown');
   await until('actionState', 'idle');
+  // A second cycle: the page must come back out at the same size and place.
+  await button('RESUME').click(); await until('actionState', 'resume-reading'); await p.waitForTimeout(600);
+  await p.screenshot({ path: `${OUT}/${action}-${tag}-held-again.png`, style: HIDE });
 } else throw new Error(`unknown action ${action}`);
 console.log(JSON.stringify({ action, tag, errors }));
 await b.close();
