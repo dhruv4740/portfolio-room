@@ -16,12 +16,12 @@ function attachPageListeners(p) {
   p.on('requestfailed', (req) => {
     const why = req.failure()?.errorText || 'failed';
     // Closing a real-UI window removes its iframe mid-prefetch; those aborted chunk loads are not failures.
-    if (why === 'net::ERR_ABORTED' && (req.url().includes('/apps/') || /fonts\.gstatic\.com/.test(req.url()))) return;
+    if (why === 'net::ERR_ABORTED' && (req.url().includes('/apps/') || /fonts\.(gstatic|googleapis)\.com/.test(req.url()))) return;
     failedRequests.push(`${req.method()} ${req.url()} - ${why}`);
   });
   p.on('request', (req) => {
     const url = req.url();
-    if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(baseOrigin) && !url.includes('fonts.googleapis.com') && !url.includes('fonts.gstatic.com') && !url.includes('api.github.com')) {
+    if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(baseOrigin) && !url.includes('fonts.googleapis.com') && !url.includes('fonts.gstatic.com') && !url.includes('api.github.com') && !url.includes('api.open-meteo.com')) {
       externalRequests.push(url);
     }
   });
