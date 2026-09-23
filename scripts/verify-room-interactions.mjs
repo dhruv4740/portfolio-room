@@ -94,15 +94,18 @@ async function windowVisibilityCheck(label, suffix) {
   // Isolate the sash: raise the blinds first so both shots share the same
   // blinds state and only the sash slide can move pixels in the region.
   await click('BLINDS');assert.equal((await state()).blindsOpen,'1');await idle(`blinds raised for isolation (${label})`);
-  const anchor = await page.evaluate(() => window.__v3test.projectAnchor('windowOpen'));
-  const vp = page.viewportSize();
-  const marginX = vp.width * 0.12, marginY = vp.height * 0.12;
-  const region = { xMin: anchor.x - marginX, xMax: anchor.x + marginX, yMin: anchor.y - marginY, yMax: anchor.y + marginY };
   await hideSeatExit(page);
   await page.screenshot({path:`scripts/shots/window-closed-${suffix}.png`});
   const closedB64 = await screenshotBase64();
   await showSeatExit(page);
   await click('WINDOW');assert.equal((await state()).windowOpen,'1');await idle(`window open (${label})`);
+  // Project from the open view: in the true-scale room the sash anchor sits
+  // past the right edge of the seated frame at this aspect. The two shots
+  // come from different cameras on both rooms (seat vs. window view).
+  const anchor = await page.evaluate(() => window.__v3test.projectAnchor('windowOpen'));
+  const vp = page.viewportSize();
+  const marginX = vp.width * 0.12, marginY = vp.height * 0.12;
+  const region = { xMin: anchor.x - marginX, xMax: anchor.x + marginX, yMin: anchor.y - marginY, yMax: anchor.y + marginY };
   await hideSeatExit(page);
   await page.screenshot({path:`scripts/shots/window-open-${suffix}.png`});
   const openB64 = await screenshotBase64();
@@ -180,14 +183,15 @@ await page.close();
   const dayClick=async name=>{await dayPage.getByRole('button',{name,exact:true}).click();await dayPage.waitForTimeout(100);};
   const dayState=()=>dayPage.locator('.workspace-stage').evaluate(e=>({...e.dataset}));
   await dayClick('BLINDS');assert.equal((await dayState()).blindsOpen,'1');await dayPage.waitForTimeout(900);
-  const anchor=await dayPage.evaluate(()=>window.__v3test.projectAnchor('windowOpen'));
-  const vp=dayPage.viewportSize();const marginX=vp.width*0.12,marginY=vp.height*0.12;
-  const region={xMin:anchor.x-marginX,xMax:anchor.x+marginX,yMin:anchor.y-marginY,yMax:anchor.y+marginY};
   await hideSeatExit(dayPage);
   await dayPage.screenshot({path:'scripts/shots/window-closed-day.png'});
   const closedB64=(await dayPage.screenshot()).toString('base64');
   await showSeatExit(dayPage);
   await dayClick('WINDOW');assert.equal((await dayState()).windowOpen,'1');await dayPage.waitForTimeout(900);
+  // Projected from the open view, as in windowVisibilityCheck.
+  const anchor=await dayPage.evaluate(()=>window.__v3test.projectAnchor('windowOpen'));
+  const vp=dayPage.viewportSize();const marginX=vp.width*0.12,marginY=vp.height*0.12;
+  const region={xMin:anchor.x-marginX,xMax:anchor.x+marginX,yMin:anchor.y-marginY,yMax:anchor.y+marginY};
   await hideSeatExit(dayPage);
   await dayPage.screenshot({path:'scripts/shots/window-open-day.png'});
   const openB64=(await dayPage.screenshot()).toString('base64');

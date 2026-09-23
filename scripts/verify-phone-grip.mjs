@@ -12,7 +12,7 @@ try{
     sessionStorage.setItem('v3:arrival-seen','1');sessionStorage.setItem('v3:controls','open');
   });
   await page.goto((process.env.BASE||'http://localhost:4173')+'/?sky=day');
-  await page.locator('.workspace-stage[data-winter-city="ready"]').waitFor({state:'attached',timeout:30000});
+  await page.locator('.workspace-stage:is([data-winter-city="ready"],[data-winter-city="skipped"])').waitFor({state:'attached',timeout:30000});
   await page.locator('[data-launchpad-action="explore-room"]').click();await page.waitForTimeout(1800);
   await page.getByRole('button',{name:'PHONE',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.workspace-stage')?.dataset.phoneState==='reaching');

@@ -286,9 +286,11 @@ async function runAssetBudget(browser) {
     await page.locator('[data-testid="room-overview"]').waitFor({ timeout: 15_000 });
     const readiness = await waitFor(page, () => {
       const stage = document.querySelector('.workspace-stage');
-      return stage?.dataset.winterCity === 'ready'
+      // The true-scale room skips the old window's city GLB and lightmap bake.
+      const done = (v) => v === 'ready' || v === 'skipped';
+      return done(stage?.dataset.winterCity)
         && stage?.dataset.roomMaterials === 'ready'
-        && stage?.dataset.roomBake === 'ready';
+        && done(stage?.dataset.roomBake);
     }, undefined, 20_000);
     const readinessState = await page.locator('.workspace-stage').evaluate((el) => ({
       city: el.dataset.winterCity, materials: el.dataset.roomMaterials, bake: el.dataset.roomBake,

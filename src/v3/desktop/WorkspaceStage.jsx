@@ -6,6 +6,7 @@ import { createRig } from './cameraRig.js';
 // True-scale room (feat/true-scale-room). Old-room constants below were moved
 // with the seat (0,-0.49,-0.54); reach leans are halved with the shorter desk.
 import { buildCinematicWorkspace as buildWorkspace, WORKSPACE } from './buildCinematicWorkspace.js';
+import { ROOM } from './cinematicLayout.js';
 import { PHONE_SCREEN } from './phoneScreenSize.js';
 import { reportProgress } from '../lib/loadProgress.js';
 import { fetchGithubActivity, formatActivity } from '../lib/githubActivity.js';
@@ -44,6 +45,11 @@ export function resolveSkyState() {
 }
 
 // Just outside the bezel's bottom-right corner, clear of the screen text.
+// The room is enclosed, so no orbit or flight may leave it (8 cm off the walls).
+const CAMERA_MIN = new THREE.Vector3(ROOM.interior.minX + 0.08, ROOM.interior.floorY + 0.08, ROOM.interior.minZ + 0.08);
+const CAMERA_MAX = new THREE.Vector3(ROOM.interior.maxX - 0.08, ROOM.interior.ceilingY - 0.08, ROOM.interior.maxZ - 0.08);
+const clamped = new THREE.Vector3();
+
 const MONITOR_MARKER_OFFSET = new THREE.Vector3(WORKSPACE.screen.width / 2 + 0.02, -WORKSPACE.screen.height / 2 - 0.005, 0.02);
 
 export default function WorkspaceStage({
@@ -246,7 +252,7 @@ export default function WorkspaceStage({
         });
         phoneScreenRef.current?.setRect(pts.some((pt) => pt.z > 1) ? null : quadMatrix(pts, PHONE_SCREEN.width, PHONE_SCREEN.height));
       }
-      function render() { for (const h of [model.hands.left, model.hands.right]) { if(h.skinMesh){h.skinMesh.visible=h.hand.visible;if(!h.clothMesh?.userData?.hidden)h.clothMesh.visible=h.hand.visible;} } if (!state.current.seated || state.current.phase !== 'room') controls.update(); if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
+      function render() { for (const h of [model.hands.left, model.hands.right]) { if(h.skinMesh){h.skinMesh.visible=h.hand.visible;if(!h.clothMesh?.userData?.hidden)h.clothMesh.visible=h.hand.visible;} } if (!state.current.seated || state.current.phase !== 'room') { controls.update(); if (!clamped.copy(camera.position).clamp(CAMERA_MIN, CAMERA_MAX).equals(camera.position)) { camera.position.copy(clamped); camera.lookAt(controls.target); } } if(model.roomActions.state.headphones)model.roomActions.objects.headphones.visible=camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position))>0.24;const seatDistance = camera.position.distanceTo(new THREE.Vector3(...WORKSPACE.seat.position));
         // The chair reads as empty until you are in it. The body only exists
         // once the camera has arrived at the seat, so the approach never shows
         // someone already sitting there — and the head is dropped at the last
@@ -660,7 +666,7 @@ export default function WorkspaceStage({
           if(target===r.state.windowOpen){end();return;}
           const opening=target>r.state.windowOpen;
           const raiseBlindsFirst=opening&&r.state.blinds<0.5;
-          rig.flyTo({position:opening?[1.15,1.50,-.35]:WORKSPACE.seat.position,target:opening?[1.40,1.62,-4.5]:o.position.toArray()},{reduced,duration:1.05,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+          rig.flyTo({position:WORKSPACE.seat.position,target:opening?WORKSPACE.anchors.window:o.position.toArray()},{reduced,duration:1.05,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           if(reduced){
             if(raiseBlindsFirst)r.state.blinds=1;
             r.state.windowOpen=target;update();if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();return;
