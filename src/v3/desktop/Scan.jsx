@@ -301,7 +301,10 @@ export default function Scan() {
   useEffect(() => {
     const [kind, arg] = location.pathname.split('/').filter(Boolean);
     if (!kind || !introDone || screenPhase !== 'room') return undefined;
-    navigate('/', { replace: true });
+    // Only clear the URL if it is still this link. After a long main-thread
+    // stall this effect can run after a newer navigation (the tour's next
+    // step), and replacing that one dropped it: the tour skipped the OS.
+    if (window.location.hash.replace(/^#/, '').split('?')[0] === location.pathname) navigate('/', { replace: true });
     const fake = (action) => ({ currentTarget: document.querySelector(`[data-launchpad-action="${action}"]`) });
     if (kind === 'about') { setAboutOpen(true); return undefined; }
     if (kind === 'contact') { handleOpenContact(fake('contact')); return undefined; }
