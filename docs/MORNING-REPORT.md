@@ -91,13 +91,21 @@ The stack is `feat/true-scale-room` → `feat/relight` → `feat/cutscenes`, so 
 - It plays once per visitor (localStorage), and SKIP still works. Replay and reduced motion land in the final state.
 - A load stall now pauses the shot rather than skipping it (at most 50 ms of shot time per tick).
 - The sky and weather stay live. Rain is not forced for the shot.
+- **Spec deviation:** the handoff asks the shot to "settle at the desk" in first-person camera language. It ends on the standing landing view instead, because the launchpad needs that view and the suites require the overview to stay usable during arrival.
 
-**Verified:**
-- Dev suites: `verify-v3` 41/41 and `verify-after-hours` 26/26 (the arrival contract).
-  - `room-interactions` 34, `deeplinks` 12, `tour` 9 and `os-apps` 20 pass.
-  - `verify-v3` failed once with two transient 403 console errors, which did not reproduce, then passed 41/41.
-- Cold-open frames were checked at each beat; the contact sheet is `scripts/shots/cold-sheet.png` in the worktree.
-- Production build: the shot plays through, with no page errors.
+**Verified at `a6c63a5`, the final commit:**
+- Full dev suite:
+  - Pass: `verify-v3` 41, `room-interactions` 34, `after-hours` 26 (arrival contract included), `deeplinks` 12, `os-apps` 20.
+  - Exit 0: `held-objects`, `reduced-hands`, `hand-support`.
+  - `verify-phone-grip` fails, as it does on every branch.
+- **`verify-tour`: flaky.** Its "opens CrisisWatch in the OS" check failed in 3 of about 8 runs on `feat/relight` and `feat/cutscenes`, and in 0 of 3 on `feat/v3` and true-scale.
+  - When it passes, the samples show CrisisWatch open from 4 s to 14 s.
+  - The cause is not known. My hypothesis is that the first-load stall (below) overlaps the tour's early steps, but I haven't proven it.
+- **Production build of `a6c63a5`:**
+  - The shot starts about 18 s after load (it holds its first frame through the load stall), then plays through: about 7.5 s wall time, lamp on at the end, no page errors.
+  - After a reload it doesn't replay.
+- **Phone stage:** a GPU frame of FocusLock in stage mode shows no vignette or grain over the phone UI. It paints above the overlay.
+- **Frames:** checked at each cold-open beat; the contact sheet was sent.
 
 **Test edit:** the `verify-after-hours` arrival helper also clears the new localStorage key.
 
@@ -108,6 +116,7 @@ The stack is `feat/true-scale-room` → `feat/relight` → `feat/cutscenes`, so 
   - The MetaHuman licence question can't be settled from here. It needs a deep-research pass (for example Gemini or ChatGPT deep research).
   - Hands stay as they are.
 - **Pre-rendered Blender cutscene video:** not attempted.
+- **Coffee steam at the true-scale mug (0.625 scale):** not checked visually.
 - **Arrival audio:** browsers block it before a gesture, so the lamp click is visual only.
 
 ## First-load stall (profiled tonight; predates tonight's work)
