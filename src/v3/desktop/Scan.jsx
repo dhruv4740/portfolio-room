@@ -40,6 +40,12 @@ function markArrivalSeen() {
   try { sessionStorage.setItem(ARRIVAL_SEEN_KEY, '1'); localStorage.setItem(ARRIVAL_SEEN_KEY, '1'); } catch { /* private mode */ }
 }
 
+function LiveTelemetry({ sink, anchorId }) {
+  const [stats, setStats] = useState({});
+  useEffect(() => { sink.current = setStats; return () => { sink.current = null; }; }, [sink]);
+  return <Telemetry frameMs={stats.frameMs} gpuMs={stats.gpuMs} anchorId={anchorId} />;
+}
+
 export default function Scan() {
   const reduced = useMemo(() => prefersReducedMotion(), []);
   const showDebug = useMemo(() => {
@@ -54,12 +60,10 @@ export default function Scan() {
   const [arrivalToken, setArrivalToken] = useState(0);
   const nextArrivalToken = useRef(1);
   const arrivalTokenRef = useRef(0);
-  const [stats, setStats] = useState({
-    frameMs: undefined,
-    cpuMs: undefined,
-    gpuMs: undefined,
-    cameraPos: undefined,
-  });
+  // Frame stats arrive every 300 ms while the loop runs. Only the debug HUD
+  // reads them, so they go straight to it instead of re-rendering this tree.
+  const statsSink = useRef(null);
+  const handleStats = useCallback((stats) => statsSink.current?.(stats), []);
   const [liveMonitor,setLiveMonitor]=useState(false);
   const [seated, setSeated] = useState(false);
   const [overviewOpen, setOverviewOpen] = useState(true);
@@ -639,7 +643,7 @@ export default function Scan() {
         onReady={handleWorkspaceReady}
         arrivalToken={arrivalToken}
         onArrivalComplete={handleArrivalComplete}
-        onStats={setStats}
+        onStats={handleStats}
         onError={setError}
         onScreenRect={handleScreenRect}
         onTravel={handleTravel}
@@ -791,11 +795,7 @@ export default function Scan() {
       )}
 
       {/* ---- instrument chrome -------------------------------------------- */}
-      {showDebug && <Telemetry
-        frameMs={stats.frameMs}
-        gpuMs={stats.gpuMs}
-        anchorId={activeId}
-      />}
+      {showDebug && <LiveTelemetry sink={statsSink} anchorId={activeId} />}
 
       <AnchorPanel
         anchor={activeAnchor}
