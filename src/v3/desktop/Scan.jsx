@@ -260,11 +260,11 @@ export default function Scan() {
   // Keys 1–5 mirror the launchpad buttons while it is on screen.
   useEffect(() => {
     if (!introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen) return undefined;
-    const order = ['desktop-projects', 'mobile-projects', 'explore-room', 'recruiter', 'about'];
+    const order = ['desktop-projects', 'mobile-projects', 'explore-room', 'recruiter', 'about', 'tour'];
     const onKey = (e) => {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       if (e.target?.closest?.('input, textarea, [contenteditable="true"]')) return;
-      const i = '12345'.indexOf(e.key);
+      const i = '123456'.indexOf(e.key);
       if (i < 0) return;
       const button = document.querySelector(`[data-launchpad-action="${order[i]}"]`);
       if (!button) return;
@@ -458,6 +458,66 @@ export default function Scan() {
     setActiveId(null);
   }, [screenPhase]);
 
+  // 60-second guided tour: an autopilot over the same deep-link routes a
+  // visitor could use, with captions. Any real input hands control back.
+  const [tour, setTour] = useState(null); // null | { caption, step, done }
+  const tourApi = useRef({});
+  tourApi.current = { navigate, handleLeaveScreen, handleSelect };
+  const tourTimers = useRef([]);
+  const stopTour = useCallback(() => {
+    tourTimers.current.forEach(clearTimeout);
+    tourTimers.current = [];
+    setTour(null);
+  }, []);
+  const startTour = useCallback(() => {
+    stopTour();
+    const api = () => tourApi.current;
+    const steps = [
+      [0, 'This is my desk in Mumbai. Everything in the room works.', () => api().navigate('/room/explore')],
+      [6500, 'The computer runs my real web projects. This is CrisisWatch, a fact-checker.', () => api().navigate('/os/crisiswatch')],
+      [18000, 'Fraud detection: an XGBoost model scoring transactions.', () => dhruvRef.current?.openApp('fraud')],
+      [28000, 'Back to the desk.', () => api().handleLeaveScreen()],
+      [32000, 'The phone runs my Android apps. FocusLock puts friction in front of distracting apps.', () => api().navigate('/phone/focuslock')],
+      [44000, 'Expense Tracker: shared costs and Uber splits.', () => window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: 'expense' } }))],
+      [53000, 'That was the one-minute version.', () => api().handleSelect('phone')],
+      [56500, null, () => setTour({ done: true, step: 7 })],
+    ];
+    steps.forEach(([at, caption, action], step) => {
+      tourTimers.current.push(setTimeout(() => {
+        try { action(); } catch { /* a step failing must not strand the tour */ }
+        if (caption) setTour({ caption, step, done: false });
+      }, at));
+    });
+    setTour({ caption: steps[0][1], step: 0, done: false });
+  }, [stopTour]);
+  useEffect(() => () => tourTimers.current.forEach(clearTimeout), []);
+  // Real input (not the tour's own UI) interrupts the autopilot.
+  useEffect(() => {
+    if (!tour || tour.done) return undefined;
+    const interrupt = (e) => {
+      if (!e.isTrusted || e.target?.closest?.('.tour-ui')) return;
+      stopTour();
+    };
+    // A click into the OS (or an app inside it) only reaches this window as
+    // focus moving into the iframe. The tour itself never focuses a frame.
+    const onBlur = () => setTimeout(() => { if (document.activeElement?.tagName === 'IFRAME') stopTour(); }, 0);
+    const t = setTimeout(() => {
+      window.addEventListener('pointerdown', interrupt, true);
+      window.addEventListener('keydown', interrupt, true);
+      window.addEventListener('wheel', interrupt, true);
+      window.addEventListener('os:user-input', stopTour);
+      window.addEventListener('blur', onBlur);
+    }, 300);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('pointerdown', interrupt, true);
+      window.removeEventListener('keydown', interrupt, true);
+      window.removeEventListener('wheel', interrupt, true);
+      window.removeEventListener('os:user-input', stopTour);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, [tour, stopTour]);
+
   // Escape backs out one level: the embedded OS, then the selected anchor.
   useEffect(() => {
     const onKey = (e) => {
@@ -622,6 +682,9 @@ export default function Scan() {
             <button data-launchpad-action="about" onClick={() => setAboutOpen(true)}>
               <kbd className="mono">5</kbd><span className="mono">ABOUT ME</span><small>Who I am, where I've worked, what I've won · 1 min</small>
             </button>
+            <button data-launchpad-action="tour" onClick={startTour}>
+              <kbd className="mono">6</kbd><span className="mono">GUIDED TOUR</span><small>Sit back: the room shows itself · 60 s</small>
+            </button>
           </div>
           <nav className="launchpad-links mono" aria-label="Portfolio links">
             <Link to="/work" onClick={cancelArrival}>WORK</Link>
@@ -629,6 +692,24 @@ export default function Scan() {
             <button data-launchpad-action="contact" onClick={handleOpenContact}>CONTACT</button>
           </nav>
         </section>
+      )}
+
+      {tour && !tour.done && (
+        <div className="tour-ui tour-caption" role="status" aria-live="polite" data-testid="tour-caption">
+          <p>{tour.caption}</p>
+          <button className="mono" onClick={stopTour}>SKIP TOUR · ANY KEY</button>
+        </div>
+      )}
+      {tour?.done && (
+        <div className="tour-ui tour-end" role="dialog" aria-label="Tour finished" data-testid="tour-end">
+          <p className="mono">THAT WAS THE TOUR</p>
+          <div>
+            <button className="mono" onClick={() => { stopTour(); navigate(contact.resume ? '/' : '/room/drawer'); if (contact.resume) window.open(contact.resume, '_blank', 'noopener'); }}>RÉSUMÉ</button>
+            <button className="mono" onClick={() => { stopTour(); navigate('/contact'); }}>CONTACT</button>
+            <button className="mono" onClick={() => { stopTour(); navigate('/work'); }}>RECRUITER VERSION</button>
+          </div>
+          <button className="mono tour-close" onClick={stopTour} aria-label="Close">✕</button>
+        </div>
       )}
 
       {aboutOpen && (
@@ -780,6 +861,15 @@ const css = `
 .room-load i { position:absolute; inset:0; background:var(--signal); transform-origin:left; transition:transform .25s; }
 .room-load span { position:absolute; top:8px; left:50%; transform:translateX(-50%); color:#9ea39f; font-size:10px; letter-spacing:.16em; }
 .mumbai-readout { position:fixed; right:var(--gutter); bottom:14px; z-index:var(--z-panel); margin:0; padding:5px 9px; background:rgba(10,12,13,.72); color:#b2b7b4; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
+.tour-caption { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); z-index:calc(var(--z-panel) + 4); width:min(640px, calc(100vw - 32px)); padding:14px 18px; border:1px solid #555b59; border-left:2px solid var(--signal); background:rgba(13,16,17,.92); color:var(--bone); display:flex; gap:16px; align-items:center; justify-content:space-between; }
+.tour-caption p { margin:0; font-size:15px; line-height:1.45; }
+.tour-caption button { flex:none; color:#9ea39f; font-size:10.5px; letter-spacing:.12em; min-height:32px; }
+.tour-end { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:calc(var(--z-panel) + 4); padding:26px 30px; border:1px solid #555b59; border-top:2px solid var(--signal); background:#0d1011; color:var(--bone); text-align:center; }
+.tour-end p { margin:0 0 16px; color:#b7b9b2; font-size:11px; letter-spacing:.18em; }
+.tour-end div { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+.tour-end div button { padding:12px 16px; border:1px solid #555b59; color:var(--bone); font-size:12px; letter-spacing:.1em; }
+.tour-end div button:hover,.tour-end div button:focus-visible { border-color:var(--signal); }
+.tour-close { position:absolute; top:6px; right:10px; color:#9ea39f; min-height:28px; }
 .about-scrim { position:fixed; inset:0; z-index:calc(var(--z-panel) + 5); background:rgba(0,0,0,.55); display:grid; place-items:center; padding:24px; }
 .about-panel { position:relative; width:min(620px,100%); max-height:calc(100vh - 48px); overflow:auto; padding:28px 30px; border:1px solid #555b59; border-left:2px solid var(--signal); background:#0d1011; color:#d3d4cc; font-size:14px; line-height:1.6; }
 .about-panel h2 { margin:4px 0 2px; color:var(--bone); font-size:30px; font-weight:500; letter-spacing:-.03em; }

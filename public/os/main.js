@@ -166,6 +166,21 @@ function initEmbeddedBridge() {
     }
   });
 
+  // Real input inside the OS, so the host can hand control back from its
+  // guided tour (the iframe swallows these events otherwise).
+  for (const type of ['pointerdown', 'keydown', 'wheel']) {
+    window.addEventListener(type, (event) => {
+      if (event.isTrusted) postToHost({ type: 'user-input' });
+    }, { capture: true, passive: true });
+  }
+  // A click into a project app's own iframe only shows up here as focus
+  // leaving this document for that frame.
+  window.addEventListener('blur', () => {
+    setTimeout(() => {
+      if (document.activeElement?.tagName === 'IFRAME') postToHost({ type: 'user-input' });
+    }, 0);
+  });
+
   window.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     event.preventDefault();

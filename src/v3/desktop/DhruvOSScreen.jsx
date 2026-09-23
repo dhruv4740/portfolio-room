@@ -144,6 +144,8 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
       } else if (data.type === 'load-error') {
         setFrameState('error');
         onLoadError?.(data.message || 'The computer failed to start.');
+      } else if (data.type === 'user-input') {
+        window.dispatchEvent(new Event('os:user-input'));
       } else if (data.type === 'request-leave') {
         onRequestLeave?.();
       }
