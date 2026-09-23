@@ -21,7 +21,7 @@ item 12) holds item 13. Nothing was merged to main.
 | 10 | Guided tour | `19b108e` | `verify-tour` 9/9 |
 | 11 | Docs cleanup | `f3aa32d`, `493c3a5` | not applicable |
 | 12 | True-scale room | `a9689a8`, `71b6a64`, `d6cf2c9` | see below |
-| 13 | Relight | in progress | not yet |
+| 13 | Relight (partial, see below) | `3814f48`, `7b4d1e4`, `0773c89`, `578f08c` | see below |
 | 14 | Cutscenes | not started | not yet |
 
 Test infrastructure: `fab933a`, `89395f4`, `c6f1b28`.
@@ -48,6 +48,35 @@ Test infrastructure: `fab933a`, `89395f4`, `c6f1b28`.
 - **Test edits:**
   - `after-hours`, `phone-grip` and `measure-gpu` accept `skipped` for the city and the bake.
   - `room-interactions` projects the window diff region from the open view. On both branches, this check compares two different camera positions.
+
+## Item 13, `feat/relight` (based on item 12)
+
+**Landed:**
+- **GI bake for the true-scale room** (`3814f48`): Blender 5.2 Cycles at 64 samples, lamp-off and lamp-on irradiance atlases, 533 KB.
+  - Geometry and light positions come from `cinematicLayout.js`.
+  - Orientation checked: the lamp peak on the floor atlas lands on the lamp side of the desk.
+- **One texel density** across walls and floor (`7b4d1e4`): UVs in metres, with `feat/v3`'s tile sizes.
+- **Dust in the lamp beam** (`0773c89`).
+- **Lens vignette and film grain** (`578f08c`): a static CSS overlay with no WebGL cost, shown only in the room phase.
+
+**Verified:**
+- Suites match item 12.
+  - `verify-tour` failed once on the CrisisWatch check, then passed 9/9 twice on rerun. It samples every 2 s, so it is flaky.
+  - `verify-phone-grip` fails, as it does on both earlier branches.
+- GPU median, seated drag, back-to-back runs at the same pixel ratio (1.25):
+  - Mid: `feat/v3` 15.0 ms → relight 9.8 ms.
+  - High: 14.1 → 9.1 ms.
+  - Low: 13.3 → 7.5 ms.
+  - Absolute numbers drift with the machine's state, so only back-to-back runs are compared.
+
+**Tried and rejected:** AgX tone mapping. At matched exposure (2.4) the night room went flat and grey and lost the lamp pool. ACES stays; the frames are in `scripts/shots/agx-*` in the worktree.
+
+**Skipped:**
+- **Bloom:** it needs a composer and a multisampled render target on the iGPU. The room works without it.
+- **Depth of field:** belongs to cutscenes (item 14).
+- **Sound design:** I can't verify it by ear, so it is left as is. The rain layer from item 8 exists.
+- **New Poly Haven materials:** no downloads overnight. The four existing CC0 sets are used.
+- **Mumbai retune of the city GLB:** the true-scale room doesn't load that GLB.
 
 ## Skipped or open
 
