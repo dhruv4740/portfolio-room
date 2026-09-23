@@ -149,6 +149,44 @@ These were broken or made worse by the true-scale port. Its hand and camera cons
    - Screenshots: `scripts/shots/walk-1536-*.png`.
    - **Owner review:** the copy is in the first person ("built for my family"), matching the tour captions. Edit freely.
 
+### Experience sweep (2026-09-25)
+
+Tool: `scripts/sweep-objects.mjs <tag> [ids]` clicks each desk object from the seat on the real GPU. It sweeps the action and return timelines (12 frames each, plus the held state) and captions every frame with `__v3test.handsProbe()`: per hand, the deepest skin and sleeve vertex inside the desk top (mm), vertices inside the held object's mesh boxes (loose: a handle's box holds the fingers through it, so check by eye), the wrist bend, and `T`, the reach clamp's torso shift. Sheets: `scripts/shots/motion/obj-<id>-<tag>-*`.
+
+Metrics per object (tag `s4`, before fixes). Wrist max per hand:
+
+| Object | Skin in desk | Sleeve in desk | Wrist L / R | Torso shift | Frames |
+|---|---|---|---|---|---|
+| lamp | 0 | 16 mm | 34° / **159°** | **57 cm** | `obj-lamp-s1-action-sheet` |
+| coffee | 0 | 0 | 52° / 34° | 0 | `obj-coffee-s4-*` |
+| award | 0 | 0 | 56° / 42° | 4 cm | `obj-award-s4-*` |
+| notebook | 15 mm | 0 | 46° / 62° | 2 cm | `obj-notebook-s4-*` |
+| pen | **16 mm** | 12 mm | 54° / 63° | 0 | `obj-pen-s4-held.png` |
+| blinds | 0 | 0 | **144°** / 80° | **138 cm** | `obj-blinds-s2-action-sheet` |
+| window | 0 | 0 | 20° / 17° | 0 | `obj-windowOpen-s4-*` |
+| headphones | 16 mm | 16 mm | 45° / 45° | 0 | `obj-headphones-s3-action-03.png` |
+| keyboard | 0 | 0 | 20° / 17° | 0 | `obj-keyboard-s4-*` |
+| phone | 0 | 16 mm | 65° / 42° | 9 cm | `obj-phone-s4-*` |
+| résumé | 0 | 0 | 52° / 80° | 0 | `obj-drawer-s4-*` |
+
+The desk top is 35 mm thick and depth is measured to the nearest face, so 16 mm means a limb passes right through the slab.
+
+**Fixed:**
+- **Lamp and blinds: a detached arm.** The switch is 57 cm and the cord 1.38 m beyond a seated arm, and neither had a lean. The reach clamp shifted the whole torso while the camera stayed in the seat. The result: a shoulder filling the frame (lamp), an arm floating off to the window (blinds), the non-reaching hand pinned to the keyboard with its wrist at ~150°, and the sleeve through the desk.
+  - Fix: they now switch the way the window sash already does, with the hands at rest and the camera glancing at the object. After: 0 torso shift, 0 desk contact, wrists 17–20° (`obj-lamp-s5-*`, `obj-blinds-s5-*`).
+  - **Owner decision:** this drops the hand gesture for those two. Alternatives:
+    - (a) a lean of about 57 cm for the lamp, twice the largest seated lean in the code (phone/award 27–28 cm);
+    - (b) move the lamp within reach (a layout change);
+    - (c) stand up and walk to the window for the blinds.
+- **Awards frame re-captured** (it got its own held point in 5c399d2). The held view looked at the frame's origin, which is its bottom edge, so the "HACKATHONS" title was cut off at the top. It now looks at the held frame's centre (`awardCenter()`); the whole frame and every line are readable (`obj-award-s5-held.png`). Grip and wrists unchanged: 56° / 42° at the most, 38° / 38° held.
+
+**Not fixed; needs the owner or a rig change:**
+- **Forearms through the desk's front edge** (sleeve 16 mm deep): headphones pick-up, phone reach, lamp (before). The hands work low on the desk while the elbows sit below desk height, so the forearm passes through the front edge. It shows as a light stripe across the sleeve (`obj-headphones-s3-action-03.png`). Changing elbow placement in `seatedHands.js` touches every grip and every reviewed motion, so it wasn't done unattended.
+- **Pen: the writing pose is wrong.** The hand sinks into the notebook and desk with only the thumb showing, and the pencil stands vertical above it instead of lying in the fingers (`obj-pen-s4-held.png`). The pose is derived from a writing-hand orientation (`PEN` in `WorkspaceStage.jsx`: the two direction vectors `f` and `n`) and needs re-authoring while watching the motion.
+- **Notebook:** skin 15 mm into the desk during pick-up and put-down (`obj-notebook-s4-*`). Not yet inspected frame by frame.
+- **Awards frame:** fingertips show below its bottom edge, and the frame reads small next to the hands. It's probably still at the props' 0.625 scale, which the résumé page was taken off in 5c399d2. A look decision.
+- **Headphones:** both hands pass right in front of the camera on the way to the ears (1.50 s). The code comment says this is intended ("carry them up past the camera").
+
 ### Test suite
 
 - `verify-phone-grip` fails its skin-clipping assertion. This predates 2026-09-23.

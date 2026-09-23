@@ -619,6 +619,18 @@ export default function WorkspaceStage({
       const AWARD_LEAN = { x: -0.1, y: -0.08, z: -0.25 };
       const AWARD_HELD = { x: 0.05, y: 1.07, z: 0.28 };
       const AWARD_HELD_X = 1.13 - Math.PI / 2;
+      // The frame's origin is its bottom edge (it stands on the desk), so looking
+      // at AWARD_HELD cut its title off the top of the view. Look at the held
+      // frame's centre instead, measured once from its bounds in that pose.
+      let awardLook = null;
+      function awardCenter() {
+        if (awardLook) return awardLook;
+        const o = model.roomActions.objects.award, p = o.position.clone(), r = o.rotation.clone();
+        o.position.set(AWARD_HELD.x, AWARD_HELD.y, AWARD_HELD.z); o.rotation.set(AWARD_HELD_X, 0, 0); o.updateMatrixWorld(true);
+        awardLook = new THREE.Box3().setFromObject(o).getCenter(new THREE.Vector3());
+        o.position.copy(p); o.rotation.copy(r); o.updateMatrixWorld(true);
+        return awardLook;
+      }
       const awardGrip = { pick: 0, left: 0, right: 0 };
       const upright = q => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2).multiply(q);
       const AWARD_R = upright(edgeGrip(1)), AWARD_L = upright(edgeGrip(-1));
@@ -771,12 +783,12 @@ export default function WorkspaceStage({
           rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           const target=1-r.state[id];
           if(reduced){r.state[id]=target;update();end();return;}
-          // Index finger presses the lamp switch; a pinch takes the blind cord.
-          const from=snapshot(h),AT={p:new THREE.Vector3(o.position.x,o.position.y+0.08,o.position.z+0.08),q:from.q.clone(),pose:id==='lamp'?'point':'pinch'},k={reach:0,release:0};
-          action=gsap.timeline({onUpdate(){if(k.release>0)hold(h,AT,restOf(h),k.release);else hold(h,from,AT,k.reach);update();},onComplete:end});
-          action.to(k,{reach:1,duration:0.5,ease:'power2.inOut'},0)
-            .to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'},0.5)
-            .to(k,{release:1,duration:0.5,ease:'power2.inOut'},'>');
+          // The lamp switch (rear desk corner) is 57 cm and the blind cord 1.4 m
+          // beyond a seated arm. Reaching them shifted the whole torso away from
+          // the camera (a detached arm, the other wrist bent ~150 degrees), so,
+          // like the window sash, they switch while the hands stay at rest.
+          action=gsap.timeline({onUpdate:update,onComplete:end});
+          action.to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'},0.45);
           gsap.ticker.wake();return;
         }
         if(id==='pen') {
@@ -800,7 +812,7 @@ export default function WorkspaceStage({
           const reading=()=>{host.dataset.actionState='award-reading';invalidate();};
           if(reduced){
             o.position.set(AWARD_HELD.x,AWARD_HELD.y,AWARD_HELD.z);o.rotation.set(AWARD_HELD_X,0,0);Object.assign(k,{pick:1,left:1,right:1});update();poseAward();
-            rig.flyTo({position:WORKSPACE.seat.position,target:[AWARD_HELD.x,AWARD_HELD.y,AWARD_HELD.z]},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+            rig.flyTo({position:WORKSPACE.seat.position,target:awardCenter().toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
             reading();return;
           }
           startLean();
@@ -810,7 +822,7 @@ export default function WorkspaceStage({
             .to(k,{pick:1,duration:0.6,ease:'power2.inOut'},0)
             .to(o.position,{y:home.y+0.08,duration:0.3,ease:'power2.out'},0.6)
             .to(model.hands.lean,{...ZERO,duration:0.9,ease:'power2.inOut'},0.9)
-            .to(look,{...AWARD_HELD,duration:0.9,ease:'power2.inOut'},0.9)
+            .to(look,{x:awardCenter().x,y:awardCenter().y,z:awardCenter().z,duration:0.9,ease:'power2.inOut'},0.9)
             .to(o.position,{...AWARD_HELD,duration:0.9,ease:'power2.inOut'},0.9)
             .to(o.rotation,{x:AWARD_HELD_X,y:0,duration:0.9,ease:'power2.inOut'},0.9)
             .to(k,{left:1,duration:0.9,ease:'power2.inOut'},0.9)
@@ -1151,7 +1163,7 @@ export default function WorkspaceStage({
           // Zoomed in on a held page: the pointer moves the gaze across it.
           const rect = renderer.domElement.getBoundingClientRect(), zoom = (56 - camera.fov) / 38;
           const nx = (event.clientX - rect.left) / rect.width * 2 - 1, ny = (event.clientY - rect.top) / rect.height * 2 - 1;
-          const c = extraHeld === 'award' ? AWARD_HELD : PAGE_HELD;
+          const c = extraHeld === 'award' ? awardCenter() : PAGE_HELD;
           look.set(c.x + nx * 0.09 * zoom, c.y - ny * 0.13 * zoom, c.z);
           camera.lookAt(look); controls.target.copy(look); invalidate(); return;
         }
@@ -1347,19 +1359,23 @@ export default function WorkspaceStage({
           },
           // Re-solve the drawer handle grip with other offsets and re-pose (tuning only).
           tuneDrawerHandle(opts) { drawerGrips = drawerGripsFor(model.roomActions.objects.drawer, model.roomActions.resumePage, opts); poseDrawer(); invalidate(); return this.drawerClip(); },
-          // Right-hand skin and sleeve vertices inside the drawer's wooden parts (1 mm tolerance).
-          // Per hand: [skin + sleeve vertices inside the desk, inside the held object's own meshes, wrist bend in degrees].
+          // Per hand: [deepest skin, deepest sleeve vertex inside the desk top (mm), skin + sleeve vertices inside the
+          // held object's own mesh boxes (loose: a handle's box holds the fingers through it), wrist bend in degrees].
           handsProbe() {
             model.root.updateMatrixWorld(true);
             const desk=model.staticBoxes.desk.clone().expandByScalar(-.001),p=new THREE.Vector3(),q=new THREE.Vector3(),held=[],out={};
             const obj=extraHeld?model.roomActions.objects[extraHeld]:phoneInHand?model.phone:notebookInHand?model.notebook:null;
             obj?.traverse(o=>{if(!o.isMesh||!o.visible)return;o.geometry.computeBoundingBox();held.push({box:o.geometry.boundingBox.clone().expandByScalar(-.001),inv:o.matrixWorld.clone().invert()});});
-            for(const [k,h] of [['L',model.hands.left],['R',model.hands.right]]){let d=0,i=0;
-              for(const mesh of [h.skinMesh,h.clothMesh]){if(!mesh?.visible)continue;const pos=mesh.geometry.attributes.position;
-                for(let v=0;v<pos.count;v++){p.fromBufferAttribute(pos,v);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(v,p);p.applyMatrix4(mesh.matrixWorld);if(desk.containsPoint(p))d++;if(held.some(b=>b.box.containsPoint(q.copy(p).applyMatrix4(b.inv))))i++;}}
-              out[k]=[d,i,Math.round(h.wristDeg)];}
+            const depth=v=>Math.min(v.x-desk.min.x,desk.max.x-v.x,v.y-desk.min.y,desk.max.y-v.y,v.z-desk.min.z,desk.max.z-v.z);
+            for(const [k,h] of [['L',model.hands.left],['R',model.hands.right]]){const d=[0,0];let i=0;
+              [h.skinMesh,h.clothMesh].forEach((mesh,m)=>{if(!mesh?.visible)return;const pos=mesh.geometry.attributes.position;
+                for(let v=0;v<pos.count;v++){p.fromBufferAttribute(pos,v);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(v,p);p.applyMatrix4(mesh.matrixWorld);if(desk.containsPoint(p))d[m]=Math.max(d[m],depth(p));if(held.some(b=>b.box.containsPoint(q.copy(p).applyMatrix4(b.inv))))i++;}});
+              out[k]=[Math.round(d[0]*1000),Math.round(d[1]*1000),i,Math.round(h.wristDeg)];}
+            // Body shift the reach clamp added on top of the authored lean (cm): non-zero means a target out of arm's reach.
+            out.T=model.hands.torsoOffset.toArray().map(v=>Math.round(v*100));
             return out;
           },
+          // Right-hand skin and sleeve vertices inside the drawer's wooden parts (1 mm tolerance).
           drawerClip() {
             model.root.updateMatrixWorld(true);
             const h=model.hands.right,parts=model.roomActions.objects.drawer.children.filter(o=>o.isMesh),p=new THREE.Vector3(),q=new THREE.Vector3(),out={};

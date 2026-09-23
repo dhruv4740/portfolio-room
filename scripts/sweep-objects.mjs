@@ -1,7 +1,8 @@
 // Every desk object from the seat, on the real GPU: the action timeline swept at
 // even steps (slowed, not paused, so the render loop keeps running), the held
 // state, and the return. Each frame is captioned with __v3test.handsProbe():
-// per hand, skin vertices inside the desk / inside the held object, and wrist bend.
+// per hand, deepest skin / sleeve vertex inside the desk top (mm), vertices inside the held object's
+// mesh boxes (loose), and wrist bend; T is the reach clamp's torso shift (cm).
 //   BASE=http://localhost:4175 node scripts/sweep-objects.mjs [tag] [lamp,coffee,...]
 // Output: scripts/shots/motion/obj-<id>-<tag>-<phase>-sheet.png (+ single frames).
 // Camera flights (rig.flyTo) run outside the action timeline, so a seeked frame
@@ -72,11 +73,18 @@ for (const [id, label] of OBJECTS) {
   const held = await probe(); log(`obj-${id} held ${JSON.stringify(held)} actionState=${await stage('actionState')}`);
   await mark();
   const back = p.getByRole('button', { name: 'BACK TO SEAT', exact: true });
-  if (await back.isVisible().catch(() => false)) await back.click(); else await p.keyboard.press('Escape');
+  // Held objects return with BACK TO SEAT; switches (lamp, blinds, window) toggle back with a second click.
+  // Escape with nothing held would stand the visitor up.
+  if (id === 'phone') await p.keyboard.press('Escape'); // the phone stage owns Escape
+  else if (await back.isVisible().catch(() => false)) await back.click();
+  else if (['lamp', 'blinds', 'windowOpen'].includes(id)) { await idle(); await mark(); await p.getByRole('button', { name: label, exact: true }).click(); }
+  else log(`obj-${id}: no return control`);
   const ret = await capture(id, 'return');
+  if (id === 'phone') await p.waitForFunction(() => document.querySelector('.workspace-stage')?.dataset.phoneState === 'desk', null, { timeout: 20000 }).catch(() => log('phone not back on the desk'));
   const all = [...go, { data: held }, ...ret].map(f => f.data);
-  summary.push({ id, maxDesk: Math.max(...all.flatMap(d => [d.L[0], d.R[0]])), maxHeld: Math.max(...all.flatMap(d => [d.L[1], d.R[1]])),
-    maxWristL: Math.max(...all.map(d => d.L[2])), maxWristR: Math.max(...all.map(d => d.R[2])) });
+  const max = f => Math.max(...all.map(f));
+  summary.push({ id, skinInDeskMm: max(d => Math.max(d.L[0], d.R[0])), sleeveInDeskMm: max(d => Math.max(d.L[1], d.R[1])), heldVerts: max(d => Math.max(d.L[2], d.R[2])),
+    wristL: max(d => d.L[3]), wristR: max(d => d.R[3]), torsoCm: Math.round(max(d => Math.hypot(...d.T))) });
 }
 await idle();
 for (const s of summary) console.log(JSON.stringify(s));
