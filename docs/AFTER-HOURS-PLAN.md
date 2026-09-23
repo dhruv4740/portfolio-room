@@ -103,7 +103,7 @@ Measure fixed camera paths and settings; rAF cadence is not GPU cost.
 ## Delegation and continuation rules
 
 **Superseded team policy (latest owner instruction):** use
-[TEAM-COORDINATION.md](TEAM-COORDINATION.md). Codex owns 3D; external Claude
+[TEAM-COORDINATION.md](archive/TEAM-COORDINATION.md). Codex owns 3D; external Claude
 Opus owns bounded application logic; external Gemini 3.8 Flash replaces Luna
 for workhorse tasks. Internal subagents are stopped. The paragraph below is
 historical and must not be used to launch Luna/Sol agents.

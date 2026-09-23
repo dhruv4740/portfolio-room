@@ -3,28 +3,20 @@
 Operational guide for any coding agent in this repo. Setup, commands,
 invariants, traps. Narrative and rationale live in `docs/`.
 
-**Start with [docs/HANDOFF-OVERNIGHT.md](docs/HANDOFF-OVERNIGHT.md)** — it supersedes every ownership, team and handoff note below.
-and what is genuinely unverified.
+**Start with [docs/HANDOFF-OVERNIGHT.md](docs/HANDOFF-OVERNIGHT.md)** for the
+current queue, then [docs/STATE.md](docs/STATE.md).
 
-**Current execution authority (2026-09-20):** Opus leads the next multi-pass
-integration run and may coordinate Gemini. Read
-[docs/OPUS-GEMINI-CONTINUATION.md](docs/OPUS-GEMINI-CONTINUATION.md) and
-[docs/TEAM-COORDINATION.md](docs/TEAM-COORDINATION.md) for live ownership,
-reserved hand files, Git writer and exclusive GPU slot. Older prompt scopes
-are historical. No internal subagents. Codex's authored-hand prototype is
-opt-in and depicts fingerless gloves; it is not a bare-hand replacement.
+**Who works here.** One agent (Claude) owns the whole repo: code, 3D, tests,
+docs. There are no file reservations and no GPU-slot protocol. Subagents are
+allowed for exploration (Sonnet or Haiku). An optional offline Gemini lane
+exists for menial, well-specified work: write a self-contained prompt (template
+[docs/PROMPT-GEMINI-WORKHORSE.md](docs/PROMPT-GEMINI-WORKHORSE.md)), the owner
+forwards it, and nothing blocks on it. Old team, ownership and prompt documents
+are in `docs/archive/` and are historical only.
 
-**Active parallel work:** read [docs/TEAM-COORDINATION.md](docs/TEAM-COORDINATION.md)
-before editing. The owner now uses Codex for 3D, external Claude Opus for
-application logic, and external Gemini 3.8 Flash for tests/docs. No internal
-subagents. Respect exclusive file ownership and the single build/browser slot.
-
-**Active direction: After Hours.** Read `docs/AFTER-HOURS-PLAN.md` and
-`docs/AFTER-HOURS-HANDOFF.md` before editing. GTA V/RDR2 physical realism is
-the owner-approved target across all scene assets, not an achieved claim.
-Parent owns 3D. Supporting subagents must be Luna high/xhigh (max when needed);
-Sol low/medium only for a concrete problem Luna cannot solve. Max three
-subagents concurrently. Update the continuation ledger before stopping.
+**Direction.** GTA V/RDR2-feeling physical realism for one room is the
+owner-approved target, not an achieved claim. The room is set in Mumbai: the sky
+follows IST and the weather is live (never snow).
 
 ## What this is
 
@@ -62,11 +54,13 @@ you to `curl` a `.splat` file, they are stale — ignore them.**
 
 ```bash
 npm run build     # production build
-npm run dev       # dev server
+npm run dev       # dev server (port 4173 via .claude/launch.json)
 node node_modules/vite/bin/vite.js preview --host localhost --port 4173
-BASE=http://localhost:4173 node scripts/verify-v3.mjs
-BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
-BASE=http://localhost:4173 node scripts/verify-real-apps.mjs
+GPU=1 BASE=http://localhost:4173 node scripts/verify-v3.mjs
+GPU=1 BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
+GPU=1 BASE=http://localhost:4173 node scripts/verify-deeplinks.mjs
+GPU=1 BASE=http://localhost:4173 node scripts/verify-tour.mjs
+GPU=1 node scripts/report-frames.mjs <prefix>   # landing, seated, hands, window frames
 node scripts/build-apps.mjs darksentinel   # rebuild a real project UI into public/apps/
 ```
 
@@ -76,6 +70,11 @@ Playwright harness is the entire quality signal.
 
 The verification scripts default to `http://localhost:4173`; keep the preview
 and `BASE` on that same origin so a run cannot silently test another server.
+**Run Playwright suites with `GPU=1`** (real AMD iGPU through ANGLE D3D11).
+Without it, software rendering starves input and clicks hang. Never trust a
+SwiftShader frame for a visual claim. The dev server has run every suite so far;
+also check a production build (`npm run build`, then preview) before claiming a
+release works, because the two use different JSX transform paths.
 
 ## Invariants
 
@@ -109,7 +108,7 @@ has a `PORTFOLIO.md` listing every changed file); `node scripts/build-apps.mjs`
 writes the static output to `public/apps/<name>/`, which is committed so the
 portfolio build never needs the app's toolchain. A window is
 `iframeApp({...})` from `public/os/shell/iframeApp.js`. Recipe and readability
-floor: `docs/PROMPT-R8-GEMINI.md`. Never edit the source repos.
+floor: `docs/archive/PROMPT-R8-GEMINI.md`. Never edit the source repos.
 
 **Android browser demos may be faithful reconstructions** (owner-approved).
 Keep them close to the original UI and label them honestly. The phone's
@@ -148,25 +147,29 @@ not the procedural fallback.
   visual proof on the GPU path or in a real browser.
 - **Static exports hydrate late in headless.** The HTML is there before React
   is; a click before hydration does nothing. `verify-real-apps.mjs` waits for it.
-- **Dead v1/v2 code**: `src/App.jsx`, `src/Shell.jsx`, `src/routes/`,
-  `src/flagship/`, `src/components/`. Unreferenced. Do not repair or import.
+- **Dead v1/v2 code**: `src/game`, `src/hooks`, `src/store`, `src/data`,
+  `src/lib`, `src/lab`, `src/content`, `src/shaders`, `src/index.css`,
+  `src/flagship`, `src/components`. Unreferenced (deletion approved, pending).
+  Do not repair or import. Their npm dependencies are already removed.
   Precedent: a stale `manualChunks` entry was force-emitting a dead 514KB chunk.
   The former lab gallery and its HTML files are removed. The four retained
   sketches are dependency-free OS apps in `public/os/apps/` and are registered
   in `public/os/shell/registry.js`.
-- **`SplatStage.jsx`, `splatBounds.js` and `@sparkjsdev/spark` are historical.**
-  The Gaussian-splat direction was abandoned — the placeholder was a shoe and
-  the user rejected it. Nothing imports them. Do not restore the shoe, do not
-  re-source a capture, and treat any capture/normalised-bounds rules in older
-  docs as applying only to that dead renderer.
+- **The Gaussian-splat direction is gone** (the placeholder was a shoe and the
+  owner rejected it). Do not restore it; capture/splat rules in archived docs
+  do not apply.
+- **The seated figure's head is invisible but real geometry.** Raycasts must
+  skip `model.figure.root` or every click from the seat hits the hair.
 - **Gravity in the embedded OS needs Matter.js** and is unavailable on the
   dependency-free embedded path. Known, not a bug to chase.
 
 ## Git
 
-- Never commit to `main`/`master`. Current work is on `feat/v3`.
+- Never commit to `main`/`master`, never merge to main. Current work is on
+  `feat/v3`; big bets get their own branch.
 - Conventional Commits, subject under 72 chars, no trailing period.
-- Commit locally per logical unit. **Do not push** — no remote is configured.
+- Commit per logical unit and push. Remote `origin` is the private
+  `dhruv4740/portfolio-room` (not the unrelated `dhruv4740/portfolio`).
 - No attribution or co-author lines.
 
 ## Working style the user expects
@@ -207,12 +210,14 @@ src/v3/
   (public/os/shell/iframeApp.js  window wrapper for a built project UI)
 apps/<name>/            copied project source + mock layer + PORTFOLIO.md
 public/apps/<name>/     its static build (committed; scripts/build-apps.mjs)
-    SplatStage.jsx      DEAD — historical splat renderer, unimported
-    splatBounds.js      DEAD — supports SplatStage only
   mobile/Deck.jsx       100dvh scroll-snap + gyro
   work/Work.jsx         static recruiter page, no WebGL
-  ui/                   Telemetry, AnchorPanel, ScanIntro
-docs/                   HANDOFF first, then VISION, DECISIONS, STATE, ROADMAP, DESIGN
+  ui/                   Telemetry, AnchorPanel, ScanIntro, CommandPalette (Ctrl/Cmd+K)
+  lib/loadProgress.js   real load progress (boot bar, room-detail bar)
+  lib/mumbai.js         IST sky + Open-Meteo weather (?sky=, ?weather= overrides)
+  lib/githubActivity.js public GitHub events on the monitor idle screen
+docs/                   HANDOFF-OVERNIGHT first, then STATE, VISION, DECISIONS, DESIGN
+docs/archive/           superseded prompts, team docs and handoffs (historical)
 scripts/verify-v3.mjs   Playwright harness
 scripts/shots-hands.mjs every hand grip as a frame + wrist angles (GPU=1 for the real GPU)
 scripts/verify-reduced-hands.mjs  reduced-motion: each action lands held at once
