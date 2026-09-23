@@ -41,6 +41,8 @@ export function resolveSkyState() {
   return mumbaiSky();
 }
 
+const MONITOR_MARKER_OFFSET = new THREE.Vector3(0.66, -0.40, 0.02);
+
 export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
   onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
@@ -179,7 +181,11 @@ export default function WorkspaceStage({
         const rect = host.getBoundingClientRect();
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
-          projected.set(...point).project(camera);
+          // The monitor's marker sits on the bezel's bottom-right corner, not the
+          // screen centre, so its label never covers the monitor's own menu.
+          projected.set(...point);
+          if (id === 'monitor') projected.add(MONITOR_MARKER_OFFSET);
+          projected.project(camera);
           const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee','drawer','pen'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
@@ -1050,7 +1056,10 @@ export default function WorkspaceStage({
         // Hands rest on the keys; clicks pass through them to whatever is underneath.
         const hands = [model.hands.left, model.hands.right];
         const isHand = o => hands.some(h => o === h.arm || o === h.sleeve || o === h.elbow || h.hand === o || (() => { for (let p = o.parent; p; p = p.parent) if (p === h.hand) return true; return false; })());
-        const result = raycaster.intersectObject(model.root, true).find(r => !isHand(r.object));
+        // The seated figure's head is never drawn but is still geometry; without
+        // this its hair swallowed every click from the seat.
+        const inFigure = o => { for (let p = o; p; p = p.parent) if (p === model.figure.root) return true; return false; };
+        const result = raycaster.intersectObject(model.root, true).find(r => !isHand(r.object) && !inFigure(r.object));
         host.dataset.hitKey = result?.object === model.keys ? String(result.instanceId) : '';
         return result?.object.userData.anchorId || null;
       }
