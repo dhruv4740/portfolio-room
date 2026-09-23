@@ -72,3 +72,8 @@ are in `archive/` and the git log.
       - `verify-room-interactions` projects the window diff region from the
         open view.
 - Suites that don't pass `?sky=` see day or dusk during Mumbai daytime.
+- **Relight (item 13, also on this branch):** the true-scale room has its own baked lighting, one texture density across walls and floor, dust in the lamp beam, and a CSS vignette and grain. GPU cost is below `feat/v3` on every tier.
+- **Cold open (item 14):** 7.2 s from the doorway, lamp click, typed name; once per visitor and skippable.
+- **First-load stall:** after the room appears, the page freezes for 14–21 s on this iGPU while shaders compile (79 programs, 3 shadow-casting lights). It predates this branch, and a fix needs an owner decision.
+- `verify-tour` is flaky on this branch: the CrisisWatch sample failed in 3 of about 8 runs.
+- Full overnight account: `docs/MORNING-REPORT.md` on `feat/v3`.
