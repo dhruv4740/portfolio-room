@@ -21,7 +21,7 @@ function attachPageListeners(p) {
   });
   p.on('request', (req) => {
     const url = req.url();
-    if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(baseOrigin) && !url.includes('fonts.googleapis.com') && !url.includes('fonts.gstatic.com')) {
+    if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(baseOrigin) && !url.includes('fonts.googleapis.com') && !url.includes('fonts.gstatic.com') && !url.includes('api.github.com')) {
       externalRequests.push(url);
     }
   });

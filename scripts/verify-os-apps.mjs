@@ -24,7 +24,7 @@ page.on('requestfailed', (request) => failedRequests.push(`${request.method()} $
 page.on('request', (request) => {
   const url = request.url();
   // The real project UIs (public/apps/*) load their own web fonts from Google; everything else must stay on-origin.
-  if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(new URL(BASE).origin) && !/fonts\.g(oogleapis|static)\.com/.test(url)) externalRequests.push(url);
+  if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(new URL(BASE).origin) && !/fonts\.g(oogleapis|static)\.com|api\.github\.com/.test(url)) externalRequests.push(url);
 });
 
 await page.addInitScript(() => {

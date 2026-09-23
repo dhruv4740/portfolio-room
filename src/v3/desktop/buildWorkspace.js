@@ -660,6 +660,15 @@ export function buildWorkspace(scene, options = {}) {
     clearNotes() { const c = notes.image; drawBlankPage(c.getContext('2d'), c.width, c.height); notes.needsUpdate = true; },
     resetNotebook() { notebook.position.set(...WORKSPACE.anchors.notebook); notebook.rotation.set(0, 0, 0); },
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
+    // One line of live GitHub activity under the "Selected work" panel.
+    setGithubActivity(line) {
+      const texture = displayMaterial.map, ctx = texture.image.getContext('2d');
+      ctx.fillStyle = '#152028'; ctx.fillRect(72, 530, 900, 34);
+      ctx.fillStyle = '#3ecf8e'; ctx.beginPath(); ctx.arc(82, 547, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#9ea39f'; ctx.font = '17px monospace';
+      ctx.fillText(`GITHUB  ${line}`.slice(0, 84), 96, 553);
+      texture.needsUpdate = true;
+    },
     resetPhone() { phone.position.set(...WORKSPACE.anchors.phone); phone.rotation.set(0,0,0); phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07; },
     setHandsVisible(visible) { hands.root.visible = visible; },
     setEntryPower(value) { pendantLight.intensity = 0.85 * value; pendantMaterial.emissiveIntensity = 0.7 * value; ceilingFixture.update(value); },

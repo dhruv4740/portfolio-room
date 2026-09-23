@@ -6,6 +6,7 @@ import { createRig } from './cameraRig.js';
 import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
 import { PHONE_SCREEN } from './phoneScreenSize.js';
 import { reportProgress } from '../lib/loadProgress.js';
+import { fetchGithubActivity, formatActivity } from '../lib/githubActivity.js';
 
 // The phone UI and its apps load after the room is up (idle prefetch below),
 // not with the first paint.
@@ -1109,6 +1110,12 @@ export default function WorkspaceStage({
       afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });
       callbacks.current.onReady?.({ splatCount: null });
+      fetchGithubActivity().then(items => {
+        if (disposed || !items?.length || !model.setGithubActivity) return;
+        model.setGithubActivity(formatActivity(items[0]));
+        host.dataset.githubActivity = 'ready';
+        invalidate();
+      });
       const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1500));
       idle(() => loadPhoneScreen().then(() => setPhoneWanted(true), () => {}), { timeout: 4000 });
       let entryPlayed = false;
