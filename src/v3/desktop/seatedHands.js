@@ -140,7 +140,7 @@ export function seatedHands() {
   }
 
   const wristW = new THREE.Vector3(), s = new THREE.Vector3(), s0 = new THREE.Vector3(), dir = new THREE.Vector3(), pole = new THREE.Vector3();
-  const elbowW = new THREE.Vector3(), elbowL = new THREE.Vector3(), ax = new THREE.Vector3(), ay = new THREE.Vector3(), az = new THREE.Vector3();
+  const ideal = new THREE.Vector3(), elbowW = new THREE.Vector3(), elbowL = new THREE.Vector3(), ax = new THREE.Vector3(), ay = new THREE.Vector3(), az = new THREE.Vector3();
   function updateHand(h) {
     applyPose(h);
     h.hand.updateMatrixWorld(true);
@@ -148,7 +148,15 @@ export function seatedHands() {
     s0.copy(h.shoulder).add(lean).add(torsoOffset); s.copy(s0);
     dir.subVectors(wristW, s); let distance = dir.length(); dir.normalize();
     if (distance > REACH) { s.addScaledVector(dir, distance - REACH); distance = REACH; }
-    pole.set(h.side * 0.25, -1, 0.1); pole.addScaledVector(dir, -pole.dot(dir)).normalize();
+    pole.set(h.side * 0.25, -1, 0.1);
+    // Opt-in (elbowFollow 0..1): pull the elbow toward where the hand's own
+    // wrist axis points, so an authored grip far from the keyboard keeps a
+    // straight wrist instead of hanging off an elbow that always drops down.
+    if (h.elbowFollow > 0) {
+      ideal.set(0, 0, 1).transformDirection(h.hand.matrixWorld).multiplyScalar(FOREARM).add(wristW).sub(s);
+      ideal.addScaledVector(dir, -ideal.dot(dir)); if (ideal.lengthSq() > 1e-8) pole.normalize().lerp(ideal.normalize(), h.elbowFollow);
+    }
+    pole.addScaledVector(dir, -pole.dot(dir)).normalize();
     // Two unequal bones: the elbow sits `along` the shoulder-wrist line and `drop` toward the pole.
     const along = (distance * distance + UPPER_ARM * UPPER_ARM - FOREARM * FOREARM) / (2 * distance);
     elbowW.copy(s).addScaledVector(dir, along).addScaledVector(pole, Math.sqrt(Math.max(0, UPPER_ARM * UPPER_ARM - along * along)));
@@ -183,7 +191,7 @@ export function seatedHands() {
     lean.set(0, 0, 0);
     for (const h of hands) {
       h.hand.position.set(h.restX??h.side*HAND_REST.x, HAND_REST.y+(h.restLift||0), h.restZ??HAND_REST.z); h.hand.rotation.set(0, h.side*(h.restYaw??HAND_REST.yaw), 0);
-      Object.assign(h.pose, POSES.rest); for (const f of h.fingers) f.rotation.x = 0;
+      Object.assign(h.pose, POSES.rest); for (const f of h.fingers) f.rotation.x = 0; h.elbowFollow = 0;
       h.hand.visible = h.arm.visible = h.sleeve.visible = h.elbow.visible = true;
     }
     update();

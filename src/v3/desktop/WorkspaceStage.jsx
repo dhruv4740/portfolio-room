@@ -312,6 +312,8 @@ export default function WorkspaceStage({
       // length from an upright seat, so reaching leans the body in (camera and
       // shoulders together) instead of stretching the arm.
       const SEAT = new THREE.Vector3(...WORKSPACE.seat.position), look = new THREE.Vector3();
+      // Head offset on top of the shared body lean (the drawer bends the neck, not the shoulders).
+      const head = new THREE.Vector3();
       const REST_AXIS = new THREE.Vector3(0, 1, 0);
       const REST = [-1, 1].map(s => ({ p: new THREE.Vector3(s * HAND_REST.x, HAND_REST.y, HAND_REST.z), q: new THREE.Quaternion(), pose: POSES.rest }));
       const restOf = h => {const rest=REST[h === model.hands.left ? 0 : 1];rest.p.set(h.restX??h.side*HAND_REST.x,HAND_REST.y+(h.restLift||0),h.restZ??HAND_REST.z);rest.q.setFromAxisAngle(REST_AXIS,h.side*(h.restYaw??HAND_REST.yaw));return rest;};
@@ -357,9 +359,10 @@ export default function WorkspaceStage({
       function startLean() {
         rig.dispose(); look.copy(controls.target);
         model.hands.lean.copy(camera.position).sub(SEAT); if (model.hands.lean.length() > 0.7) model.hands.lean.set(0, 0, 0);
+        head.set(0, 0, 0);
       }
       function leanCamera() {
-        camera.position.copy(SEAT).add(model.hands.lean); camera.lookAt(look); controls.target.copy(look);
+        camera.position.copy(SEAT).add(model.hands.lean).add(head); camera.lookAt(look); controls.target.copy(look);
         camera.fov = 56; camera.updateProjectionMatrix();
       }
       const SEAT_LOOK = { x: WORKSPACE.seat.target[0], y: WORKSPACE.seat.target[1], z: WORKSPACE.seat.target[2] };
@@ -547,17 +550,41 @@ export default function WorkspaceStage({
       // 29 cm from the eye: the full 21 x 27.9 cm sheet fills most of the view, readable without zooming.
       const PAGE_HELD = { x: 0.05, y: 1.107, z: 0.358 };
       const DRAWER_LEAN = { x: 0.15, y: -0.12, z: -0.025 };
+      // The head bends out over the open drawer, ahead of the right shoulder, so
+      // the reaching arm stays at the frame's edge instead of across it.
+      const DRAWER_HEAD = { x: 0.14, y: -0.02, z: -0.1 };
       const drawerGrip = { handle: 0, pick: 0, right: 0, left: 0 };
+      // Drawer grips live in the drawer's scaled frame, but the hand is not
+      // scaled: offsets are world metres divided by the drawer's scale.
+      // Handle: palm toward the front panel, fingers down and hooked under the
+      // pull, wrist tipped back toward the body. Pick: fingertips down on the
+      // page, wrist high enough to clear the front panel. Via: over the front
+      // panel between the two.
+      let drawerGrips = null;
+      function drawerGripsFor(drawer, page, { y = 0.09, z = 0.09, tilt = 0, via = [0.08, 0.2, 0.06], viaDown = false, pickY = 0.13, pickYaw = -0.3, pickPitch = -0.75, pickRoll = 0, heldTilt = 0.6, heldX = 0.14, heldZ = 0.07, restVia = [-0.22, 0.28, 0.22] } = {}) {
+        const s = drawer.scale.x;
+        const wrist = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt)), back = new THREE.Vector3(0, -Math.sin(tilt), Math.cos(tilt));
+        return {
+          HANDLE: { obj: drawer, p: [0, y / s, z / s], r: basisGrip(new THREE.Vector3().crossVectors(back, wrist), back, wrist), pose: 'hook' },
+          // Keyboard to handle and back: out past the desk's front edge, not through it.
+          REST_VIA: { obj: drawer, p: restVia.map(v => v / s), r: [-0.7, 0, 0], pose: 'open' },
+          VIA: { obj: drawer, p: via.map(v => v / s), r: viaDown ? basisGrip(new THREE.Vector3().crossVectors(back, wrist), back, wrist) : [-0.4, 0, 0], pose: 'open' },
+          PICK: { obj: page, p: [0.1, pickY, 0.1], r: new THREE.Quaternion().setFromEuler(new THREE.Euler(pickPitch, pickYaw, pickRoll, 'YXZ')), pose: 'flat' },
+          // Side edges, below the middle, thumbs on the margin rather than the text.
+          RIGHT: { obj: page, p: [heldX, -0.015, heldZ], r: edgeGrip(1, heldTilt), pose: 'hold' },
+          LEFT: { obj: page, p: [-heldX, -0.015, heldZ], r: edgeGrip(-1, heldTilt), pose: 'hold' },
+        };
+      }
       function poseDrawer() {
         const page = model.roomActions.resumePage, drawer = model.roomActions.objects.drawer, R = model.hands.right, k = drawerGrip;
-        const HANDLE = { obj: drawer, p: [0, 0.03, 0.07], r: [0, 0, 0], pose: 'hook' };
-        const PICK = { obj: page, p: [0.1, 0.03, 0.05], r: [0, 0, 0], pose: 'flat' };
-        // Side edges, below the middle, thumbs on the margin rather than the text.
-        const RIGHT = { obj: page, p: [0.14, -0.015, 0.07], r: edgeGrip(1), pose: 'hold' };
-        const LEFT = { obj: page, p: [-0.14, -0.015, 0.07], r: edgeGrip(-1), pose: 'hold' };
+        drawerGrips ||= drawerGripsFor(drawer, page);
+        const { HANDLE, VIA, REST_VIA, PICK, RIGHT, LEFT } = drawerGrips;
+        // Low reaches follow the hand's wrist axis; holding the page up at
+        // reading distance keeps the default dropped elbow (forearms from below).
+        R.elbowFollow = 1 - k.right; model.hands.left.elbowFollow = 1 - k.left;
         if (k.right > 0) hold(R, PICK, RIGHT, k.right);
-        else if (k.pick > 0) hold(R, HANDLE, PICK, k.pick);
-        else hold(R, restOf(R), HANDLE, k.handle);
+        else if (k.pick > 0) hold(R, HANDLE, PICK, k.pick, VIA);
+        else hold(R, restOf(R), HANDLE, k.handle, REST_VIA);
         hold(model.hands.left, restOf(model.hands.left), LEFT, k.left);
         model.hands.update();
       }
@@ -697,6 +724,8 @@ export default function WorkspaceStage({
           startLean();
           action=gsap.timeline({onUpdate(){if(k.pick>0&&page.parent!==room)room.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:reading});
           action.to(model.hands.lean,{...DRAWER_LEAN,duration:0.6,ease:'power2.inOut'},0)
+            .to(head,{...DRAWER_HEAD,duration:0.6,ease:'power2.inOut'},0)
+            .to(head,{...ZERO,duration:0.9,ease:'power2.inOut'},2.1)
             .to(look,{x:o.position.x,y:o.position.y,z:o.position.z+0.05,duration:0.6,ease:'power2.inOut'},0)
             .to(k,{handle:1,duration:0.6,ease:'power2.inOut'},0)
             .to(r.state,{drawer:1,duration:0.65,ease:'power2.inOut'},0.6)
@@ -707,7 +736,7 @@ export default function WorkspaceStage({
             .to(look,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},2.1)
             .to(page.position,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},2.1)
             .to(page.rotation,{x:1.13,duration:0.9,ease:'power2.inOut'},2.1)
-            .to(k,{right:1,duration:0.4,ease:'power2.inOut'},2.6)
+            .to(k,{right:1,duration:0.8,ease:'power2.inOut'},2.2)
             .to(k,{left:1,duration:0.65,ease:'power2.inOut'},2.35);
           gsap.ticker.wake();return;
         }
@@ -879,10 +908,12 @@ export default function WorkspaceStage({
           startLean();
           action=gsap.timeline({onUpdate(){if(k.pick===0&&page.parent!==o)o.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:finish});
           action.to(page.position,{...floor,duration:0.8,ease:'power2.inOut'},0)
-            .to(page.rotation,{x:0,duration:0.8,ease:'power2.inOut'},0)
+            .to(page.rotation,{x:0,duration:0.6,ease:'power2.inOut'},0)
             .to(k,{left:0,duration:0.45,ease:'power2.inOut'},0)
-            .to(k,{right:0,duration:0.8,ease:'power2.inOut'},0)
+            .to(k,{right:0,duration:0.6,ease:'power2.inOut'},0)
             .to(model.hands.lean,{...DRAWER_LEAN,duration:0.8,ease:'power2.inOut'},0)
+            .to(head,{...DRAWER_HEAD,duration:0.8,ease:'power2.inOut'},0)
+            .to(head,{...ZERO,duration:0.5,ease:'power2.inOut'},1.85)
             .to(look,{...floor,duration:0.8,ease:'power2.inOut'},0)
             .to(k,{pick:0,duration:0.45,ease:'power2.inOut'},0.8)
             .to(r.state,{drawer:0,duration:0.6,ease:'power2.inOut'},1.25)
@@ -1269,6 +1300,26 @@ export default function WorkspaceStage({
           // Wrist bend in degrees (forearm against the hand's own axis) and the live pose, per hand.
           hands() {
             return [model.hands.left, model.hands.right].map(h => ({ wristDeg: +h.wristDeg.toFixed(1), pose: Object.fromEntries(Object.keys(POSES.rest).map(k => [k, +h.pose[k].toFixed(2)])), p: h.hand.position.toArray().map(v => +v.toFixed(3)) }));
+          },
+          // Re-solve the drawer handle grip with other offsets and re-pose (tuning only).
+          tuneDrawerHandle(opts) { drawerGrips = drawerGripsFor(model.roomActions.objects.drawer, model.roomActions.resumePage, opts); poseDrawer(); invalidate(); return this.drawerClip(); },
+          // Right-hand skin and sleeve vertices inside the drawer's wooden parts (1 mm tolerance).
+          drawerClip() {
+            model.root.updateMatrixWorld(true);
+            const h=model.hands.right,parts=model.roomActions.objects.drawer.children.filter(o=>o.isMesh),p=new THREE.Vector3(),q=new THREE.Vector3(),out={};
+            const boxes=parts.map(o=>{o.geometry.computeBoundingBox();return {o,box:o.geometry.boundingBox.clone().expandByScalar(-.001),inv:o.matrixWorld.clone().invert()};});
+            for(const [name,mesh] of [['skin',h.skinMesh],['sleeve',h.clothMesh]]){
+              if(!mesh?.visible)continue;const pos=mesh.geometry.attributes.position,n=boxes.map(()=>0);
+              for(let i=0;i<pos.count;i++){
+                p.fromBufferAttribute(pos,i);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(i,p);p.applyMatrix4(mesh.matrixWorld);
+                boxes.forEach((b,j)=>{if(b.box.containsPoint(q.copy(p).applyMatrix4(b.inv)))n[j]++;});
+                // Nearest skin to the pull (the last part), in its local frame, for contact.
+                if(name==='skin'){const b=boxes[boxes.length-1];q.copy(p).applyMatrix4(b.inv);out.handleGapMm=Math.min(out.handleGapMm??Infinity,b.box.distanceToPoint(q)*b.o.scale.x*1000*model.roomActions.objects.drawer.scale.x);}
+              }
+              out[name]=n.join('/')+' of '+pos.count;
+            }
+            {const desk=model.staticBoxes.desk.clone().expandByScalar(-.001);let n=0;for(const mesh of [h.skinMesh,h.clothMesh]){if(!mesh?.visible)continue;const pos=mesh.geometry.attributes.position;for(let i=0;i<pos.count;i++){p.fromBufferAttribute(pos,i);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(i,p);p.applyMatrix4(mesh.matrixWorld);if(desk.containsPoint(p))n++;}}out.desk=n;}
+            out.wristDeg=Math.round(h.wristDeg);out.wristL=Math.round(model.hands.left.wristDeg);return out;
           },
           phoneGripGeometry() {
             model.root.updateMatrixWorld(true);
