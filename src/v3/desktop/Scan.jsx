@@ -608,13 +608,13 @@ export default function Scan() {
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
             <button data-launchpad-action="desktop-projects" onClick={handleLaunchDesktop}>
-              <kbd className="mono">1</kbd><span className="mono">TRY MY PROJECTS</span><small>Sit at the computer and run the real apps · ~3 min</small>
+              <kbd className="mono">1</kbd><span className="mono">TRY MY PROJECTS</span><small>Run the real web apps on the computer · ~3 min</small>
             </button>
             <button data-launchpad-action="mobile-projects" onClick={handleOpenPhone}>
-              <kbd className="mono">2</kbd><span className="mono">PHONE APPS</span><small>Pick up the phone and try the Android apps · ~2 min</small>
+              <kbd className="mono">2</kbd><span className="mono">PHONE APPS</span><small>Try the Android apps on the phone · ~2 min</small>
             </button>
             <button data-launchpad-action="explore-room" onClick={handleExploreRoom}>
-              <kbd className="mono">3</kbd><span className="mono">EXPLORE THE ROOM</span><small>Sit at the desk and play with everything on it · open-ended</small>
+              <kbd className="mono">3</kbd><span className="mono">EXPLORE THE ROOM</span><small>Play with everything on the desk · open-ended</small>
             </button>
             <button data-launchpad-action="recruiter" onClick={handleRecruiter}>
               <kbd className="mono">4</kbd><span className="mono">RECRUITER? 30-SECOND VERSION</span><small>One page: projects, experience, skills · 30 s</small>
@@ -769,7 +769,7 @@ const css = `
 .launchpad h1 { top:56px; margin:0; font-size:clamp(30px,3.5vw,52px); font-weight:500; line-height:1; letter-spacing:-.04em; text-shadow:0 2px 18px #000; }
 .launchpad-role { top:118px; color:#c0c2bd; font-size:11px; letter-spacing:.12em; text-transform:uppercase; }
 .launchpad-statement { top:146px; width:420px; max-width:calc(100vw - 64px); margin:0; color:#d3d4cc; font-size:14px; line-height:1.55; text-shadow:0 1px 12px #000; }
-.launchpad-actions { top:222px; width:440px; max-width:calc(100vw - 2*var(--gutter)); display:flex; flex-direction:column; gap:8px; pointer-events:auto; }
+.launchpad-actions { top:222px; width:372px; max-width:calc(100vw - 2*var(--gutter)); display:flex; flex-direction:column; gap:8px; pointer-events:auto; }
 .launchpad-actions button { position:relative; min-height:64px; padding:13px 18px 13px 58px; border:1px solid #555b59; color:var(--bone); background:rgba(16,20,21,.92); text-align:left; transition:transform .18s,border-color .18s; }
 .launchpad-actions button:first-child { border-left:2px solid var(--signal); }
 .launchpad-actions button:hover,.launchpad-actions button:focus-visible { border-color:var(--bone); transform:translateX(4px); }
@@ -779,7 +779,7 @@ const css = `
 .room-load { position:fixed; left:0; right:0; top:0; z-index:calc(var(--z-panel) + 1); height:2px; background:#1d2122; pointer-events:none; }
 .room-load i { position:absolute; inset:0; background:var(--signal); transform-origin:left; transition:transform .25s; }
 .room-load span { position:absolute; top:8px; left:50%; transform:translateX(-50%); color:#9ea39f; font-size:10px; letter-spacing:.16em; }
-.mumbai-readout { position:fixed; right:var(--gutter); bottom:18px; z-index:var(--z-panel); margin:0; color:#8d928f; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
+.mumbai-readout { position:fixed; right:var(--gutter); bottom:14px; z-index:var(--z-panel); margin:0; padding:5px 9px; background:rgba(10,12,13,.72); color:#b2b7b4; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
 .about-scrim { position:fixed; inset:0; z-index:calc(var(--z-panel) + 5); background:rgba(0,0,0,.55); display:grid; place-items:center; padding:24px; }
 .about-panel { position:relative; width:min(620px,100%); max-height:calc(100vh - 48px); overflow:auto; padding:28px 30px; border:1px solid #555b59; border-left:2px solid var(--signal); background:#0d1011; color:#d3d4cc; font-size:14px; line-height:1.6; }
 .about-panel h2 { margin:4px 0 2px; color:var(--bone); font-size:30px; font-weight:500; letter-spacing:-.03em; }

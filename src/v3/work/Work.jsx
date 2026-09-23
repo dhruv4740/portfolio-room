@@ -345,13 +345,17 @@ const css = `
 
     .work-skill-meta {
       flex-direction: row;
-      gap: 1.25rem;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 0.25rem 1.25rem;
       margin-left: auto;
+      min-width: 0;
     }
 
+    /* Wraps rather than nowrap: long notes overflowed the page at ~625 px. */
     .work-skill-proof,
     .work-skill-note {
-      white-space: nowrap;
+      overflow-wrap: anywhere;
     }
 
     .work-footer {

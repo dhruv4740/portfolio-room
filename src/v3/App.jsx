@@ -2,7 +2,7 @@
 // v3 app shell.
 //
 // One content source, three surfaces:
-//   scan   — desktop: the Gaussian-splat capture of the room
+//   scan   — desktop: the modeled 3D room
 //   deck   — touch: vertical gyro-driven card deck
 //   static — no WebGL2 / software GPU / data-saver: straight to /work
 //

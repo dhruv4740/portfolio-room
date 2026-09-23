@@ -57,7 +57,7 @@ export function saveData() {
 
 /**
  * Which surface should render.
- *  'scan'   — desktop splat experience
+ *  'scan'   — desktop 3D room
  *  'deck'   — mobile vertical deck with gyro
  *  'static' — no WebGL2, software GPU, or data-saver: the fast /work page
  */
