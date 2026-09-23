@@ -6,7 +6,7 @@ const baseOrigin = new URL(BASE).origin;
 
 console.log('[suite] starting project UI verification against', BASE);
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.GPU === '1' ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } : {});
 const pageErrors = [];
 const failedRequests = [];
 const externalRequests = [];
@@ -21,7 +21,7 @@ function attachPageListeners(p) {
   });
   p.on('request', (req) => {
     const url = req.url();
-    if (!url.startsWith('data:') && !url.startsWith(baseOrigin) && !url.includes('fonts.googleapis.com') && !url.includes('fonts.gstatic.com')) {
+    if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(baseOrigin) && !url.includes('fonts.googleapis.com') && !url.includes('fonts.gstatic.com')) {
       externalRequests.push(url);
     }
   });
@@ -46,6 +46,9 @@ function attachPageListeners(p) {
   await page.locator('[data-testid="room-overview"]').waitFor({ timeout: 15000 });
   await page.locator('[data-launchpad-action="explore-room"]').click();
   await page.waitForTimeout(1800);
+  // The arrival collapses the Objects menu; expand it before using its buttons.
+  const objectsToggle = page.locator('.seat-exit-toggle');
+  if (await objectsToggle.getAttribute('aria-expanded') === 'false') await objectsToggle.click();
 
   const phoneBtn = page.getByRole('button', { name: 'PHONE', exact: true });
   await phoneBtn.waitFor({ timeout: 10000 });
@@ -116,7 +119,7 @@ function attachPageListeners(p) {
     const netSavings = await phoneScreen.locator('text=Net Savings').first().innerText();
     assert.equal(netSavings, 'Net Savings', 'Net savings label mismatch');
     // Assert DEMO DATA tag
-    const demoTag = await phoneScreen.locator('text=DEMO DATA').first().innerText();
+    const demoTag = await phoneScreen.locator('.ps-full-app.is-active').locator('text=DEMO DATA').first().innerText();
     assert.equal(demoTag, 'DEMO DATA', 'DEMO DATA tag missing in Expense Tracker');
     await phoneScreen.screenshot({ path: 'scripts/shots/ui-phone-expense-dashboard.png' });
     console.log('PASS [phone:expense] Screen 1 (Dashboard) verified & saved');
@@ -135,7 +138,7 @@ function attachPageListeners(p) {
     console.log('PASS [phone:expense] Screen 2 (Uber Splits) verified & saved');
 
     // Close back to phone home
-    await phoneScreen.locator('button[title="Close"]').click();
+    await phoneScreen.locator('.ps-full-app.is-active button[title="Close"]').click();
     await page.waitForTimeout(400);
   }
 
@@ -155,7 +158,7 @@ function attachPageListeners(p) {
     const subtext = await phoneScreen.locator('text=Add the items you want to compare, then Compare.').first().innerText();
     assert.ok(subtext.includes('Nothing is picked for you'), 'Shopping list subtext mismatch');
     // Assert DEMO DATA tag
-    const demoTag = await phoneScreen.locator('text=DEMO DATA').first().innerText();
+    const demoTag = await phoneScreen.locator('.ps-full-app.is-active').locator('text=DEMO DATA').first().innerText();
     assert.equal(demoTag, 'DEMO DATA', 'DEMO DATA tag missing in BasketProof');
     await phoneScreen.screenshot({ path: 'scripts/shots/ui-phone-basket-shopping.png' });
     console.log('PASS [phone:basket] Screen 1 (Shopping List) verified & saved');
@@ -173,7 +176,7 @@ function attachPageListeners(p) {
     console.log('PASS [phone:basket] Screen 2 (Resolution) verified & saved');
 
     // Close back to phone home
-    await phoneScreen.locator('button[title="Close"]').click();
+    await phoneScreen.locator('.ps-full-app.is-active button[title="Close"]').click();
     await page.waitForTimeout(400);
   }
 

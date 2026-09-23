@@ -13,7 +13,7 @@ const promoted = [
   { id: 'fraud', title: 'Fraud Detection', mode: 'close', projectKey: 'fraud' },
 ];
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.GPU === '1' ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] } : {});
 const page = await browser.newPage({ viewport: { width: 1200, height: 900 } });
 const pageErrors = [];
 const failedRequests = [];
@@ -24,7 +24,7 @@ page.on('requestfailed', (request) => failedRequests.push(`${request.method()} $
 page.on('request', (request) => {
   const url = request.url();
   // The real project UIs (public/apps/*) load their own web fonts from Google; everything else must stay on-origin.
-  if (!url.startsWith('data:') && !url.startsWith(new URL(BASE).origin) && !/fonts\.g(oogleapis|static)\.com/.test(url)) externalRequests.push(url);
+  if (!url.startsWith('data:') && !url.startsWith('blob:') && !url.startsWith(new URL(BASE).origin) && !/fonts\.g(oogleapis|static)\.com/.test(url)) externalRequests.push(url);
 });
 
 await page.addInitScript(() => {
