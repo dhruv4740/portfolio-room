@@ -159,9 +159,10 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     }});
     status.materials='ready';probeDirty=true;invalidate();report();
   }).catch(e=>{status.materials='fallback';console.warn('Room materials fallback:',e.message);report();});
-  // Lightmaps were baked against the old room's UVs and geometry.
-  const bakePromise=model.cinematic?Promise.resolve().then(()=>{status.bake='skipped';report();}):Promise.all(Object.entries(model.bakedMaterials).map(async([name,m])=>{
-    const [off,on]=await Promise.all(['off','on'].map(mode=>loadTexture(`${ROOT}baked/${name}-${mode}.png`)));
+  // Each room has its own bake (scripts/blender/bake_room.py, bake_true_scale_room.py).
+  const BAKED=`${ROOT}${model.cinematic?'baked-true-scale':'baked'}/`;
+  const bakePromise=Promise.all(Object.entries(model.bakedMaterials).map(async([name,m])=>{
+    const [off,on]=await Promise.all(['off','on'].map(mode=>loadTexture(`${BAKED}${name}-${mode}.png`)));
     off.channel=on.channel=1;m.lightMap=off;m.lightMapIntensity=sky==='night'?.7:0;
     m.onBeforeCompile=shader=>{
       shader.uniforms.taskLamp=uniforms.lamp;shader.uniforms.lampLightmap={value:on};

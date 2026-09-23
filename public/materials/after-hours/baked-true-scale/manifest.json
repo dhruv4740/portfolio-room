@@ -1,0 +1,14 @@
+{
+  "generator": "scripts/blender/bake_true_scale_room.py",
+  "layout": "src/v3/desktop/cinematicLayout.js",
+  "resolution": 256,
+  "bakeResolution": 512,
+  "samples": 64,
+  "channels": "linear irradiance; no albedo",
+  "receivers": [
+    "back",
+    "left",
+    "right",
+    "floor"
+  ]
+}

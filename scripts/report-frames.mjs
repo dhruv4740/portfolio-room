@@ -1,5 +1,5 @@
 // Key frames for review: landing, seated desk view, hands at rest, window/city.
-// GPU=1 BASE=http://localhost:4173 node scripts/report-frames.mjs [prefix]
+// GPU=1 BASE=http://localhost:4173 [QUERY='?sky=night&weather=rain'] node scripts/report-frames.mjs [prefix]
 import { chromium } from 'playwright';
 if (process.env.GPU !== '1') { console.error('Run with GPU=1; software frames are not evidence.'); process.exit(1); }
 const BASE = process.env.BASE || 'http://localhost:4173';
@@ -9,7 +9,7 @@ const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
 const errors = [];
 p.on('pageerror', e => errors.push(e.message));
 await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); });
-await p.goto(`${BASE}/#/`);
+await p.goto(`${BASE}/${process.env.QUERY || ''}#/`);
 await p.locator('[data-testid="room-overview"]').waitFor({ timeout: 60000 });
 await p.waitForFunction(() => !document.querySelector('.room-load'), null, { timeout: 90000 }).catch(() => {});
 await p.waitForTimeout(2500);
