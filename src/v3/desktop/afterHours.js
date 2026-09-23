@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { createDeskContactShadows } from './deskContactShadows.js';
@@ -112,7 +113,8 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   const fixturePromise=model.ceilingFixture.ready.then(()=>{
     if(disposed)return;status.fixture=model.ceilingFixture.state.status;invalidate();report();});
   const lampPromise=model.taskLamp.ready.then(()=>{if(disposed)return;status.lamp=model.taskLamp.state.status;probeDirty=true;invalidate();report();});
-  const cityPromise=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/winter-city.glb`).then(gltf=>{
+  // The city GLB is meshopt-compressed (scripts: gltf-transform meshopt).
+  const cityPromise=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).loadAsync(`${import.meta.env.BASE_URL}models/after-hours/winter-city.glb`).then(gltf=>{
     if(disposed){gltf.scene.traverse(o=>{o.geometry?.dispose();o.material?.dispose();});return;}
     city=gltf.scene;city.name='After Hours winter city';
     city.traverse(o=>{if(o.isMesh){o.castShadow=false;o.receiveShadow=false;o.raycast=()=>{};
