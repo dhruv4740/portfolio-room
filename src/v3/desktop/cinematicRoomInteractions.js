@@ -106,8 +106,12 @@ export function buildCinematicRoomInteractions({
   box(drawer, [0.15, 0.018, 0.025], [0, 0, 0.038]);
   const pageTexture = new THREE.TextureLoader().load('/resume-page.jpg');
   pageTexture.colorSpace = THREE.SRGBColorSpace; pageTexture.anisotropy = 8;
+  // The page stays true letter size (world scale 1) inside the scaled drawer:
+  // the held grips and the reading pan are authored for a 21 cm sheet. Set
+  // back far enough that its near edge clears the front panel.
   const resumePage = new THREE.Group(); resumePage.name = 'resumePage';
-  resumePage.position.set(0, -0.047, -0.23); drawer.add(resumePage);
+  resumePage.position.set(0, -0.047, -0.245); resumePage.scale.setScalar(1 / PROP_SCALE); drawer.add(resumePage);
+  resumePage.userData.home = resumePage.position.clone();
   const pagePlane = mesh(resumePage, new THREE.PlaneGeometry(0.21, 0.21 * 3300 / 2550),
     new THREE.MeshBasicMaterial({ map: pageTexture, toneMapped: false, side: THREE.DoubleSide }), [0, 0, 0], 'drawer');
   pagePlane.rotation.x = -Math.PI / 2;

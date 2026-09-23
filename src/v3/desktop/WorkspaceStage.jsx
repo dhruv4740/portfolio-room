@@ -16,7 +16,7 @@ import { fetchMumbaiWeather, mumbaiSky } from '../lib/mumbai.js';
 // not with the first paint.
 const loadPhoneScreen = () => import('./PhoneScreen.jsx');
 const PhoneScreen = lazy(loadPhoneScreen);
-import { KEY_ROWS, AWARD_REST, PEN_REST } from './cinematicRoomInteractions.js';
+import { KEY_ROWS, AWARD_REST, PEN_REST, DRAWER_TRAVEL } from './cinematicRoomInteractions.js';
 import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
 import { createAfterHours } from './afterHours.js';
@@ -544,15 +544,17 @@ export default function WorkspaceStage({
       }
       // Résumé: the right hand pulls the drawer by its handle and takes the page
       // from above; then both hands hold its side edges at reading distance.
-      const PAGE_HELD = { x: 0.05, y: 1.07, z: 0.28 };
+      // 29 cm from the eye: the full 21 x 27.9 cm sheet fills most of the view, readable without zooming.
+      const PAGE_HELD = { x: 0.05, y: 1.107, z: 0.358 };
       const DRAWER_LEAN = { x: 0.15, y: -0.12, z: -0.025 };
       const drawerGrip = { handle: 0, pick: 0, right: 0, left: 0 };
       function poseDrawer() {
         const page = model.roomActions.resumePage, drawer = model.roomActions.objects.drawer, R = model.hands.right, k = drawerGrip;
         const HANDLE = { obj: drawer, p: [0, 0.03, 0.07], r: [0, 0, 0], pose: 'hook' };
         const PICK = { obj: page, p: [0.1, 0.03, 0.05], r: [0, 0, 0], pose: 'flat' };
-        const RIGHT = { obj: page, p: [0.125, -0.015, 0.03], r: edgeGrip(1), pose: 'hold' };
-        const LEFT = { obj: page, p: [-0.125, -0.015, 0.03], r: edgeGrip(-1), pose: 'hold' };
+        // Side edges, below the middle, thumbs on the margin rather than the text.
+        const RIGHT = { obj: page, p: [0.14, -0.015, 0.07], r: edgeGrip(1), pose: 'hold' };
+        const LEFT = { obj: page, p: [-0.14, -0.015, 0.07], r: edgeGrip(-1), pose: 'hold' };
         if (k.right > 0) hold(R, PICK, RIGHT, k.right);
         else if (k.pick > 0) hold(R, HANDLE, PICK, k.pick);
         else hold(R, restOf(R), HANDLE, k.handle);
@@ -561,6 +563,7 @@ export default function WorkspaceStage({
       }
       // Awards frame: grips authored like the résumé page's, rotated into the upright frame (face +z, top +y).
       const AWARD_LEAN = { x: -0.1, y: -0.08, z: -0.25 };
+      const AWARD_HELD = { x: 0.05, y: 1.07, z: 0.28 };
       const AWARD_HELD_X = 1.13 - Math.PI / 2;
       const awardGrip = { pick: 0, left: 0, right: 0 };
       const upright = q => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2).multiply(q);
@@ -690,7 +693,7 @@ export default function WorkspaceStage({
             rig.flyTo({position:WORKSPACE.seat.position,target:[PAGE_HELD.x,PAGE_HELD.y,PAGE_HELD.z]},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
             reading();return;
           }
-          const px=o.position.x,py=o.position.y-0.047,pz=o.position.z+0.46-0.23;
+          const home=page.userData.home,s=o.scale.x,px=o.position.x+home.x*s,py=o.position.y+home.y*s,pz=r.homes.drawer.z+DRAWER_TRAVEL+home.z*s;
           startLean();
           action=gsap.timeline({onUpdate(){if(k.pick>0&&page.parent!==room)room.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:reading});
           action.to(model.hands.lean,{...DRAWER_LEAN,duration:0.6,ease:'power2.inOut'},0)
@@ -740,8 +743,8 @@ export default function WorkspaceStage({
           const k=awardGrip,home=r.homes.award;Object.assign(k,{pick:0,left:0,right:0});
           const reading=()=>{host.dataset.actionState='award-reading';invalidate();};
           if(reduced){
-            o.position.set(PAGE_HELD.x,PAGE_HELD.y,PAGE_HELD.z);o.rotation.set(AWARD_HELD_X,0,0);Object.assign(k,{pick:1,left:1,right:1});update();poseAward();
-            rig.flyTo({position:WORKSPACE.seat.position,target:[PAGE_HELD.x,PAGE_HELD.y,PAGE_HELD.z]},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+            o.position.set(AWARD_HELD.x,AWARD_HELD.y,AWARD_HELD.z);o.rotation.set(AWARD_HELD_X,0,0);Object.assign(k,{pick:1,left:1,right:1});update();poseAward();
+            rig.flyTo({position:WORKSPACE.seat.position,target:[AWARD_HELD.x,AWARD_HELD.y,AWARD_HELD.z]},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
             reading();return;
           }
           startLean();
@@ -751,8 +754,8 @@ export default function WorkspaceStage({
             .to(k,{pick:1,duration:0.6,ease:'power2.inOut'},0)
             .to(o.position,{y:home.y+0.08,duration:0.3,ease:'power2.out'},0.6)
             .to(model.hands.lean,{...ZERO,duration:0.9,ease:'power2.inOut'},0.9)
-            .to(look,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},0.9)
-            .to(o.position,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},0.9)
+            .to(look,{...AWARD_HELD,duration:0.9,ease:'power2.inOut'},0.9)
+            .to(o.position,{...AWARD_HELD,duration:0.9,ease:'power2.inOut'},0.9)
             .to(o.rotation,{x:AWARD_HELD_X,y:0,duration:0.9,ease:'power2.inOut'},0.9)
             .to(k,{left:1,duration:0.9,ease:'power2.inOut'},0.9)
             .to(k,{right:1,duration:0.5,ease:'power2.inOut'},1.3);
@@ -869,9 +872,10 @@ export default function WorkspaceStage({
         if(id==='drawer'){
           const page=r.resumePage,room=o.parent,k=drawerGrip;
           const update=()=>{r.apply();host.dataset.drawerOpen=String(r.state.drawer);};
-          const finish=()=>{o.attach(page);page.position.set(0,-0.047,-0.23);page.rotation.set(0,0,0);r.state.drawer=0;update();Object.assign(k,{handle:0,pick:0,right:0,left:0});finishExtra(id);};
+          const home=page.userData.home,s=o.scale.x;
+          const finish=()=>{o.attach(page);page.position.copy(home);page.rotation.set(0,0,0);page.scale.setScalar(1/s);r.state.drawer=0;update();Object.assign(k,{handle:0,pick:0,right:0,left:0});finishExtra(id);};
           if(reduced||page.parent!==room){finish();return;}
-          const floor={x:o.position.x,y:o.position.y-0.047,z:o.position.z-0.23};
+          const floor={x:o.position.x+home.x*s,y:o.position.y+home.y*s,z:o.position.z+home.z*s};
           startLean();
           action=gsap.timeline({onUpdate(){if(k.pick===0&&page.parent!==o)o.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:finish});
           action.to(page.position,{...floor,duration:0.8,ease:'power2.inOut'},0)
@@ -1089,7 +1093,8 @@ export default function WorkspaceStage({
           // Zoomed in on a held page: the pointer moves the gaze across it.
           const rect = renderer.domElement.getBoundingClientRect(), zoom = (56 - camera.fov) / 38;
           const nx = (event.clientX - rect.left) / rect.width * 2 - 1, ny = (event.clientY - rect.top) / rect.height * 2 - 1;
-          look.set(PAGE_HELD.x + nx * 0.09 * zoom, PAGE_HELD.y - ny * 0.13 * zoom, PAGE_HELD.z);
+          const c = extraHeld === 'award' ? AWARD_HELD : PAGE_HELD;
+          look.set(c.x + nx * 0.09 * zoom, c.y - ny * 0.13 * zoom, c.z);
           camera.lookAt(look); controls.target.copy(look); invalidate(); return;
         }
         if (notebookInHand || extraHeld) return;
