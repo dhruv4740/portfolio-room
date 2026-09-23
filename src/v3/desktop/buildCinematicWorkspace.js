@@ -153,7 +153,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
     if (surface) {
       material = bakedMaterials[surface] ||= material.clone();
       material.name = `Baked ${surface}`;
-      const p = geometry.getAttribute('position'), uv = [];
+      const p = geometry.getAttribute('position'), uv = [], metres = [];
       for (let i = 0; i < p.count; i++) {
         const x = p.getX(i) + position[0], y = p.getY(i) + position[1], z = p.getZ(i) + position[2];
         uv.push(
@@ -163,6 +163,11 @@ export function buildCinematicWorkspace(scene, options = {}) {
         );
       }
       geometry.setAttribute('uv1', new THREE.Float32BufferAttribute(uv, 2));
+      // Texture UVs in metres along the same axes, so every piece of a surface
+      // shares one texel density (afterHours sets metres per tile).
+      const extent = [surface === 'back' || surface === 'floor' ? span.x : span.z, surface === 'floor' ? span.z : span.y];
+      for (let i = 0; i < uv.length; i++) metres.push(uv[i] * extent[i % 2]);
+      geometry.setAttribute('uv', new THREE.Float32BufferAttribute(metres, 2));
     }
     const mesh = new THREE.Mesh(geometry, material);
     mesh.name = name; mesh.position.set(...position); mesh.castShadow = true; mesh.receiveShadow = true;

@@ -149,7 +149,9 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     }
     assign(model.materials.oak,sets.wood,[2,1]);
     assign(model.materials.plaster,sets.plaster,[2,2]);
-    for(const [name,m] of Object.entries(model.bakedMaterials))assign(m,sets[name==='floor'?'floor':'plaster'],name==='floor'?[4,3]:[3,2]);
+    // The true-scale room's UVs are in metres; tiles keep feat/v3's density.
+    const tile=name=>1/(name==='floor'?1.27:1.6);
+    for(const [name,m] of Object.entries(model.bakedMaterials))assign(m,sets[name==='floor'?'floor':'plaster'],model.cinematic?[tile(name),tile(name)]:name==='floor'?[4,3]:[3,2]);
     await cityPromise;
     city?.traverse(o=>{if(!o.isMesh)return;const n=o.material.name;if(n==='Winter masonry'||n==='Winter limestone'){
       const color=o.material.color.clone();assign(o.material,sets.brick,[.5,.5]);o.material.color.copy(color).multiplyScalar(2.2);
