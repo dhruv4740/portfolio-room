@@ -14,12 +14,14 @@ export const COLD_OPEN = { lampAt: 1.7, typeFrom: 2.9, typeTo: 4.3, settle: 2.6 
 // Arrival has one camera owner; cancellation never invokes stale completion.
 export function createSceneDirector({camera,controls,invalidate,onComplete}) {
   let timeline=null,token=0,cue=null;
+  // The shot advances by at most 50 ms per tick: a load stall pauses it
+  // instead of skipping ahead (the shared ticker runs on wall-clock time).
+  const step=(_t,deltaMs)=>{if(timeline)timeline.time(Math.min(timeline.duration(),timeline.time()+Math.min(deltaMs,50)/1000));};
   const restore=()=>{controls.minAzimuthAngle=-.8;controls.maxAzimuthAngle=.85;controls.minPolarAngle=Math.PI*.2;controls.maxPolarAngle=Math.PI*.47;controls.enableDamping=true;};
-  function cancel(){timeline?.kill();timeline=null;token=0;const c=cue;cue=null;c?.end();restore();}
+  function cancel(){gsap.ticker.remove(step);timeline?.kill();timeline=null;token=0;const c=cue;cue=null;c?.end();restore();}
   return {
-    // `warm` resolves once assets have settled and shaders are compiled: the
-    // timeline runs on wall-clock time, so starting it during load stalls
-    // would skip most of the shot. The first frame is posed immediately.
+    // `warm` resolves when the room is ready enough to start; the first frame
+    // is posed immediately.
     start(id,home,reduced,shotCue,warm){
       cancel();token=id;cue=shotCue||null;controls.enabled=false;controls.enableDamping=false;
       controls.minDistance=.025;controls.minAzimuthAngle=-Infinity;controls.maxAzimuthAngle=Infinity;
@@ -31,10 +33,10 @@ export function createSceneDirector({camera,controls,invalidate,onComplete}) {
       cue?.start();apply();
       Promise.resolve(warm).catch(()=>{}).then(()=>{
         if(token!==id)return;
-        timeline=gsap.timeline({onUpdate:apply,onComplete(){settle();cancel();onComplete(id);}});
+        timeline=gsap.timeline({paused:true,onUpdate:apply,onComplete(){settle();cancel();onComplete(id);}});
         for(let i=1;i<SHOT.length;i++){const {at,ease,...to}=SHOT[i];timeline.to(p,{...to,duration:at-SHOT[i-1].at,ease},SHOT[i-1].at);}
         timeline.to(p,{x:home.position.x,y:home.position.y,z:home.position.z,tx:home.target.x,ty:home.target.y,tz:home.target.z,duration:COLD_OPEN.settle,ease:'power2.inOut'},SHOT[SHOT.length-1].at);
-        gsap.ticker.wake();
+        gsap.ticker.add(step);gsap.ticker.wake();
       });
     },
     cancel,

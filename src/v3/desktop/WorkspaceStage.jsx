@@ -1179,7 +1179,7 @@ export default function WorkspaceStage({
       }
       api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome,
         arrival(token){
-          if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion,coldOpenCue(),Promise.resolve(afterHours?.ready).then(()=>renderer.compileAsync(scene,camera)));}
+          if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion,coldOpenCue(),Promise.race([afterHours?.ready,new Promise(r=>setTimeout(r,1500))]));}
           else if(director.active){director.cancel();if(state.current.phase==='room'&&!state.current.seated&&!state.current.activeAnchorId)place(home);invalidate();}
         },
         setSky: (s) => model.setSky(s), clearNotes: () => { model.clearNotes(); invalidate(); } };
@@ -1233,7 +1233,7 @@ export default function WorkspaceStage({
           bodyAttachment(){return {torsoOffset:model.hands.torsoOffset.toArray(),upperArmLengths:[model.hands.left.sleeve.scale.y,model.hands.right.sleeve.scale.y]};},
           showHands(v) { model.hands.root.visible = !!v; invalidate(); },
           // Real-GPU cost probes (scripts/measure-gpu.mjs): governor state, live pixel ratio, draw calls.
-          perf() { const i = renderer.info.render, s = renderer.getSize(new THREE.Vector2()); return { ...gov.getStats(), pixelRatio: renderer.getPixelRatio(), calls: i.calls, triangles: i.triangles, w: s.x, h: s.y, shadows: renderer.shadowMap.enabled }; },
+          perf() { const i = renderer.info.render, s = renderer.getSize(new THREE.Vector2()); return { ...gov.getStats(), pixelRatio: renderer.getPixelRatio(), programs: renderer.info.programs?.length, lights: (()=>{let n=0,sh=0;model.root.parent.traverse(o=>{if(o.isLight&&!o.isAmbientLight&&!o.isHemisphereLight){n++;if(o.castShadow)sh++;}});return n+'/'+sh+' shadow';})(), calls: i.calls, triangles: i.triangles, w: s.x, h: s.y, shadows: renderer.shadowMap.enabled }; },
           setPixelRatio(v) { gov.pinPixelRatio(v); invalidate(); },
           contacts() { return afterHours?.contactStats(); },
           setContactsEnabled(v) { afterHours?.setContactsEnabled(v); },
