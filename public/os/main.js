@@ -148,6 +148,11 @@ function initEmbeddedBridge() {
       }
       return;
     }
+    if (message.type === 'open-app') {
+      // Deep links (/#/os/<app>) from the host. Unknown ids are ignored.
+      if (typeof message.app === 'string' && apps.some((a) => a.id === message.app)) ctx.openApp(message.app);
+      return;
+    }
     if (message.type === 'host-hello') {
       postToHost({ type: 'ready', state: 'inside' });
       return;

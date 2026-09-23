@@ -496,6 +496,16 @@ const PhoneScreen = forwardRef(function PhoneScreen({
     }
   }
 
+  // Deep links (/#/phone/<app>) arrive once the phone is in hand.
+  useEffect(() => {
+    const onOpen = (event) => {
+      const open = { focuslock: handleOpenFocusLock, expense: handleOpenExpense, basketproof: handleOpenBasket }[event.detail?.app];
+      open?.();
+    };
+    window.addEventListener('phone:open-app', onOpen);
+    return () => window.removeEventListener('phone:open-app', onOpen);
+  });
+
   function handleOpenFocusLock() {
     setApp('focuslock');
     onOpenApp?.();

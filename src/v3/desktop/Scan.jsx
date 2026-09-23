@@ -6,7 +6,7 @@
 // ============================================================================
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
@@ -278,6 +278,41 @@ export default function Scan() {
     setTimeout(() => document.querySelector('.about-close')?.focus(), 0);
     return () => window.removeEventListener('keydown', onKey, true);
   }, [aboutOpen, closeAbout]);
+
+  // Deep links: /os/<app>, /phone[/<app>], /about, /contact, /room/<object>.
+  // Each is consumed once the room is ready, then the URL returns to /.
+  const location = useLocation();
+  useEffect(() => {
+    const [kind, arg] = location.pathname.split('/').filter(Boolean);
+    if (!kind || !introDone || screenPhase !== 'room') return undefined;
+    navigate('/', { replace: true });
+    const fake = (action) => ({ currentTarget: document.querySelector(`[data-launchpad-action="${action}"]`) });
+    if (kind === 'about') { setAboutOpen(true); return undefined; }
+    if (kind === 'contact') { handleOpenContact(fake('contact')); return undefined; }
+    if (kind === 'os') {
+      if (arg) dhruvRef.current?.openApp(arg);
+      if (overviewOpen) handleLaunchDesktop(fake('desktop-projects')); else handleEnterScreen();
+      return undefined;
+    }
+    if (kind === 'phone') {
+      if (overviewOpen) handleOpenPhone(fake('mobile-projects')); else handleSelect('phone');
+      if (!arg) return undefined;
+      const timer = setInterval(() => {
+        if (document.querySelector('.workspace-stage')?.dataset.phoneState !== 'zoomed' || !document.querySelector('.phone-screen')) return;
+        clearInterval(timer);
+        window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: arg } }));
+      }, 150);
+      // Not tied to the effect cleanup: resetting the URL re-runs this effect.
+      setTimeout(() => clearInterval(timer), 15000);
+      return undefined;
+    }
+    if (kind === 'room') {
+      if (overviewOpen) handleExploreRoom(fake('explore-room'));
+      if (arg && arg !== 'explore') setTimeout(() => handleSelect(arg === 'window' ? 'windowOpen' : arg), 400);
+    }
+    return undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, introDone]);
 
   const handlePhoneExit = useCallback(() => {
     launchLocked.current = false;

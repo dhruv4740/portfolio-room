@@ -23,6 +23,7 @@ const Scan = lazy(() => {
 });
 const Deck = lazy(() => import('./mobile/Deck.jsx'));
 const Work = lazy(() => import('./work/Work.jsx'));
+const CommandPalette = lazy(() => import('./ui/CommandPalette.jsx'));
 
 /** Minimal first paint. Never a blank screen — see ScanIntro's same rule. */
 function Booting() {
@@ -74,10 +75,15 @@ function Home() {
 export default function App() {
   return (
     <HashRouter>
+      <Suspense fallback={null}><CommandPalette /></Suspense>
       <Suspense fallback={<Booting />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/work" element={<Work />} />
+          {/* Deep links into the room; Scan consumes them once it is ready. */}
+          {['/os/:app', '/phone', '/phone/:app', '/about', '/contact', '/room/:object'].map(path => (
+            <Route key={path} path={path} element={<Home />} />
+          ))}
           {/* Old v2 deep links land somewhere sensible rather than blank. */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
