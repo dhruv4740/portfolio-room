@@ -6,10 +6,10 @@
 // props that are already 1.0x (phone, Poly Haven task lamp, licensed mouse,
 // licensed keyboard) keep their real sizes and only move.
 //
-// Values marked CONTRACT come from docs/PROMPT-OPUS-ROOM-COMPOSITION.md.
+// Values marked CONTRACT come from docs/archive/PROMPT-OPUS-ROOM-COMPOSITION.md.
 // Values marked DERIVED are computed here from an asset measurement, and where
 // a derived value disagrees with the contract the residual is exported next to
-// it instead of being silently absorbed. See docs/reviews/OPUS-ROOM-COMPOSITION.md.
+// it instead of being silently absorbed. See docs/archive/reviews/OPUS-ROOM-COMPOSITION.md.
 
 import { KEYCAPS } from './keyboardLayout.js';
 

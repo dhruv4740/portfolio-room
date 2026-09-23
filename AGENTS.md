@@ -3,14 +3,15 @@
 Operational guide for any coding agent in this repo. Setup, commands,
 invariants, traps. Narrative and rationale live in `docs/`.
 
-**Start with [docs/HANDOFF-OVERNIGHT.md](docs/HANDOFF-OVERNIGHT.md)** for the
-current queue, then [docs/STATE.md](docs/STATE.md).
+**Start with [docs/HANDOFF.md](docs/HANDOFF.md)**: status, branches, open
+problems and owner decisions. It is the only status document; don't add
+another one. Update it at the end of a session.
 
 **Who works here.** One agent (Claude) owns the whole repo: code, 3D, tests,
 docs. There are no file reservations and no GPU-slot protocol. Subagents are
 allowed for exploration (Sonnet or Haiku). An optional offline Gemini lane
 exists for menial, well-specified work: write a self-contained prompt (template
-[docs/PROMPT-GEMINI-WORKHORSE.md](docs/PROMPT-GEMINI-WORKHORSE.md)), the owner
+`docs/archive/PROMPT-GEMINI-WORKHORSE.md`), the owner
 forwards it, and nothing blocks on it. Old team, ownership and prompt documents
 are in `docs/archive/` and are historical only.
 
@@ -61,6 +62,7 @@ GPU=1 BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
 GPU=1 BASE=http://localhost:4173 node scripts/verify-deeplinks.mjs
 GPU=1 BASE=http://localhost:4173 node scripts/verify-tour.mjs
 GPU=1 node scripts/report-frames.mjs <prefix>   # landing, seated, hands, window frames
+BASE=http://localhost:4175 sh scripts/run-suites.sh   # the ten GPU regression suites, one line each
 node scripts/build-apps.mjs darksentinel   # rebuild a real project UI into public/apps/
 ```
 
@@ -79,7 +81,8 @@ release works, because the two use different JSX transform paths.
 ## Invariants
 
 **The desktop scene is authored geometry, not photogrammetry.**
-`buildWorkspace.js` exports `WORKSPACE` with world-space `anchors` and `screen`
+`cinematicLayout.js` exports `WORKSPACE` (built by `buildCinematicWorkspace.js`;
+the old-room `buildWorkspace.js` still supplies textures and sky configs) with world-space `anchors` and `screen`
 dimensions. Content anchors in `src/v3/content/index.js` stay normalised and map
 onto it. Do not write raw world coordinates into the content file.
 
@@ -114,7 +117,7 @@ floor: `docs/archive/PROMPT-R8-GEMINI.md`. Never edit the source repos.
 Keep them close to the original UI and label them honestly. The phone's
 readable stage uses a 390px CSS width, while its projected surface remains
 540×1200. The 3D loop pauses while the stage is open. See
-`docs/CINEMATIC-STUDIO.md` for presentation and manual app-refresh details.
+`docs/archive/CINEMATIC-STUDIO.md` for presentation and manual app-refresh details.
 
 **Hand meshes are generated assets.** After changing topology or the neutral
 bind pose, run `node scripts/build-hand-assets.mjs` and commit both local
@@ -184,6 +187,10 @@ not the procedural fallback.
 - The user dislikes long waits, redundant checks and heavy delegation. One clean
   verification run, fix, one confirming run — not a probe loop.
 - Never fabricate project links, metrics or evidence. Those come from the user.
+- **Green suites don't prove an interaction feels right.** The suites check
+  state. Any change to a hand grip, camera move, timing or held object needs a
+  frame sequence or recording reviewed by eye before it's called done.
+- The owner is present. Work in small reviewed steps, not long autonomous runs.
 
 ## Map
 
@@ -197,14 +204,19 @@ src/v3/
     Scan.jsx            composes stage + chrome; owns phase machine
                         (room / preparing / entering / inside / leaving)
     WorkspaceStage.jsx  renderer, orbit, raycast, projected markers, camera travel
-    buildWorkspace.js   geometry, materials, WORKSPACE anchors + screen dims
+    cinematicLayout.js  true-scale room: every dimension, WORKSPACE anchors + screen
+    buildCinematicWorkspace.js  builds the room from cinematicLayout.js
+    afterHours.js       materials, baked lighting, rain, steam, dust, probes
+    sceneDirector.js    the cold open (arrival shot)
     seatedHands.js      first-person hand rig: palm, jointed fingers and thumb,
                         forearm; POSES and HAND_REST drive grips in WorkspaceStage
     DhruvOSScreen.jsx   persistent same-origin iframe bridge to dhruvOS
     cameraRig.js        flyTo (GSAP power3.inOut), idle drift, project()
     musicPlayer.js      the one shared song player (room, headphones, monitor)
-    buildRoomInteractions.js  movable desk objects: lamp, coffee, awards, drawer,
-                        pen, blinds, headphones, window
+    cinematicRoomInteractions.js  movable desk objects: lamp, coffee, awards,
+                        drawer, pen, blinds, headphones, window
+    (buildWorkspace.js, buildRoomInteractions.js: the old room; only its
+                        textures and sky configs are still imported)
   (public/os/apps/*.js  monitor apps: one per project, Skills, Music Player;
                         darksentinel.js is an iframeApp() entry for the real UI)
   (public/os/shell/iframeApp.js  window wrapper for a built project UI)
@@ -216,7 +228,7 @@ public/apps/<name>/     its static build (committed; scripts/build-apps.mjs)
   lib/loadProgress.js   real load progress (boot bar, room-detail bar)
   lib/mumbai.js         IST sky + Open-Meteo weather (?sky=, ?weather= overrides)
   lib/githubActivity.js public GitHub events on the monitor idle screen
-docs/                   HANDOFF-OVERNIGHT first, then STATE, VISION, DECISIONS, DESIGN
+docs/                   HANDOFF (status), DESIGN, ASSET-REGISTER, PROJECT-MATERIAL
 docs/archive/           superseded prompts, team docs and handoffs (historical)
 scripts/verify-v3.mjs   Playwright harness
 scripts/shots-hands.mjs every hand grip as a frame + wrist angles (GPU=1 for the real GPU)

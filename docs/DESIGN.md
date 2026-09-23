@@ -3,11 +3,11 @@
 ## Current scene art direction
 
 UI rules below apply to interface chrome. Scene materials use physical
-material colors and authored textures; they are not all CSS tokens. The room
-is a warm night studio against a cold snowy exterior. AFTER-HOURS-PLAN.md and
-OPUS-GEMINI-CONTINUATION.md govern scene composition and realism. Avoid
-oversized props, plastic skin, arbitrary gloss and effects used to hide weak
-geometry. An imported asset must be inspected in context before acceptance.
+material colours and authored textures; they are not CSS tokens. The room is a
+warm night studio in Mumbai at true metre scale, with a live sky and live
+weather (rain, never snow). Avoid oversized props, plastic skin, arbitrary
+gloss and effects used to hide weak geometry. Inspect an imported asset in
+context, on the real GPU, before accepting it.
 
 The rules exist because "make it impressive" with no constraints converges on
 the same gradient-and-glassmorphism page every AI generates. Constraint is what
