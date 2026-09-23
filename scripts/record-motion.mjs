@@ -26,7 +26,8 @@ const mark = () => p.evaluate(() => { window.__oldTl = window.__v3test.timeline(
 const fresh = () => p.waitForFunction(() => { const t = window.__v3test.timeline(); return t && t !== window.__oldTl; }, null, { polling: 10 });
 
 // Slows the new timeline to a crawl (a paused one stops the render loop), steps it through `n` evenly spaced times, then lets it finish.
-async function sweep(phase, n = 16) {
+// `probe` names a __v3test method whose result is logged and captioned per frame.
+async function sweep(phase, n = 16, probe = null) {
   await fresh(); log(phase + ' timeline');
   const duration = await p.evaluate(() => { const t = window.__v3test.timeline(); t.timeScale(0.02); return t.duration(); });
   const frames = [];
@@ -35,15 +36,16 @@ async function sweep(phase, n = 16) {
     const time = +(Math.min(duration * i / (n - 1), duration - 0.02)).toFixed(3);
     await p.evaluate(t => { window.__v3test.timeline().seek(t).play(); }, time); await p.waitForTimeout(150);
     const buf = await p.screenshot({ style: HIDE });
+    const data = probe ? await p.evaluate(m => window.__v3test[m](), probe) : null;
     const name = `${action}-${tag}-${phase}-${String(i).padStart(2, '0')}`;
-    await writeFile(`${OUT}/${name}.png`, buf); frames.push({ time, buf }); log(name);
+    await writeFile(`${OUT}/${name}.png`, buf); frames.push({ time, buf, data }); log(name + (data ? ' ' + JSON.stringify(data) : ''));
   }
   await p.evaluate(() => { window.__v3test.timeline().timeScale(1).play(); });
   await sheet(phase, frames, duration);
 }
 async function sheet(phase, frames, duration) {
   const s = await b.newPage({ viewport: { width: 1600, height: 400 } });
-  const cells = frames.map(f => `<figure><img src="data:image/png;base64,${f.buf.toString('base64')}"><figcaption>${f.time.toFixed(2)} s</figcaption></figure>`).join('');
+  const cells = frames.map(f => `<figure><img src="data:image/png;base64,${f.buf.toString('base64')}"><figcaption>${f.time.toFixed(2)} s${f.data ? ' · ' + JSON.stringify(f.data) : ''}</figcaption></figure>`).join('');
   await s.setContent(`<style>body{margin:0;background:#111;color:#ddd;font:13px system-ui}h1{font-size:15px;margin:8px}
     main{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;padding:4px}figure{margin:0}img{width:100%;display:block}figcaption{padding:2px 4px}</style>
     <h1>${action} · ${phase} · ${tag} · ${duration.toFixed(2)} s timeline · ${BASE}</h1><main>${cells}</main>`);
@@ -52,7 +54,7 @@ async function sheet(phase, frames, duration) {
 const button = name => p.getByRole('button', { name, exact: true });
 
 if (action === 'resume') {
-  await mark(); await button('RESUME').click(); await sweep('pickup');
+  await mark(); await button('RESUME').click(); await sweep('pickup', 16, 'drawerClip');
   await until('actionState', 'resume-reading'); await p.waitForTimeout(600);
   await p.screenshot({ path: `${OUT}/${action}-${tag}-held.png`, style: HIDE });
   // Reading zoom: wheel in fully, pointer at the page's top-left third.
@@ -60,11 +62,17 @@ if (action === 'resume') {
   await p.mouse.move(560, 300); await p.waitForTimeout(500);
   await p.screenshot({ path: `${OUT}/${action}-${tag}-zoomed.png`, style: HIDE });
   for (let i = 0; i < 8; i++) { await p.mouse.wheel(0, 200); await p.waitForTimeout(40); }
-  await mark(); await p.keyboard.press('Escape'); await sweep('putdown');
+  await mark(); await p.keyboard.press('Escape'); await sweep('putdown', 16, 'drawerClip');
   await until('actionState', 'idle');
   // A second cycle: the page must come back out at the same size and place.
   await button('RESUME').click(); await until('actionState', 'resume-reading'); await p.waitForTimeout(600);
   await p.screenshot({ path: `${OUT}/${action}-${tag}-held-again.png`, style: HIDE });
+} else if (action === 'phone') {
+  // Pick-up timeline, then (after the zoom in and out flights) the put-down timeline.
+  await mark(); await button('PHONE').click(); await sweep('pickup', 16, 'phoneGap');
+  await until('phoneState', 'zoomed'); await p.waitForTimeout(600);
+  await mark(); await p.keyboard.press('Escape'); await sweep('putdown', 16, 'phoneGap');
+  await until('phoneState', 'desk');
 } else throw new Error(`unknown action ${action}`);
 console.log(JSON.stringify({ action, tag, errors }));
 await b.close();
