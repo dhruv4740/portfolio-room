@@ -306,8 +306,8 @@ async function runAssetBudget(browser) {
       `${required} bytes${groups ? ' (manifest)' : ' (resource timing estimate)'}`);
     record('assets: optional transfer is within 15MB', optional <= OPTIONAL_BUDGET,
       `${optional} bytes${groups ? ' (manifest)' : '(/after-hours/ resource timing)'}`);
-    const external = requests.filter((url) => !url.startsWith(BASE)
-      && !/^https:\/\/fonts\.(googleapis|gstatic)\.com\//i.test(url));
+    const external = requests.filter((url) => !url.startsWith(BASE) && !url.startsWith('blob:')
+      && !/^https:\/\/(fonts\.(googleapis|gstatic)\.com|api\.github\.com|api\.open-meteo\.com)\//i.test(url));
     record('assets: runtime requests stay same-origin/local', external.length === 0,
       external.slice(0, 3).join(' | ') || 'local requests only (Google font CSS/font files allowed)');
   } finally {

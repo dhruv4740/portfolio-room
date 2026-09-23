@@ -10,7 +10,8 @@ const ROOT = `${import.meta.env.BASE_URL}materials/after-hours/`;
 // Resources are optional upgrades: failure leaves the working authored scene.
 // All URLs are local; runtime never depends on an asset-library service.
 export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}) {
-  let disposed=false, city=null, sky='night', probeDirty=true, lastLamp=-1;
+  let disposed=false, city=null, sky='night', probeDirty=true, lastLamp=-1, wet=false;
+  const applyWet=()=>city?.traverse(o=>{if(o.isMesh&&o.material){o.material.roughness=Math.min(o.material.userData.dryRoughness??=o.material.roughness,wet?.35:1);o.material.envMapIntensity=wet?.35:.12;}});
   const resources=[],targets=[], uniforms={lamp:{value:1},time:{value:0}};
   const textureLoader=new THREE.TextureLoader();
   const loadTexture=async(url,color=false)=>{
@@ -22,19 +23,21 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   const snowGeometry=new THREE.BufferGeometry(), positions=[], seeds=[];
   let seed=1926;const random=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
   for(let i=0;i<(tier==='low'?180:tier==='high'?850:460);i++){
-    positions.push(-8+random()*20,-5+random()*17,-2.4-random()*24);seeds.push(random());
+    positions.push(-.6+random()*4.6,-1+random()*8,-2.05-random()*3.2);seeds.push(random());
   }
   snowGeometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
   snowGeometry.setAttribute('seed',new THREE.Float32BufferAttribute(seeds,1));
+  // Mumbai rain, not snow: fast, slightly wind-slanted streaks. Each point
+  // draws a thin vertical sliver so it reads as a falling drop.
   const snowMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,uniforms:{time:uniforms.time},
     vertexShader:`attribute float seed;uniform float time;varying float fade;
-      void main(){vec3 p=position;p.y=-5.+mod(position.y+5.-time*(.38+seed*.38),17.);
-      p.x+=sin(time*.3+seed*40.)*.25;vec4 mv=modelViewMatrix*vec4(p,1.);
-      fade=mix(.13,.46,seed)*clamp((-mv.z-1.)*.4,0.,1.);gl_Position=projectionMatrix*mv;
-      gl_PointSize=clamp((18.+seed*19.)/-mv.z,1.,4.);}`,
-    fragmentShader:`varying float fade;void main(){float r=length(gl_PointCoord-.5);if(r>.5)discard;
-      gl_FragColor=vec4(.71,.80,.90,fade*smoothstep(.5,.1,r));}`});
-  const snow=new THREE.Points(snowGeometry,snowMaterial);snow.name='Exterior snowfall';snow.frustumCulled=false;snow.raycast=()=>{};scene.add(snow);
+      void main(){vec3 p=position;p.y=-1.+mod(position.y+1.-time*(7.5+seed*3.),8.);
+      p.x+=(p.y-6.)*-.06;vec4 mv=modelViewMatrix*vec4(p,1.);
+      fade=mix(.28,.6,seed)*clamp((-mv.z-1.)*.4,0.,1.);gl_Position=projectionMatrix*mv;
+      gl_PointSize=clamp((140.+seed*90.)/-mv.z,3.,26.);}`,
+    fragmentShader:`varying float fade;void main(){vec2 c=gl_PointCoord-.5;if(abs(c.x)>.03)discard;
+      gl_FragColor=vec4(.62,.70,.78,fade*smoothstep(.5,.0,abs(c.y)));}`});
+  const snow=new THREE.Points(snowGeometry,snowMaterial);snow.name='Exterior rain';snow.frustumCulled=false;snow.raycast=()=>{};snow.visible=false;scene.add(snow);
 
   // A small, low-opacity glass reflection follows the actual sliding sash.
   // Mid/low retain the prefiltered room probe without a second scene render.
@@ -62,7 +65,8 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   // Small physical-scale architecture details, batched by material.
   const detail=new THREE.Group();detail.name='Winter room details';model.root.add(detail);
   const trim=new THREE.MeshStandardMaterial({color:'#303934',roughness:.54,metalness:.12});
-  const snowCap=new THREE.MeshStandardMaterial({color:'#b6c5cf',roughness:.98});
+  // Wet concrete sill (was a snow cap; it never snows in Mumbai).
+  const snowCap=new THREE.MeshStandardMaterial({color:'#4a4d4c',roughness:.62});
   const detailParts=[];
   function box(size,pos,mat){const g=new THREE.BoxGeometry(...size);g.translate(...pos);detailParts.push({g,mat});}
   for(const x of [.56,2.21])box([.026,2.13,.045],[x,1.99,-1.565],trim);
@@ -122,7 +126,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
       // Exterior has its own soft sky fill; no indoor point lights reach it.
       if(!o.material.name.startsWith('Window ')){o.material.color.multiplyScalar(.68);o.material.emissive.copy(o.material.color);o.material.emissiveIntensity=.06;}
     }});
-    scene.add(city);model.city.visible=false;status.city='ready';probeDirty=true;invalidate();report();
+    scene.add(city);applyWet();model.city.visible=false;status.city='ready';probeDirty=true;invalidate();report();
   }).catch(e=>{status.city='fallback';console.warn('Winter city fallback:',e.message);report();});
   const mapsPromise=fetch(`${ROOT}manifest.json`).then(r=>{if(!r.ok)throw new Error('material manifest unavailable');return r.json();}).then(async manifest=>{
     const entries=manifest.sets||manifest.materials||manifest;
@@ -176,9 +180,10 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     },
     contactStats:()=>contacts.stats(),
     setContactsEnabled:value=>contacts.setEnabled(value),
-    setSky(value){sky=value;snow.visible=value==='night';scene.environment=value==='night'?(probes.get(lastLamp?'on':'off')?.texture||null):null;
+    setSky(value){sky=value;scene.environment=value==='night'?(probes.get(lastLamp?'on':'off')?.texture||null):null;
       for(const m of Object.values(model.bakedMaterials))m.lightMapIntensity=value==='night'?.7:0;probeDirty=true;},
-    setWeather(active){snow.visible=active&&sky==='night';},
+    // Rain shows in any light; wet streets read as glossier city surfaces.
+    setWeather(raining){snow.visible=!!raining;wet=!!raining;applyWet();invalidate();},
     dispose(){disposed=true;contacts.dispose();scene.environment=null;scene.remove(snow,steam);snowGeometry.dispose();snowMaterial.dispose();steamGeometry.dispose();steamMaterial.dispose();
       if(glassReflection){glassReflection.removeFromParent();glassReflection.geometry.dispose();glassReflection.dispose();}
       city?.traverse(o=>{o.geometry?.dispose();if(o.material){o.material.map?.dispose();o.material.normalMap?.dispose();o.material.roughnessMap?.dispose();o.material.dispose();}});if(city)scene.remove(city);

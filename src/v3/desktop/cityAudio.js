@@ -5,6 +5,9 @@ let masterGain = null;
 let noiseSource = null;
 let humOsc1 = null;
 let humOsc2 = null;
+let rainSource = null;
+let rainGain = null;
+let raining = false;
 let muted = (() => {
   try { return localStorage.getItem('v3:room-muted') === '1'; } catch { return false; }
 })();
@@ -74,6 +77,33 @@ function initAudio() {
   humOsc2.connect(humGain2);
   humGain2.connect(masterGain);
   humOsc2.start();
+
+  // Rain on the window: bright, band-passed white noise. Silent until the
+  // live Mumbai weather says it is raining.
+  const rainBuffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+  const rd = rainBuffer.getChannelData(0);
+  for (let i = 0; i < rd.length; i++) rd[i] = Math.random() * 2 - 1;
+  rainSource = audioCtx.createBufferSource();
+  rainSource.buffer = rainBuffer;
+  rainSource.loop = true;
+  const rainFilter = audioCtx.createBiquadFilter();
+  rainFilter.type = 'bandpass';
+  rainFilter.frequency.setValueAtTime(2600, audioCtx.currentTime);
+  rainFilter.Q.setValueAtTime(0.6, audioCtx.currentTime);
+  rainGain = audioCtx.createGain();
+  rainGain.gain.setValueAtTime(raining ? 0.18 : 0, audioCtx.currentTime);
+  rainSource.connect(rainFilter);
+  rainFilter.connect(rainGain);
+  rainGain.connect(masterGain);
+  rainSource.start();
+}
+
+export function setCityRain(value) {
+  raining = !!value;
+  if (!audioCtx || !rainGain) return;
+  const t = audioCtx.currentTime;
+  rainGain.gain.cancelScheduledValues(t);
+  rainGain.gain.linearRampToValueAtTime(raining ? 0.18 : 0, t + 1.2);
 }
 
 export function startCityAmbience() {

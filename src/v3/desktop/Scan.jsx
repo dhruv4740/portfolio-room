@@ -11,7 +11,8 @@ import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
-import { startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted, suspendCityAmbience } from './cityAudio.js';
+import { istParts } from '../lib/mumbai.js';
+import { setCityRain, startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted, suspendCityAmbience } from './cityAudio.js';
 import { disposeRoomAudio, isRoomMuted, playRoomFoley, setRoomMuted, unlockRoomAudio } from './roomAudio.js';
 import { subscribeProgress } from '../lib/loadProgress.js';
 import { anchors, projects, identity, contact, education, experience, achievements } from '../content/index.js';
@@ -81,6 +82,15 @@ export default function Scan() {
   const [screenError, setScreenError] = useState(null);
   const [error, setError] = useState(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  // "Mumbai · 01:40 · 27°C · light rain", refreshed every minute.
+  const [weather, setWeather] = useState(null);
+  const [clock, setClock] = useState(() => istParts().label);
+  useEffect(() => {
+    const onWeather = (event) => { setWeather(event.detail); setCityRain(event.detail.raining); };
+    window.addEventListener('workspace:weather', onWeather);
+    const timer = setInterval(() => setClock(istParts().label), 30000);
+    return () => { window.removeEventListener('workspace:weather', onWeather); clearInterval(timer); };
+  }, []);
   // Only the room's own GLB/texture loads; the boot screen covered the rest.
   const [load, setLoad] = useState({ progress: 0, pending: 0 });
   useEffect(() => subscribeProgress(s => {
@@ -584,6 +594,12 @@ export default function Scan() {
         </div>
       )}
 
+      {introDone && screenPhase === 'room' && (
+        <p className="mumbai-readout mono" data-testid="mumbai-readout">
+          MUMBAI · {clock}{weather?.temperature != null ? ` · ${weather.temperature}°C` : ''}{weather ? ` · ${weather.label}` : ''}
+        </p>
+      )}
+
       {introDone && overviewOpen && screenPhase === 'room' && !error && (
         <section className="launchpad" aria-labelledby="launchpad-name" data-testid="room-overview">
           <p className="launchpad-kicker mono">WELCOME TO THE WORKSPACE</p>
@@ -763,6 +779,7 @@ const css = `
 .room-load { position:fixed; left:0; right:0; top:0; z-index:calc(var(--z-panel) + 1); height:2px; background:#1d2122; pointer-events:none; }
 .room-load i { position:absolute; inset:0; background:var(--signal); transform-origin:left; transition:transform .25s; }
 .room-load span { position:absolute; top:8px; left:50%; transform:translateX(-50%); color:#9ea39f; font-size:10px; letter-spacing:.16em; }
+.mumbai-readout { position:fixed; right:var(--gutter); bottom:18px; z-index:var(--z-panel); margin:0; color:#8d928f; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
 .about-scrim { position:fixed; inset:0; z-index:calc(var(--z-panel) + 5); background:rgba(0,0,0,.55); display:grid; place-items:center; padding:24px; }
 .about-panel { position:relative; width:min(620px,100%); max-height:calc(100vh - 48px); overflow:auto; padding:28px 30px; border:1px solid #555b59; border-left:2px solid var(--signal); background:#0d1011; color:#d3d4cc; font-size:14px; line-height:1.6; }
 .about-panel h2 { margin:4px 0 2px; color:var(--bone); font-size:30px; font-weight:500; letter-spacing:-.03em; }

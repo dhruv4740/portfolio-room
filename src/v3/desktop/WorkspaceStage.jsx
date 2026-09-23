@@ -7,6 +7,7 @@ import { buildWorkspace, WORKSPACE } from './buildWorkspace.js';
 import { PHONE_SCREEN } from './phoneScreenSize.js';
 import { reportProgress } from '../lib/loadProgress.js';
 import { fetchGithubActivity, formatActivity } from '../lib/githubActivity.js';
+import { fetchMumbaiWeather, mumbaiSky } from '../lib/mumbai.js';
 
 // The phone UI and its apps load after the room is up (idle prefetch below),
 // not with the first paint.
@@ -36,7 +37,8 @@ export function resolveSkyState() {
     const fromHash = parseSky(hash.slice(qIdx));
     if (fromHash) return fromHash;
   }
-  return 'night';
+  // No override: follow Mumbai local time.
+  return mumbaiSky();
 }
 
 export default function WorkspaceStage({
@@ -1110,6 +1112,19 @@ export default function WorkspaceStage({
       afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });
       callbacks.current.onReady?.({ splatCount: null });
+      // Live Mumbai weather: rain on the glass and wet streets, otherwise a
+      // humid night haze tinted by sodium streetlights. Silent on failure.
+      fetchMumbaiWeather().then(weather => {
+        if (disposed || !weather) return;
+        afterHours?.setWeather(weather.raining);
+        if (!weather.raining && host.dataset.skyState === 'night' && scene.fog?.isFog) {
+          scene.fog.color.set('#2b2218'); scene.fog.near = 6; scene.fog.far = 55;
+        }
+        host.dataset.weather = weather.raining ? 'rain' : 'clear';
+        window.__v3Weather = weather;
+        window.dispatchEvent(new CustomEvent('workspace:weather', { detail: weather }));
+        invalidate();
+      });
       fetchGithubActivity().then(items => {
         if (disposed || !items?.length || !model.setGithubActivity) return;
         model.setGithubActivity(formatActivity(items[0]));
