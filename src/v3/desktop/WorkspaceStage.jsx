@@ -369,19 +369,47 @@ export default function WorkspaceStage({
       const ZERO = { x: 0, y: 0, z: 0 };
       // Phone: palm down on the glass, thumb on the edge, then the hand rolls
       // under to hold it from behind: palm behind the phone, fingers wrapping
-      // its far edge, thumb over the screen's near edge.
-      const PHONE_TOP = { obj: model.phone, p: [-0.125, 0.042, 0.035], r: [0, 0, 0], pose: 'open' };
-      const PHONE_SIDE = { obj: model.phone, p: [-0.12, -0.070, 0.035], r: [0, 0, Math.PI / 2], pose: 'open' };
+      // its far edge, thumb over the screen's near edge. Offsets are solved for
+      // the true-size phone (7.8 cm) and the unscaled hand: palm 2 mm over the
+      // glass, then palm against the long edge, then under it with fingers
+      // curled only as far as the far edge. The side grip sits 4 cm further up
+      // the phone so the fingertips clear its top end while the hand turns
+      // under (the top grip can't: the forearm would sink into the flat phone).
+      const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.035], r: [0, 0, 0], pose: 'open' };
+      // Side is the top grip turned 90 degrees about the near long edge.
+      const PHONE_SIDE = { obj: model.phone, p: [-0.0735, 0.0245, -0.005], r: [0, 0, Math.PI / 2], pose: 'open' };
       const PHONE_BACK = (() => {
         const y = new THREE.Vector3(0, -1, 0), z = new THREE.Vector3(-Math.cos(0.35), 0, Math.sin(0.35));
-        return { obj: model.phone, p: [-0.040, -0.035, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
-          pose: {...POSES.cup,c0:.3,c1:.3,c2:.3,c3:.34} };
+        return { obj: model.phone, p: [-0.045, -0.03, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
+          pose: {...POSES.cup,c0:.2,c1:.2,c2:.2,c3:.24} };
       })();
-      const PHONE_LEAN = { x: -0.14, y: -0.08, z: -0.21 };
+      const PHONE_LEAN = { x: -0.14, y: -0.08, z: -0.21 }, PHONE_HELD = new THREE.Vector3(0.08, 1.04, 0.05);
       let phoneGrip = 1, phoneVisited = false;
-      // A world-up reach arc cuts through a tilted phone during the underhand
-      // roll. The explicitly authored side waypoint already supplies clearance.
-      function followPhone() { hold(model.hands.left, PHONE_TOP, PHONE_BACK, phoneGrip, PHONE_SIDE, false); }
+      // The underhand roll pivots on the phone's near long edge: a straight
+      // blend between the grips either cuts through the case or leaves the
+      // phone floating centimetres from the palm. Orientation and finger pose
+      // blend as usual; the position travels an arc around that edge.
+      const rollPos = new THREE.Vector3(), palmIn = new THREE.Vector3();
+      // Push (m) along the palm normal at grip 0, 0.025 … 1: the hand is not a
+      // flat plate, so a rigid roll alone opens a gap or presses skin into the
+      // case. Solved for smoothness and a ~1 mm gap with scripts/probe-phone-tune.mjs
+      // (DP=1), then eased 1 mm off the case where the blend between knots clipped.
+      let PHONE_ROLL_IN = [0.002, 0.0055, 0.0085, 0.0105, 0.0125, 0.014, 0.015, 0.016, 0.0165, 0.017, 0.0175, 0.018, 0.018, 0.0185,
+        0.019, 0.019, 0.0195, 0.0195, 0.0195, 0.0195, 0.019, 0.0175, 0.0155, 0.013, 0.0105, 0.0075, 0.003, 0, -0.0015, -0.006,
+        -0.006, -0.003, -0.002, -0.0015, -0.001, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005];
+      function followPhone() {
+        const L = model.hands.left, g = phoneGrip, size = WORKSPACE.phoneSize;
+        const [a, b, w] = g < 0.5 ? [PHONE_TOP, PHONE_SIDE, g * 2] : [PHONE_SIDE, PHONE_BACK, (g - 0.5) * 2];
+        hold(L, a, b, w, null, false);
+        const px = -size.width / 2, py = -size.depth / 2, polar = q => [Math.atan2(q[1] - py, q[0] - px), Math.hypot(q[0] - px, q[1] - py)];
+        let [angA, rA] = polar(a.p), [angB, rB] = polar(b.p);
+        while (angB < angA) angB += Math.PI * 2;
+        const ang = angA + (angB - angA) * w, r = rA + (rB - rA) * w;
+        model.phone.updateMatrix();
+        L.hand.position.copy(rollPos.set(px + r * Math.cos(ang), py + r * Math.sin(ang), a.p[2] + (b.p[2] - a.p[2]) * w).applyMatrix4(model.phone.matrix));
+        const n = PHONE_ROLL_IN.length - 1, i = Math.min(n - 1, Math.floor(g * n)), f = g * n - i;
+        L.hand.position.addScaledVector(palmIn.set(0, -1, 0).applyQuaternion(L.hand.quaternion), PHONE_ROLL_IN[i] + (PHONE_ROLL_IN[i + 1] - PHONE_ROLL_IN[i]) * f);
+      }
       // PhoneScreen drives these. The texture under the DOM screen follows it,
       // so pulling back out of the zoom never pops to a different screen.
       function showFocusLock() {
@@ -414,7 +442,7 @@ export default function WorkspaceStage({
       function animatePhone(reduced) {
         action?.kill(); phoneInHand = true;
         model.resetPhone(); model.hands.reset(); model.setHandsVisible(true);
-        const left = model.hands.left, held = new THREE.Vector3(0.08, 1.04, 0.05);
+        const left = model.hands.left, held = PHONE_HELD;
         if (reduced) {
           rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.02, 0.04] }, { reduced, duration: 0.65, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); } });
           model.phone.position.copy(held); model.phone.rotation.x = 1.15; phoneGrip = 1;
@@ -439,7 +467,6 @@ export default function WorkspaceStage({
           .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 1.05)
           .to(k, { grip: 1, duration: 0.85, ease: 'power2.inOut' }, 1.05)
           .call(() => markPhone('home'), [], 1.9);
-        action.timeScale(phoneVisited ? 3.2 : 1.55);
         gsap.ticker.wake();
       }
       function returnPhone(reduced) {
@@ -1320,6 +1347,25 @@ export default function WorkspaceStage({
             }
             {const desk=model.staticBoxes.desk.clone().expandByScalar(-.001);let n=0;for(const mesh of [h.skinMesh,h.clothMesh]){if(!mesh?.visible)continue;const pos=mesh.geometry.attributes.position;for(let i=0;i<pos.count;i++){p.fromBufferAttribute(pos,i);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(i,p);p.applyMatrix4(mesh.matrixWorld);if(desk.containsPoint(p))n++;}}out.desk=n;}
             out.wristDeg=Math.round(h.wristDeg);out.wristL=Math.round(model.hands.left.wristDeg);return out;
+          },
+          // Left-hand skin to the phone body: nearest distance (mm, 0 = touching or inside), vertices inside, wrist bend.
+          // Re-pose the left hand at phone grip blend `grip` (0 top, .5 side, 1 back) with other grip offsets (tuning only).
+          tunePhone(o, grip) {
+            if(o.top)PHONE_TOP.p=o.top;if(o.side)PHONE_SIDE.p=o.side;if(o.back)PHONE_BACK.p=o.back;if(o.backCurl!=null)PHONE_BACK.pose={...PHONE_BACK.pose,c0:o.backCurl,c1:o.backCurl,c2:o.backCurl,c3:o.backCurl+.04};if('follow' in o)model.hands.left.elbowFollow=o.follow;if(o.push)PHONE_ROLL_IN=o.push;
+            // The phone and body lean as the pick-up/put-down timelines have them at this grip (same ease and span as the grip tween).
+            const ph=model.phone,pos=ph.position.clone(),rx=ph.rotation.x,lean=model.hands.lean.clone(),[px,py,pz]=WORKSPACE.anchors.phone;
+            ph.position.set(px,py+0.12,pz).lerp(PHONE_HELD,grip);ph.rotation.x=1.15*grip;model.hands.lean.set(PHONE_LEAN.x,PHONE_LEAN.y,PHONE_LEAN.z).multiplyScalar(1-grip);
+            const g=phoneGrip;phoneGrip=grip;followPhone();model.hands.update();const r=this.phoneGap();phoneGrip=g;
+            ph.position.copy(pos);ph.rotation.x=rx;model.hands.lean.copy(lean);invalidate();return r;
+          },
+          phoneGap() {
+            model.root.updateMatrixWorld(true);
+            const h=model.hands.left,mesh=h.skinMesh,p=new THREE.Vector3(),size=WORKSPACE.phoneSize;
+            const inverse=model.phone.matrixWorld.clone().invert(),box=new THREE.Box3(new THREE.Vector3(-size.width/2,-size.depth,-size.height/2),new THREE.Vector3(size.width/2,0,size.height/2));
+            let gap=Infinity,inside=0,at=null;const pos=mesh.geometry.attributes.position,si=mesh.geometry.attributes.skinIndex;
+            for(let i=0;i<pos.count;i++){p.fromBufferAttribute(pos,i);mesh.applyBoneTransform(i,p).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);const d=box.distanceToPoint(p);if(d===0)inside++;if(d<gap){gap=d;at=[...p.toArray().map(v=>Math.round(v*1000)),mesh.skeleton.bones[si.getX(i)]?.name];}}
+            const hand=h.hand.getWorldPosition(new THREE.Vector3()).applyMatrix4(inverse).toArray().map(v=>Math.round(v*1000));
+            return {gapMm:+(gap*1000).toFixed(1),inside,wrist:Math.round(h.wristDeg),wristR:Math.round(model.hands.right.wristDeg),grip:+phoneGrip.toFixed(3),hand,at};
           },
           phoneGripGeometry() {
             model.root.updateMatrixWorld(true);

@@ -41,7 +41,8 @@ async function sweep(phase, n = 16, probe = null) {
     await writeFile(`${OUT}/${name}.png`, buf); frames.push({ time, buf, data }); log(name + (data ? ' ' + JSON.stringify(data) : ''));
   }
   await p.evaluate(() => { window.__v3test.timeline().timeScale(1).play(); });
-  await sheet(phase, frames, duration);
+  // 16 frames per sheet: one page of 48 base64 PNGs crashes the renderer.
+  for (let c = 0; c * 16 < frames.length; c++) await sheet(phase + (c ? '-' + (c + 1) : ''), frames.slice(c * 16, c * 16 + 16), duration);
 }
 async function sheet(phase, frames, duration) {
   const s = await b.newPage({ viewport: { width: 1600, height: 400 } });
@@ -69,9 +70,9 @@ if (action === 'resume') {
   await p.screenshot({ path: `${OUT}/${action}-${tag}-held-again.png`, style: HIDE });
 } else if (action === 'phone') {
   // Pick-up timeline, then (after the zoom in and out flights) the put-down timeline.
-  await mark(); await button('PHONE').click(); await sweep('pickup', 16, 'phoneGap');
+  await mark(); await button('PHONE').click(); await sweep('pickup', +(process.env.FRAMES || 16), 'phoneGap');
   await until('phoneState', 'zoomed'); await p.waitForTimeout(600);
-  await mark(); await p.keyboard.press('Escape'); await sweep('putdown', 16, 'phoneGap');
+  await mark(); await p.keyboard.press('Escape'); await sweep('putdown', +(process.env.FRAMES || 16), 'phoneGap');
   await until('phoneState', 'desk');
 } else throw new Error(`unknown action ${action}`);
 console.log(JSON.stringify({ action, tag, errors }));

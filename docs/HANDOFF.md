@@ -89,17 +89,18 @@ These were broken or made worse by the true-scale port. Its hand and camera cons
    - During the drawer beat the head leans out over the drawer (`DRAWER_HEAD`), so the upper arm no longer fills the frame.
    - New opt-in `elbowFollow` in `seatedHands.js`: the elbow goes where the hand's wrist axis points. Before it, wrists were bent 107–135° through the reach.
    - Measured with `drawerClip`: 0 skin vertices in the drawer or desk at every sampled frame. The wrist stays at 1–25° except brief 64–70° moments while the page travels between the drawer and the face.
-6. **Phone speed: uncommitted, in the working tree.** The pick-up `timeScale` is removed (it was 1.55× on a first visit and 3.2× on a repeat).
-   - Measured before, click to zoomed / Escape to desk: 1.85 s / 2.41 s on a first visit, 1.17 s / 2.37 s on a repeat. The reach alone was 0.26 s on a repeat.
-   - Not re-measured since the change: run `BASE=http://localhost:4175 node scripts/measure-phone-timing.mjs`.
-7. **Phone gap: in progress, uncommitted.** Cause: the grip offsets (`PHONE_TOP`, `PHONE_SIDE`, `PHONE_BACK`) were authored for a larger phone. The true-size phone is 7.8 cm wide, and the old top grip put the palm 12.5 cm from its centre.
-   - Done in the working tree:
-     - The top grip is 1.8 mm above the glass.
-     - The back grip has 0.4 mm contact with finger curl 0.2. This also clears the skin clipping that fails `verify-phone-grip`, but the suite hasn't been re-run.
-     - `followPhone()` moves the hand along an arc around the phone's near long edge instead of a straight blend.
-   - Not done: the roll still leaves a 14–16 mm gap in its first half and about 100 vertices of overlap around grip 0.7. The latest sweep (side x −0.052…−0.064, back y −0.035/−0.04) found no candidate with both a small gap and no overlap.
-   - Next idea: make the side grip's orientation follow the arc angle (a true rigid roll about the edge), then re-tune.
-   - Tools: `__v3test.tunePhone(opts, grip)` and `phoneGap()`.
+6. **Phone speed: fixed.** The pick-up `timeScale` is gone (it was 1.55× on a first visit, 3.2× on a repeat), so pick-up and put-down now play at the same 1× pace.
+   - Measured (`measure-phone-timing.mjs`, click → zoomed / Escape → desk): 2.50 s / 2.36 s on a first visit, 2.34 s / 2.36 s on a repeat. Before: 1.85 / 2.41 s and 1.17 / 2.37 s.
+7. **Phone gap and roll: fixed.** Cause: the grip offsets were authored for a larger phone. The true-size phone is 7.8 cm wide, and the old top grip put the palm 12.5 cm from its centre.
+   - The earlier "next idea" (a true rigid roll about the edge) was already what the first half did. The real cause: the top grip touched the phone only at its *far* edge (x = +40 mm), so any roll about the near edge lifted that contact off at once (1.8 mm → 13.6 mm within 5 % of the roll).
+   - Fix, all in `WorkspaceStage.jsx`:
+     - `PHONE_ROLL_IN`: a 41-knot push along the palm normal through the roll. It's solved for smoothness plus about a 1 mm gap by `scripts/probe-phone-tune.mjs` (`DP=1`).
+     - The side grip sits 4 cm further up the phone (z −0.005), so the fingertips clear its top end while the hand turns under. The top grip can't move: with the phone flat, the forearm would sink into it.
+     - `tunePhone` now poses the phone and body lean the way the timelines do at that grip. A probe against the already-held phone missed a 280-vertex forearm clip that only shows while the phone is flat.
+   - Measured in motion (`FRAMES=48 record-motion.mjs phone final`, 96 frames): 0 skin vertices inside the phone in any frame. The gap through the roll is ≤ 4.2 mm (it was 14–16 mm). The hand path in the phone frame is monotonic, with no out-and-back. Wrist: left 6–65°, right 17–42°.
+   - The 321-sample grip sweep shows 1–2 vertices inside at 2 samples. The probe measures against a sharp-cornered box, and the phone has 4 mm rounded corners.
+   - Look/feel, for the owner (not changed): in the side phase (`phone-final-pickup-3-sheet.png`, 1.46–1.54 s) the phone touches the palm only along its edge, with the fingers straight, so it reads as floating beside the hand. In the held pose the fingers fan open behind the phone and the wrist sits at 65° (`phone-final-pickup-47.png`). Both predate this fix.
+   - Tools: `__v3test.tunePhone(opts, grip)` (opts: top, side, back, backCurl, follow, push) and `phoneGap()` (now also logs the right wrist, the grip and the hand position in phone coordinates).
 8. **Mobile demo:** the phone-apps demo has no walkthrough text. Only the guided tour has captions. Not started.
 
 ### Test suite
@@ -115,6 +116,8 @@ These were broken or made worse by the true-scale port. Its hand and camera cons
 - **`scripts/record-motion.mjs <resume|phone> <tag>`** (with `BASE=http://localhost:4175`):
   - Real-GPU frame sweeps of a whole timeline, plus a contact sheet per phase, with a per-frame probe in the captions.
   - It slows the timeline rather than pausing it, because a paused timeline stops the render loop.
+  - `FRAMES=48` samples more densely (phone only). Sheets are split 16 frames each (`…-pickup-sheet`, `…-pickup-2-sheet`, …).
+- **`scripts/probe-phone-tune.mjs`:** phone grip sweeps through `tunePhone`. Pass an options array for one compact row per option set; `DP=1` re-solves `PHONE_ROLL_IN`.
   - Never return a GSAP timeline from `page.evaluate`: serialising it takes about 150 s.
 - **`scripts/probe-drawer-tune.mjs [timeline | grid <t> <json>]`:** parameter sweeps through `__v3test.tuneDrawerHandle`.
 - **`scripts/measure-phone-timing.mjs`:** wall-clock phone pick-up and put-down.
