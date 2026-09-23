@@ -32,7 +32,8 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
 }, ref) {
   const frameRef = useRef(null);
   const pendingKeys=useRef([]);
-  const pendingApp=useRef(null);
+  // Apps asked for before the OS reports ready, in order (a single slot dropped all but the last).
+  const pendingApps=useRef([]);
   const lastRect=useRef(null);
   const backRef = useRef(null);
   const rootRef = useRef(null);
@@ -52,7 +53,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
       const frame = frameRef.current;
       if (frame?.contentWindow && frame.dataset.ready === 'true') {
         frame.contentWindow.postMessage({ source: 'v3-scan', type: 'open-app', app }, TRUSTED_ORIGIN);
-      } else { pendingApp.current = app; setMounted(true); }
+      } else { pendingApps.current.push(app); setMounted(true); }
     },
     typeKey(key) {
       if(frameRef.current?.contentWindow && frameRef.current?.dataset.ready === "true") {
@@ -137,7 +138,7 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
         setFrameState('ready');
         frameRef.current.dataset.ready='true';
         for(const key of pendingKeys.current.splice(0))frameRef.current.contentWindow.postMessage({source:'v3-scan',type:'room-key',key},TRUSTED_ORIGIN);
-        if(pendingApp.current){frameRef.current.contentWindow.postMessage({source:'v3-scan',type:'open-app',app:pendingApp.current},TRUSTED_ORIGIN);pendingApp.current=null;}
+        for(const app of pendingApps.current.splice(0))frameRef.current.contentWindow.postMessage({source:'v3-scan',type:'open-app',app},TRUSTED_ORIGIN);
         const rect=lastRect.current,root=rootRef.current,box=frameBoxRef.current;
         if(rect&&root&&box){root.setAttribute('data-aligning','true');box.style.width=rect.width+'px';box.style.height=rect.height+'px';box.style.transform=`matrix3d(${rect.matrix.join(',')})`;}
         onReady?.(data);

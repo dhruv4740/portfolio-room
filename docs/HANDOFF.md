@@ -68,11 +68,47 @@ The owner reported most of these after using the site. A problem marked **likely
      - fewer shadow-casting lights, or a cheaper shadow type;
      - fewer distinct materials;
      - compile in the background (`compileAsync` with `KHR_parallel_shader_compile`) behind the load bar.
-2. **The projects lag during the walkthrough, and entering or leaving the monitor lags.** Not measured yet.
-   - The "3D loop keeps rendering behind the dhruvOS iframe" theory is unlikely: `Scan.jsx` passes `paused` while the screen is `preparing` or `inside`, and the loop stops when paused. The code confirms this; it hasn't been measured.
-   - Other suspects: the load stall, or the flights into and out of the screen.
-   - Measure with `scripts/measure-gpu.mjs` and a CPU profile before changing anything.
-3. **Opening the window seems to freeze the site.** Not reproduced yet. Likely causes: a shader recompile when the window light turns on, or starting the city audio. Profile the click.
+2. **The projects lag during the walkthrough, and entering or leaving the monitor lags.**
+3. **Opening the window seems to freeze the site.**
+
+**Baseline for 2 and 3, measured 2026-09-24/25 before any fix.** Tool: `scripts/profile-interaction.mjs <sit|window|enter|tour|tour-cold>`, which records a CPU profile, rAF frame gaps and long tasks on the real GPU. Setup: dev server on 4175, 1536×864 @ 1.25. React runs in dev mode on this server, so the React costs below are higher than in production.
+   - **First-use shader compile of the hand rig: 2.1–2.7 s freezes.** Four programs (`Hand skin` plus three unnamed ones) compile the first time the hands are visible. Whichever comes first pays:
+     - first sit: 2250 ms frame;
+     - first exit from the monitor, when entered from the launchpad: 2216–2283 ms;
+     - the tour's first seconds: 2149–2650 ms.
+     - `getProgramInfoLog` holds 2.0–2.1 s of each. The second enter/leave cycle is smooth: max frame 83–100 ms, 0 new programs.
+     - This is separate from the first-load stall: those 74–79 programs are already compiled by then. `KHR_parallel_shader_compile` is available here.
+   - **First monitor entry: 450–500 ms and 267–350 ms frames**, 255–263 ms of long tasks, including 80 ms in `unlockRoomAudio`. Leaving the second time: max 83 ms.
+   - **Window open: one 200–217 ms frame at the click, then 83–100 ms**, whether or not the first load had settled. No multi-second freeze reproduced in headless. The click path:
+     - `startCityAmbience` creates an AudioContext (72 ms for a first context in a clean page);
+     - the page re-fetches and parses `favicon.svg` (a 75 ms task);
+     - the rest is 275 ms of `(program)`, native time the profiler doesn't attribute.
+     - Guess, not measured: on the owner's machine a real audio device may make the AudioContext slower.
+   - **Whole-tree React re-render every 300 ms:** `Scan` keeps the telemetry `stats` in state, and `WorkspaceStage` emits them every 300 ms while the loop runs. The trace shows a 28–31 ms React task about 3 times a second, even with nothing happening. Telemetry is only shown with `?debug=1` or `v3:test`, but every visitor pays for the render.
+   - **Tour** (57.8 s): p50 17 ms, p95 33 ms, 33–34 frames over 50 ms, 13 over 100 ms. Worst frames:
+     - the hand compile (2.1–2.65 s);
+     - OS boot on entering (517–550 ms twice, then 283–300 ms);
+     - leaving the monitor (367–400 ms).
+   - **First-load stall (not being fixed, the owner's call):** settling took 18.4–20.6 s after the room appeared in 5 runs this session.
+   - GPU cost per frame (`measure-gpu.mjs`, auto tier): 11.3 ms standing, 8.5 ms seated, 10.3 ms seated with the hands hidden. Steady-state GPU load isn't the lag.
+
+**Fixes (2026-09-25) and the same measurements after:**
+   - **Shader warm-up** (`WorkspaceStage.jsx`, `deskContactShadows.js` `warm()`):
+     - What it does: once the load has settled (30 frames under 50 ms), `renderer.compileAsync(scene, camera)` compiles everything the first render skipped. It also compiles the contact-shadow caster variants (render target, shadow map off). All of it runs in parallel with `KHR_parallel_shader_compile`.
+     - It finishes 0.8–1.0 s after settle and sets `data-shaders-warm="ready"`.
+     - Results:
+       - first sit: 0 new programs; worst frame 350 ms (was 2250);
+       - first monitor exit: 367 ms (was 2216–2283);
+       - tour worst frame: 567 ms (was 2149–2650).
+     - The remaining ~240 ms of `getProgramInfoLog` is three.js checking each warmed program on its first draw (`debug.checkShaderErrors`). Turning that off would also change the first-load stall, which is the owner's call, so it stays on.
+     - First-load settle after the change: 17.4–20.6 s, the same range as before. The warm-up starts only after settle.
+   - **Telemetry isolated** (`Scan.jsx` `LiveTelemetry`): the stats go straight to the HUD, so `Scan` no longer re-renders every 300 ms. React dev time over the tour went from 1962 to 737 ms; per monitor entry/exit, from 250–340 to 55–93 ms.
+   - **Pending OS app opens are queued** (`DhruvOSScreen.jsx`). A single slot dropped every app requested before the OS reported ready except the last one. See `verify-tour` below.
+   - **Not fixed:**
+     - First monitor entry: a 517 ms frame. The trace puts it in the GPU process: raster flushes of 130 ms and 242 ms while the OS document is first drawn, plus about 1.1 s of ANGLE worker tasks (likely Skia compiling shaders for that first raster; not confirmed).
+       - A possible fix: mount the OS iframe in the background after load. That means loading dhruvOS for every visitor, which the code comment deliberately avoids. **Owner decision.**
+     - Window open: still one 217 ms frame at the click (now 0 long tasks), native or GPU time. It's a hitch, not a freeze. If the owner still sees a multi-second freeze on the laptop, it wasn't reproduced here. One guess: a real audio device (e.g. Bluetooth) making the AudioContext slow.
+   - **`verify-tour`:** it passed in this session's suite run. When the tour is started cold, during the first-load stall, the key press isn't handled until the stall ends (about 14 s in the `tour-cold` run). The tour then ends at about 71.5 s, while `verify-tour` samples only to 62 s. `DhruvOSScreen` holds the only iframe on the page, so the suite's `querySelector('iframe')` isn't picking the wrong frame.
 
 ### Interactions
 
