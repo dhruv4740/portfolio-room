@@ -196,6 +196,13 @@ export function createDeskContactShadows({
       capture();lastCapture=now;
     },
     markDirty(){dirty=true;},
+    // Compile the capture's caster variants (skinned hands included) the way
+    // capture() draws them: into a render target, shadow map off.
+    warm(){
+      const target=renderer.getRenderTarget(),shadows=renderer.shadowMap.enabled;
+      try{renderer.shadowMap.enabled=false;renderer.setRenderTarget(raw);return renderer.compileAsync(casters,camera);}
+      finally{renderer.setRenderTarget(target);renderer.shadowMap.enabled=shadows;}
+    },
     // Asynchronous desk assets own their geometry and hand it over on load.
     addStatic,
     setEnabled(value){enabled=!!value;receivers.forEach(mesh=>{mesh.visible=enabled&&captures>0;});if(enabled)dirty=true;invalidate();},

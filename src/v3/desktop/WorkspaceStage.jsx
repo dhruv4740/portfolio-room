@@ -1215,6 +1215,21 @@ export default function WorkspaceStage({
       });
       const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1500));
       idle(() => loadPhoneScreen().then(() => setPhoneWanted(true), () => {}), { timeout: 4000 });
+      // three.js compiles a shader the first time something using it is drawn.
+      // The hands and seated body are hidden until the first sit, so their
+      // programs compiled then, synchronously: a 2.1-2.7 s freeze on the first
+      // sit or the first exit from the monitor. Once the load has settled
+      // (30 frames under 50 ms), compile everything not yet drawn in parallel
+      // (KHR_parallel_shader_compile), off the main thread.
+      let warmFrames = 0, warmLast = performance.now();
+      const warm = (now) => {
+        if (disposed) return;
+        warmFrames = now - warmLast < 50 ? warmFrames + 1 : 0; warmLast = now;
+        if (warmFrames < 30) { requestAnimationFrame(warm); return; }
+        Promise.all([renderer.compileAsync(scene, camera), afterHours?.warmContacts()])
+          .then(() => { if (!disposed) host.dataset.shadersWarm = 'ready'; }, () => {});
+      };
+      requestAnimationFrame(warm);
       let entryPlayed = false;
       function startEntryPower() {
         if (entryPlayed) return;
@@ -1296,6 +1311,8 @@ export default function WorkspaceStage({
           bodyAttachment(){return {torsoOffset:model.hands.torsoOffset.toArray(),upperArmLengths:[model.hands.left.sleeve.scale.y,model.hands.right.sleeve.scale.y]};},
           showHands(v) { model.hands.root.visible = !!v; invalidate(); },
           // Real-GPU cost probes (scripts/measure-gpu.mjs): governor state, live pixel ratio, draw calls.
+          // Compiled shader programs by name (material type or name), to see which first-use compiles an interaction triggers.
+          programs(full) { return (renderer.info.programs || []).map(p => p.name + '#' + p.id + (full ? ' ' + p.cacheKey.slice(0, 400) : '')); },
           perf() { const i = renderer.info.render, s = renderer.getSize(new THREE.Vector2()); return { ...gov.getStats(), pixelRatio: renderer.getPixelRatio(), programs: renderer.info.programs?.length, lights: (()=>{let n=0,sh=0;model.root.parent.traverse(o=>{if(o.isLight&&!o.isAmbientLight&&!o.isHemisphereLight){n++;if(o.castShadow)sh++;}});return n+'/'+sh+' shadow';})(), calls: i.calls, triangles: i.triangles, w: s.x, h: s.y, shadows: renderer.shadowMap.enabled }; },
           setPixelRatio(v) { gov.pinPixelRatio(v); invalidate(); },
           contacts() { return afterHours?.contactStats(); },

@@ -213,6 +213,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
       contacts.update(performance.now());
     },
     contactStats:()=>contacts.stats(),
+    warmContacts:()=>contacts.warm(),
     setContactsEnabled:value=>contacts.setEnabled(value),
     setSky(value){sky=value;scene.environment=value==='night'?(probes.get(lastLamp?'on':'off')?.texture||null):null;
       for(const m of Object.values(model.bakedMaterials))m.lightMapIntensity=value==='night'?.7:0;probeDirty=true;},
