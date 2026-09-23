@@ -108,7 +108,12 @@ The owner reported most of these after using the site. A problem marked **likely
      - First monitor entry: a 517 ms frame. The trace puts it in the GPU process: raster flushes of 130 ms and 242 ms while the OS document is first drawn, plus about 1.1 s of ANGLE worker tasks (likely Skia compiling shaders for that first raster; not confirmed).
        - A possible fix: mount the OS iframe in the background after load. That means loading dhruvOS for every visitor, which the code comment deliberately avoids. **Owner decision.**
      - Window open: still one 217 ms frame at the click (now 0 long tasks), native or GPU time. It's a hitch, not a freeze. If the owner still sees a multi-second freeze on the laptop, it wasn't reproduced here. One guess: a real audio device (e.g. Bluetooth) making the AudioContext slow.
-   - **`verify-tour`:** it passed in this session's suite run. When the tour is started cold, during the first-load stall, the key press isn't handled until the stall ends (about 14 s in the `tour-cold` run). The tour then ends at about 71.5 s, while `verify-tour` samples only to 62 s. `DhruvOSScreen` holds the only iframe on the page, so the suite's `querySelector('iframe')` isn't picking the wrong frame.
+   - **`verify-tour` flake: root cause found and fixed** (`Scan.jsx` deep-link effect).
+     - Reproduced with fresh browsers (`scripts/_diag-tour.mjs`, verify-tour's first block with a 250 ms state log): a miss on run 2 of 2.
+     - The first-load stall blocked the page from +0.3 s to +16.3 s after the tour started. When it cleared, the tour's 6.5 s step called `navigate('/os/crisiswatch')`, and then the stale deep-link effect for step 0's `/room/explore` ran and called `navigate('/', {replace: true})`. That replaced the newer URL, so the OS was never entered.
+     - Fix: the effect still performs its link but clears the URL only while it's still that link.
+     - Real visitors hit this too whenever a long stall lines up with the tour.
+     - Earlier observation: `verify-tour` passed in this session's suite runs. When the tour is started cold, during the first-load stall, the key press isn't handled until the stall ends (about 14 s in the `tour-cold` run). The tour then ends at about 71.5 s, while `verify-tour` samples only to 62 s. `DhruvOSScreen` holds the only iframe on the page, so the suite's `querySelector('iframe')` isn't picking the wrong frame.
 
 ### Interactions
 
@@ -137,7 +142,12 @@ These were broken or made worse by the true-scale port. Its hand and camera cons
    - The 321-sample grip sweep shows 1–2 vertices inside at 2 samples. The probe measures against a sharp-cornered box, and the phone has 4 mm rounded corners.
    - Look/feel, for the owner (not changed): in the side phase (`phone-final-pickup-3-sheet.png`, 1.46–1.54 s) the phone touches the palm only along its edge, with the fingers straight, so it reads as floating beside the hand. In the held pose the fingers fan open behind the phone and the wrist sits at 65° (`phone-final-pickup-47.png`). Both predate this fix.
    - Tools: `__v3test.tunePhone(opts, grip)` (opts: top, side, back, backCurl, follow, push) and `phoneGap()` (now also logs the right wrist, the grip and the hand position in phone coordinates).
-8. **Mobile demo:** the phone-apps demo has no walkthrough text. Only the guided tour has captions. Not started.
+8. **Mobile demo walkthrough: done.**
+   - In the phone's stage view, a text panel left of the phone says what the open app is and what to try. It changes per app: home, FocusLock, friction, hard block, Expense Tracker, BasketProof.
+   - Styled like the stage chrome, not the signal colour. It's hidden below 1100 px wide, where there's no room beside the phone.
+   - Copy comes from `WALKTHROUGH` in `PhoneScreen.jsx`, facts from PROJECT-MATERIAL.md only; BasketProof is framed neutrally.
+   - Screenshots: `scripts/shots/walk-1536-*.png`.
+   - **Owner review:** the copy is in the first person ("built for my family"), matching the tour captions. Edit freely.
 
 ### Test suite
 

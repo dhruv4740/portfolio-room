@@ -1348,6 +1348,18 @@ export default function WorkspaceStage({
           // Re-solve the drawer handle grip with other offsets and re-pose (tuning only).
           tuneDrawerHandle(opts) { drawerGrips = drawerGripsFor(model.roomActions.objects.drawer, model.roomActions.resumePage, opts); poseDrawer(); invalidate(); return this.drawerClip(); },
           // Right-hand skin and sleeve vertices inside the drawer's wooden parts (1 mm tolerance).
+          // Per hand: [skin + sleeve vertices inside the desk, inside the held object's own meshes, wrist bend in degrees].
+          handsProbe() {
+            model.root.updateMatrixWorld(true);
+            const desk=model.staticBoxes.desk.clone().expandByScalar(-.001),p=new THREE.Vector3(),q=new THREE.Vector3(),held=[],out={};
+            const obj=extraHeld?model.roomActions.objects[extraHeld]:phoneInHand?model.phone:notebookInHand?model.notebook:null;
+            obj?.traverse(o=>{if(!o.isMesh||!o.visible)return;o.geometry.computeBoundingBox();held.push({box:o.geometry.boundingBox.clone().expandByScalar(-.001),inv:o.matrixWorld.clone().invert()});});
+            for(const [k,h] of [['L',model.hands.left],['R',model.hands.right]]){let d=0,i=0;
+              for(const mesh of [h.skinMesh,h.clothMesh]){if(!mesh?.visible)continue;const pos=mesh.geometry.attributes.position;
+                for(let v=0;v<pos.count;v++){p.fromBufferAttribute(pos,v);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(v,p);p.applyMatrix4(mesh.matrixWorld);if(desk.containsPoint(p))d++;if(held.some(b=>b.box.containsPoint(q.copy(p).applyMatrix4(b.inv))))i++;}}
+              out[k]=[d,i,Math.round(h.wristDeg)];}
+            return out;
+          },
           drawerClip() {
             model.root.updateMatrixWorld(true);
             const h=model.hands.right,parts=model.roomActions.objects.drawer.children.filter(o=>o.isMesh),p=new THREE.Vector3(),q=new THREE.Vector3(),out={};

@@ -32,6 +32,41 @@ const STORAGE_KEY = 'v3:focuslock';
 const TARGET = 'com.instagram.android';
 const BLOCK_SECONDS = 300;
 const GRANTED = 'Extension granted for 5 minutes. Stay intentional.';
+// Walkthrough beside the phone in the stage view: what each app is and what
+// to try. Facts only from docs/PROJECT-MATERIAL.md.
+const WALKTHROUGH = {
+  home: {
+    title: 'Android apps, running in the browser',
+    body: 'Each one is rebuilt from its own source and runs here on sample data. Instagram is here as the app FocusLock guards.',
+    steps: ['Open FocusLock to see its rules.', 'Then open Instagram and meet them.', 'Expense Tracker and BasketProof open full screen.'],
+  },
+  focuslock: {
+    title: 'FocusLock',
+    body: 'A screen-time enforcer: this Android app and a Windows agent share one daily limit, kept in sync through Firestore.',
+    steps: ['Settings → Friction & blockers picks the steps that stand in front of Instagram.', 'Apps sets the daily limit and the blocked apps.', 'Go home and open Instagram to try them.'],
+  },
+  friction: {
+    title: 'FocusLock friction',
+    body: 'Before Instagram opens, FocusLock walks you through every step turned on in its settings.',
+    steps: ['Finish the steps to reach Instagram, or give up and go home.'],
+  },
+  locked: {
+    title: 'FocusLock hard block',
+    body: 'With hard block after the limit, or a focus session running, Instagram stays locked.',
+    steps: ['Solve the problem to ask for an extension.'],
+  },
+  expense: {
+    title: 'Expense Tracker',
+    body: 'Reads bank SMS and UPI notifications and parses them on the phone into a local SQLite database. No backend, no accounts.',
+    steps: ['The bottom bar has the feed, Uber splits and stats.'],
+  },
+  basketproof: {
+    title: 'BasketProof',
+    body: 'A private grocery comparison across Blinkit, Zepto and Swiggy Instamart, built for my family. It shows UNKNOWN rather than a total it can’t verify.',
+    steps: ['Build a list, then compare the platforms.'],
+  },
+};
+
 const QUOTES = [
   'Focus on being productive instead of busy.',
   'Your focus determines your reality.',
@@ -1724,6 +1759,14 @@ const PhoneScreen = forwardRef(function PhoneScreen({
           </div>
         </div>
       )}
+      {stageMode && interactive && WALKTHROUGH[app] && (
+        <aside className="phone-walkthrough" aria-live="polite" aria-label="About this app">
+          <span className="phone-walkthrough-kicker">WALKTHROUGH</span>
+          <h2 className="phone-walkthrough-title">{WALKTHROUGH[app].title}</h2>
+          <p>{WALKTHROUGH[app].body}</p>
+          <ul>{WALKTHROUGH[app].steps.map((step) => <li key={step}>{step}</li>)}</ul>
+        </aside>
+      )}
     </div>
   );
 });
@@ -1827,6 +1870,33 @@ const css = `
 .phone-stage-actions button:hover,
 .phone-stage-actions button:focus-visible { border-color: #E8E4DC; }
 .phone-stage-actions button:disabled { opacity: .46; cursor: default; }
+/* Beside the phone, only where there is room for it. */
+.phone-walkthrough {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: max(24px, calc(50% - 195px - 48px - 300px));
+  width: min(300px, calc(50% - 195px - 72px));
+  transform: translateY(-50%);
+  padding-left: 16px;
+  border-left: 1px solid #3B3B42;
+  color: #B7B9B2;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 13.5px;
+  line-height: 1.55;
+  pointer-events: none;
+}
+.phone-walkthrough-kicker {
+  color: #8D8D95;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: .16em;
+}
+.phone-walkthrough-title { margin: 6px 0 8px; color: #E8E4DC; font-size: 17px; font-weight: 500; }
+.phone-walkthrough p { margin: 0 0 12px; }
+.phone-walkthrough ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.phone-walkthrough li { color: #D6D3CB; }
+@media (max-width: 1099px) { .phone-walkthrough { display: none; } }
 .phone-stage-exit { color: #FFB394 !important; border-color: rgba(255, 95, 31, .55) !important; }
 .phone-stage-exit:hover, .phone-stage-exit:focus-visible { border-color: #FF5F1F !important; }
 
