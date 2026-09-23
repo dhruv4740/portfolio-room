@@ -20,7 +20,7 @@ import { KEY_ROWS, AWARD_REST, PEN_REST } from './cinematicRoomInteractions.js';
 import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
 import { createAfterHours } from './afterHours.js';
-import { createSceneDirector } from './sceneDirector.js';
+import { createSceneDirector, COLD_OPEN } from './sceneDirector.js';
 import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
 export function resolveSkyState() {
@@ -1163,9 +1163,23 @@ export default function WorkspaceStage({
           }
         }
       }
+      // Cold-open beats: the lamp is off until it clicks on, and the name types
+      // onto the monitor. Cutting the shot lands both in their final state.
+      function coldOpenCue() {
+        const r = model.roomActions; let lampAfter = null, clicked = false;
+        const setLamp = v => { if (r.state.lamp !== v) { r.state.lamp = v; r.apply(); host.dataset.lampOn = String(v); } };
+        return {
+          start() { lampAfter = r.state.lamp; clicked = false; setLamp(0); model.setMonitorName(0); },
+          frame(t) {
+            if (!clicked && t >= COLD_OPEN.lampAt) { clicked = true; setLamp(lampAfter ?? 1); }
+            model.setMonitorName((t - COLD_OPEN.typeFrom) / (COLD_OPEN.typeTo - COLD_OPEN.typeFrom));
+          },
+          end() { if (lampAfter !== null) setLamp(lampAfter); model.setMonitorName(1); invalidate(); },
+        };
+      }
       api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome,
         arrival(token){
-          if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion);}
+          if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion,coldOpenCue(),Promise.resolve(afterHours?.ready).then(()=>renderer.compileAsync(scene,camera)));}
           else if(director.active){director.cancel();if(state.current.phase==='room'&&!state.current.seated&&!state.current.activeAnchorId)place(home);invalidate();}
         },
         setSky: (s) => model.setSky(s), clearNotes: () => { model.clearNotes(); invalidate(); } };

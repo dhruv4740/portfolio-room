@@ -620,11 +620,24 @@ export function buildCinematicWorkspace(scene, options = {}) {
   figure.root.scale.set(FIG_XZ, FIG_Y, FIG_XZ);
   figure.root.position.set(BODY.shoulderMidpoint[0] - FIG_XZ * 0.05, 0, BODY.shoulderMidpoint[2] - FIG_XZ * 1.23);
 
+  function setMonitorName(fraction = 1) {
+    const texture = displayMaterial.map, ctx = texture.image.getContext('2d'), name = 'DHRUV KOTHARI';
+    const shown = name.slice(0, Math.round(name.length * Math.min(1, Math.max(0, fraction))));
+    ctx.fillStyle = '#25343b'; ctx.fillRect(0, 0, 560, 42);
+    ctx.fillStyle = '#ece7db'; ctx.font = 'bold 24px monospace'; ctx.fillText(shown, 24, 30);
+    if (fraction < 1) { ctx.fillStyle = '#ece7db'; ctx.fillRect(24 + ctx.measureText(shown).width + 3, 10, 12, 24); }
+    texture.needsUpdate = true;
+  }
+  setMonitorName(1);
+
   return {
     // Old-room lightmaps and trim do not fit this geometry; afterHours skips them.
     cinematic: true,
     // Rain falls just outside this room's window (afterHours reads this).
     rainVolume: { x: [WINDOW.opening.minX - 0.6, WINDOW.opening.maxX + 2.5], z: [WINDOW.wallZ - 0.35, WINDOW.wallZ - 3.55] },
+    // The owner's name in the monitor's title bar; `fraction` types it on
+    // (the cold open). Drawn fully typed at build.
+    setMonitorName,
     // One line of live GitHub activity under the "Selected work" panel.
     setGithubActivity(line) {
       const texture = displayMaterial.map, ctx = texture.image.getContext('2d');

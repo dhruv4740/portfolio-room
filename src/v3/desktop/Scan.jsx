@@ -30,12 +30,14 @@ const RETURN_MS = 1000;
 const PREPARE_TIMEOUT_MS = 9000;
 const ARRIVAL_SEEN_KEY = 'v3:arrival-seen';
 
+// The cold open plays once per visitor (localStorage). The session key is
+// still honoured because the harnesses set it to skip the shot.
 function hasSeenArrival() {
-  try { return sessionStorage.getItem(ARRIVAL_SEEN_KEY) === '1'; } catch { return false; }
+  try { return sessionStorage.getItem(ARRIVAL_SEEN_KEY) === '1' || localStorage.getItem(ARRIVAL_SEEN_KEY) === '1'; } catch { return false; }
 }
 
 function markArrivalSeen() {
-  try { sessionStorage.setItem(ARRIVAL_SEEN_KEY, '1'); } catch { /* private mode */ }
+  try { sessionStorage.setItem(ARRIVAL_SEEN_KEY, '1'); localStorage.setItem(ARRIVAL_SEEN_KEY, '1'); } catch { /* private mode */ }
 }
 
 export default function Scan() {
@@ -169,7 +171,7 @@ export default function Scan() {
 
   const handleWorkspaceReady = useCallback(() => {
     // Keep the old persistent intro flag for existing harnesses and returning
-    // visitors, while the cinematic arrival itself is once per browser session.
+    // visitors, while the cold open itself is once per visitor.
     if (!hasSeenIntro()) markIntroSeen();
     setIntroDone(true);
     if (!reduced && !hasSeenArrival()) {

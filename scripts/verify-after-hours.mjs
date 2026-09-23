@@ -36,7 +36,7 @@ function pinScan(page, { reduced = false, skipArrival = false } = {}) {
     localStorage.setItem('v3:perf-tier', 'low');
     sessionStorage.setItem('v3:controls', 'open');
     if (shouldSkipArrival) sessionStorage.setItem('v3:arrival-seen', '1');
-    else sessionStorage.removeItem('v3:arrival-seen');
+    else { sessionStorage.removeItem('v3:arrival-seen'); localStorage.removeItem('v3:arrival-seen'); }
     if (reducedMotion) {
       // Playwright's reducedMotion context is the source of truth. This marker
       // is only useful to app-side diagnostics and does not replace the media query.
