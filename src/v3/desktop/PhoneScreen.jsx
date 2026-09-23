@@ -496,6 +496,12 @@ const PhoneScreen = forwardRef(function PhoneScreen({
     }
   }
 
+  // The full-screen apps are DOM panels outside the phone's projected quad;
+  // putting the phone down must close them or they stay over the room.
+  useEffect(() => {
+    if (!interactive) setApp(current => (current === 'expense' || current === 'basketproof' ? 'home' : current));
+  }, [interactive]);
+
   // Deep links (/#/phone/<app>) arrive once the phone is in hand.
   useEffect(() => {
     const onOpen = (event) => {
