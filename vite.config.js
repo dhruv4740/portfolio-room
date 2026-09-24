@@ -11,7 +11,9 @@ const staticAppIndex = {
   configureServer(server) {
     server.middlewares.use((req, res, next) => {
       const match = /^\/apps\/([\w-]+)\/?(?:index\.html)?(?:\?.*)?$/.exec(req.url || '')
-      const file = match && resolve('public/apps', match[1], 'index.html')
+      // Relative to this config, not the working directory: a server started
+      // from another checkout served that checkout's apps.
+      const file = match && resolve(import.meta.dirname, 'public/apps', match[1], 'index.html')
       if (!file || !existsSync(file)) return next()
       res.setHeader('Content-Type', 'text/html; charset=utf-8')
       res.end(readFileSync(file))
