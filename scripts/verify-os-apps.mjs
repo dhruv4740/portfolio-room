@@ -7,7 +7,7 @@ const baseOrigin = new URL(BASE).origin;
 
 const promoted = [
   { id: 'focuslock', title: 'FocusLock', mode: 'minimize', projectKey: 'focuslock' },
-  { id: 'skills', title: 'Skills', mode: 'close', customTagline: 'Interactive skill physics', hasRaf: true },
+  { id: 'skills', title: 'Skills', mode: 'close' },
   { id: 'darksentinel', title: 'DarkSentinel', mode: 'close', projectKey: 'darksentinel' },
   { id: 'crisiswatch', title: 'CrisisWatch', mode: 'close', projectKey: 'crisiswatch' },
   { id: 'fraud', title: 'Fraud Detection', mode: 'close', projectKey: 'fraud' },
@@ -115,12 +115,9 @@ for (const app of promoted) {
   await page.waitForTimeout(1500);
 
   if (app.id === 'skills') {
-    const expectedHeader = `${app.title} — ${app.customTagline}`;
-    const headerEl = win.locator('.app-project-header');
-    assert.equal(await headerEl.count(), 1, `${app.title}: .app-project-header missing`);
-    const actualHeader = (await headerEl.innerText()).trim();
-    assert.equal(actualHeader, expectedHeader, `${app.title}: header mismatch. Expected "${expectedHeader}", got "${actualHeader}"`);
-    console.log(`PASS ${app.title}: header matched "${expectedHeader}"`);
+    const rows = await win.locator('.sk-row').count();
+    assert.equal(rows, content.skills.length, `${app.title}: expected ${content.skills.length} readable skill rows, got ${rows}`);
+    console.log(`PASS ${app.title}: ${rows} skill rows listed`);
   } else if (await win.locator('iframe').count()) {
     // Real project UI (public/os/shell/iframeApp.js): the demo label is the window title, the app is untouched.
     assert.match(await win.locator('iframe').getAttribute('src'), /^\/apps\/[a-z-]+\/$/, `${app.title}: iframe src`);
@@ -188,35 +185,25 @@ for (const app of promoted) {
   }
 }
 
-// Assert Skills physics keeps animating after another app opens and closes
+// A skill's project button opens that project's card in the projects app.
 const skillsDeskIcon = page.locator('.desk-icon').filter({ hasText: 'Skills' }).first();
 await skillsDeskIcon.click();
 const skillsWindow = await windowFor('Skills');
-await page.waitForTimeout(500);
-
-// A visible window covers the desktop canvas, so minimize Skills before
-// launching the second icon with the shell's single-click affordance. Restore
-// it after FocusLock closes to verify its animation resumes in the foreground.
-await skillsWindow.locator('[data-minimize]').click();
-await page.waitForTimeout(200);
-const flDeskIcon = page.locator('.desk-icon').filter({ hasText: 'FocusLock' }).first();
-await flDeskIcon.click();
-const flWindow = await windowFor('FocusLock');
-await page.waitForTimeout(500);
-
-await flWindow.locator('[data-close]').click();
-await page.waitForTimeout(400);
-
-await page.locator('.taskbar-btn').filter({ hasText: 'Skills' }).click();
+await skillsWindow.locator('.sk-proof button', { hasText: 'Expense Tracker' }).first().click();
+const projectsWindow = await windowFor('projects');
 await page.waitForTimeout(300);
+assert.deepEqual(await projectsWindow.locator('.ql-card.ql-decoded h2').allInnerTexts(), ['Expense Tracker'], 'skill proof did not open its project card');
+console.log('PASS Skills project button opens its card in projects');
 
-const skillsRunningBefore = await page.evaluate(() => window.__rafCallbacks);
-await page.waitForTimeout(250);
-const skillsRunningAfter = await page.evaluate(() => window.__rafCallbacks);
-assert.ok(skillsRunningAfter > skillsRunningBefore, `Skills stopped animating after FocusLock closed (${skillsRunningBefore} -> ${skillsRunningAfter})`);
-console.log('PASS Skills keeps animating after other app closes');
-
-await skillsWindow.locator('[data-close]').click();
+// The green light fills the workspace and restores the previous size.
+const before = await projectsWindow.evaluate((el) => [el.style.width, el.style.height]);
+await projectsWindow.locator('[data-maximize]').click();
+const [ww, wh] = await page.locator('#workspace').evaluate((el) => [el.clientWidth, el.clientHeight]);
+assert.deepEqual(await projectsWindow.evaluate((el) => [el.style.width, el.style.height]), [`${ww}px`, `${wh}px`], 'maximize did not fill the workspace');
+await projectsWindow.locator('[data-maximize]').click();
+assert.deepEqual(await projectsWindow.evaluate((el) => [el.style.width, el.style.height]), before, 'maximize did not restore the window');
+console.log('PASS maximize fills the workspace and restores');
+for (const close of await page.locator('.os-window [data-close]').all()) await close.click().catch(() => {});
 await page.waitForTimeout(400);
 
 const wallpaperIcon = page.locator('.desk-icon').filter({ hasText: 'wallpaper' }).first();
@@ -224,7 +211,7 @@ await wallpaperIcon.click();
 const wallpaper = await windowFor('wallpaper');
 
 // 1. Set SKY
-await wallpaper.locator('button[title="SKY"]').click();
+await wallpaper.locator('button[title="Mumbai, live"]').click();
 await wallpaper.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
 await page.waitForTimeout(300);
 const skyBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
@@ -232,16 +219,16 @@ assert.ok(skyBg.startsWith('url("data:image/png'), `SKY wallpaper backgroundImag
 await page.screenshot({ path: 'scripts/shots/wallpaper-sky.png' });
 console.log('PASS set SKY wallpaper applied data URL and screenshot saved');
 
-// 2. Set PLN
-await wallpaper.locator('button[title="PLN"]').click();
+// 2. Set a palette: the desktop shows a still of its flow field.
+await wallpaper.locator('button[title="Ember"]').click();
 await wallpaper.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
 await page.waitForTimeout(300);
-const plnBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
-const plnColor = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor);
-assert.equal(plnBg, 'none', `PLN backgroundImage should be none, got: ${plnBg}`);
-assert.equal(plnColor, 'rgb(11, 13, 16)', `PLN backgroundColor should be rgb(11, 13, 16), got: ${plnColor}`);
-await page.screenshot({ path: 'scripts/shots/wallpaper-plain.png' });
-console.log('PASS set PLN wallpaper applied plain color and screenshot saved');
+const emberBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
+const emberColor = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor);
+assert.ok(emberBg.startsWith('url("data:image/png'), `Ember backgroundImage should be a data URL, got: ${emberBg.slice(0, 60)}`);
+assert.equal(emberColor, 'rgb(10, 8, 0)', `Ember backgroundColor should be rgb(10, 8, 0), got: ${emberColor}`);
+await page.screenshot({ path: 'scripts/shots/wallpaper-ember.png' });
+console.log('PASS set Ember wallpaper applied its flow still');
 
 // 3. Reload embed.html to verify persistence
 await wallpaper.locator('[data-close]').click();
@@ -249,11 +236,9 @@ await page.waitForTimeout(300);
 await page.goto(`${BASE}/os/embed.html?embed=1`);
 await page.locator('.desk-icon').first().waitFor();
 await page.waitForTimeout(600);
-const reloadBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
 const reloadColor = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor);
-assert.equal(reloadBg, 'none', `reloaded PLN backgroundImage should be none, got: ${reloadBg}`);
-assert.equal(reloadColor, 'rgb(11, 13, 16)', `reloaded PLN backgroundColor should be rgb(11, 13, 16), got: ${reloadColor}`);
-console.log('PASS reload embed.html persists PLN wallpaper');
+assert.equal(reloadColor, 'rgb(10, 8, 0)', `reloaded Ember backgroundColor should be rgb(10, 8, 0), got: ${reloadColor}`);
+console.log('PASS reload embed.html persists the Ember wallpaper');
 
 for (const close of await page.locator('.os-window [data-close]').all()) await close.click().catch(() => {});
 await page.waitForTimeout(400);
@@ -352,7 +337,7 @@ await frameWpIcon.click();
 const frameWp = osFrame.locator('.os-window').filter({ hasText: 'wallpaper' }).last();
 await frameWp.waitFor({ timeout: 10000 });
 
-await frameWp.locator('button[title="SKY"]').click();
+await frameWp.locator('button[title="Mumbai, live"]').click();
 await frameWp.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
 await roomPage.waitForTimeout(800);
 

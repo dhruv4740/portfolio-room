@@ -163,8 +163,6 @@ not the procedural fallback.
   do not apply.
 - **The seated figure's head is invisible but real geometry.** Raycasts must
   skip `model.figure.root` or every click from the seat hits the hair.
-- **Gravity in the embedded OS needs Matter.js** and is unavailable on the
-  dependency-free embedded path. Known, not a bug to chase.
 
 ## Git
 

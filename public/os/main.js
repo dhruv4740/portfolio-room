@@ -24,13 +24,17 @@ const ctx = {
     }
   },
   openProject: (projectId) => {
-    store.emit('open-project', { id: projectId });
     const app = apps.find(a => a.id === 'projects');
     if (app) {
       store.markExplored('projects');
       openApp(app, ctx);
     }
+    // After opening: a projects window mounted just now subscribes on mount.
+    store.emit('open-project', { id: projectId });
   },
+  // Android demos live on the phone in the room; the host leaves the computer
+  // and picks it up. Only meaningful when embedded in the room.
+  openPhone: window.parent !== window ? (app) => postToHost({ type: 'open-phone', app }) : null,
   openContact: () => {
     const app = apps.find(a => a.id === 'contact');
     if (app) {

@@ -25,7 +25,7 @@ await load('../apps/crisiswatch.js');
 await load('../apps/fraud.js');
 await load('../apps/wallpaper.js');
 await load('../apps/contact.js');
-await load('../apps/gravity.js');
+await load('../apps/skills.js');
 await load('../apps/music.js');
 
 export default apps;

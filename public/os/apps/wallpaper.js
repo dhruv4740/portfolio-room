@@ -1,12 +1,13 @@
-// os/apps/wallpaper.js — curl-noise flow field, skyline, and plain wallpapers with store persistence
+// os/apps/wallpaper.js — curl-noise flow field and live skyline wallpapers with store persistence
 import store from '../shell/store.js';
 
 export const PALETTES = {
-  green:  { key: 'green',  bg: '#050a08', r: 92,  g: 255, b: 208, label: 'GRN', hex: '#5cffd0' },
-  amber:  { key: 'amber',  bg: '#0a0800', r: 255, g: 176, b: 0,   label: 'AMB', hex: '#ffb000' },
-  violet: { key: 'violet', bg: '#080510', r: 192, g: 132, b: 252, label: 'VIO', hex: '#c084fc' },
-  blue:   { key: 'blue',   bg: '#020810', r: 96,  g: 165, b: 250, label: 'BLU', hex: '#60a5fa' },
+  green:  { key: 'green',  bg: '#050a08', r: 92,  g: 255, b: 208, label: 'Aurora', hex: '#5cffd0' },
+  amber:  { key: 'amber',  bg: '#0a0800', r: 255, g: 176, b: 0,   label: 'Ember',  hex: '#ffb000' },
+  violet: { key: 'violet', bg: '#080510', r: 192, g: 132, b: 252, label: 'Nebula', hex: '#c084fc' },
+  blue:   { key: 'blue',   bg: '#020810', r: 96,  g: 165, b: 250, label: 'Tide',   hex: '#60a5fa' },
 };
+const SKY_LABEL = 'Mumbai, live';
 
 export function getSkyState() {
   if (window.parent !== window) {
@@ -99,7 +100,62 @@ export function renderSkylineDataUrl(skyState, width, height, dpr = 1) {
     }
   }
 
+  // Readability: the desktop icons sit in a column on the left, and a bright
+  // day sky washed them out. Dim the day sky and shade that column.
+  if (skyState === 'day') {
+    ctx.fillStyle = 'rgba(10,16,26,0.38)';
+    ctx.fillRect(0, 0, W, H);
+  }
+  const scrim = ctx.createLinearGradient(0, 0, W * 0.22, 0);
+  scrim.addColorStop(0, 'rgba(0,0,0,0.5)');
+  scrim.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, 0, W * 0.22, H);
+
   return c.toDataURL('image/png');
+}
+
+// A still of the preview's flow field, so the desktop shows the palette you
+// picked rather than an 8% glow on near-black. Same seed every time.
+const flowCache = new Map();
+export function renderFlowDataUrl(p, width, height, dpr = 1) {
+  const cacheKey = `${p.key}:${width}x${height}@${dpr}`;
+  if (flowCache.has(cacheKey)) return flowCache.get(cacheKey);
+  const c = document.createElement('canvas');
+  c.width = Math.max(1, Math.round(width * dpr));
+  c.height = Math.max(1, Math.round(height * dpr));
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.fillStyle = p.bg;
+  ctx.fillRect(0, 0, width, height);
+  const glow = ctx.createRadialGradient(width * 0.62, height * 0.42, 0, width * 0.62, height * 0.42, Math.max(width, height) * 0.7);
+  glow.addColorStop(0, `rgba(${p.r},${p.g},${p.b},0.16)`);
+  glow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, width, height);
+  const rng = createPrng(4740);
+  ctx.lineCap = 'round';
+  for (let i = 0; i < 520; i++) {
+    let x = rng() * width, y = rng() * height;
+    const steps = 40 + Math.floor(rng() * 70), size = 0.6 + rng() * 1.4, t = rng() * 6;
+    for (let s = 0; s < steps; s++) {
+      const { dx, dy } = curlXY(x, y, t);
+      const len = Math.hypot(dx, dy) || 1;
+      const nx = x + (dx / len) * 2.2, ny = y + (dy / len) * 2.2;
+      ctx.strokeStyle = `rgba(${p.r},${p.g},${p.b},${Math.sin((s / steps) * Math.PI) * 0.24})`;
+      ctx.lineWidth = size;
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(nx, ny); ctx.stroke();
+      x = nx; y = ny;
+    }
+  }
+  const scrim = ctx.createLinearGradient(0, 0, width * 0.22, 0);
+  scrim.addColorStop(0, 'rgba(0,0,0,0.45)');
+  scrim.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, 0, width * 0.22, height);
+  const url = c.toDataURL('image/png');
+  flowCache.set(cacheKey, url);
+  return url;
 }
 
 let skyObserver = null;
@@ -129,17 +185,9 @@ export function startSkyObserver(onChange) {
 export function applyWallpaper(key) {
   const desktop = document.getElementById('desktop');
   const workspace = document.getElementById('workspace');
-  if (key === 'plain') {
-    stopSkyObserver();
-    if (desktop) {
-      desktop.style.backgroundColor = 'rgb(11, 13, 16)';
-      desktop.style.backgroundImage = 'none';
-    }
-    if (workspace) {
-      workspace.style.backgroundColor = 'rgb(11, 13, 16)';
-      workspace.style.backgroundImage = 'none';
-    }
-  } else if (key === 'sky') {
+  // 'plain' was removed; a saved choice falls back to the default.
+  if (key !== 'sky' && !PALETTES[key]) key = 'green';
+  if (key === 'sky') {
     const redraw = () => {
       const W = desktop?.clientWidth || window.innerWidth || 900;
       const H = desktop?.clientHeight || window.innerHeight || 640;
@@ -160,16 +208,14 @@ export function applyWallpaper(key) {
   } else if (PALETTES[key]) {
     stopSkyObserver();
     const p = PALETTES[key];
-    const glow = `rgba(${p.r},${p.g},${p.b},0.08)`;
-    if (desktop) {
-      desktop.style.backgroundColor = p.bg;
-      desktop.style.backgroundImage = `radial-gradient(ellipse at 30% 60%, ${glow} 0%, transparent 65%)`;
-      desktop.style.backgroundSize = '';
-    }
-    if (workspace) {
-      workspace.style.backgroundColor = p.bg;
-      workspace.style.backgroundImage = `radial-gradient(ellipse at 30% 40%, ${glow} 0%, transparent 65%)`;
-      workspace.style.backgroundSize = '';
+    const W = desktop?.clientWidth || window.innerWidth || 900;
+    const H = desktop?.clientHeight || window.innerHeight || 640;
+    const url = `url("${renderFlowDataUrl(p, W, H, Math.min(window.devicePixelRatio || 1, 1.5))}")`;
+    for (const el of [desktop, workspace]) {
+      if (!el) continue;
+      el.style.backgroundColor = p.bg;
+      el.style.backgroundImage = url;
+      el.style.backgroundSize = 'cover';
     }
   }
 }
@@ -216,11 +262,12 @@ export default {
 
     const palLabel = document.createElement('span');
     palLabel.style.cssText = 'font-size:8px;letter-spacing:0.24em;color:rgba(92,255,208,0.3);margin-right:6px;flex-shrink:0;';
-    palLabel.textContent = 'PALETTE';
+    palLabel.style.minWidth = '92px';
     ui.appendChild(palLabel);
 
     const btnMap = {};
     let currentKey = store.get('wallpaper.palette') || 'green';
+    if (currentKey !== 'sky' && !PALETTES[currentKey]) currentKey = 'green';
 
     // ── Particle state ────────────────────────────────────────────────────────
     let W, H, dpr, particles = [];
@@ -237,38 +284,26 @@ export default {
       canvas.style.height = H + 'px';
       c.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      if (currentKey === 'sky') {
-        drawSkyPreview();
-      } else if (currentKey === 'plain') {
-        drawPlainPreview();
-      } else {
-        particles = Array.from({ length: N }, () => ({
-          x: Math.random() * W, y: Math.random() * H,
-          age: Math.random() * 220, maxAge: 160 + Math.random() * 180,
-          speed: 0.6 + Math.random() * 1.1, size: 0.8 + Math.random() * 1.8,
-        }));
-      }
+      particles = Array.from({ length: N }, () => ({
+        x: Math.random() * W, y: Math.random() * H,
+        age: Math.random() * 220, maxAge: 160 + Math.random() * 180,
+        speed: 0.6 + Math.random() * 1.1, size: 0.8 + Math.random() * 1.8,
+      }));
+      if (currentKey === 'sky') drawSkyPreview();
     }
 
+    // Draws in CSS pixels under the dpr transform. Resetting the transform
+    // here (as it used to) left the particle loop painting only 1/dpr of the
+    // canvas after switching back from SKY.
     function drawSkyPreview() {
-      const skyState = getSkyState();
-      const dataUrl = renderSkylineDataUrl(skyState, W, H, dpr);
+      const dataUrl = renderSkylineDataUrl(getSkyState(), W, H, dpr);
       const img = new Image();
-      img.onload = () => {
-        c.setTransform(1, 0, 0, 1, 0, 0);
-        c.drawImage(img, 0, 0, canvas.width, canvas.height);
-      };
+      img.onload = () => { if (currentKey === 'sky') c.drawImage(img, 0, 0, W, H); };
       img.src = dataUrl;
     }
 
-    function drawPlainPreview() {
-      c.setTransform(1, 0, 0, 1, 0, 0);
-      c.fillStyle = '#0b0d10';
-      c.fillRect(0, 0, canvas.width, canvas.height);
-    }
-
     function loop(now) {
-      if (currentKey === 'sky' || currentKey === 'plain') {
+      if (currentKey === 'sky') {
         rafId = null;
         return;
       }
@@ -291,9 +326,12 @@ export default {
           continue;
         }
         const { dx, dy } = curlXY(p.x, p.y, t);
+        // The curl's raw magnitude is ~0.004, which moved each particle a
+        // fraction of a pixel and left the preview dark; follow its direction.
+        const len = Math.hypot(dx, dy) || 1;
         const speed = p.speed * 60 * dt;
-        const nx = p.x + dx * speed;
-        const ny = p.y + dy * speed;
+        const nx = p.x + (dx / len) * speed;
+        const ny = p.y + (dy / len) * speed;
         const alpha = Math.sin((p.age / p.maxAge) * Math.PI) * 0.72;
         c.beginPath(); c.moveTo(p.x, p.y); c.lineTo(nx, ny);
         c.strokeStyle = `rgba(${r},${g},${b},${alpha})`;
@@ -309,6 +347,7 @@ export default {
       currentKey = key;
       store.set('wallpaper.palette', key);
       applyWallpaper(key);
+      palLabel.textContent = (PALETTES[key]?.label || SKY_LABEL).toUpperCase();
 
       Object.entries(btnMap).forEach(([k, btn]) => {
         const isActive = k === key;
@@ -320,13 +359,11 @@ export default {
         if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
         body.style.background = '#2b2f55';
         drawSkyPreview();
-      } else if (key === 'plain') {
-        if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
-        body.style.background = '#0b0d10';
-        drawPlainPreview();
       } else {
         const pal = PALETTES[key] || PALETTES.green;
         body.style.background = pal.bg;
+        c.fillStyle = pal.bg;
+        c.fillRect(0, 0, W, H);
         if (!rafId) {
           last = performance.now();
           rafId = requestAnimationFrame(loop);
@@ -354,7 +391,7 @@ export default {
 
     // SKY button
     const skyBtn = document.createElement('button');
-    skyBtn.title = 'SKY';
+    skyBtn.title = SKY_LABEL;
     skyBtn.textContent = 'SKY';
     skyBtn.style.cssText = [
       'width:28px', 'height:28px', 'border:none', 'cursor:pointer',
@@ -370,25 +407,6 @@ export default {
     skyBtn.addEventListener('mouseout',  () => { if (currentKey !== 'sky') skyBtn.style.opacity = '0.45'; });
     btnMap.sky = skyBtn;
     ui.appendChild(skyBtn);
-
-    // PLN button
-    const plnBtn = document.createElement('button');
-    plnBtn.title = 'PLN';
-    plnBtn.textContent = 'PLN';
-    plnBtn.style.cssText = [
-      'width:28px', 'height:28px', 'border:1px solid #222', 'cursor:pointer',
-      'background:#0b0d10',
-      'color:#888', "font:8px 'JetBrains Mono',monospace", 'font-weight:600',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'outline:2px solid transparent', 'outline-offset:2px',
-      'opacity:0.45', 'transition:opacity 0.15s, outline 0.15s',
-      'flex-shrink:0',
-    ].join(';');
-    plnBtn.addEventListener('click', () => applyPal('plain'));
-    plnBtn.addEventListener('mouseover', () => { if (currentKey !== 'plain') plnBtn.style.opacity = '0.75'; });
-    plnBtn.addEventListener('mouseout',  () => { if (currentKey !== 'plain') plnBtn.style.opacity = '0.45'; });
-    btnMap.plain = plnBtn;
-    ui.appendChild(plnBtn);
 
     const setBtn = document.createElement('button');
     setBtn.textContent = 'SET AS WALLPAPER';

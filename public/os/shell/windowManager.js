@@ -100,7 +100,7 @@ export function openApp(appDef, ctx) {
       <div class="traffic-lights">
         <div class="tl red" data-close title="Close"></div>
         <div class="tl yellow" data-minimize title="Minimize"></div>
-        <div class="tl green-tl" title="Zoom (noop)"></div>
+        <div class="tl green-tl" data-maximize title="Fill the screen"></div>
       </div>
       <div class="win-title">${appDef.title}</div>
     </div>
@@ -117,6 +117,15 @@ export function openApp(appDef, ctx) {
   win.querySelector('[data-minimize]').addEventListener('click', e => {
     e.stopPropagation();
     minimizeApp(appDef.id);
+  });
+
+  win.querySelector('[data-maximize]').addEventListener('click', e => {
+    e.stopPropagation();
+    toggleMaximize(appDef.id);
+  });
+  win.querySelector('[data-drag]').addEventListener('dblclick', e => {
+    if (e.target.closest('.tl')) return;
+    toggleMaximize(appDef.id);
   });
 
   // Focus on mousedown
@@ -156,6 +165,29 @@ export function openApp(appDef, ctx) {
   notify();
 }
 
+// Fill the workspace, or go back to the size and place it had before. Apps
+// resize their own canvases through ResizeObserver on the window body.
+export function toggleMaximize(id) {
+  const entry = openWindows.get(id);
+  if (!entry) return;
+  const { el } = entry;
+  if (entry.restore) {
+    Object.assign(el.style, entry.restore);
+    entry.restore = null;
+    el.classList.remove('maximized');
+  } else {
+    entry.restore = { left: el.style.left, top: el.style.top, width: el.style.width, height: el.style.height };
+    fitMaximized(el);
+    el.classList.add('maximized');
+  }
+  focus(id);
+}
+
+function fitMaximized(el) {
+  const wsRect = workspace.getBoundingClientRect();
+  Object.assign(el.style, { left: '0px', top: '0px', width: wsRect.width + 'px', height: wsRect.height + 'px' });
+}
+
 export function getOpenWindows() {
   return openWindows;
 }
@@ -164,7 +196,7 @@ function _makeDraggable(win, handle) {
   let dragging = false, ox = 0, oy = 0;
 
   handle.addEventListener('pointerdown', e => {
-    if (e.target.closest('.tl')) return;
+    if (e.target.closest('.tl') || win.classList.contains('maximized')) return;
     dragging = true;
     ox = e.clientX - win.offsetLeft;
     oy = e.clientY - win.offsetTop;
@@ -190,7 +222,8 @@ function _makeDraggable(win, handle) {
 // Keep windows on-screen on resize
 window.addEventListener('resize', () => {
   const wsRect = workspace.getBoundingClientRect();
-  openWindows.forEach(({ el }) => {
+  openWindows.forEach(({ el, restore }) => {
+    if (restore) { fitMaximized(el); return; }
     const l = parseInt(el.style.left) || 0;
     const t = parseInt(el.style.top) || 0;
     el.style.left = Math.max(0, Math.min(l, wsRect.width - el.offsetWidth)) + 'px';
