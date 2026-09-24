@@ -32,6 +32,12 @@ auth state in `src/firebase/firebase.tsx`, `src/components/AuthGuard.tsx`,
 `src/services/api.ts`. No Firebase SDK or axios import remains in the static
 bundle. The untouched CSV uploader still parses user-selected local CSV files.
 
+Portfolio-only behaviour change: the landing page's "Start Free Trial" button
+had no handler in the source; it now navigates to `/dashboard` (the demo user
+is already signed in), so a visitor reaches the working demo from the hero.
+`index.html`'s `<title>` is "Fraud Detection" instead of the template's
+"Vite + React + TS" (it is the tab and window title).
+
 Refresh the committed static export manually with
 `node scripts/build-apps.mjs fraud`; the portfolio build does not run this
 toolchain automatically.

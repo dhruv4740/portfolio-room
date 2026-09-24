@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
 import { Globe, ArrowRight, Shield, Code } from 'lucide-react';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Footer from '../components/Footer';
 
 export default function Landing() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const navigate = useNavigate();
 
   const features = [
     { icon: <Globe />, title: "Real-time Monitoring", desc: "24/7 transaction surveillance" },
@@ -59,7 +61,7 @@ export default function Landing() {
             <span className="text-cyber-primary block mt-2">Before It Starts</span>
           </h1>
           <motion.div whileHover={{ scale: 1.05 }} className="inline-block">
-            <button className="bg-cyber-primary text-cyber-dark px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transition-shadow">
+            <button onClick={() => navigate('/dashboard')} className="bg-cyber-primary text-cyber-dark px-8 py-4 rounded-xl text-lg font-semibold shadow-lg hover:shadow-2xl transition-shadow">
               Start Free Trial
             </button>
           </motion.div>
