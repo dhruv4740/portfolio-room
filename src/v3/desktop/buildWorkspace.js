@@ -11,6 +11,7 @@ import { KEYCAPS } from './keyboardLayout.js';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { identity, education, experience, achievements } from '../content/index.js';
+import { INSTAGRAM_ICON_UV_RECT } from './phoneScreenSize.js';
 
 // An authored architectural model. Coordinates here describe its geometry,
 // not a capture; content anchors remain normalized in the content source.
@@ -117,11 +118,6 @@ export function phoneFocusLockTexture() {
   }, 540, 1200);
 }
 
-// Texture UV origin is bottom-left. Drawing, hover and click tests share this.
-export const INSTAGRAM_ICON_UV_RECT = Object.freeze({
-  uMin: 205 / 540, uMax: 335 / 540,
-  vMin: 1 - 610 / 1200, vMax: 1 - 480 / 1200,
-});
 // One app icon, drawn rather than loaded so the phone needs no external asset.
 // The joke only works if the icon is recognisable, so this is the real mark.
 export function phoneHomeTexture(highlighted = false) {

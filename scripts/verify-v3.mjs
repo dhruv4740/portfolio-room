@@ -147,6 +147,19 @@ try {
   record('work: renders identity', !!h1 && h1.trim().length > 0, h1 || 'no h1');
   record('work: no console errors', errors.length === 0, errors.slice(0, 2).join(' | ') || 'clean');
 
+  // Live demos open beside the page, still without three (dev serves it from
+  // .vite/deps, prod as a three- chunk).
+  await page.locator('.work-project', { hasText: 'Expense Tracker' }).getByRole('button', { name: /Try it/ }).click();
+  const phoneOpen = await page.waitForFunction(() => document.querySelector('[data-testid="work-demo"] .phone-screen')?.dataset.app === 'expense', null, { timeout: 15_000 }).then(() => true, () => false);
+  record('work: phone demo opens Expense beside the page', phoneOpen);
+  await page.locator('.work-project', { hasText: 'CrisisWatch' }).getByRole('button', { name: /Try it/ }).click();
+  const webOpen = await page.locator('[data-testid="work-demo"] iframe[src="/apps/crisiswatch/"]').waitFor({ timeout: 15_000 }).then(() => true, () => false);
+  record('work: web demo opens CrisisWatch beside the page', webOpen);
+  const demoThree = requests.filter((u) => /\/three-|\/assets\/three|deps\/three/i.test(u));
+  record('work: demos do not download three', demoThree.length === 0, demoThree.join(', ') || 'none');
+  await page.keyboard.press('Escape');
+  record('work: Escape closes the demo', await page.locator('[data-testid="work-demo"]').count() === 0);
+
   await ctx.close();
 }
 
@@ -161,6 +174,8 @@ try {
   page.on('request', (r) => requests.push(r.url()));
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
+  // "Failed to load resource" console errors don't name the URL; log it.
+  page.on('response', (r) => r.status() >= 500 && errors.push(`HTTP ${r.status()} ${r.url()}`));
   await pinSurface(page, 'scan');
 
   await page.goto(`${BASE}/#/`, { waitUntil: 'domcontentloaded' });

@@ -1,7 +1,8 @@
-import { useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../tokens.css';
 import { identity, contact, skills, projects } from '../content/index.js';
+import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 
 /** Resolve a skill's `proof` ids to the project names they reference.
  *  Evidence, not a percentage bar — the whole point of the content model. */
@@ -269,6 +270,144 @@ const css = `
     border-bottom-color: var(--dim);
   }
 
+  .work-demos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin: 0.25rem 0 1.25rem;
+  }
+
+  .work-demo-btn {
+    font-family: var(--font-mono);
+    font-size: var(--t-data);
+    letter-spacing: var(--track-data);
+    text-transform: uppercase;
+    padding: 0.7rem 1.05rem;
+    border: var(--hair) solid var(--dim);
+    color: var(--bone);
+    background: transparent;
+    cursor: pointer;
+    transition: border-color var(--d-feedback) var(--ease), background var(--d-feedback) var(--ease);
+  }
+
+  .work-demo-btn:hover,
+  .work-demo-btn:focus-visible {
+    border-color: var(--bone);
+  }
+
+  .work-demo-btn[aria-pressed="true"] {
+    border-color: var(--bone);
+    background: var(--bone);
+    color: var(--void);
+  }
+
+  /* ---- live demo panel ---------------------------------------------------------- */
+
+  /* Wide screens: the page keeps its reading column and the demo sits beside
+     it, sticky, so a visitor can read about a project while using it. */
+  @media (min-width: 1100px) {
+    .work-root--split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(440px, 46vw);
+    }
+
+    .work-root--split .work-inner {
+      margin: 0 0 0 auto;
+      width: 100%;
+    }
+
+    .work-root--split .work-demo {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      border-left: var(--hair) solid var(--faint);
+    }
+  }
+
+  /* Narrow screens: the demo takes the screen until it is closed. */
+  @media (max-width: 1099px) {
+    .work-demo {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+    }
+  }
+
+  .work-demo {
+    display: flex;
+    flex-direction: column;
+    background: var(--void-lift);
+    min-width: 0;
+  }
+
+  .work-demo-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: var(--hair) solid var(--faint);
+  }
+
+  .work-demo-kicker {
+    color: var(--dim);
+    font-size: var(--t-micro);
+    letter-spacing: var(--track-data);
+  }
+
+  .work-demo-title {
+    font-size: var(--t-body);
+    font-weight: 500;
+    margin-top: 0.3rem;
+  }
+
+  .work-demo-title span {
+    color: var(--dim);
+    font-weight: 400;
+    margin-left: 0.4em;
+  }
+
+  .work-demo-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex: none;
+  }
+
+  .work-demo-action {
+    font-size: var(--t-micro);
+    letter-spacing: var(--track-data);
+    padding: 0.5rem 0.75rem;
+    border: var(--hair) solid var(--faint);
+    color: var(--bone);
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .work-demo-action:hover,
+  .work-demo-action:focus-visible {
+    border-color: var(--dim);
+  }
+
+  .work-demo-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+  }
+
+  .work-demo-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    background: #0b0d12;
+  }
+
+  .work-demo-loading {
+    color: var(--dim);
+  }
+
   /* ---- skills ---------------------------------------------------------------- */
 
   .work-skills {
@@ -388,7 +527,9 @@ const css = `
     }
 
     .work-skip,
-    .work-room {
+    .work-room,
+    .work-demos,
+    .work-demo {
       display: none;
     }
 
@@ -456,6 +597,13 @@ const css = `
 
 export default function Work() {
   const mainRef = useRef(null);
+  // { id, index } of the open demo; the trigger gets focus back on close.
+  const [open, setOpen] = useState(null);
+  const trigger = useRef(null);
+  const closeDemo = useCallback(() => {
+    setOpen(null);
+    trigger.current?.focus({ preventScroll: true });
+  }, []);
 
   // A project with no description yet renders as a bare title and a lone tech
   // chip, which reads as a broken stub rather than as work. Withhold it until
@@ -475,7 +623,7 @@ export default function Work() {
       >
         Skip to content
       </button>
-      <div className="work-root">
+      <div className={`work-root${open ? ' work-root--split' : ''}`}>
         <div className="work-inner">
           <header className="work-header">
             <p className="mono work-masthead">
@@ -595,6 +743,22 @@ export default function Work() {
                         <p className="work-project-desc">{project.description}</p>
                       )}
 
+                      {DEMOS[project.id] && (
+                        <div className="work-demos" aria-label={`Try ${project.name}`}>
+                          {DEMOS[project.id].map((demo, i) => (
+                            <button
+                              key={demo.label}
+                              type="button"
+                              className="work-demo-btn"
+                              aria-pressed={open?.id === project.id && open.index === i}
+                              onClick={(event) => { trigger.current = event.currentTarget; setOpen({ id: project.id, index: i }); }}
+                            >
+                              Try it · {demo.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       {project.tech?.length > 0 && (
                         <ul className="work-tech" aria-label={`${project.name} technologies`}>
                           {project.tech.map((tech) => (
@@ -681,6 +845,13 @@ export default function Work() {
             <p className="mono">{identity.name} &mdash; static build, zero WebGL</p>
           </footer>
         </div>
+        {open && (
+          <DemoPanel
+            project={projects.find((p) => p.id === open.id)}
+            demo={DEMOS[open.id][open.index]}
+            onClose={closeDemo}
+          />
+        )}
       </div>
     </>
   );

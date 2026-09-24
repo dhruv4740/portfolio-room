@@ -21,11 +21,10 @@
 // ============================================================================
 
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
-import { INSTAGRAM_ICON_UV_RECT } from './buildWorkspace.js';
 import ExpenseApp from './phone-apps/ExpenseApp.jsx';
 import BasketProofApp from './phone-apps/BasketProofApp.jsx';
 
-import { PHONE_SCREEN, PHONE_STAGE } from './phoneScreenSize.js';
+import { PHONE_SCREEN, PHONE_STAGE, INSTAGRAM_ICON_UV_RECT } from './phoneScreenSize.js';
 export { PHONE_SCREEN, PHONE_STAGE };
 
 const STORAGE_KEY = 'v3:focuslock';
@@ -188,6 +187,9 @@ const PhoneScreen = forwardRef(function PhoneScreen({
   onHome,
   onExit,
   mode = 'projected',
+  // Inside another page (/work's demo panel) rather than over the room: no
+  // fixed overlay, no stage chrome, no focus trap or page-wide key handling.
+  embedded = false,
 }, ref) {
   const rootRef = useRef(null);
   const modeRef = useRef(mode);
@@ -380,7 +382,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
       handleStageEscape(event);
       return;
     }
-    if (event.key !== 'Tab' || !stageMode || !interactive) return;
+    if (event.key !== 'Tab' || !stageMode || !interactive || embedded) return;
 
     const presentation = rootRef.current?.closest('.phone-presentation');
     if (!presentation) return;
@@ -471,7 +473,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
 
       const focusTarget = presentation?.querySelector('[data-phone-stage-control="exit"]')
         || presentation?.querySelector('[data-phone-stage-control="home"]');
-      focusTarget?.focus({ preventScroll: true });
+      if (!embedded) focusTarget?.focus({ preventScroll: true });
       const fadeTimer = window.setTimeout(() => presentation?.classList.remove('phone-stage-entering'), duration);
       return () => {
         if (cleanupTimer) window.clearTimeout(cleanupTimer);
@@ -488,7 +490,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
   }, [stageMode]);
 
   useEffect(() => {
-    if (!stageMode || !interactive) return undefined;
+    if (!stageMode || !interactive || embedded) return undefined;
     window.addEventListener('keydown', handleStageKeydown, true);
     return () => window.removeEventListener('keydown', handleStageKeydown, true);
   }, [stageMode, interactive, app]);
@@ -637,7 +639,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
   }, [app, frictionStepIndex, frictionSteps, flState.friction.mathDifficulty, interactive]);
 
   useEffect(() => {
-    if (!interactive) return undefined;
+    if (!interactive || embedded) return undefined;
     const frame = requestAnimationFrame(() => {
       const root = rootRef.current;
       const target = stageMode
@@ -712,13 +714,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({
 
   return (
     <div
-      className={`phone-presentation phone-presentation--${mode}`}
+      className={`phone-presentation phone-presentation--${mode}${embedded ? ' phone-presentation--embedded' : ''}`}
       data-phone-mode={mode}
-      role={stageMode ? 'dialog' : undefined}
-      aria-modal={stageMode ? true : undefined}
-      aria-label={stageMode ? 'Interactive mobile project stage' : undefined}
+      role={stageMode && !embedded ? 'dialog' : undefined}
+      aria-modal={stageMode && !embedded ? true : undefined}
+      aria-label={stageMode && !embedded ? 'Interactive mobile project stage' : undefined}
     >
-      {stageMode && <div className="phone-stage-backdrop" aria-hidden="true" />}
+      {stageMode && !embedded && <div className="phone-stage-backdrop" aria-hidden="true" />}
       <div
         ref={rootRef}
         className={`phone-screen phone-screen--${mode}`}
@@ -1732,7 +1734,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
       </div>
 
       </div>
-      {stageMode && (
+      {stageMode && !embedded && (
         <div className="phone-stage-chrome" role="toolbar" aria-label="Phone navigation">
           <div className="phone-stage-heading">
             <span className="phone-stage-kicker">MOBILE PROJECTS</span>
@@ -1759,7 +1761,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
           </div>
         </div>
       )}
-      {stageMode && interactive && WALKTHROUGH[app] && (
+      {stageMode && interactive && !embedded && WALKTHROUGH[app] && (
         <aside className="phone-walkthrough" aria-live="polite" aria-label="About this app">
           <span className="phone-walkthrough-kicker">WALKTHROUGH</span>
           <h2 className="phone-walkthrough-title">{WALKTHROUGH[app].title}</h2>
@@ -1795,6 +1797,18 @@ const css = `
   background: #0A0A0B;
   pointer-events: auto;
   isolation: isolate;
+}
+.phone-presentation--stage.phone-presentation--embedded {
+  position: relative;
+  inset: auto;
+  z-index: auto;
+  padding: 0;
+  background: transparent;
+  overflow: visible;
+}
+.phone-presentation--embedded .phone-screen.phone-screen--stage {
+  height: min(844px, calc(100dvh - 128px));
+  max-height: calc(100dvh - 128px);
 }
 .phone-presentation--stage.phone-stage-entering {
   background: transparent;
