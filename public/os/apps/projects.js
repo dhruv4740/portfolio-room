@@ -2,13 +2,25 @@
 import content from '../shell/content.js';
 import { mountContactStrip } from '../shell/contactStrip.js';
 
+// Where each project can be tried. FocusLock has a desktop half and an
+// Android half, so it appears in both groups.
 const desktopApps = new Set(['darksentinel', 'focuslock', 'crisiswatch', 'fraud']);
+const phoneApps = { focuslock: 'focuslock', expense: 'expense', basket: 'basketproof' };
+const GROUPS = [
+  { title: 'Try it on this computer', note: 'Each opens the real web UI in a window here, running on demo data.', has: (p) => desktopApps.has(p.id), kind: 'desktop' },
+  { title: 'Try it on the phone', note: 'These are Android apps. The button leaves the computer and picks up the phone on the desk.', has: (p) => p.id in phoneApps, kind: 'phone' },
+  { title: 'Not interactive here', note: 'Read about these; there is nothing to run in the room.', has: (p) => !desktopApps.has(p.id) && !(p.id in phoneApps), kind: 'static' },
+];
 const CSS = `
 .ql-root { height:100%; display:flex; flex-direction:column; background:#101516; color:#e9ebe5; font-family:Inter,system-ui,sans-serif; }
 .ql-heading { padding:24px 28px 18px; border-bottom:1px solid #35413c; }
 .ql-heading p { color:#aebcb4; margin:0 0 8px; font-size:12px; letter-spacing:.12em; }
 .ql-heading h1 { margin:0; font-size:28px; font-weight:500; letter-spacing:-.03em; }
-.ql-scroll { padding:22px 28px; overflow:auto; flex:1; min-height:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(290px,100%),1fr)); gap:16px; align-content:start; }
+.ql-scroll { padding:22px 28px; overflow:auto; flex:1; min-height:0; }
+.ql-group { margin:0 0 28px; }
+.ql-group-title { margin:0 0 4px; font-size:13px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:#d8e4d8; }
+.ql-group-note { margin:0 0 14px; font-size:13px; color:#aebcb4; }
+.ql-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(290px,100%),1fr)); gap:16px; align-content:start; }
 .ql-card { padding:20px; border:1px solid #3a4741; background:#151d1b; border-radius:8px; }
 .ql-card h2 { margin:0 0 12px; font-size:21px; font-weight:550; }
 .ql-type { font:12px monospace; color:#aab9b0; margin:0 0 10px; }
@@ -23,7 +35,6 @@ const CSS = `
 .ql-details[hidden] { display:none; }
 .ql-tags { font:13px monospace; line-height:1.8; color:#aebfb2; margin-bottom:12px; }
 .ql-links { display:flex; gap:10px; flex-wrap:wrap; }
-.ql-mobile-note { color:#b9c6bc; font-size:13px; margin:14px 0 0; }
 `;
 
 function node(tag, className, text) {
@@ -43,30 +54,42 @@ export default {
     root.appendChild(heading);
     const scroll = node('div', 'ql-scroll'); root.appendChild(scroll); body.appendChild(root);
     const cards = new Map();
-    const ordered = [...content.projects].sort((a,b) => Number(desktopApps.has(b.id))-Number(desktopApps.has(a.id)));
-    for (const project of ordered) {
-      const card = node('article', 'ql-card'); cards.set(project.id, card);
-      card.append(node('p', 'ql-type', `${desktopApps.has(project.id) ? 'INTERACTIVE DESKTOP DEMO' : 'PROJECT'} · ${project.year}`));
-      card.append(node('h2', '', project.name), node('p', 'ql-desc-text', project.description));
-      const actions = node('div', 'ql-actions'); card.appendChild(actions);
-      if (desktopApps.has(project.id)) {
-        const launch = node('button', 'ql-demo', 'Open demo ↗'); launch.type = 'button';
-        launch.addEventListener('click', () => ctx.openApp(project.id)); actions.appendChild(launch);
+    for (const group of GROUPS) {
+      const projects = content.projects.filter(group.has);
+      if (!projects.length) continue;
+      const section = node('section', 'ql-group');
+      section.append(node('h2', 'ql-group-title', group.title), node('p', 'ql-group-note', group.note));
+      const grid = node('div', 'ql-grid'); section.appendChild(grid);
+      for (const project of projects) {
+        const card = node('article', 'ql-card');
+        if (!cards.has(project.id)) cards.set(project.id, card);
+        const half = project.id === 'focuslock' ? (group.kind === 'desktop' ? 'WINDOWS DESKTOP APP' : 'ANDROID APP') : null;
+        const type = { desktop: 'DESKTOP DEMO', phone: 'ANDROID DEMO', static: 'PROJECT' }[group.kind];
+        card.append(node('p', 'ql-type', `${half || type} · ${project.year}`));
+        card.append(node('h2', '', project.name), node('p', 'ql-desc-text', project.description));
+        const actions = node('div', 'ql-actions'); card.appendChild(actions);
+        if (group.kind === 'desktop') {
+          const launch = node('button', 'ql-demo', 'Open demo ↗'); launch.type = 'button';
+          launch.addEventListener('click', () => ctx.openApp(project.id)); actions.appendChild(launch);
+        } else if (group.kind === 'phone' && ctx.openPhone) {
+          const launch = node('button', 'ql-demo', 'Open on the phone ↗'); launch.type = 'button';
+          launch.addEventListener('click', () => ctx.openPhone(phoneApps[project.id])); actions.appendChild(launch);
+        }
+        const toggle = node('button', 'ql-detail-toggle', 'Details & source'); toggle.type = 'button'; toggle.setAttribute('aria-expanded', 'false'); actions.appendChild(toggle);
+        const details = node('div', 'ql-details'); details.hidden = true;
+        details.appendChild(node('div', 'ql-tags', project.tech.join(' · ')));
+        const links = node('div', 'ql-links');
+        for (const [key,label] of [['github','Source ↗'],['live','Live site ↗']]) {
+          if (!project.links[key]) continue;
+          const link = node('a', '', label); link.href = project.links[key]; link.target = '_blank'; link.rel = 'noopener noreferrer'; links.appendChild(link);
+        }
+        details.appendChild(links); card.appendChild(details);
+        const expand = () => { details.hidden = false; toggle.setAttribute('aria-expanded','true'); card.classList.add('ql-decoded'); };
+        toggle.addEventListener('click', () => { if(details.hidden) expand(); else { details.hidden=true;toggle.setAttribute('aria-expanded','false');card.classList.remove('ql-decoded'); } });
+        card.expand = expand;
+        grid.appendChild(card);
       }
-      const toggle = node('button', 'ql-detail-toggle', 'Details & source'); toggle.type = 'button'; toggle.setAttribute('aria-expanded', 'false'); actions.appendChild(toggle);
-      const details = node('div', 'ql-details'); details.hidden = true;
-      details.appendChild(node('div', 'ql-tags', project.tech.join(' · ')));
-      const links = node('div', 'ql-links');
-      for (const [key,label] of [['github','Source ↗'],['live','Live site ↗']]) {
-        if (!project.links[key]) continue;
-        const link = node('a', '', label); link.href = project.links[key]; link.target = '_blank'; link.rel = 'noopener noreferrer'; links.appendChild(link);
-      }
-      details.appendChild(links); card.appendChild(details);
-      if (['expense','basket'].includes(project.id)) card.appendChild(node('p','ql-mobile-note','Explore the Android UI through Mobile projects in the room.'));
-      const expand = () => { details.hidden = false; toggle.setAttribute('aria-expanded','true'); card.classList.add('ql-decoded'); };
-      toggle.addEventListener('click', () => { if(details.hidden) expand(); else { details.hidden=true;toggle.setAttribute('aria-expanded','false');card.classList.remove('ql-decoded'); } });
-      card.expand = expand;
-      scroll.appendChild(card);
+      scroll.appendChild(section);
     }
     const unsubscribe = ctx.store?.on('open-project', ({id}) => { const card=cards.get(id); if(card){card.expand();card.scrollIntoView({block:'nearest'});} });
     const removeStrip = mountContactStrip(root);

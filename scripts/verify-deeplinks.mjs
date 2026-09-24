@@ -26,6 +26,12 @@ const osWindow = (p, app) => p.waitForFunction((app) => {
   const ok = await p.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'expense', null, { timeout: 30000 }).then(() => true, () => false);
   record('/phone/expense opens the Expense app on the phone', ok);
   record('/phone/expense no page errors', !errors.length, errors.join('; ')); await ctx.close(); }
+{ const { p, ctx, errors } = await fresh('/os/projects');
+  record('/os/projects opens the projects window', await osWindow(p, 'projects'));
+  await p.frameLocator('[data-testid="dhruv-os-frame"]').locator('.ql-card', { hasText: 'Expense Tracker' }).locator('.ql-demo').click();
+  const ok = await p.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'expense', null, { timeout: 30000 }).then(() => true, () => false);
+  record('projects "Open on the phone" leaves the OS and opens Expense on the phone', ok);
+  record('projects → phone no page errors', !errors.length, errors.join('; ')); await ctx.close(); }
 { const { p, ctx } = await fresh('/about');
   record('/about opens the About panel', await p.locator('[data-testid="about-panel"]').waitFor({ timeout: 30000 }).then(() => true, () => false)); await ctx.close(); }
 { const { p, ctx } = await fresh('/contact');

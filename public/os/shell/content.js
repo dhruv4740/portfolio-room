@@ -75,8 +75,7 @@ export default Object.freeze({
       "label": "React / Next.js",
       "note": "",
       "projects": [
-        "crisiswatch",
-        "reddit"
+        "crisiswatch"
       ]
     },
     {
@@ -85,8 +84,7 @@ export default Object.freeze({
       "note": "",
       "projects": [
         "expense",
-        "crisiswatch",
-        "reddit"
+        "crisiswatch"
       ]
     },
     {
@@ -94,8 +92,7 @@ export default Object.freeze({
       "label": "Node.js / Express",
       "note": "",
       "projects": [
-        "crisiswatch",
-        "reddit"
+        "crisiswatch"
       ]
     },
     {
@@ -261,28 +258,6 @@ export default Object.freeze({
       "links": {
         "live": "",
         "github": "https://github.com/dhruv4740/crisiswatch"
-      },
-      "note": ""
-    },
-    {
-      "id": "reddit",
-      "name": "Reddit Growth Copilot",
-      "year": 2026,
-      "kind": "product",
-      "type": "SIDE QUEST",
-      "tagline": "Finds the threads worth replying to, then drafts the reply.",
-      "description": "Surfaces relevant Reddit threads for a product in real time and drafts contextual, non-spammy replies.",
-      "decision": "",
-      "broke": "",
-      "tech": [
-        "TypeScript",
-        "Next.js",
-        "Node.js",
-        "Reddit API"
-      ],
-      "links": {
-        "live": "",
-        "github": ""
       },
       "note": ""
     },

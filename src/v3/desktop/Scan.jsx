@@ -481,6 +481,27 @@ export default function Scan() {
     setActiveId(null);
   }, [screenPhase]);
 
+  // The OS projects app can send a visitor to an Android demo: leave the
+  // computer, then follow the /phone/<app> deep link once back in the room
+  // (deep links are only consumed there).
+  const pendingPhone = useRef(null);
+  useEffect(() => {
+    const onOpenPhone = (event) => {
+      const app = event.detail?.app;
+      if (!['focuslock', 'expense', 'basketproof'].includes(app)) return;
+      pendingPhone.current = app;
+      handleLeaveScreen();
+    };
+    window.addEventListener('os:open-phone', onOpenPhone);
+    return () => window.removeEventListener('os:open-phone', onOpenPhone);
+  }, [handleLeaveScreen]);
+  useEffect(() => {
+    if (screenPhase !== 'room' || !pendingPhone.current) return;
+    const app = pendingPhone.current;
+    pendingPhone.current = null;
+    navigate(`/phone/${app}`);
+  }, [screenPhase, navigate]);
+
   // 60-second guided tour: an autopilot over the same deep-link routes a
   // visitor could use, with captions. Any real input hands control back.
   const [tour, setTour] = useState(null); // null | { caption, step, done }

@@ -79,9 +79,9 @@ export const achievements = [
 // `proof` lists project ids that actually demonstrate the skill. No percentages,
 // no star ratings — evidence or nothing.
 export const skills = [
-  { id: 'react',    label: 'React / Next.js',      proof: ['crisiswatch', 'reddit'],            note: '' },
-  { id: 'ts',       label: 'TypeScript',           proof: ['expense', 'crisiswatch', 'reddit'], note: '' },
-  { id: 'node',     label: 'Node.js / Express',    proof: ['crisiswatch', 'reddit'],            note: '' },
+  { id: 'react',    label: 'React / Next.js',      proof: ['crisiswatch'],                      note: '' },
+  { id: 'ts',       label: 'TypeScript',           proof: ['expense', 'crisiswatch'],           note: '' },
+  { id: 'node',     label: 'Node.js / Express',    proof: ['crisiswatch'],                      note: '' },
   { id: 'python',   label: 'Python',               proof: ['darksentinel', 'fraud', 'basket'],  note: 'FastAPI, Flask, pandas' },
   { id: 'kotlin',   label: 'Kotlin / Android',     proof: ['focuslock', 'expense'],             note: 'native modules, accessibility services' },
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
@@ -166,19 +166,6 @@ export const projects = [
       'The WhatsApp bridge took a day of passes: Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.',
     tech: ['Next.js', 'TypeScript', 'Node.js', 'Python'],
     links: { live: '', github: 'https://github.com/dhruv4740/crisiswatch' },
-  },
-  {
-    id: 'reddit',
-    name: 'Reddit Growth Copilot',
-    year: 2026,
-    kind: 'product',
-    tagline: 'Finds the threads worth replying to, then drafts the reply.',
-    description:
-      'Surfaces relevant Reddit threads for a product in real time and drafts contextual, non-spammy replies.',
-    decision: '',
-    broke: '',
-    tech: ['TypeScript', 'Next.js', 'Node.js', 'Reddit API'],
-    links: { live: '', github: '' },
   },
   {
     id: 'fraud',
