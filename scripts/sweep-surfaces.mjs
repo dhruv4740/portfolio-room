@@ -66,7 +66,7 @@ if (want('deeplinks')) {
   const all = [];
   for (const link of ['/about', '/contact', '/room/lamp', '/room/drawer', '/room/window', '/phone/expense', '/os/crisiswatch']) {
     const { p, errors } = await page();
-    await p.goto(BASE + '/#' + link); await p.waitForTimeout(link.startsWith('/os') ? 14000 : 10000);
+    await p.goto(BASE + '/#' + link); await p.waitForFunction(() => document.querySelector('.workspace-stage')?.dataset.shadersWarm === 'ready', null, { timeout: 90000 }).catch(() => {}); await p.waitForTimeout(6000);
     await shot(p, 'link' + link.replaceAll('/', '-'));
     all.push({ link, hash: await p.evaluate(() => location.hash), errors }); await p.close();
   }

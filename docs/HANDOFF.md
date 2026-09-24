@@ -187,6 +187,19 @@ The desk top is 35 mm thick and depth is measured to the nearest face, so 16 mm 
 - **Awards frame:** fingertips show below its bottom edge, and the frame reads small next to the hands. It's probably still at the props' 0.625 scale, which the résumé page was taken off in 5c399d2. A look decision.
 - **Headphones:** both hands pass right in front of the camera on the way to the ears (1.50 s). The code comment says this is intended ("carry them up past the camera").
 
+**Other surfaces** (`scripts/sweep-surfaces.mjs <tag> [coldopen,launchpad,os,deeplinks,work]`, output in `scripts/shots/surfaces/`, contact sheets `SHEET-*.png`). No page errors or console errors on any surface.
+- **Every dhruvOS app opens and renders** (`SHEET-os.png`): about, terminal, projects, gallery, FocusLock, DarkSentinel, CrisisWatch, Fraud, wallpaper, contact, skills, music. Skills' tags pile at the bottom of an empty window: gravity needs Matter.js, which the embedded OS doesn't have (a known trap in AGENTS.md).
+- **Palette: fixed two bugs.**
+  - "res" or "resume" found nothing, because the only résumé entry is spelled with accents; matching is now accent-insensitive.
+  - With few results the box still stretched to 64vh, leaving empty space; it now fits its contents (`v3-palette-res.png`).
+- **`/room/<object>` deep links, opened cold on the dev server, did nothing.** React StrictMode runs the mount effect twice, and the second `handleSelect` toggled the object straight back off.
+  - Production worked with the original code (1 cold run on the 4176 preview); it only affected dev, where every review happens.
+  - Fixed: the effect is keyed by `location.key`, and the select waits for the seat to reach the stage instead of a fixed 400 ms timer that could fire right after a stall.
+  - `verify-deeplinks` has no `/room/<object>` case; checked with a probe, cold and warm, on dev and prod.
+- **/work:** renders and loads no three.js (`v1-work.png`).
+- **Cold open, a look question for the owner** (`SHEET-coldopen.png`): the launchpad (name plus six options) and the Monitor/Phone markers are on screen for the whole arrival fly-in, from 1.2 s. The first-load stall also blocks the page during the fly-in: the screenshots show a 14.7 s gap.
+- **Favicon:** still the default Vite logo (`public/favicon.svg`). It needs an owner-supplied mark.
+
 ### Test suite
 
 - `verify-phone-grip` fails its skin-clipping assertion. This predates 2026-09-23.

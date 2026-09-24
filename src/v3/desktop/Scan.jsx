@@ -298,9 +298,14 @@ export default function Scan() {
   // Deep links: /os/<app>, /phone[/<app>], /about, /contact, /room/<object>.
   // Each is consumed once the room is ready, then the URL returns to /.
   const location = useLocation();
+  const consumedLink = useRef(null);
   useEffect(() => {
     const [kind, arg] = location.pathname.split('/').filter(Boolean);
     if (!kind || !introDone || screenPhase !== 'room') return undefined;
+    // Development StrictMode runs this effect twice on mount; a second
+    // handleSelect toggled the object straight back off.
+    if (consumedLink.current === location.key) return undefined;
+    consumedLink.current = location.key;
     // Only clear the URL if it is still this link. After a long main-thread
     // stall this effect can run after a newer navigation (the tour's next
     // step), and replacing that one dropped it: the tour skipped the OS.
@@ -327,7 +332,16 @@ export default function Scan() {
     }
     if (kind === 'room') {
       if (overviewOpen) handleExploreRoom(fake('explore-room'));
-      if (arg && arg !== 'explore') setTimeout(() => handleSelect(arg === 'window' ? 'windowOpen' : arg), 400);
+      // Select once the seat has reached the stage and a frame has drawn, then
+      // 400 ms more: a select that lands first is undone by the seat's own
+      // camera move. A fixed timer started before the first-load stall fired
+      // right after it, so /room/drawer opened cold never opened the drawer.
+      if (arg && arg !== 'explore') {
+        const select = () => tourApi.current.handleSelect(arg === 'window' ? 'windowOpen' : arg);
+        const whenSeated = () => document.querySelector('.scan-root')?.dataset.seated === 'true'
+          ? requestAnimationFrame(() => setTimeout(select, 400)) : requestAnimationFrame(whenSeated);
+        whenSeated();
+      }
     }
     return undefined;
   // eslint-disable-next-line react-hooks/exhaustive-deps
