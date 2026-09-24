@@ -277,28 +277,41 @@ const css = `
     margin: 0.25rem 0 1.25rem;
   }
 
+  /* Solid bone buttons: the hero CTA already holds the one accent. */
   .work-demo-btn {
     font-family: var(--font-mono);
-    font-size: var(--t-data);
+    font-size: 0.95rem;
+    font-weight: 600;
     letter-spacing: var(--track-data);
     text-transform: uppercase;
-    padding: 0.7rem 1.05rem;
-    border: var(--hair) solid var(--dim);
-    color: var(--bone);
-    background: transparent;
+    padding: 0.95rem 1.5rem;
+    min-height: 3rem;
+    border: 2px solid var(--bone);
+    color: var(--void);
+    background: var(--bone);
     cursor: pointer;
-    transition: border-color var(--d-feedback) var(--ease), background var(--d-feedback) var(--ease);
+    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease);
+  }
+
+  .work-demo-btn::before {
+    content: '▶ ';
   }
 
   .work-demo-btn:hover,
   .work-demo-btn:focus-visible {
-    border-color: var(--bone);
+    background: transparent;
+    color: var(--bone);
+  }
+
+  .work-demo-btn:focus-visible {
+    outline: 2px solid var(--bone);
+    outline-offset: 3px;
   }
 
   .work-demo-btn[aria-pressed="true"] {
-    border-color: var(--bone);
-    background: var(--bone);
-    color: var(--void);
+    background: transparent;
+    color: var(--bone);
+    box-shadow: inset 0 -4px 0 var(--bone);
   }
 
   /* ---- live demo panel ---------------------------------------------------------- */
