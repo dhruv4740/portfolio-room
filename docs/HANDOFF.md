@@ -54,6 +54,23 @@ The worktree for the stacked branches is `C:\Users\hp\pf-truescale`. Its dev ser
 
 Verification results and commit hashes for all of this are in the git log and in `docs/archive/MORNING-REPORT-2026-09-23.md`.
 
+## Owner feedback round (2026-09-24, afternoon)
+
+The owner reviewed on `npm run dev` in the **main checkout** (`feat/v3`, port 5173), which has none of the `feat/cutscenes` fixes; that is why the phone still felt "insanely fast" (feat/v3 plays the pick-up at 1.55×/3.2×). Review `feat/cutscenes` by running `npm run dev` in `C:\Users\hp\pf-truescale`.
+
+Owner answers on record: Reddit Growth Copilot is an internship project and must not be shown (removed everywhere); the window "look around / lean out" is future scope; /work must not load the 3D room — demos open beside the page; wallpapers and Skills were left to the agent's judgement; installs in `apps/*` approved.
+
+Done (all on `feat/cutscenes`):
+- **dhruvOS:** the green light maximises/restores (also title-bar double-click). Skills is a readable list grouped by area, each skill naming the projects that prove it (buttons open the project card); the Matter.js toy is gone. Wallpapers: the desktop now shows a still of the chosen flow field (Aurora, Ember, Nebula, Tide) or the live Mumbai skyline, dimmed by day with a shaded icon column; Plain is gone. Fixed: the preview glitch (sky/plain reset the canvas transform, so the palette loop painted 1/dpr of it), the flow field never visibly moving (its step was ~0.004 px), and black text-glyph desktop icons that were invisible on dark wallpapers.
+- **Projects app:** three groups, "Try it on this computer", "Try it on the phone" (button leaves the OS and opens that app on the phone), "Not interactive here". FocusLock is in both. The FocusLock window has a strip naming it the Windows half, with a button to the Android half.
+- **FraudShield:** "Start Free Trial" goes to the dashboard (`apps/fraud/PORTFOLIO.md`).
+- **CrisisWatch hero:** 20 → 60 fps (median frame 50 → 16.7 ms, `scripts/probe-crisiswatch-hero.mjs`): the five CSS-blur glows are radial gradients and two noise textures are gone (`apps/crisiswatch/PORTFOLIO.md`).
+- **Tour:** a step machine with ◀ PREV / ❚❚ PAUSE–▶ RESUME / NEXT ▶ / ✕ and ←/→/Space/Esc. Real input pauses instead of ending it; Alt (Alt-Tab), window switches and modifier keys are ignored; a hidden page pauses and resumes. Each step's hold starts once its scene is in place, so a load stall no longer eats steps. While paused the caption shrinks to one line so it doesn't cover the demo.
+- **/work:** each demo project has "Try it · …" buttons. On ≥1100 px the demo opens in a sticky panel beside the reading column; narrower, as a full-screen sheet. Web demos load `/apps/<name>/`; phone demos lazy-load the phone's React apps (`PhoneScreen` `embedded` mode). No three.js on /work, asserted in `verify-v3`. The page's overall visual design is unchanged: **owner to give a direction**.
+- **Dev server:** `/apps/<name>/` was served from whichever checkout the server was *started in* (cwd), so the 4175 server started from the main checkout served the main checkout's apps.
+
+Test notes: GitHub's unauthenticated API allows 60 requests/hour per IP; a day of suite runs exhausts it and the monitor's activity fetch then logs 403s, failing the "no console errors" checks in `verify-after-hours`/`verify-v3`. Confirmed for the 403s (rate-limit endpoint showed 60/60 used); the earlier one-off 503 is unconfirmed, and `verify-v3` now logs the URL of any 5xx so the next one is named. Not a site bug for normal visitors, who each get their own quota.
+
 ## Owner decisions waiting (2026-09-25)
 
 Each links to its details further down. Nothing here was chosen for you.

@@ -8,7 +8,8 @@ try{
   page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{localStorage.setItem('v3:test','1');localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier','mid');sessionStorage.setItem('v3:arrival-seen','1');sessionStorage.setItem('v3:controls','open');});
   await page.goto((process.env.BASE||'http://localhost:4173')+'/?sky=night');
-  await page.locator('[data-launchpad-action="explore-room"]').click();await page.waitForTimeout(3000);
+  // The first load can block the page ~30 s on this machine; Playwright's default click timeout is 30 s.
+  await page.locator('[data-launchpad-action="explore-room"]').click({timeout:120000});await page.waitForTimeout(3000);
   evidence.rest=await page.evaluate(()=>({contact:__v3test.keyboardSkinContact(),body:__v3test.bodyAttachment(),hand:__v3test.boxOf('handL'),arm:__v3test.boxOf('armL')}));
   assert.notDeepEqual(evidence.rest.hand,evidence.rest.arm,'Arm and hand diagnostics must measure different geometry');
   for(const r of evidence.rest.contact){assert.ok(r.samples>0,'Actual skin must overlap keys for contact test');assert.ok(r.clearance>=.0015,'Resting skin must clear key surfaces');}
