@@ -57,8 +57,10 @@ export default function CommandPalette() {
   }, [open]);
 
   const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return q ? ENTRIES.filter(e => `${e.label} ${e.hint}`.toLowerCase().includes(q)) : ENTRIES;
+    // Accent-insensitive, so "resume" finds "Read the résumé".
+    const fold = (text) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+    const q = fold(query.trim());
+    return q ? ENTRIES.filter(e => fold(`${e.label} ${e.hint}`).includes(q)) : ENTRIES;
   }, [query]);
 
   function run(entry) {
@@ -101,7 +103,7 @@ export default function CommandPalette() {
 }
 
 const css = `
-.cmdk-scrim { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.5); display:flex; justify-content:center; padding-top:14vh; }
+.cmdk-scrim { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.5); display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; }
 .cmdk { width:min(560px, calc(100vw - 32px)); max-height:64vh; display:flex; flex-direction:column; border:1px solid #555b59; border-top:2px solid var(--signal, #e4572e); background:#0d1011; color:#d3d4cc; font-family:var(--font-mono, monospace); }
 .cmdk input { padding:16px 18px; border:0; border-bottom:1px solid #2a2f30; background:transparent; color:var(--bone, #eee); font:inherit; font-size:15px; outline:none; }
 .cmdk ul { margin:0; padding:6px 0; list-style:none; overflow:auto; }
