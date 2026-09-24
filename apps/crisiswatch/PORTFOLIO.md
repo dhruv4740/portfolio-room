@@ -31,6 +31,13 @@ proxied `BACKEND_URL` and are replaced by the browser seam. Unsplash image URLs
 remain in the original UI and therefore require network access when those
 sections are reached; the first screen does not depend on them.
 
+Portfolio-only performance change in `app/components/sections/hero.tsx`: the
+five 120–180px CSS-blur glows are radial gradients of the same colour and
+reach, and the two feTurbulence noise textures (1.5% full-screen, 10% on each
+falling headline) are removed. Measured with `scripts/probe-crisiswatch-hero.mjs`
+the hero ran at about 20 fps inside the 1.25-zoom window; the rest of the
+page is unchanged.
+
 Refresh the committed static export manually with
 `node scripts/build-apps.mjs crisiswatch`; the portfolio build does not run the
 Next toolchain automatically.

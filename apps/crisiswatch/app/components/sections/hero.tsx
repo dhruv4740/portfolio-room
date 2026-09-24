@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo, type CSSProperties } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import { MagneticButton } from "../ui/magnetic-button";
 import { Badge, GradientText } from "../ui/gradient-text";
@@ -300,13 +300,6 @@ function MatrixHeadlines() {
                   clipPath: "polygon(0 0, 100% 2%, 98% 100%, 2% 98%)",
                 }}
               >
-                {/* Paper texture overlay */}
-                <div 
-                  className="absolute inset-0 opacity-10 rounded"
-                  style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E")`,
-                  }}
-                />
                 <p className="text-[11px] text-amber-100/70 font-serif leading-relaxed line-clamp-3 relative z-10">
                   {headline.text}
                 </p>
@@ -347,6 +340,17 @@ function MatrixHeadlines() {
   );
 }
 
+// Portfolio build: the hero's glows were 120-180px CSS blurs, two of them
+// pulsing, which re-rendered the blur every frame (about 20 fps inside the
+// OS window). A radial gradient scaled to the blur's reach looks the same
+// and costs nothing to animate.
+function glow(rgb: string, alpha: number): CSSProperties {
+  return {
+    background: `radial-gradient(circle, rgba(${rgb},${alpha}) 0%, rgba(${rgb},${alpha / 2}) 35%, transparent 70%)`,
+    scale: "1.9",
+  };
+}
+
 export function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -383,14 +387,6 @@ export function Hero() {
         }}
       />
 
-      {/* TV static/noise overlay */}
-      <div 
-        className="absolute inset-0 opacity-[0.015] mix-blend-overlay"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E")`,
-        }}
-      />
-
       {/* Data rain effect */}
       <DataRain />
 
@@ -401,9 +397,9 @@ export function Hero() {
       <MatrixHeadlines />
 
       {/* Red danger glow in corners */}
-      <div className="absolute top-0 left-0 w-96 h-96 bg-red-900/20 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute top-0 right-0 w-80 h-80 bg-orange-900/15 rounded-full blur-[120px] translate-x-1/2 -translate-y-1/2" />
-      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-red-950/20 rounded-full blur-[180px]" />
+      <div className="absolute top-0 left-0 w-96 h-96 -translate-x-1/2 -translate-y-1/2" style={glow("127,29,29", 0.2)} />
+      <div className="absolute top-0 right-0 w-80 h-80 translate-x-1/2 -translate-y-1/2" style={glow("124,45,18", 0.15)} />
+      <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px]" style={glow("69,10,10", 0.2)} />
 
       {/* Gradient orbs - warmer tones */}
       <motion.div
@@ -412,7 +408,8 @@ export function Hero() {
           opacity: [0.1, 0.18, 0.1]
         }}
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute top-1/3 -left-32 w-[400px] h-[400px] bg-amber-500/10 rounded-full blur-[120px]"
+        className="absolute top-1/3 -left-32 w-[400px] h-[400px]"
+        style={glow("245,158,11", 0.1)}
       />
       <motion.div
         animate={{ 
@@ -420,7 +417,8 @@ export function Hero() {
           opacity: [0.08, 0.15, 0.08]
         }}
         transition={{ duration: 12, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute bottom-1/3 -right-32 w-[450px] h-[450px] bg-primary-500/10 rounded-full blur-[140px]"
+        className="absolute bottom-1/3 -right-32 w-[450px] h-[450px]"
+        style={glow("99,102,241", 0.1)}
       />
 
       {/* Scanning line effect - more dramatic */}
