@@ -2,7 +2,7 @@
 
 The single source of truth for status, open problems and what to do next.
 Operational rules (commands, invariants, traps) are in [AGENTS.md](../AGENTS.md).
-Last updated 2026-09-24.
+Last updated 2026-09-25, after an unattended overnight run. **Start with "Owner decisions waiting" below.**
 
 ## Working mode
 
@@ -54,6 +54,22 @@ The worktree for the stacked branches is `C:\Users\hp\pf-truescale`. Its dev ser
 
 Verification results and commit hashes for all of this are in the git log and in `docs/archive/MORNING-REPORT-2026-09-23.md`.
 
+## Owner decisions waiting (2026-09-25)
+
+Each links to its details further down. Nothing here was chosen for you.
+1. **First-load stall option** (Performance item 1): still yours to pick; untouched. The new background warm-up only compiles shaders the first render doesn't use (hands, seated body, contact casters) *after* the load settles. It doesn't change first load.
+2. **Lamp and blinds** now switch without a hand reach, like the window sash (Experience sweep). Alternatives: a 57 cm lean, moving the lamp within reach, or standing up for the blinds.
+3. **Mount dhruvOS in the background after load?** It would remove the ~500 ms GPU-side hitch on the first monitor entry, at the cost of loading the OS for every visitor (Performance, "Not fixed").
+4. **Interaction looks that need authoring while watching them** (Experience sweep, "Not fixed"):
+   - the pen's writing pose;
+   - the notebook lift;
+   - forearms through the desk's front edge (elbow placement in `seatedHands.js`);
+   - the phone's side phase and the fanned fingers of the held phone (item 7);
+   - the awards frame's size and fingertips.
+5. **Cold open:** the launchpad and markers show during the arrival fly-in.
+6. **Favicon:** still the Vite logo.
+7. **Phone walkthrough copy** (item 8): first person, from PROJECT-MATERIAL.md facts. Edit freely.
+
 ## Open problems
 
 The owner reported most of these after using the site. A problem marked **likely** has a suspected cause that hasn't been confirmed.
@@ -68,8 +84,8 @@ The owner reported most of these after using the site. A problem marked **likely
      - fewer shadow-casting lights, or a cheaper shadow type;
      - fewer distinct materials;
      - compile in the background (`compileAsync` with `KHR_parallel_shader_compile`) behind the load bar.
-2. **The projects lag during the walkthrough, and entering or leaving the monitor lags.**
-3. **Opening the window seems to freeze the site.**
+2. **The projects lag during the walkthrough, and entering or leaving the monitor lags.** Mostly fixed: the 2+ s freezes are gone. The first monitor entry still has one ~500 ms GPU-side frame. Details below.
+3. **Opening the window seems to freeze the site.** Not reproduced as a freeze: a ~200 ms hitch at the click. Details below.
 
 **Baseline for 2 and 3, measured 2026-09-24/25 before any fix.** Tool: `scripts/profile-interaction.mjs <sit|window|enter|tour|tour-cold>`, which records a CPU profile, rAF frame gaps and long tasks on the real GPU. Setup: dev server on 4175, 1536×864 @ 1.25. React runs in dev mode on this server, so the React costs below are higher than in production.
    - **First-use shader compile of the hand rig: 2.1–2.7 s freezes.** Four programs (`Hand skin` plus three unnamed ones) compile the first time the hands are visible. Whichever comes first pays:
@@ -183,7 +199,8 @@ The desk top is 35 mm thick and depth is measured to the nearest face, so 16 mm 
 **Not fixed; needs the owner or a rig change:**
 - **Forearms through the desk's front edge** (sleeve 16 mm deep): headphones pick-up, phone reach, lamp (before). The hands work low on the desk while the elbows sit below desk height, so the forearm passes through the front edge. It shows as a light stripe across the sleeve (`obj-headphones-s3-action-03.png`). Changing elbow placement in `seatedHands.js` touches every grip and every reviewed motion, so it wasn't done unattended.
 - **Pen: the writing pose is wrong.** The hand sinks into the notebook and desk with only the thumb showing, and the pencil stands vertical above it instead of lying in the fingers (`obj-pen-s4-held.png`). The pose is derived from a writing-hand orientation (`PEN` in `WorkspaceStage.jsx`: the two direction vectors `f` and `n`) and needs re-authoring while watching the motion.
-- **Notebook:** skin 15 mm into the desk during pick-up and put-down (`obj-notebook-s4-*`). Not yet inspected frame by frame.
+- **Notebook, held: fixed.** The held side grips were 25 cm out from the centre on a 25 cm-wide notebook, so the hands hovered about 2 cm off its sides and it floated (`obj-notebook-s4-held.png`). Measured with `__v3test.tuneNotebook(x)` and set to 19 cm: gap 1.1 / 3.6 mm, no overlap, wrists 41° / 41° (`obj-notebook-nb1-*`). The lift's side waypoint went from 29 to 23 cm to match.
+- **Notebook, lift: not fixed.** At 1.23–1.48 s the notebook tips up while the open right hand is about 10 cm away, so it floats (`obj-notebook-nb1-action-sheet.png`). The right hand's pick is also 15–16 mm into the desk at 0.49–0.62 s. Both predate this session and need the pick/lift choreography re-authored while watching it.
 - **Awards frame:** fingertips show below its bottom edge, and the frame reads small next to the hands. It's probably still at the props' 0.625 scale, which the résumé page was taken off in 5c399d2. A look decision.
 - **Headphones:** both hands pass right in front of the camera on the way to the ears (1.50 s). The code comment says this is intended ("carry them up past the camera").
 
@@ -202,9 +219,11 @@ The desk top is 35 mm thick and depth is measured to the nearest face, so 16 mm 
 
 ### Test suite
 
-- `verify-phone-grip` fails its skin-clipping assertion. This predates 2026-09-23.
-- `verify-focuslock-app` times out on the friction step. This also predates it.
-- `verify-tour` failed its OS-open step ("opens Fraud" or "opens CrisisWatch") in 4 of 5 runs on 2026-09-24, including a run with no source changes. It's no longer an occasional flake, and it may be the walkthrough lag (item 2) showing up. Cause unknown.
+- `verify-phone-grip` passes (exit 0) since `11eb21f`. Before that, its skin-clipping assertion failed.
+- `verify-tour`'s OS-open failures were a real bug, not lag; fixed in `e0cd47e` (see Performance above). Afterwards: 3 of 3 suite runs and 8 of 8 fresh-browser diagnostic runs passed.
+- `verify-focuslock-app` isn't in `run-suites.sh`; see "Owner decisions waiting" for its last result.
+- `verify-v3` failed once on 2026-09-25 with two "503 Service Unavailable" console errors. It passed 41/41 on an immediate re-run and on every other run; probably a live-data service, but the URL wasn't logged.
+- `verify-deeplinks` has no `/room/<object>` case.
 - `verify-held-objects` and `verify-reduced-hands` exit 0, but `run-suites.sh` counts 0 PASS lines for them, so they only prove the script ran.
 - The suites check state, not feel. A green run proves nothing about how an interaction looks or how fast it is. Every interaction change needs a frame sequence reviewed by eye, including the wrist angle (see below).
 

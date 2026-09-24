@@ -511,9 +511,12 @@ export default function WorkspaceStage({
       // Notebook: the right hand takes the near corner from above; once lifted
       // both hands hold the side edges, fingers behind the cover.
       const NB_PICK = { obj: model.notebook, p: [0.17, 0.035, 0.2], r: [0, 0, 0], pose: 'flat' };
-      const NB_SIDE = { obj: model.notebook, p: [0.29, -0.01, 0.12], r: [0, 0, -Math.PI / 2], pose: 'cup' };
-      const NB_RIGHT = { obj: model.notebook, p: [0.25, -0.02, 0.1], r: edgeGrip(1), pose: 'hold' };
-      const NB_LEFT = { obj: model.notebook, p: [-0.25, -0.02, 0.1], r: edgeGrip(-1), pose: 'hold' };
+      // Held side grips sit 19 cm out from the centre: the 25 cm-wide notebook's
+      // edges, measured with __v3test.tuneNotebook (1-4 mm to the cover, no
+      // overlap). The old 25 cm offsets held the hands 2 cm off its sides.
+      const NB_SIDE = { obj: model.notebook, p: [0.23, -0.01, 0.12], r: [0, 0, -Math.PI / 2], pose: 'cup' };
+      const NB_RIGHT = { obj: model.notebook, p: [0.19, -0.02, 0.1], r: edgeGrip(1), pose: 'hold' };
+      const NB_LEFT = { obj: model.notebook, p: [-0.19, -0.02, 0.1], r: edgeGrip(-1), pose: 'hold' };
       const NB_LEAN = { x: 0.225, y: -0.06, z: -0.1 };
       const nb = { right: 1, left: 1 };
       function followNotebook() {
@@ -1374,6 +1377,17 @@ export default function WorkspaceStage({
             // Body shift the reach clamp added on top of the authored lean (cm): non-zero means a target out of arm's reach.
             out.T=model.hands.torsoOffset.toArray().map(v=>Math.round(v*100));
             return out;
+          },
+          // Held notebook grips, tuning only: side-edge offset x (m). Per hand: [nearest skin to the notebook (mm), vertices inside it, wrist bend].
+          tuneNotebook(x) {
+            if(x!=null){NB_RIGHT.p[0]=x;NB_LEFT.p[0]=-x;}
+            nb.right=nb.left=1;followNotebook();model.root.updateMatrixWorld(true);
+            const boxes=[],p=new THREE.Vector3(),q=new THREE.Vector3(),out={};
+            model.notebook.traverse(o=>{if(!o.isMesh)return;o.geometry.computeBoundingBox();boxes.push({box:o.geometry.boundingBox,inv:o.matrixWorld.clone().invert()});});
+            for(const [k,h] of [['L',model.hands.left],['R',model.hands.right]]){let gap=Infinity,inside=0;const mesh=h.skinMesh,pos=mesh.geometry.attributes.position;
+              for(let v=0;v<pos.count;v++){p.fromBufferAttribute(pos,v);mesh.applyBoneTransform(v,p);p.applyMatrix4(mesh.matrixWorld);let d=Infinity;for(const b of boxes)d=Math.min(d,b.box.distanceToPoint(q.copy(p).applyMatrix4(b.inv)));if(d===0)inside++;gap=Math.min(gap,d);}
+              out[k]=[+(gap*1000).toFixed(1),inside,Math.round(h.wristDeg)];}
+            invalidate();return out;
           },
           // Right-hand skin and sleeve vertices inside the drawer's wooden parts (1 mm tolerance).
           drawerClip() {
