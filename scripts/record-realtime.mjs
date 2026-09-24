@@ -13,7 +13,8 @@ mkdirSync(dir, { recursive: true });
 const browser = await chromium.launch({ channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] });
 const context = await browser.newContext({ viewport: { width: 1280, height: 720 }, recordVideo: { dir, size: { width: 1280, height: 720 } } });
 const page = await context.newPage();
-await page.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); localStorage.setItem('v3:surface-override', 'scan'); });
+const keyCam = action === 'keyboard' && process.env.KEYCAM !== '0';
+await page.addInitScript((test) => { sessionStorage.setItem('v3:arrival-seen', '1'); localStorage.setItem('v3:surface-override', 'scan'); if (test) localStorage.setItem('v3:test', '1'); }, keyCam);
 await page.goto(`${BASE}/#/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
 await page.locator('[data-testid="room-overview"]').waitFor({ timeout: 90000 });
 // Let the first-load stall and the background shader warm-up finish first,
@@ -47,6 +48,9 @@ if (action === 'launchpad-phone') {
   await page.waitForTimeout(4000);
 } else if (action === 'keyboard') {
   await seat();
+  // The seated view frames the monitor; look down at the keys so the clip
+  // shows the fingers (KEYCAM=0 keeps the seated view).
+  if (keyCam) await page.evaluate(() => window.__v3test.lookFrom([0, 1.12, 0.58], [0, 0.74, 0.16]));
   await page.locator('.workspace-stage canvas').focus();
   await mark('type');
   await page.keyboard.type(process.env.TEXT || 'the quick brown fox jumps over the lazy dog', { delay: Number(process.env.DELAY || 180) });
