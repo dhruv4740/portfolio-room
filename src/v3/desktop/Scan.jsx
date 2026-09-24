@@ -198,6 +198,15 @@ export default function Scan() {
     }
   }, [reduced, setArrival]);
 
+  // Sit first, then pick the phone up. Starting the pick-up during the seat's
+  // camera flight made its lean snap the camera straight into the chair.
+  const phoneAfterSit = useRef(0);
+  const pickUpAfterSit = useCallback(() => {
+    clearTimeout(phoneAfterSit.current);
+    phoneAfterSit.current = setTimeout(() => setActiveId('phone'), reduced ? 0 : 1250);
+  }, [reduced]);
+  useEffect(() => () => clearTimeout(phoneAfterSit.current), []);
+
   const handleSelect = useCallback((id, meta) => {
     if (screenPhase !== 'room') return;
     if (meta?.completed) {
@@ -209,6 +218,8 @@ export default function Scan() {
       returnOrigin.current = 'overview';
       overviewFocusAction.current = 'mobile-projects';
       setOverviewOpen(false); setSeated(true);
+      pickUpAfterSit();
+      return;
     }
     if (id === 'windowOpen') {
       const stage = document.querySelector('.workspace-stage');
@@ -220,7 +231,7 @@ export default function Scan() {
     }
     lastTrigger.current = document.activeElement;
     setActiveId((cur) => (cur === id ? null : id));
-  }, [cancelArrival, screenPhase, activeId, seated]);
+  }, [cancelArrival, screenPhase, activeId, seated, pickUpAfterSit]);
 
   const beginLaunch = useCallback((origin, trigger) => {
     if (launchLocked.current || screenPhase !== 'room') return false;
@@ -255,8 +266,8 @@ export default function Scan() {
   const handleOpenPhone = useCallback((event) => {
     if (!beginLaunch('overview', event.currentTarget)) return;
     setSeated(true);
-    setActiveId('phone');
-  }, [beginLaunch]);
+    pickUpAfterSit();
+  }, [beginLaunch, pickUpAfterSit]);
 
   const handleOpenContact = useCallback((event) => {
     if (!beginLaunch('overview', event.currentTarget)) return;
