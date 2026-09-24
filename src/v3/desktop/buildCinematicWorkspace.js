@@ -660,7 +660,9 @@ export function buildCinematicWorkspace(scene, options = {}) {
       phone.position.set(...ANCHORS.phone); phone.rotation.set(0, 0, 0);
       phoneMaterial.map = phoneTextures.home; phoneGlow.color.set('#d4d5d8'); phoneGlow.intensity = 0.07;
     },
-    setHandsVisible(visible) { hands.root.visible = visible; },
+    // `wanted` survives the render loop's out-of-seat gate, which used to
+    // hide the hands for good when an action started before the camera sat.
+    setHandsVisible(visible) { hands.root.userData.wanted = visible; hands.root.visible = visible; },
     setEntryPower(value) {
       pendantLight.intensity = 0.85 * value;
       pendantMaterial.emissiveIntensity = 0.7 * value;

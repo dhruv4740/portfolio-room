@@ -16,7 +16,9 @@ try{
   await page.locator('[data-launchpad-action="explore-room"]').click();await page.waitForTimeout(1800);
   await page.getByRole('button',{name:'PHONE',exact:true}).click();
   await page.waitForFunction(()=>document.querySelector('.workspace-stage')?.dataset.phoneState==='reaching');
-  for(const time of [.35,.5,.6,.7,.9,1.05,...Array.from({length:17},(_,i)=>1.08+i*.05)]){
+  // Sampled by fraction of the pick-up so a retime still covers the reach, the lift and the whole roll.
+  const duration=await page.evaluate(()=>window.__v3test.timeline().duration());
+  for(const time of Array.from({length:28},(_,i)=>duration*(0.12+i*0.88/27))){
     await page.evaluate(t=>{window.__v3test.timeline().pause().time(t);},time);await page.waitForTimeout(100);
     const contact=await page.evaluate(()=>window.__v3test.phoneGripGeometry());
     results.push({time,...contact});

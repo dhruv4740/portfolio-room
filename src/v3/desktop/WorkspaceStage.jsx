@@ -264,7 +264,10 @@ export default function WorkspaceStage({
         // The hands are a separate group from the body. Left ungated they lie
         // on the keyboard above an empty chair — the exact disembodied-arms
         // problem the figure was added to solve.
-        if (!inTheSeat) model.hands.root.visible = false;
+        // Recomputed every frame like the body: hiding them once while the
+        // camera was still standing (the launchpad's phone option starts the
+        // pick-up before the seat is reached) left a body with no arms.
+        model.hands.root.visible = inTheSeat && model.hands.root.userData.wanted !== false;
         // The body only renders in first person, where your own head is never
         // in view. A distance gate showed it whenever a reach leaned the
         // camera away from the seat (the pen view filled with hair).
@@ -434,7 +437,7 @@ export default function WorkspaceStage({
         const distance = Math.max(h / (2 * tan), w / (2 * tan * camera.aspect)) * 1.06;
         phoneZoom = 'in'; markPhone('zooming'); setPhoneWanted(true);
         rig.flyTo({ position: center.clone().addScaledVector(normal, distance).toArray(), target: center.toArray() }, {
-          reduced, duration: phoneVisited ? .3 : .45,
+          reduced, duration: phoneVisited ? .45 : .55,
           onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); },
           onComplete() { phoneZoom = 'held'; markPhone('zoomed'); host.dataset.phonePresentation='stage'; setPhoneLive(true); phoneVisited=true; cancelAnimationFrame(raf); raf=0; },
         });
@@ -456,17 +459,20 @@ export default function WorkspaceStage({
           onComplete() { zoomPhone(false); },
         });
         markPhone('reaching');
-        action.to(model.hands.lean, { ...PHONE_LEAN, duration: 0.7, ease: 'power2.inOut' }, 0)
-          .to(look, { x: px, y: py, z: pz + 0.15, duration: 0.7, ease: 'power2.inOut' }, 0)
-          .to(k, { reach: 1, duration: 0.7, ease: 'power2.inOut' }, 0)
-          .call(() => markPhone('lifting'), [], 0.7)
-          .to(model.phone.position, { y: py + 0.12, duration: 0.35, ease: 'power2.out' }, 0.7)
-          .to(model.hands.lean, { ...ZERO, duration: 0.85, ease: 'power2.inOut' }, 1.05)
-          .to(look, { x: 0.08, y: 1.02, z: 0.04, duration: 0.85, ease: 'power2.inOut' }, 1.05)
-          .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 0.85, ease: 'power2.inOut' }, 1.05)
-          .to(model.phone.rotation, { x: 1.15, duration: 0.85, ease: 'power2.inOut' }, 1.05)
-          .to(k, { grip: 1, duration: 0.85, ease: 'power2.inOut' }, 1.05)
-          .call(() => markPhone('home'), [], 1.9);
+        // Paced like a person: a 1 s reach, a beat with the hand on the phone
+        // before it moves, then lift and bring it up. The old 0.7 s reach and
+        // 0.35 s lift, straight into the roll, read as a snatch.
+        action.to(model.hands.lean, { ...PHONE_LEAN, duration: 1.0, ease: 'power2.inOut' }, 0)
+          .to(look, { x: px, y: py, z: pz + 0.15, duration: 1.0, ease: 'power2.inOut' }, 0)
+          .to(k, { reach: 1, duration: 1.0, ease: 'power2.inOut' }, 0)
+          .call(() => markPhone('lifting'), [], 1.2)
+          .to(model.phone.position, { y: py + 0.12, duration: 0.45, ease: 'power2.out' }, 1.2)
+          .to(model.hands.lean, { ...ZERO, duration: 1.1, ease: 'power2.inOut' }, 1.65)
+          .to(look, { x: 0.08, y: 1.02, z: 0.04, duration: 1.1, ease: 'power2.inOut' }, 1.65)
+          .to(model.phone.position, { x: held.x, y: held.y, z: held.z, duration: 1.1, ease: 'power2.inOut' }, 1.65)
+          .to(model.phone.rotation, { x: 1.15, duration: 1.1, ease: 'power2.inOut' }, 1.65)
+          .to(k, { grip: 1, duration: 1.1, ease: 'power2.inOut' }, 1.65)
+          .call(() => markPhone('home'), [], 2.75);
         gsap.ticker.wake();
       }
       function returnPhone(reduced) {
@@ -1324,7 +1330,7 @@ export default function WorkspaceStage({
           keyBoxes(){return keySurfaceBoxes(model.keys).map(boxToPlain);},
           keyboardSkinContact(){return [model.hands.left,model.hands.right].map(h=>({restLift:h.restLift,...skinKeyClearance(h,keySurfaceBoxes(model.keys))}));},
           bodyAttachment(){return {torsoOffset:model.hands.torsoOffset.toArray(),upperArmLengths:[model.hands.left.sleeve.scale.y,model.hands.right.sleeve.scale.y]};},
-          showHands(v) { model.hands.root.visible = !!v; invalidate(); },
+          showHands(v) { model.setHandsVisible(!!v); invalidate(); },
           // Real-GPU cost probes (scripts/measure-gpu.mjs): governor state, live pixel ratio, draw calls.
           // Compiled shader programs by name (material type or name), to see which first-use compiles an interaction triggers.
           programs(full) { return (renderer.info.programs || []).map(p => p.name + '#' + p.id + (full ? ' ' + p.cacheKey.slice(0, 400) : '')); },
