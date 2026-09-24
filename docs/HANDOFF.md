@@ -221,7 +221,7 @@ The desk top is 35 mm thick and depth is measured to the nearest face, so 16 mm 
 
 - `verify-phone-grip` passes (exit 0) since `11eb21f`. Before that, its skin-clipping assertion failed.
 - `verify-tour`'s OS-open failures were a real bug, not lag; fixed in `e0cd47e` (see Performance above). Afterwards: 3 of 3 suite runs and 8 of 8 fresh-browser diagnostic runs passed.
-- `verify-focuslock-app` isn't in `run-suites.sh`; see "Owner decisions waiting" for its last result.
+- `verify-focuslock-app` (not in `run-suites.sh`) still fails as before. Run on 2026-09-25: 13 PASS, then it times out waiting for friction step `breathing` → `delay` (line 218). The test sets `__phoneTimeScale = 20`, so breathing should end in 600 ms, and the friction effect's deps look stable. Cause not found; not investigated further.
 - `verify-v3` failed once on 2026-09-25 with two "503 Service Unavailable" console errors. It passed 41/41 on an immediate re-run and on every other run; probably a live-data service, but the URL wasn't logged.
 - `verify-deeplinks` has no `/room/<object>` case.
 - `verify-held-objects` and `verify-reduced-hands` exit 0, but `run-suites.sh` counts 0 PASS lines for them, so they only prove the script ran.
