@@ -710,8 +710,8 @@ export default function WorkspaceStage({
       const KEY_CHARS = KEY_ROWS.join('');
       // Keys past the letter block, by their index on the authored keyboard
       // (the old lookup sent Space to right Shift and Enter to an arrow).
-      const SPECIAL_KEYS = { ' ': 52, Enter: 67, Backspace: 68, ArrowLeft: 57, ArrowRight: 59, '`': 70 };
-      const INDEX_FINGER = { 52: [1, -1], 67: [1, 3], 68: [1, 3], 57: [1, 0], 58: [1, 1], 59: [1, 2], 70: [-1, 3] };
+      const SPECIAL_KEYS = { ' ': 52, Enter: 67, Backspace: 68, ArrowLeft: 57, ArrowRight: 59, '`': 69 };
+      const INDEX_FINGER = { 52: [1, -1], 67: [1, 3], 68: [1, 3], 57: [1, 0], 58: [1, 1], 59: [1, 2], 69: [-1, 3] };
       const keyIndexOf = key => SPECIAL_KEYS[key] ?? (key.length === 1 && key !== ' ' ? KEY_CHARS.indexOf(key.toLowerCase()) : -1);
       const typeRest = new THREE.Vector3();
       // The room root is untransformed, so hand-rig space is world space.
@@ -745,8 +745,11 @@ export default function WorkspaceStage({
         let dip = 0;
         h.digits.forEach(d => { d.rotation.x = 0; });
         for (let pass = 0; pass < 2; pass++) {
-          placeHand(h, to); if (f) f.rotation.x = -dip; h.hand.updateMatrixWorld(true);
+          // The thumb aims as it strikes: curled by the press, not at rest.
+          placeHand(h, to); if (f) f.rotation.x = -dip; else { h.pose.tCurl = POSES.rest.tCurl + 0.3; model.hands.update(); }
+          h.hand.updateMatrixWorld(true);
           const tip = typingTip(h, f);
+          if (!f) { h.pose.tCurl = POSES.rest.tCurl; model.hands.update(); }
           aim.set(THREE.MathUtils.clamp(tip.x, box.min.x + inset, box.max.x - inset), 0, THREE.MathUtils.clamp(tip.z, box.min.z + inset, box.max.z - inset));
           to.x += aim.x - tip.x; to.z += aim.z - tip.z;
           // Lift for the row: every other part of the hand stays 2 mm over the
