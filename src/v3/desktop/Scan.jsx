@@ -40,6 +40,20 @@ function markArrivalSeen() {
   try { sessionStorage.setItem(ARRIVAL_SEEN_KEY, '1'); localStorage.setItem(ARRIVAL_SEEN_KEY, '1'); } catch { /* private mode */ }
 }
 
+// The guided tour. `scene` is where the step puts the visitor; `hold` is how
+// long it stays once it is there.
+const TOUR = [
+  { caption: 'This is my desk in Mumbai. Everything in the room works.', hold: 5000, scene: 'room' },
+  { caption: 'The computer runs my real web projects. This is CrisisWatch, a fact-checker.', hold: 9500, scene: 'os', app: 'crisiswatch' },
+  { caption: 'Fraud detection: an XGBoost model scoring transactions.', hold: 9000, scene: 'os', app: 'fraud' },
+  { caption: 'Back to the desk.', hold: 3000, scene: 'room' },
+  { caption: 'The phone runs my Android apps. FocusLock puts friction in front of distracting apps.', hold: 10000, scene: 'phone', app: 'focuslock' },
+  { caption: 'Expense Tracker: shared costs and Uber splits.', hold: 8500, scene: 'phone', app: 'expense' },
+  { caption: 'That was the one-minute version.', hold: 3000, scene: 'room' },
+];
+const tourInRoom = () => document.querySelector('.scan-root')?.dataset.entranceState === 'room';
+const tourPhoneUp = () => { const s = document.querySelector('.workspace-stage')?.dataset.phoneState; return !!s && s !== 'desk'; };
+
 function LiveTelemetry({ sink, anchorId }) {
   const [stats, setStats] = useState({});
   useEffect(() => { sink.current = setStats; return () => { sink.current = null; }; }, [sink]);
@@ -502,65 +516,135 @@ export default function Scan() {
     navigate(`/phone/${app}`);
   }, [screenPhase, navigate]);
 
-  // 60-second guided tour: an autopilot over the same deep-link routes a
-  // visitor could use, with captions. Any real input hands control back.
-  const [tour, setTour] = useState(null); // null | { caption, step, done }
+  // Guided tour: steps over the same deep-link routes a visitor could use,
+  // with captions and Previous / Pause / Next / Exit. Each step first brings
+  // the scene to its place (leaving the OS or putting the phone down as
+  // needed), and its hold only starts once that has happened, so a load stall
+  // can't eat a step. Real input pauses the tour rather than ending it, and a
+  // hidden page pauses it too; modifier keys (Alt-Tab) are ignored.
+  const [tour, setTour] = useState(null); // null | { step, paused, done }
   const tourApi = useRef({});
-  tourApi.current = { navigate, handleLeaveScreen, handleSelect };
-  const tourTimers = useRef([]);
+  tourApi.current = { navigate, handleLeaveScreen, handleSelect, screenPhase, activeId, seated };
+  // id bumps on every step change or stop, so a stale step's waits give up.
+  const tourRun = useRef({ id: 0, step: 0, timer: 0, holdStart: 0, remaining: 0, paused: false, autoPaused: false });
+  const goTourRef = useRef(null);
   const stopTour = useCallback(() => {
-    tourTimers.current.forEach(clearTimeout);
-    tourTimers.current = [];
+    const r = tourRun.current;
+    clearTimeout(r.timer); r.id++; r.paused = false; r.autoPaused = false;
     setTour(null);
   }, []);
-  const startTour = useCallback(() => {
-    stopTour();
-    const api = () => tourApi.current;
-    const steps = [
-      [0, 'This is my desk in Mumbai. Everything in the room works.', () => api().navigate('/room/explore')],
-      [6500, 'The computer runs my real web projects. This is CrisisWatch, a fact-checker.', () => api().navigate('/os/crisiswatch')],
-      [18000, 'Fraud detection: an XGBoost model scoring transactions.', () => dhruvRef.current?.openApp('fraud')],
-      [28000, 'Back to the desk.', () => api().handleLeaveScreen()],
-      [32000, 'The phone runs my Android apps. FocusLock puts friction in front of distracting apps.', () => api().navigate('/phone/focuslock')],
-      [44000, 'Expense Tracker: shared costs and Uber splits.', () => window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: 'expense' } }))],
-      [53000, 'That was the one-minute version.', () => api().handleSelect('phone')],
-      [56500, null, () => setTour({ done: true, step: 7 })],
-    ];
-    steps.forEach(([at, caption, action], step) => {
-      tourTimers.current.push(setTimeout(() => {
-        try { action(); } catch { /* a step failing must not strand the tour */ }
-        if (caption) setTour({ caption, step, done: false });
-      }, at));
+  const holdTour = useCallback((ms) => {
+    const r = tourRun.current;
+    clearTimeout(r.timer); r.timer = 0;
+    r.remaining = ms; r.holdStart = performance.now();
+    if (r.paused) return;
+    const id = r.id;
+    r.timer = setTimeout(() => { if (tourRun.current.id === id) goTourRef.current(tourRun.current.step + 1); }, ms);
+  }, []);
+  goTourRef.current = async (step) => {
+    const r = tourRun.current;
+    clearTimeout(r.timer); r.timer = 0;
+    const id = ++r.id;
+    if (step >= TOUR.length) { setTour({ step: TOUR.length, done: true }); return; }
+    r.step = Math.max(0, step);
+    const s = TOUR[r.step], api = () => tourApi.current;
+    const alive = () => tourRun.current.id === id;
+    const until = (test, timeout = 30000) => new Promise((resolve) => {
+      const t0 = performance.now();
+      const poll = () => {
+        if (!alive()) return resolve(false);
+        if (test() || performance.now() - t0 > timeout) return resolve(true);
+        setTimeout(poll, 100);
+      };
+      poll();
     });
-    setTour({ caption: steps[0][1], step: 0, done: false });
-  }, [stopTour]);
-  useEffect(() => () => tourTimers.current.forEach(clearTimeout), []);
-  // Real input (not the tour's own UI) interrupts the autopilot.
+    setTour({ step: r.step, paused: r.paused, done: false });
+    try {
+      // Undo whatever the previous step (or the visitor) left open.
+      if (s.scene !== 'os' && api().screenPhase !== 'room') { api().handleLeaveScreen(); if (!await until(tourInRoom)) return; }
+      if (s.scene !== 'phone' && api().activeId === 'phone') { api().handleSelect('phone'); if (!await until(() => !tourPhoneUp())) return; }
+      if (s.scene === 'room') {
+        if (!api().seated) { api().navigate('/room/explore'); if (!await until(() => document.querySelector('.scan-root')?.dataset.seated === 'true')) return; }
+      } else if (s.scene === 'os') {
+        if (api().screenPhase === 'inside' && dhruvRef.current) dhruvRef.current.openApp(s.app);
+        else api().navigate(`/os/${s.app}`);
+        if (!await until(() => document.querySelector('.scan-root')?.dataset.entranceState === 'inside')) return;
+      } else if (s.scene === 'phone') {
+        if (api().activeId === 'phone' && document.querySelector('.phone-screen')) window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: s.app } }));
+        else api().navigate(`/phone/${s.app}`);
+        if (!await until(() => document.querySelector('.phone-screen')?.dataset.app === s.app)) return;
+      }
+    } catch { /* a step failing must not strand the tour */ }
+    if (alive()) holdTour(s.hold);
+  };
+  const startTour = useCallback(() => {
+    const r = tourRun.current;
+    r.paused = false; r.autoPaused = false;
+    goTourRef.current(0);
+  }, []);
+  const pauseTour = useCallback((auto = false) => {
+    const r = tourRun.current;
+    if (r.paused) return;
+    r.paused = true; r.autoPaused = auto === true;
+    if (r.timer) { clearTimeout(r.timer); r.timer = 0; r.remaining = Math.max(0, r.remaining - (performance.now() - r.holdStart)); }
+    setTour((t) => (t && !t.done ? { ...t, paused: true } : t));
+  }, []);
+  const resumeTour = useCallback(() => {
+    const r = tourRun.current;
+    if (!r.paused) return;
+    r.paused = false; r.autoPaused = false;
+    // Put the scene back where this step had it (the visitor may have moved
+    // on while paused), then finish what was left of its hold.
+    const { step, remaining } = r;
+    goTourRef.current(step).then(() => {
+      const now = tourRun.current;
+      if (now.step === step && !now.paused && now.timer) holdTour(Math.max(1500, remaining));
+    });
+  }, [holdTour]);
+  useEffect(() => () => clearTimeout(tourRun.current.timer), []);
   useEffect(() => {
     if (!tour || tour.done) return undefined;
     const interrupt = (e) => {
       if (!e.isTrusted || e.target?.closest?.('.tour-ui')) return;
-      stopTour();
+      pauseTour();
     };
-    // A click into the OS (or an app inside it) only reaches this window as
-    // focus moving into the iframe. The tour itself never focuses a frame.
-    const onBlur = () => setTimeout(() => { if (document.activeElement?.tagName === 'IFRAME') stopTour(); }, 0);
+    // Relayed from inside the OS, so not trusted here; the OS only sends it for real input.
+    const onOSInput = () => pauseTour();
+    const onKey = (e) => {
+      if (!e.isTrusted || e.target?.closest?.('.tour-ui')) return;
+      if (e.altKey || e.ctrlKey || e.metaKey || ['Alt', 'AltGraph', 'Control', 'Shift', 'Meta', 'Tab', 'CapsLock'].includes(e.key)) return;
+      if (e.key === 'ArrowRight') { e.preventDefault(); goTourRef.current(tourRun.current.step + 1); return; }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); goTourRef.current(tourRun.current.step - 1); return; }
+      if (e.key === ' ') { e.preventDefault(); if (tourRun.current.paused) resumeTour(); else pauseTour(); return; }
+      if (e.key === 'Escape') { stopTour(); return; }
+      pauseTour();
+    };
+    // A click into the OS only reaches this window as focus moving into the
+    // iframe. Switching to another window also blurs, but then the document
+    // has no focus at all; that isn't the visitor taking over.
+    const onBlur = () => setTimeout(() => { if (document.hasFocus() && document.activeElement?.tagName === 'IFRAME') pauseTour(); }, 0);
+    const onVisibility = () => {
+      if (document.hidden) pauseTour(true);
+      else if (tourRun.current.autoPaused) resumeTour();
+    };
     const t = setTimeout(() => {
       window.addEventListener('pointerdown', interrupt, true);
-      window.addEventListener('keydown', interrupt, true);
       window.addEventListener('wheel', interrupt, true);
-      window.addEventListener('os:user-input', stopTour);
+      window.addEventListener('keydown', onKey, true);
+      window.addEventListener('os:user-input', onOSInput);
       window.addEventListener('blur', onBlur);
     }, 300);
+    document.addEventListener('visibilitychange', onVisibility);
     return () => {
       clearTimeout(t);
       window.removeEventListener('pointerdown', interrupt, true);
-      window.removeEventListener('keydown', interrupt, true);
       window.removeEventListener('wheel', interrupt, true);
-      window.removeEventListener('os:user-input', stopTour);
+      window.removeEventListener('keydown', onKey, true);
+      window.removeEventListener('os:user-input', onOSInput);
       window.removeEventListener('blur', onBlur);
+      document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [tour, stopTour]);
+  }, [tour, stopTour, pauseTour, resumeTour]);
 
   // Escape backs out one level: the embedded OS, then the selected anchor.
   useEffect(() => {
@@ -739,9 +823,16 @@ export default function Scan() {
       )}
 
       {tour && !tour.done && (
-        <div className="tour-ui tour-caption" role="status" aria-live="polite" data-testid="tour-caption">
-          <p>{tour.caption}</p>
-          <button className="mono" onClick={stopTour}>SKIP TOUR · ANY KEY</button>
+        <div className="tour-ui tour-caption" role="status" aria-live="polite" data-testid="tour-caption" data-paused={tour.paused ? 'true' : 'false'} data-step={tour.step}>
+          {/* Paused, the caption shrinks so it doesn't cover what the visitor stopped to use. */}
+          {tour.paused ? <p className="tour-paused mono">PAUSED · LOOK AROUND, THEN RESUME</p> : <p>{TOUR[tour.step].caption}</p>}
+          <div className="tour-controls">
+            <span className="mono tour-count">{tour.step + 1} / {TOUR.length}</span>
+            <button className="mono" onClick={() => goTourRef.current(tour.step - 1)} disabled={tour.step === 0} aria-label="Previous step">◀ PREV</button>
+            <button className="mono tour-play" data-testid="tour-pause" onClick={() => (tour.paused ? resumeTour() : pauseTour())}>{tour.paused ? '▶ RESUME' : '❚❚ PAUSE'}</button>
+            <button className="mono" onClick={() => goTourRef.current(tour.step + 1)} aria-label="Next step">NEXT ▶</button>
+            <button className="mono tour-exit" onClick={stopTour} aria-label="Exit tour">✕</button>
+          </div>
         </div>
       )}
       {tour?.done && (
@@ -903,6 +994,13 @@ const css = `
 .mumbai-readout { position:fixed; right:var(--gutter); bottom:14px; z-index:var(--z-panel); margin:0; padding:5px 9px; background:rgba(10,12,13,.72); color:#b2b7b4; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
 .tour-caption { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); z-index:calc(var(--z-panel) + 4); width:min(640px, calc(100vw - 32px)); padding:14px 18px; border:1px solid #555b59; border-left:2px solid var(--signal); background:rgba(13,16,17,.92); color:var(--bone); display:flex; gap:16px; align-items:center; justify-content:space-between; }
 .tour-caption p { margin:0; font-size:15px; line-height:1.45; }
+.tour-caption { flex-direction:column; align-items:stretch; }
+.tour-caption .tour-paused { font-size:10.5px; letter-spacing:.14em; color:var(--signal); }
+.tour-controls { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+.tour-controls .tour-count { color:#9ea39f; font-size:10.5px; letter-spacing:.12em; margin-right:auto; }
+.tour-controls button { padding:0 10px; border:1px solid #3d4341; }
+.tour-controls button:hover:not(:disabled), .tour-controls button:focus-visible { border-color:#9ea39f; color:var(--bone); }
+.tour-controls button:disabled { opacity:.35; cursor:default; }
 /* The phone stage (fixed, z-index 100) covered the caption on the tour's phone steps.
    Above it, and in the free column right of the phone where there is room. */
 .scan-root:has(.phone-presentation--stage) .tour-caption { z-index:101; }
