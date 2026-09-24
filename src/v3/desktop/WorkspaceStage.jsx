@@ -700,33 +700,116 @@ export default function WorkspaceStage({
         } else lastInk = null;
         invalidate();
       }
+      // Touch typing: each key has its finger (index 0 … pinky 3; the right
+      // thumb for space). The hand slides so that fingertip lands on the cap,
+      // rising for the higher rows so no other skin enters a key, the finger
+      // dips onto it, and the hand drifts back to rest once typing pauses.
+      const TYPE_FINGER = {};
+      for (const [keys, side, digit] of [['1qaz`', -1, 3], ['2wsx', -1, 2], ['3edc', -1, 1], ['45rtfgvb', -1, 0],
+        ['67yuhjnm', 1, 0], ['8ik,', 1, 1], ['9ol.', 1, 2], ["0-=p[];'/\\", 1, 3]]) for (const k of keys) TYPE_FINGER[k] = [side, digit];
+      const KEY_CHARS = KEY_ROWS.join('');
+      // Keys past the letter block, by their index on the authored keyboard
+      // (the old lookup sent Space to right Shift and Enter to an arrow).
+      const SPECIAL_KEYS = { ' ': 52, Enter: 67, Backspace: 68, ArrowLeft: 57, ArrowRight: 59, '`': 70 };
+      const INDEX_FINGER = { 52: [1, -1], 67: [1, 3], 68: [1, 3], 57: [1, 0], 58: [1, 1], 59: [1, 2], 70: [-1, 3] };
+      const keyIndexOf = key => SPECIAL_KEYS[key] ?? (key.length === 1 && key !== ' ' ? KEY_CHARS.indexOf(key.toLowerCase()) : -1);
+      const typeRest = new THREE.Vector3();
+      // The room root is untransformed, so hand-rig space is world space.
+      function placeHand(h, off) {
+        h.hand.position.set(h.restX ?? h.side * HAND_REST.x, HAND_REST.y + (h.restLift || 0), h.restZ ?? HAND_REST.z).add(off);
+        h.hand.updateMatrixWorld(true);
+      }
+      function typingTip(h, f) {
+        if (f) return f.localToWorld(f.userData.tip.clone().sub(f.position));
+        const j = h.thumb.userData.joints[2]; return j.localToWorld(new THREE.Vector3(0, 0, -h.thumb.userData.L[2]));
+      }
+      function typingFinger(index, center) {
+        const mapped = INDEX_FINGER[index] ?? TYPE_FINGER[KEY_CHARS[index]];
+        if (mapped) { const h = mapped[0] < 0 ? model.hands.left : model.hands.right; return { h, digit: mapped[1] }; }
+        let best = null, distance = Infinity;
+        for (const h of [model.hands.left, model.hands.right]) h.digits.forEach((f, digit) => {
+          const tip = typingTip(h, f), d = (tip.x - center.x) ** 2 + (tip.z - center.z) ** 2;
+          if (d < distance) { distance = d; best = { h, digit }; }
+        });
+        return best;
+      }
+      function planKey(index, boxes) {
+        const box = boxes[index]; if (!box) return null;
+        const { h, digit } = typingFinger(index, box.getCenter(new THREE.Vector3()));
+        const f = digit >= 0 ? h.digits[digit] : null, from = (h.typeOffset ??= new THREE.Vector3()).clone();
+        const to = new THREE.Vector3(), aim = new THREE.Vector3();
+        // Aim inside the cap, 7 mm in from its edges: the centre of a normal
+        // key, anywhere along the space bar.
+        const inset = 0.007, pressed = box.clone(); pressed.max.y -= 0.003;
+        const pressBoxes = boxes.map(b => (b === box ? pressed : b));
+        let dip = 0;
+        h.digits.forEach(d => { d.rotation.x = 0; });
+        for (let pass = 0; pass < 2; pass++) {
+          placeHand(h, to); if (f) f.rotation.x = -dip; h.hand.updateMatrixWorld(true);
+          const tip = typingTip(h, f);
+          aim.set(THREE.MathUtils.clamp(tip.x, box.min.x + inset, box.max.x - inset), 0, THREE.MathUtils.clamp(tip.z, box.min.z + inset, box.max.z - inset));
+          to.x += aim.x - tip.x; to.z += aim.z - tip.z;
+          // Lift for the row: every other part of the hand stays 2 mm over the
+          // caps, as at rest; the hand never drops below its rest height.
+          if (f) f.rotation.x = 0;
+          placeHand(h, to.setY(0));
+          let clear = Infinity;
+          for (let d = 0; d < 4; d++) if (d !== digit) clear = Math.min(clear, skinKeyClearance(h, boxes, d).clearance);
+          if (Number.isFinite(clear) && clear < 0.002) to.y = 0.002 - clear;
+          placeHand(h, to);
+          // The finger curls onto the cap, 3 mm into its travel, no deeper.
+          if (f) {
+            let lo = 0, hi = 0.45;
+            for (let n = 0; n < 9; n++) { const mid = (lo + hi) / 2; f.rotation.x = -mid;
+              if (skinKeyClearance(h, pressBoxes, digit).clearance >= 0.0004) lo = mid; else hi = mid; }
+            dip = lo;
+          }
+        }
+        if (f) f.rotation.x = 0;
+        placeHand(h, from);
+        return { h, f, digit, index, from, to, dip };
+      }
+      function stopTyping() {
+        for (const h of [model.hands.left, model.hands.right]) {
+          h.typingTween?.kill(); h.typingReturn?.kill(); h.typingTween = h.typingReturn = null;
+          if (h.typingKey !== undefined) model.roomActions.setKey(h.typingKey, 0);
+          h.typeOffset?.set(0, 0, 0); h.digits.forEach(f => { f.rotation.x = 0; });
+        }
+      }
       function pressKey(key,index) {
         if(!state.current.seated || state.current.phase !== 'room' || state.current.activeAnchorId) return;
         callbacks.current.onTypeKey?.(key);
-        const boxes=keySurfaceBoxes(model.keys),center=boxes[index]?.getCenter(new THREE.Vector3());if(!center)return;
-        let h,finger,digit,distance=Infinity;
-        for(const hand of [model.hands.left,model.hands.right])hand.digits.forEach((f,i)=>{
-          const tip=f.localToWorld(f.userData.tip.clone().sub(f.position));const d=(tip.x-center.x)**2+(tip.z-center.z)**2;
-          if(d<distance){distance=d;h=hand;finger=f;digit=i;}
-        });
-        // Solve once against skin and each cap's real top, not a bone tip and
-        // one hardcoded plane. Limit travel to 3mm; 9mm buried the old fingers.
-        h.typingTween?.kill();h.digits.forEach(f=>{f.rotation.x=0;});
+        const plan = planKey(index, keySurfaceBoxes(model.keys)); if (!plan) return;
+        const { h, f, from, to, dip } = plan, off = h.typeOffset, k = { t: 0, press: 0 }, tCurl = POSES.rest.tCurl;
+        h.typingTween?.kill(); h.typingReturn?.kill(); h.digits.forEach(d => { d.rotation.x = 0; });
         if(h.typingKey!==undefined)model.roomActions.setKey(h.typingKey,0);h.typingKey=index;
-        boxes[index].max.y-=.003;let lo=0,hi=.45;
-        for(let n=0;n<9;n++){const mid=(lo+hi)/2;finger.rotation.x=-mid;
-          const {clearance}=skinKeyClearance(h,boxes,digit);if(clearance>=.0004)lo=mid;else hi=mid;
-        }
-        finger.rotation.x=0;const dip=lo,depression={y:0};h.typingTween=gsap.to(depression,{y:.003,duration:.09,repeat:1,yoyo:true,
-          onUpdate(){model.roomActions.setKey(index,depression.y);finger.rotation.x=-dip*depression.y/.003;invalidate();},
-          onComplete(){model.roomActions.setKey(index,0);finger.rotation.x=0;invalidate();}});
+        const move = Math.min(0.12, 0.035 + from.distanceTo(to) * 2.5);
+        const apply = () => {
+          if (state.current.activeAnchorId) { stopTyping(); return; }
+          off.lerpVectors(from, to, k.t); placeHand(h, off);
+          if (f) f.rotation.x = -dip * k.press; else h.pose.tCurl = tCurl + 0.3 * k.press;
+          model.roomActions.setKey(index, 0.003 * k.press); model.hands.update(); invalidate();
+        };
+        h.typingTween = gsap.timeline({ onUpdate: apply, onComplete() {
+          apply(); model.roomActions.setKey(index, 0);
+          // Back to the home row after a pause, not between keys.
+          const back = { t: 1 }, start = off.clone();
+          h.typingReturn = gsap.to(back, { t: 0, delay: 0.45, duration: 0.3, ease: 'power2.inOut', onUpdate() {
+            if (state.current.activeAnchorId) { stopTyping(); return; }
+            off.copy(start).multiplyScalar(back.t); placeHand(h, off); model.hands.update(); invalidate();
+          } });
+          gsap.ticker.wake();
+        } })
+          .to(k, { t: 1, duration: move, ease: 'power2.out' }, 0)
+          .to(k, { press: 1, duration: 0.07, ease: 'power2.in' }, move * 0.6)
+          .to(k, { press: 0, duration: 0.09, ease: 'power2.out' }, move * 0.6 + 0.07);
         gsap.ticker.wake();
       }
       function physicalKey(event) {
         if(event.key==='Escape'||event.key==='Tab'||event.ctrlKey||event.metaKey||event.altKey)return;
         if(event.key.length!==1&&!['Enter','Backspace','ArrowLeft','ArrowRight'].includes(event.key))return;
         if(state.current.activeAnchorId)return;event.preventDefault();
-        const index=KEY_ROWS.join('').indexOf(event.key.toLowerCase());pressKey(event.key,index<0?59:index);
+        const index=keyIndexOf(event.key);if(index>=0)pressKey(event.key,index);
       }
       function finishExtra(id) {
         extraHeld=null;model.hands.reset();model.setHandsVisible(true);host.dataset.actionState='idle';invalidate();
@@ -1011,7 +1094,7 @@ export default function WorkspaceStage({
       function fly() {
         if(director?.active)return;
         if (returningPhone || returningNotebook) return;
-        tween?.kill(); rig.dispose();
+        tween?.kill(); rig.dispose(); stopTyping();
         if(extraHeld){returnExtra(state.current.reducedMotion);return;}
         if (notebookInHand) { returnNotebook(state.current.reducedMotion); return; }
         if (phoneInHand) { returnPhone(state.current.reducedMotion); return; }
@@ -1331,6 +1414,24 @@ export default function WorkspaceStage({
           },
           timeline() { return action || null; },
           keyBoxes(){return keySurfaceBoxes(model.keys).map(boxToPlain);},
+          // Each key pressed at full dip, measured, then put back: is the tip
+          // on the cap, how close the other fingers come to any cap (mm, <0 is
+          // inside), the lift and travel, and both wrists.
+          typeProbe(keys){
+            const boxes=keySurfaceBoxes(model.keys),out=[];stopTyping();
+            for(const key of keys){
+              const index=keyIndexOf(key),plan=index>=0&&planKey(index,boxes);
+              if(!plan){out.push({key,error:'no key'});continue;}
+              const {h,f,digit,to,dip}=plan,box=boxes[index];
+              placeHand(h,to);if(f)f.rotation.x=-dip;else h.pose.tCurl=POSES.rest.tCurl+0.3;model.hands.update();h.hand.updateMatrixWorld(true);
+              const tip=typingTip(h,f),on=tip.x>=box.min.x&&tip.x<=box.max.x&&tip.z>=box.min.z&&tip.z<=box.max.z;
+              let others=Infinity;for(let d=0;d<4;d++)if(d!==digit)others=Math.min(others,skinKeyClearance(h,boxes,d).clearance);
+              out.push({key,hand:h.side<0?'L':'R',digit,on,tipAboveCapMm:+((tip.y-box.max.y)*1000).toFixed(1),othersMm:+(others*1000).toFixed(1),
+                liftMm:+(to.y*1000).toFixed(1),capMm:[Math.round(box.getCenter(new THREE.Vector3()).x*1000),Math.round(box.getCenter(new THREE.Vector3()).z*1000)],tipMm:[Math.round(tip.x*1000),Math.round(tip.z*1000)],travelMm:+(Math.hypot(to.x,to.z)*1000).toFixed(0),wrist:[Math.round(model.hands.left.wristDeg),Math.round(model.hands.right.wristDeg)]});
+              if(f)f.rotation.x=0;h.pose.tCurl=POSES.rest.tCurl;placeHand(h,h.typeOffset);model.hands.update();
+            }
+            invalidate();return out;
+          },
           keyboardSkinContact(){return [model.hands.left,model.hands.right].map(h=>({restLift:h.restLift,...skinKeyClearance(h,keySurfaceBoxes(model.keys))}));},
           bodyAttachment(){return {torsoOffset:model.hands.torsoOffset.toArray(),upperArmLengths:[model.hands.left.sleeve.scale.y,model.hands.right.sleeve.scale.y]};},
           showHands(v) { model.setHandsVisible(!!v); invalidate(); },

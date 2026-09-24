@@ -69,6 +69,16 @@ Done (all on `feat/cutscenes`):
 - **/work:** each demo project has "Try it · …" buttons. On ≥1100 px the demo opens in a sticky panel beside the reading column; narrower, as a full-screen sheet. Web demos load `/apps/<name>/`; phone demos lazy-load the phone's React apps (`PhoneScreen` `embedded` mode). No three.js on /work, asserted in `verify-v3`. The page's overall visual design is unchanged: **owner to give a direction**.
 - **Dev server:** `/apps/<name>/` was served from whichever checkout the server was *started in* (cwd), so the 4175 server started from the main checkout served the main checkout's apps.
 
+- **Phone:** the arm now shows when picking up from the launchpad (render loop hid hands off-seat and never restored them); launchpad/standing pick-up sits first; pick-up retimed to ~3.3 s (1 s reach, 0.2 s beat, 0.45 s lift, 1.1 s bring, 0.55 s zoom; commit `d66bd7a` holds both the arm fix and the retime); fingers kept together (spread 0.35/0.1). Clips: `scripts/record-realtime.mjs`, `scripts/clip-frames.mjs`.
+
+**Left for the next session (not done):**
+1. **Keyboard finger travel: committed as WIP, unverified by eye.** `pressKey` in `WorkspaceStage.jsx` now assigns touch-typing fingers, slides the hand to the key, lifts for higher rows, dips, returns after 0.45 s. `node scripts/probe-typing.mjs` (with `BASE`): 50/52 keys pass (tip on cap, no finger inside a key, wrists 12–25°). Open: (a) instance 70 isn't the backtick (it sits at x=+150 mm), so find the real backtick index by position; (b) space misses its cap by ~4 mm because `planKey` aims with the thumb uncurled; measure the thumb tip with the pressed `tCurl`; (c) confirm 67/68/57/59 really are Enter/Backspace/←/→ by position; (d) record `record-realtime.mjs keyboard` and review frames; (e) run all suites.
+2. **Phone "air":** a real grip needs re-authoring `PHONE_TOP` as an edge pinch (thumb near long edge, fingers far edge), then re-solving `PHONE_ROLL_IN` (`probe-phone-tune.mjs DP=1`) and the held pose. Curling the current poses clips the case (`scripts/probe-phone-wrap.mjs`). Also check "air" on the notebook lift (known float).
+3. **/work visual redesign:** owner to give a direction; the demo panel is done.
+4. **Eco Water:** no facts on file; ask the owner.
+5. **verify-after-hours:** rerun once GitHub's rate limit resets; it failed only on 403s.
+6. **Window lean-out:** future scope (owner).
+
 Test notes: GitHub's unauthenticated API allows 60 requests/hour per IP; a day of suite runs exhausts it and the monitor's activity fetch then logs 403s, failing the "no console errors" checks in `verify-after-hours`/`verify-v3`. Confirmed for the 403s (rate-limit endpoint showed 60/60 used); the earlier one-off 503 is unconfirmed, and `verify-v3` now logs the URL of any 5xx so the next one is named. Not a site bug for normal visitors, who each get their own quota.
 
 ## Owner decisions waiting (2026-09-25)
