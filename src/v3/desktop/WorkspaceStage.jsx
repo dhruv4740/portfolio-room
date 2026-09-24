@@ -378,13 +378,16 @@ export default function WorkspaceStage({
       // curled only as far as the far edge. The side grip sits 4 cm further up
       // the phone so the fingertips clear its top end while the hand turns
       // under (the top grip can't: the forearm would sink into the flat phone).
-      const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.035], r: [0, 0, 0], pose: 'open' };
+      // Fingers together rather than splayed: POSES.open's 0.9 spread fanned
+      // them off the phone. (Curling them clips the case; see probe-phone-wrap.mjs.)
+      const PHONE_FINGERS = { ...POSES.open, spread: 0.35 };
+      const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.035], r: [0, 0, 0], pose: PHONE_FINGERS };
       // Side is the top grip turned 90 degrees about the near long edge.
-      const PHONE_SIDE = { obj: model.phone, p: [-0.0735, 0.0245, -0.005], r: [0, 0, Math.PI / 2], pose: 'open' };
+      const PHONE_SIDE = { obj: model.phone, p: [-0.0735, 0.0245, -0.005], r: [0, 0, Math.PI / 2], pose: PHONE_FINGERS };
       const PHONE_BACK = (() => {
         const y = new THREE.Vector3(0, -1, 0), z = new THREE.Vector3(-Math.cos(0.35), 0, Math.sin(0.35));
         return { obj: model.phone, p: [-0.045, -0.03, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
-          pose: {...POSES.cup,c0:.2,c1:.2,c2:.2,c3:.24} };
+          pose: {...POSES.cup,c0:.2,c1:.2,c2:.2,c3:.24,spread:.1} };
       })();
       const PHONE_LEAN = { x: -0.14, y: -0.08, z: -0.21 }, PHONE_HELD = new THREE.Vector3(0.08, 1.04, 0.05);
       let phoneGrip = 1, phoneVisited = false;
@@ -1416,6 +1419,10 @@ export default function WorkspaceStage({
           // Left-hand skin to the phone body: nearest distance (mm, 0 = touching or inside), vertices inside, wrist bend.
           // Re-pose the left hand at phone grip blend `grip` (0 top, .5 side, 1 back) with other grip offsets (tuning only).
           tunePhone(o, grip) {
+            // Pose options merge onto the authored grip poses, not onto the last probe's.
+            this._phoneBase??={top:PHONE_TOP.pose,side:PHONE_SIDE.pose,back:PHONE_BACK.pose};
+            const named=p=>typeof p==='string'?POSES[p]:p;
+            PHONE_TOP.pose=o.topPose?{...named(this._phoneBase.top),...o.topPose}:this._phoneBase.top;PHONE_SIDE.pose=o.sidePose?{...named(this._phoneBase.side),...o.sidePose}:this._phoneBase.side;PHONE_BACK.pose=o.backPose?{...named(this._phoneBase.back),...o.backPose}:this._phoneBase.back;
             if(o.top)PHONE_TOP.p=o.top;if(o.side)PHONE_SIDE.p=o.side;if(o.back)PHONE_BACK.p=o.back;if(o.backCurl!=null)PHONE_BACK.pose={...PHONE_BACK.pose,c0:o.backCurl,c1:o.backCurl,c2:o.backCurl,c3:o.backCurl+.04};if('follow' in o)model.hands.left.elbowFollow=o.follow;if(o.push)PHONE_ROLL_IN=o.push;
             // The phone and body lean as the pick-up/put-down timelines have them at this grip (same ease and span as the grip tween).
             const ph=model.phone,pos=ph.position.clone(),rx=ph.rotation.x,lean=model.hands.lean.clone(),[px,py,pz]=WORKSPACE.anchors.phone;
@@ -1427,10 +1434,10 @@ export default function WorkspaceStage({
             model.root.updateMatrixWorld(true);
             const h=model.hands.left,mesh=h.skinMesh,p=new THREE.Vector3(),size=WORKSPACE.phoneSize;
             const inverse=model.phone.matrixWorld.clone().invert(),box=new THREE.Box3(new THREE.Vector3(-size.width/2,-size.depth,-size.height/2),new THREE.Vector3(size.width/2,0,size.height/2));
-            let gap=Infinity,inside=0,at=null;const pos=mesh.geometry.attributes.position,si=mesh.geometry.attributes.skinIndex;
-            for(let i=0;i<pos.count;i++){p.fromBufferAttribute(pos,i);mesh.applyBoneTransform(i,p).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);const d=box.distanceToPoint(p);if(d===0)inside++;if(d<gap){gap=d;at=[...p.toArray().map(v=>Math.round(v*1000)),mesh.skeleton.bones[si.getX(i)]?.name];}}
+            let gap=Infinity,inside=0,at=null,near3=0,nearFingers=0;const pos=mesh.geometry.attributes.position,si=mesh.geometry.attributes.skinIndex;
+            for(let i=0;i<pos.count;i++){p.fromBufferAttribute(pos,i);mesh.applyBoneTransform(i,p).applyMatrix4(mesh.matrixWorld).applyMatrix4(inverse);const d=box.distanceToPoint(p);if(d===0)inside++;if(d<.003){near3++;const b=si.getX(i);if(b>=2&&b<=13)nearFingers++;}if(d<gap){gap=d;at=[...p.toArray().map(v=>Math.round(v*1000)),mesh.skeleton.bones[si.getX(i)]?.name];}}
             const hand=h.hand.getWorldPosition(new THREE.Vector3()).applyMatrix4(inverse).toArray().map(v=>Math.round(v*1000));
-            return {gapMm:+(gap*1000).toFixed(1),inside,wrist:Math.round(h.wristDeg),wristR:Math.round(model.hands.right.wristDeg),grip:+phoneGrip.toFixed(3),hand,at};
+            return {gapMm:+(gap*1000).toFixed(1),inside,near3,nearFingers,wrist:Math.round(h.wristDeg),wristR:Math.round(model.hands.right.wristDeg),grip:+phoneGrip.toFixed(3),hand,at};
           },
           phoneGripGeometry() {
             model.root.updateMatrixWorld(true);
