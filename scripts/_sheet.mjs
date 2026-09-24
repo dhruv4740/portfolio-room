@@ -1,0 +1,11 @@
+import { readdir, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
+import { chromium } from 'playwright';
+const [dir, prefix, out, cols = 4] = process.argv.slice(2);
+const files = (await readdir(dir)).filter(f => f.startsWith(prefix) && f.endsWith('.png')).sort();
+const html = resolve(dir, '_sheet.html');
+await writeFile(html, `<style>body{margin:0;background:#111;color:#ddd;font:12px system-ui}main{display:grid;grid-template-columns:repeat(${cols},1fr);gap:4px;padding:4px}figure{margin:0}img{width:100%;display:block}</style><main>${files.map(f => `<figure><img src="${f}"><figcaption>${f}</figcaption></figure>`).join('')}</main>`);
+const b = await chromium.launch(); const s = await b.newPage({ viewport: { width: 1600, height: 400 } });
+await s.goto(pathToFileURL(html).href); await s.waitForLoadState('load');
+await s.screenshot({ path: out, fullPage: true }); await b.close(); console.log(files.length);
