@@ -882,6 +882,10 @@ const css = `
 .mumbai-readout { position:fixed; right:var(--gutter); bottom:14px; z-index:var(--z-panel); margin:0; padding:5px 9px; background:rgba(10,12,13,.72); color:#b2b7b4; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
 .tour-caption { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); z-index:calc(var(--z-panel) + 4); width:min(640px, calc(100vw - 32px)); padding:14px 18px; border:1px solid #555b59; border-left:2px solid var(--signal); background:rgba(13,16,17,.92); color:var(--bone); display:flex; gap:16px; align-items:center; justify-content:space-between; }
 .tour-caption p { margin:0; font-size:15px; line-height:1.45; }
+/* The phone stage (fixed, z-index 100) covered the caption on the tour's phone steps.
+   Above it, and in the free column right of the phone where there is room. */
+.scan-root:has(.phone-presentation--stage) .tour-caption { z-index:101; }
+@media (min-width:1100px) { .scan-root:has(.phone-presentation--stage) .tour-caption { left:auto; right:max(24px, calc(50% - 543px)); top:50%; bottom:auto; transform:translateY(-50%); width:300px; flex-direction:column; align-items:flex-start; } }
 .tour-caption button { flex:none; color:#9ea39f; font-size:10.5px; letter-spacing:.12em; min-height:32px; }
 .tour-end { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:calc(var(--z-panel) + 4); padding:26px 30px; border:1px solid #555b59; border-top:2px solid var(--signal); background:#0d1011; color:var(--bone); text-align:center; }
 .tour-end p { margin:0 0 16px; color:#b7b9b2; font-size:11px; letter-spacing:.18em; }

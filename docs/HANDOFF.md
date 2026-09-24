@@ -106,7 +106,7 @@ The owner reported most of these after using the site. A problem marked **likely
      - OS boot on entering (517–550 ms twice, then 283–300 ms);
      - leaving the monitor (367–400 ms).
    - **First-load stall (not being fixed, the owner's call):** settling took 18.4–20.6 s after the room appeared in 5 runs this session.
-   - GPU cost per frame (`measure-gpu.mjs`, auto tier): 11.3 ms standing, 8.5 ms seated, 10.3 ms seated with the hands hidden. Steady-state GPU load isn't the lag.
+   - GPU cost per frame (`measure-gpu.mjs`, auto tier; measured *after* the warm-up and telemetry commits, not a pre-fix baseline): 11.3 ms standing, 8.5 ms seated, 10.3 ms seated with the hands hidden. Steady-state GPU load isn't the lag.
 
 **Fixes (2026-09-25) and the same measurements after:**
    - **Shader warm-up** (`WorkspaceStage.jsx`, `deskContactShadows.js` `warm()`):
@@ -118,6 +118,8 @@ The owner reported most of these after using the site. A problem marked **likely
        - tour worst frame: 567 ms (was 2149–2650).
      - The remaining ~240 ms of `getProgramInfoLog` is three.js checking each warmed program on its first draw (`debug.checkShaderErrors`). Turning that off would also change the first-load stall, which is the owner's call, so it stays on.
      - First-load settle after the change: 17.4–20.6 s, the same range as before. The warm-up starts only after settle.
+     - The warm-up itself, measured with every frame logged from page start and no input: on the launchpad it costs one 117 ms frame about 1.2 s before it reports ready; every other frame is 17–33 ms. So the 2.25 s freeze became a ~0.1 s hitch while the visitor is idle.
+     - If the room opens straight into the seat (`/#/room/explore`, or a sit during the stall), the hands are drawn before the warm-up can run, and frames just after the stall still reach 150–533 ms. The warm-up doesn't help that path.
    - **Telemetry isolated** (`Scan.jsx` `LiveTelemetry`): the stats go straight to the HUD, so `Scan` no longer re-renders every 300 ms. React dev time over the tour went from 1962 to 737 ms; per monitor entry/exit, from 250–340 to 55–93 ms.
    - **Pending OS app opens are queued** (`DhruvOSScreen.jsx`). A single slot dropped every app requested before the OS reported ready except the last one. See `verify-tour` below.
    - **Not fixed:**
@@ -146,6 +148,7 @@ These were broken or made worse by the true-scale port. Its hand and camera cons
    - During the drawer beat the head leans out over the drawer (`DRAWER_HEAD`), so the upper arm no longer fills the frame.
    - New opt-in `elbowFollow` in `seatedHands.js`: the elbow goes where the hand's wrist axis points. Before it, wrists were bent 107–135° through the reach.
    - Measured with `drawerClip`: 0 skin vertices in the drawer or desk at every sampled frame. The wrist stays at 1–25° except brief 64–70° moments while the page travels between the drawer and the face.
+   - **Correction (2026-09-25 sweep):** the right wrist reaches **80°** at 0.21 s into the put-down (`obj-drawer-s4-return-01.png`, a visible sideways kink while the hand holds the page's edge). It's 49° held and 58–59° at other moments. Not re-tuned.
 6. **Phone speed: fixed.** The pick-up `timeScale` is gone (it was 1.55× on a first visit, 3.2× on a repeat), so pick-up and put-down now play at the same 1× pace.
    - Measured (`measure-phone-timing.mjs`, click → zoomed / Escape → desk): 2.50 s / 2.36 s on a first visit, 2.34 s / 2.36 s on a repeat. Before: 1.85 / 2.41 s and 1.17 / 2.37 s.
 7. **Phone gap and roll: fixed.** Cause: the grip offsets were authored for a larger phone. The true-size phone is 7.8 cm wide, and the old top grip put the palm 12.5 cm from its centre.
@@ -214,6 +217,7 @@ The desk top is 35 mm thick and depth is measured to the nearest face, so 16 mm 
   - Fixed: the effect is keyed by `location.key`, and the select waits for the seat to reach the stage instead of a fixed 400 ms timer that could fire right after a stall.
   - `verify-deeplinks` has no `/room/<object>` case; checked with a probe, cold and warm, on dev and prod.
 - **/work:** renders and loads no three.js (`v1-work.png`).
+- **Tour captions on the phone steps: fixed.** The phone stage (fixed, `z-index: 100`) covered the tour caption and its SKIP control for two of the seven steps ("The phone runs my Android apps…" and "Expense Tracker…"). It now sits above the stage, in the free column right of the phone (≥1100 px wide), mirroring the walkthrough panel on the left (`surfaces/tour-47s.png`).
 - **Cold open, a look question for the owner** (`SHEET-coldopen.png`): the launchpad (name plus six options) and the Monitor/Phone markers are on screen for the whole arrival fly-in, from 1.2 s. The first-load stall also blocks the page during the fly-in: the screenshots show a 14.7 s gap.
 - **Favicon:** still the default Vite logo (`public/favicon.svg`). It needs an owner-supplied mark.
 
