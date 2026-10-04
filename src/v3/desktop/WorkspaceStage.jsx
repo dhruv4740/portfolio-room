@@ -72,6 +72,8 @@ export default function WorkspaceStage({
   useEffect(() => {
     const host = hostRef.current;
     let renderer, controls, model, resizeObserver, tween, rig, action, afterHours, director;
+    // Nothing is drawn until every program the room needs is compiled (see below), so a first draw never blocks the page on shader compile.
+    let gateOpen = false, revealed = Promise.resolve();
     let extraHeld = null;
     let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
     // null | 'in' | 'held' | 'out'. While set, PhoneScreen tracks the display.
@@ -82,6 +84,10 @@ export default function WorkspaceStage({
       renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
       renderer.setClearColor('#0a0a0b');
+      // checkShaderErrors reads the link log of every program on its first draw, which
+      // blocks the main thread for the program's whole D3D link (about 60 ms each here).
+      // Shader errors are caught in dev and by the suites on the dev server.
+      renderer.debug.checkShaderErrors = !import.meta.env.PROD;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       // Furniture and lights are static: camera moves do not invalidate shadows.
@@ -272,6 +278,7 @@ export default function WorkspaceStage({
         // in view. A distance gate showed it whenever a reach leaned the
         // camera away from the seat (the pen view filled with hair).
         model.figure.head.visible = false;
+        if (!gateOpen) return;
         afterHours?.update(state.current.reducedMotion ? 0 : performance.now()/1000,gov.getStats().medianMs||0);
         renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); updatePhoneAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
@@ -1325,21 +1332,49 @@ export default function WorkspaceStage({
       });
       const idle = window.requestIdleCallback || ((cb) => setTimeout(cb, 1500));
       idle(() => loadPhoneScreen().then(() => setPhoneWanted(true), () => {}), { timeout: 4000 });
-      // three.js compiles a shader the first time something using it is drawn.
-      // The hands and seated body are hidden until the first sit, so their
-      // programs compiled then, synchronously: a 2.1-2.7 s freeze on the first
-      // sit or the first exit from the monitor. Once the load has settled
-      // (30 frames under 50 ms), compile everything not yet drawn in parallel
-      // (KHR_parallel_shader_compile), off the main thread.
-      let warmFrames = 0, warmLast = performance.now();
-      const warm = (now) => {
+      // three.js compiles a shader the first time something using it is drawn,
+      // synchronously: about 5.6 s of frozen page on this iGPU, in two bursts
+      // (the base room, then the late assets). Hold the first draw until the
+      // assets are in and every program (hidden hands and body included) is
+      // compiled in parallel off the main thread (KHR_parallel_shader_compile),
+      // then fade the whole room in at once. The launchpad is DOM and stays
+      // responsive meanwhile.
+      renderer.domElement.style.opacity = '0';
+      revealed = Promise.race([
+        afterHours.ready.then(() => Promise.all([renderer.compileAsync(scene, camera), afterHours.warmContacts()])).then(() => renderer.compileAsync(scene, camera)).then(async () => {
+          // compileAsync misses the programs three builds at draw time (different light state), and those compile
+          // synchronously (~125 ms each on ANGLE/D3D11). Draw the scene one material at a time, hidden, one task per
+          // material, so the cost lands as small hitches while the visitor reads the launchpad instead of one freeze.
+          const byMat = new Map();
+          scene.traverse(o => { const m = o.material; if (m && !Array.isArray(m) && !byMat.has(m)) byMat.set(m, o); });
+          const all = []; scene.traverse(o => all.push([o, o.visible]));
+          const shown = new Set();
+          const chain = o => { for (let n = o; n; n = n.parent) shown.add(n); };
+          const mats = [...byMat.values()];
+          const lights = all.map(([o]) => o).filter(o => o.isLight);
+          try {
+            for (const target of mats) {
+              if (disposed || gateOpen) return;
+              shown.clear(); chain(target); lights.forEach(chain);
+              for (const [o] of all) o.visible = shown.has(o);
+              renderer.render(scene, camera);
+              await new Promise(r => setTimeout(r, 0));
+            }
+          } finally {
+            for (const [o, v] of all) o.visible = v;
+          }
+        }),
+        new Promise(r => setTimeout(r, 20000)),
+      ]).catch(() => {}).then(() => {
         if (disposed) return;
-        warmFrames = now - warmLast < 50 ? warmFrames + 1 : 0; warmLast = now;
-        if (warmFrames < 30) { requestAnimationFrame(warm); return; }
-        Promise.all([renderer.compileAsync(scene, camera), afterHours?.warmContacts()])
-          .then(() => { if (!disposed) host.dataset.shadersWarm = 'ready'; }, () => {});
-      };
-      requestAnimationFrame(warm);
+        gateOpen = true;
+        const fade = !state.current.reducedMotion;
+        renderer.domElement.style.transition = fade ? 'opacity .7s ease' : 'none';
+        renderer.domElement.style.opacity = '1';
+        host.dataset.shadersWarm = 'ready'; host.dataset.roomRevealed = '1';
+        window.dispatchEvent(new CustomEvent('workspace:revealed'));
+        invalidate();
+      });
       let entryPlayed = false;
       function startEntryPower() {
         if (entryPlayed) return;
@@ -1367,7 +1402,7 @@ export default function WorkspaceStage({
       }
       api.current = { fly, refresh, startEntryPower, showFocusLock, phoneHome,
         arrival(token){
-          if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion,coldOpenCue(),Promise.race([afterHours?.ready,new Promise(r=>setTimeout(r,1500))]));}
+          if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion,coldOpenCue(),revealed);}
           else if(director.active){director.cancel();if(state.current.phase==='room'&&!state.current.seated&&!state.current.activeAnchorId)place(home);invalidate();}
         },
         setSky: (s) => model.setSky(s), clearNotes: () => { model.clearNotes(); invalidate(); } };
@@ -1375,6 +1410,7 @@ export default function WorkspaceStage({
         const box3 = new THREE.Box3();
         const boxToPlain = (b) => ({ min: b.min.toArray(), max: b.max.toArray() });
         window.__v3test = {
+          renderer, scene, camera,
           arrival:()=>director.snapshot(),
           // Test-only free camera. Several room assets (the chair, the
           // fixture's underside) sit outside every authored view, so asset
