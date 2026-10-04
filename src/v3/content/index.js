@@ -25,7 +25,7 @@ export const contact = {
   twitter: '',  // TODO(dhruv): empty hides the link
   // Drop the PDF at public/resume.pdf, then set this to '/resume.pdf'.
   // Empty hides the download button, so a missing file can never 404.
-  resume: '',
+  resume: '/resume.pdf',
 };
 
 export const education = {

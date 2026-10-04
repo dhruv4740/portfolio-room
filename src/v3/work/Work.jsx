@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../tokens.css';
-import { identity, contact, skills, projects } from '../content/index.js';
+import { identity, contact, education, experience, achievements, skills, projects } from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 
 /** Resolve a skill's `proof` ids to the project names they reference.
@@ -34,6 +34,88 @@ const css = `
     top: 1rem;
     outline-offset: 0;
   }
+
+
+  /* Readable secondary text: --dim on --void is ~3.7:1; this is ~7:1. Scoped to /work. */
+  .work-root { --dim: #9C9CA4; }
+
+  .work-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.75rem;
+  }
+
+  .work-action {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.7rem 1.1rem;
+    border: var(--hair) solid var(--faint);
+    font-family: var(--font-mono);
+    font-size: var(--t-data);
+    letter-spacing: var(--track-data);
+    text-transform: uppercase;
+    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease), border-color var(--d-feedback) var(--ease);
+  }
+
+  .work-action:hover,
+  .work-action:focus-visible { border-color: var(--dim); color: var(--bone); }
+
+  .work-action--primary { background: var(--signal); border-color: var(--signal); color: var(--void); }
+  .work-action--primary:hover,
+  .work-action--primary:focus-visible { background: var(--bone); border-color: var(--bone); color: var(--void); }
+
+  .work-wins {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    list-style: none;
+    margin-top: 1.5rem;
+  }
+
+  .work-wins li {
+    font-family: var(--font-mono);
+    font-size: var(--t-data);
+    letter-spacing: 0.06em;
+    color: var(--bone);
+    border: var(--hair) solid var(--faint);
+    padding: 0.35rem 0.65rem;
+  }
+
+  .work-wins li span { color: var(--signal); margin-right: 0.5em; text-transform: uppercase; }
+
+  /* ---- experience / education ----------------------------------------------- */
+
+  .work-timeline { list-style: none; display: flex; flex-direction: column; gap: 1.5rem; }
+
+  .work-job { display: grid; grid-template-columns: 9.5rem 1fr; gap: 0.25rem 1.5rem; }
+  .work-job-when { color: var(--dim); padding-top: 0.2rem; }
+  .work-job-role { font-size: 1.15rem; font-weight: 500; }
+  .work-job-org { color: var(--dim); }
+  .work-job-detail { margin-top: 0.4rem; max-width: 62ch; }
+
+  @media (max-width: 640px) {
+    .work-job { grid-template-columns: 1fr; }
+  }
+
+  /* ---- project notes fold ---------------------------------------------------- */
+
+  .work-more { margin-top: 1rem; border-top: var(--hair) solid var(--faint); }
+  .work-more > summary {
+    cursor: pointer;
+    padding: 0.8rem 0;
+    font-family: var(--font-mono);
+    font-size: var(--t-data);
+    letter-spacing: var(--track-data);
+    text-transform: uppercase;
+    color: var(--dim);
+    list-style: none;
+  }
+  .work-more > summary::-webkit-details-marker { display: none; }
+  .work-more > summary::before { content: '+ '; color: var(--signal); }
+  .work-more[open] > summary::before { content: '− '; }
+  .work-more > summary:hover,
+  .work-more > summary:focus-visible { color: var(--bone); }
 
   .work-root {
     background: var(--void);
@@ -649,85 +731,58 @@ export default function Work() {
               <h1 className="work-statement">{identity.statement}</h1>
               {identity.tagline && <p className="mono work-tagline">{identity.tagline}</p>}
 
+              <ul className="work-wins" aria-label="Highlights">
+                {achievements.map((a) => (
+                  <li key={a.id}><span>{a.result}</span>{a.label.split(' — ')[0].split(' (')[0]}</li>
+                ))}
+              </ul>
+
               {hasContact && (
-                <ul className="work-contact-list" aria-label="Contact">
+                <div className="work-actions" aria-label="Contact">
+                  {contact.resume && (
+                    <a className="work-action work-action--primary" href={contact.resume} target="_blank" rel="noopener noreferrer">
+                      Résumé (PDF)
+                    </a>
+                  )}
                   {contact.email && (
-                    <li>
-                      <a className="mono" href={`mailto:${contact.email}`}>
-                        {contact.email}
-                      </a>
-                    </li>
+                    <a className="work-action" href={`mailto:${contact.email}`}>Email</a>
                   )}
                   {contact.github && (
-                    <li>
-                      <a
-                        className="mono"
-                        href={contact.github}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {contact.githubLabel || contact.github}
-                      </a>
-                    </li>
+                    <a className="work-action" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
                   )}
                   {contact.linkedin && (
-                    <li>
-                      <a
-                        className="mono"
-                        href={contact.linkedin}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        LinkedIn
-                      </a>
-                    </li>
+                    <a className="work-action" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
                   )}
                   {contact.twitter && (
-                    <li>
-                      <a
-                        className="mono"
-                        href={contact.twitter}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Twitter
-                      </a>
-                    </li>
+                    <a className="work-action" href={contact.twitter} target="_blank" rel="noopener noreferrer">Twitter</a>
                   )}
-                  {contact.resume && (
-                    <li>
-                      <a
-                        className="mono"
-                        href={contact.resume}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        Resume
-                      </a>
-                    </li>
-                  )}
-                </ul>
+                </div>
               )}
             </section>
 
-            <section className="work-room" aria-labelledby="work-room-heading">
-              <div className="work-room-panel">
-                <h2 id="work-room-heading" className="work-section-head">
-                  Full 3D room
-                </h2>
-                <p className="work-room-copy">
-                  There is also a modeled 3D workspace — desk, monitor, notebook — that you orbit
-                  and click into. This page is the fast, GPU-free path; that one needs a real
-                  graphics card.
-                </p>
-                <Link className="work-room-cta" to="/">
-                  Enter the 3D room <span aria-hidden="true">&rarr;</span>
-                </Link>
-                <p className="mono work-room-note">
-                  Needs a hardware GPU. If your device can&rsquo;t run it, you&rsquo;ll land back
-                  here automatically.
-                </p>
-              </div>
+            <section className="work-section" aria-labelledby="work-experience-heading">
+              <h2 id="work-experience-heading" className="work-section-head">
+                Experience &amp; education
+              </h2>
+              <ol className="work-timeline">
+                {experience.map((job) => (
+                  <li key={job.id} className="work-job">
+                    <span className="mono work-job-when">{job.from} &ndash; {job.to}</span>
+                    <div>
+                      <h3 className="work-job-role">{job.role}</h3>
+                      <p className="work-job-org">{job.org}{job.note ? ` · ${job.note}` : ''}</p>
+                      {job.detail && <p className="work-job-detail">{job.detail}</p>}
+                    </div>
+                  </li>
+                ))}
+                <li className="work-job">
+                  <span className="mono work-job-when">{education.year}</span>
+                  <div>
+                    <h3 className="work-job-role">{education.degree}</h3>
+                    <p className="work-job-org">{education.school}</p>
+                  </div>
+                </li>
+              </ol>
             </section>
 
             <section className="work-section" aria-labelledby="work-projects-heading">
@@ -780,18 +835,23 @@ export default function Work() {
                         </ul>
                       )}
 
-                      {project.decision && (
-                        <div className="work-note">
-                          <span className="mono work-note-label">Decision</span>
-                          <p>{project.decision}</p>
-                        </div>
-                      )}
+                      {(project.decision || project.broke) && (
+                        <details className="work-more">
+                          <summary>Engineering notes</summary>
+                        {project.decision && (
+                          <div className="work-note">
+                            <span className="mono work-note-label">Decision</span>
+                            <p>{project.decision}</p>
+                          </div>
+                        )}
 
-                      {project.broke && (
-                        <div className="work-note">
-                          <span className="mono work-note-label">What broke</span>
-                          <p>{project.broke}</p>
-                        </div>
+                        {project.broke && (
+                          <div className="work-note">
+                            <span className="mono work-note-label">What broke</span>
+                            <p>{project.broke}</p>
+                          </div>
+                        )}
+                        </details>
                       )}
 
                       {hasLinks && (
@@ -846,6 +906,23 @@ export default function Work() {
                   );
                 })}
               </ul>
+            </section>
+            <section className="work-room" aria-labelledby="work-room-heading">
+              <div className="work-room-panel">
+                <h2 id="work-room-heading" className="work-section-head">
+                  The 3D room
+                </h2>
+                <p className="work-room-copy">
+                  The same projects, on a desk you can walk up to: a computer and a phone that run them.
+                </p>
+                <Link className="work-room-cta" to="/">
+                  Enter the 3D room <span aria-hidden="true">&rarr;</span>
+                </Link>
+                <p className="mono work-room-note">
+                  Needs a hardware GPU. If your device can&rsquo;t run it, you&rsquo;ll land back
+                  here automatically.
+                </p>
+              </div>
             </section>
           </main>
 
