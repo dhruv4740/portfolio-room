@@ -79,7 +79,7 @@ if (scenario === 'window') {
   await p.evaluate(() => { const s = performance.now(); window.__beats = []; setInterval(() => { const f = document.querySelector('iframe')?.contentDocument;
     window.__beats.push([Math.round(performance.now() - s), document.querySelector('[data-testid="tour-caption"] p')?.textContent?.slice(0, 24) || (document.querySelector('[data-testid="tour-end"]') ? 'END' : null),
       document.querySelector('.scan-root')?.dataset.entranceState, [...(f?.querySelectorAll('[id^=win-body-]') || [])].map(e => e.id.slice(9)).join(','), document.querySelector('.phone-screen')?.dataset.app || null]); }, 250); });
-  results.push(await measure('tour', () => p.keyboard.press('5'), () => p.locator('[data-testid="tour-end"]').waitFor({ timeout: 90000 }), 500));
+  results.push(await measure('tour', () => p.keyboard.press('4'), () => p.locator('[data-testid="tour-end"]').waitFor({ timeout: 90000 }), 500));
   const beats = await p.evaluate(() => window.__beats);
   // Only the changes.
   const changes = beats.filter((x, i) => !i || JSON.stringify(x.slice(1)) !== JSON.stringify(beats[i - 1].slice(1)));

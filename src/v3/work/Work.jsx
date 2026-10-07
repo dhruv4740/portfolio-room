@@ -712,6 +712,7 @@ const css = `
   .work-bullets { margin: 0.9rem 0 0; padding-left: 1.1rem; color: var(--dim); }
   .work-bullets li { margin: 0.3rem 0; }
 
+  .work-project-shot { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; object-position: top; margin-bottom: 1rem; border: var(--hair) solid var(--faint); }
   .work-project-summary { margin: 0.5rem 0 0; font-size: 1.05rem; }
   .work-project-detail { margin: 0.4rem 0 0; color: var(--dim); }
   .work-project-badge { margin: 0.5rem 0 0; color: var(--signal); font-size: var(--t-data); }
@@ -878,6 +879,8 @@ const css = `
   .work-footer a:first-child { color: var(--bone); }
 `;
 
+const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
+
 export default function Work() {
   const mainRef = useRef(null);
   // { id, index } of the open demo; the trigger gets focus back on close.
@@ -903,6 +906,9 @@ export default function Work() {
     const ordinal = String(index + 1).padStart(2, '0');
     return (
       <li key={project.id} className="work-project">
+        {!compact && PREVIEWS[project.id] && (
+          <img className="work-project-shot" src={PREVIEWS[project.id]} alt={`${project.name} screenshot`} loading="lazy" width="780" height="520" />
+        )}
         <div className="work-project-meta mono">
           <span className="work-project-index">{ordinal}/{String(total).padStart(2, '0')}</span>
           <span>{project.year}</span>

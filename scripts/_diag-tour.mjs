@@ -12,7 +12,7 @@ for (let run = 1; run <= RUNS; run++) {
   await p.evaluate(() => { const s = performance.now(); window.__log = []; const f = () => { const fr = document.querySelector('iframe'), d = fr?.contentDocument, r = document.querySelector('.scan-root');
     window.__log.push([Math.round(performance.now() - s), location.hash, r?.dataset.entranceState, r?.dataset.seated, r?.dataset.overview, fr ? (fr.dataset.ready || 'mounted') : '-', [...(d?.querySelectorAll('[id^=win-body-]') || [])].map(e => e.id.slice(9)).join(','), document.querySelector('[data-testid="tour-caption"] p')?.textContent?.slice(0, 18) || (document.querySelector('[data-testid="tour-end"]') ? 'END' : '')]); };
     setInterval(f, 250); });
-  await p.keyboard.press('5');
+  await p.keyboard.press('4');
   await p.waitForTimeout(62000);
   const log = await p.evaluate(() => window.__log);
   const ok = log.some(x => x[2] === 'inside' && x[6].includes('crisiswatch')) && log.some(x => x[6].includes('fraud'));

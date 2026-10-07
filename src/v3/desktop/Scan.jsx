@@ -833,9 +833,9 @@ export default function Scan() {
           <p className="launchpad-role mono">{identity.role} · {identity.location}</p>
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
-            <a className="launchpad-primary" href="/work/" onClick={cancelArrival}>
+            <Link className="launchpad-primary" to="/work" onClick={cancelArrival}>
               <span className="mono">RÉSUMÉ &amp; WORK →</span><small>One page: projects, experience, résumé PDF · 30 s</small>
-            </a>
+            </Link>
             <button className="launchpad-secondary" data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>
               <span className="mono">TRY MY LIVE APPS</span><small>Run the real web apps on the computer · ~3 min</small>
             </button>
