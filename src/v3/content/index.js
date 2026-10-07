@@ -11,7 +11,7 @@ export const identity = {
   name: 'Dhruv Kothari',
   role: 'Full-stack developer',
   location: 'Mumbai, India',
-  tagline: 'Third-year IT student. Growth intern at Blink.new (YC).',
+  tagline: 'Third-year IT student. Previously growth intern at Blink.new (YC). Open to internships.',
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
     'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',

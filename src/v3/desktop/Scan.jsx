@@ -187,6 +187,27 @@ export default function Scan() {
   // The monitor anchor is the one that opens the embedded OS.
   const monitorIsActive = activeAnchor?.ref === 'lab';
 
+  // Room-dependent launchpad actions clicked before the room is revealed wait for it
+  // (a dead click would look broken) and show a short "preparing" line meanwhile.
+  const [roomRevealed, setRoomRevealed] = useState(false);
+  const [queuedAction, setQueuedAction] = useState(null);
+  const queued = useRef(null);
+  useEffect(() => {
+    const open = () => {
+      setRoomRevealed(true);
+      const q = queued.current; queued.current = null; setQueuedAction(null);
+      if (q) q.handler({ currentTarget: q.button, preventDefault() {} });
+    };
+    if (document.querySelector('.workspace-stage')?.dataset.roomRevealed === '1') open();
+    window.addEventListener('workspace:revealed', open);
+    return () => window.removeEventListener('workspace:revealed', open);
+  }, []);
+  const gate = (handler) => (event) => {
+    if (roomRevealed) return handler(event);
+    queued.current = { handler, button: event.currentTarget };
+    setQueuedAction(event.currentTarget?.dataset?.launchpadAction || 'pending');
+  };
+
   const handleWorkspaceReady = useCallback(() => {
     // Keep the old persistent intro flag for existing harnesses and returning
     // visitors, while the cold open itself is once per visitor.
@@ -806,13 +827,13 @@ export default function Scan() {
           <p className="launchpad-role mono">{identity.role} · {identity.location}</p>
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
-            <button data-launchpad-action="desktop-projects" onClick={handleLaunchDesktop}>
+            <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>
               <kbd className="mono">1</kbd><span className="mono">TRY MY PROJECTS</span><small>Run the real web apps on the computer · ~3 min</small>
             </button>
-            <button data-launchpad-action="mobile-projects" onClick={handleOpenPhone}>
+            <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>
               <kbd className="mono">2</kbd><span className="mono">PHONE APPS</span><small>Try the Android apps on the phone · ~2 min</small>
             </button>
-            <button data-launchpad-action="explore-room" onClick={handleExploreRoom}>
+            <button data-launchpad-action="explore-room" onClick={gate(handleExploreRoom)}>
               <kbd className="mono">3</kbd><span className="mono">EXPLORE THE ROOM</span><small>Play with everything on the desk · open-ended</small>
             </button>
             <button data-launchpad-action="recruiter" onClick={handleRecruiter}>
@@ -821,10 +842,11 @@ export default function Scan() {
             <button data-launchpad-action="about" onClick={() => setAboutOpen(true)}>
               <kbd className="mono">5</kbd><span className="mono">ABOUT ME</span><small>Who I am, where I've worked, what I've won · 1 min</small>
             </button>
-            <button data-launchpad-action="tour" onClick={startTour}>
+            <button data-launchpad-action="tour" onClick={gate(startTour)}>
               <kbd className="mono">6</kbd><span className="mono">GUIDED TOUR</span><small>Sit back: the room shows itself · 60 s</small>
             </button>
           </div>
+          {queuedAction && <p className="launchpad-pending mono" role="status">PREPARING THE ROOM… YOUR CHOICE STARTS AUTOMATICALLY</p>}
           <nav className="launchpad-links mono" aria-label="Portfolio links">
             <Link to="/work" onClick={cancelArrival}>WORK</Link>
             <a href={contact.github} target="_blank" rel="noreferrer">GITHUB</a>
@@ -1034,6 +1056,7 @@ const css = `
 .about-close { position:absolute; top:14px; right:14px; color:#b7b9b2; font-size:11px; letter-spacing:.1em; min-height:32px; }
 .about-links { display:flex; gap:20px; margin-top:22px; font-size:12px; letter-spacing:.1em; }
 .about-links a { color:var(--bone); }
+.launchpad-pending { top:auto; bottom:28px; margin:0; color:#d3d4cc; font-size:11px; letter-spacing:.14em; text-shadow:0 1px 10px #000; }
 .launchpad-links { top:36px; left:auto; right:var(--gutter); display:flex; gap:24px; font-size:12px; letter-spacing:.1em; pointer-events:auto; }
 .launchpad-links a,.launchpad-links button { color:var(--bone); min-height:32px; }
 @keyframes launchpad-in { from { opacity:0; } }
