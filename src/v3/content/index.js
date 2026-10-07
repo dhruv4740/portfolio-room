@@ -85,7 +85,7 @@ export const achievements = [
   {
     id: 'saiss',
     label: 'Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)',
-    result: 'Finalist',
+    result: 'Top 5 in problem statement',
     year: 2026,
   },
 ];
@@ -157,9 +157,9 @@ export const projects = [
     name: 'DarkSentinel',
     year: 2026,
     kind: 'research',
-    tagline: 'Darknet threat monitoring. Hackathon finalist.',
+    tagline: 'Darknet threat monitoring. Top 5 in problem statement.',
     description:
-      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it reached the finals. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
+      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it placed top 5 in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
     decision:
       'I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
     broke:
@@ -188,10 +188,11 @@ export const projects = [
   },
   {
     id: 'fraud',
-    name: 'Fraud Detection Dashboard',
+    name: 'F-Shield',
     year: 2025,
     kind: 'research',
-    tagline: 'Innovathon 2025 winner.',
+    tagline: 'Fraud detection for small businesses.',
+    badge: 'Winner, Innovathon 2025',
     description:
       'Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Around 85% accuracy on the test set.',
     decision: '',
@@ -242,6 +243,20 @@ export const projects = [
     tech: ['Kotlin', 'Android'],
     links: { live: '', github: '' },
   },
+  {
+    id: 'cellbook',
+    name: 'Cellbook',
+    year: 2026,
+    kind: 'product',
+    tagline: 'A desktop spreadsheet app modelled on Excel.',
+    description: '',
+    decision: '',
+    broke: '',
+    summary: 'A desktop spreadsheet app modelled on Excel, with the same ribbon, menus and formulas.',
+    detail: 'The formula engine is HyperFormula and the grid is drawn on a canvas.',
+    tech: ['Electron', 'HyperFormula'],
+    links: { live: '', github: '' },
+  },
 ];
 
 // Anchors are authored against the modeled room. `ref` points at a project id,
@@ -273,3 +288,6 @@ export const anchors = [
 // /work shows these first, in the resume's order, as full cards; every other
 // listed project goes under "More projects".
 export const featuredProjectIds = ['focuslock', 'portfolio3d', 'darksentinel', 'blackout'];
+
+// Order of the compact "More projects" list on /work.
+export const moreProjectIds = ['fraud', 'crisiswatch', 'cellbook', 'expense', 'basket', 'ecowater'];

@@ -100,7 +100,7 @@ export default Object.freeze({
     {
       "id": "saiss",
       "label": "Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)",
-      "result": "Finalist",
+      "result": "Top 5 in problem statement",
       "year": 2026
     }
   ],
@@ -254,8 +254,8 @@ export default Object.freeze({
       "year": 2026,
       "kind": "research",
       "type": "SIDE QUEST",
-      "tagline": "Darknet threat monitoring. Hackathon finalist.",
-      "description": "Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it reached the finals. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.",
+      "tagline": "Darknet threat monitoring. Top 5 in problem statement.",
+      "description": "Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it placed top 5 in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.",
       "decision": "I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.",
       "broke": "A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.",
       "tech": [
@@ -298,11 +298,11 @@ export default Object.freeze({
     },
     {
       "id": "fraud",
-      "name": "Fraud Detection Dashboard",
+      "name": "F-Shield",
       "year": 2025,
       "kind": "research",
       "type": "SIDE QUEST",
-      "tagline": "Innovathon 2025 winner.",
+      "tagline": "Fraud detection for small businesses.",
       "description": "Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Around 85% accuracy on the test set.",
       "decision": "",
       "broke": "",
@@ -375,6 +375,26 @@ export default Object.freeze({
       "tech": [
         "Kotlin",
         "Android"
+      ],
+      "links": {
+        "live": "",
+        "github": ""
+      },
+      "note": ""
+    },
+    {
+      "id": "cellbook",
+      "name": "Cellbook",
+      "year": 2026,
+      "kind": "product",
+      "type": "SIDE QUEST",
+      "tagline": "A desktop spreadsheet app modelled on Excel.",
+      "description": "",
+      "decision": "",
+      "broke": "",
+      "tech": [
+        "Electron",
+        "HyperFormula"
       ],
       "links": {
         "live": "",

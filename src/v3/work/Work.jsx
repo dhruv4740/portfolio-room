@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import '../tokens.css';
 import {
-  identity, contact, education, experience, achievements, skills, projects, featuredProjectIds,
+  identity, contact, education, experience, achievements, skills, projects, featuredProjectIds, moreProjectIds,
 } from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 
@@ -737,7 +737,8 @@ export default function Work() {
   const featured = featuredProjectIds
     .map((id) => listed.find((p) => p.id === id))
     .filter(Boolean);
-  const more = listed.filter((p) => !featuredProjectIds.includes(p.id));
+  const rank = (p) => { const i = moreProjectIds.indexOf(p.id); return i < 0 ? moreProjectIds.length : i; };
+  const more = listed.filter((p) => !featuredProjectIds.includes(p.id)).sort((a, b) => rank(a) - rank(b));
 
   const renderProject = (project, index, total, compact) => {
     const hasLinks = project.links?.live || project.links?.github;
@@ -751,7 +752,10 @@ export default function Work() {
         </div>
         <h3 className="work-project-name">{project.name}</h3>
         {compact ? (
-          project.tagline && <p className="work-project-tagline">{project.tagline}</p>
+          <>
+            {project.tagline && <p className="work-project-tagline">{project.tagline}</p>}
+            {project.badge && <p className="mono work-project-badge">{project.badge}</p>}
+          </>
         ) : (
           <>
             <p className="work-project-summary">{project.summary || project.tagline}</p>
@@ -935,8 +939,8 @@ export default function Work() {
               <section className="work-section" aria-labelledby="work-contact-heading">
                 <h2 id="work-contact-heading" className="work-section-head">Contact</h2>
                 <p className="work-job-detail">
-                  Looking for an internship? Email me at{' '}
-                  <a className="work-link" href={`mailto:${contact.email}`}>{contact.email}</a>.
+                  Open to remote internships in AI engineering and growth engineering. Email:{' '}
+                  <a className="work-link" href={`mailto:${contact.email}`}>{contact.email}</a>
                 </p>
               </section>
             )}
