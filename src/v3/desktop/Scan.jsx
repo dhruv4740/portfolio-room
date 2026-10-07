@@ -684,6 +684,8 @@ export default function Scan() {
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== 'Escape' || e.defaultPrevented) return;
+      // Leaving the monitor or standing up also stops the song; it is otherwise hard to find the off switch.
+      if (screenPhase === 'inside' || screenPhase === 'entering' || (seated && !overviewOpen && !activeId)) window.__v3Music?.pause();
       if (arrivalTokenRef.current !== 0) {
         e.preventDefault();
         cancelArrival();
@@ -1079,6 +1081,9 @@ const css = `
   display: none;
 }
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
+/* The room is an interface, not a document: Ctrl+A must not paint everything blue. */
+.scan-root, .scan-root * { -webkit-user-select: none; user-select: none; }
+.scan-root input, .scan-root textarea { -webkit-user-select: text; user-select: text; }
 
 .scan-head {
   position: absolute;

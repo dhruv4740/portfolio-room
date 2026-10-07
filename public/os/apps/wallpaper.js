@@ -138,15 +138,18 @@ export function renderFlowDataUrl(p, width, height, dpr = 1) {
   for (let i = 0; i < 520; i++) {
     let x = rng() * width, y = rng() * height;
     const steps = 40 + Math.floor(rng() * 70), size = 0.6 + rng() * 1.4, t = rng() * 6;
+    // One continuous stroke per streamline: separate alpha-blended segments
+    // stacked at every joint and read as beaded speckle once downscaled.
+    ctx.strokeStyle = `rgba(${p.r},${p.g},${p.b},0.2)`;
+    ctx.lineWidth = size;
+    ctx.beginPath(); ctx.moveTo(x, y);
     for (let s = 0; s < steps; s++) {
       const { dx, dy } = curlXY(x, y, t);
       const len = Math.hypot(dx, dy) || 1;
-      const nx = x + (dx / len) * 2.2, ny = y + (dy / len) * 2.2;
-      ctx.strokeStyle = `rgba(${p.r},${p.g},${p.b},${Math.sin((s / steps) * Math.PI) * 0.24})`;
-      ctx.lineWidth = size;
-      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(nx, ny); ctx.stroke();
-      x = nx; y = ny;
+      x += (dx / len) * 2.2; y += (dy / len) * 2.2;
+      ctx.lineTo(x, y);
     }
+    ctx.stroke();
   }
   const scrim = ctx.createLinearGradient(0, 0, width * 0.22, 0);
   scrim.addColorStop(0, 'rgba(0,0,0,0.45)');
