@@ -15,6 +15,7 @@ import { istParts } from '../lib/mumbai.js';
 import { setCityRain, startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted, suspendCityAmbience } from './cityAudio.js';
 import { disposeRoomAudio, isRoomMuted, playRoomFoley, setRoomMuted, unlockRoomAudio } from './roomAudio.js';
 import { subscribeProgress } from '../lib/loadProgress.js';
+import { dismissFrontDoor } from '../lib/frontDoor.js';
 import { anchors, projects, identity, contact, education, experience, achievements } from '../content/index.js';
 import {
   prefersReducedMotion,
@@ -101,6 +102,7 @@ export default function Scan() {
   const [osReady, setOsReady] = useState(false);
   const [screenError, setScreenError] = useState(null);
   const [error, setError] = useState(null);
+  useEffect(() => { if (error) dismissFrontDoor(); }, [error]);
   const [aboutOpen, setAboutOpen] = useState(false);
   // "Mumbai · 01:40 · 27°C · light rain", refreshed every minute.
   const [weather, setWeather] = useState(null);

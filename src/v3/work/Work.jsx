@@ -718,6 +718,164 @@ const css = `
   .work-projects--compact .work-project { padding-block: 1rem; }
   .work-projects--compact .work-project-name { font-size: 1.1rem; }
   .work-projects--compact .work-project-tagline { margin: 0.3rem 0 0; }
+
+  /* ---- layout v2: wide, card-based, one primary action ------------------------ */
+
+  .work-root { font-size: 1.0625rem; line-height: 1.6; }
+  .work-inner { max-width: 1180px; padding-top: 0; }
+
+  .work-bar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0 calc(var(--gutter) * -1);
+    padding: 0.7rem var(--gutter);
+    background: rgba(10, 10, 11, 0.94);
+    border-bottom: var(--hair) solid var(--faint);
+  }
+  .work-bar-name { font-weight: 600; font-size: 1rem; }
+  .work-bar-role { color: var(--dim); font-size: 0.9rem; margin-left: 0.75rem; }
+  .work-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5em;
+    padding: 0.55rem 0.95rem;
+    border: var(--hair) solid var(--signal);
+    color: var(--signal);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: var(--track-data);
+    text-transform: uppercase;
+    white-space: nowrap;
+    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease);
+  }
+  .work-back:hover,
+  .work-back:focus-visible { background: var(--signal); color: var(--void); }
+  @media (max-width: 560px) {
+    .work-bar-role, .work-back-long { display: none; }
+  }
+
+  .work-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 2rem 3.5rem;
+    align-items: end;
+    padding: clamp(2.5rem, 7vw, 5rem) 0 clamp(2rem, 5vw, 3.5rem);
+  }
+  .work-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6em;
+    margin-bottom: 1.25rem;
+    color: var(--bone);
+  }
+  .work-status::before {
+    content: '';
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 50%;
+    background: var(--signal);
+  }
+  .work-statement { font-size: clamp(2.75rem, 7vw, 5rem); line-height: 1.02; max-width: none; }
+  .work-tagline { font-size: 1.3rem; color: var(--bone); max-width: 34ch; margin-top: 1.1rem; }
+  .work-actions { margin-top: 2rem; align-items: center; gap: 0.75rem; }
+  .work-action { color: var(--dim); padding: 0.8rem 1.1rem; }
+  .work-action--primary { padding: 1rem 1.75rem; font-size: 0.8rem; font-weight: 600; color: var(--void); }
+  .work-wins { flex-direction: column; flex-wrap: nowrap; gap: 0.6rem; margin-top: 0; }
+  .work-wins li {
+    display: flex;
+    gap: 0.9rem;
+    align-items: baseline;
+    padding: 0.8rem 1rem;
+    background: var(--void-lift);
+    font-size: 0.78rem;
+  }
+  .work-wins li span { margin-right: 0; min-width: 8.5rem; }
+  @media (max-width: 860px) {
+    .work-hero { grid-template-columns: 1fr; }
+    .work-wins li span { min-width: 0; }
+  }
+
+  .work-section-head {
+    font-family: var(--font-display);
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    text-transform: none;
+    color: var(--bone);
+    margin-bottom: 1.75rem;
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .work-job { grid-template-columns: 11rem 1fr; }
+  .work-job-detail { max-width: 70ch; }
+  .work-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.25rem; }
+  @media (max-width: 640px) { .work-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .work-metrics li { background: var(--void-lift); border-color: var(--faint); padding: 0.85rem 1rem; }
+  .work-metrics strong { font-size: 2rem; font-weight: 500; color: var(--bone); }
+  .work-bullets { color: var(--bone); max-width: 70ch; }
+
+  .work-projects {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+  .work-project {
+    display: flex;
+    flex-direction: column;
+    padding: 1.6rem;
+    background: var(--void-lift);
+    border: var(--hair) solid var(--faint);
+    border-radius: 6px;
+    transition: border-color var(--d-feedback) var(--ease);
+  }
+  .work-project + .work-project { border-top: var(--hair) solid var(--faint); }
+  .work-project:hover { border-color: #46464d; }
+  .work-project-name { font-size: 1.6rem; }
+  .work-project-links { margin-top: auto; padding-top: 1.25rem; gap: 0.6rem; }
+  .work-project-links .work-link { border: var(--hair) solid var(--faint); padding: 0.55rem 1rem; }
+  .work-project-links .work-link:first-child:not(:only-child),
+  .work-project-links .work-link:only-child { border-color: var(--bone); }
+  .work-project-links .work-link:hover,
+  .work-project-links .work-link:focus-visible { background: var(--bone); color: var(--void); }
+  .work-demo-btn { font-size: 0.8rem; padding: 0.75rem 1.1rem; min-height: 2.75rem; }
+  .work-projects--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .work-projects--compact .work-project { padding: 1.15rem; }
+  .work-projects--compact .work-project-name { font-size: 1.15rem; }
+  @media (max-width: 900px) {
+    .work-projects--compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 680px) {
+    .work-projects, .work-projects--compact { grid-template-columns: 1fr; }
+    .work-job { grid-template-columns: 1fr; }
+  }
+  .work-root--split .work-projects,
+  .work-root--split .work-projects--compact { grid-template-columns: 1fr; }
+
+  .work-skills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 3rem; }
+  .work-skill { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
+  .work-skill-meta { margin-left: 0; justify-content: flex-start; }
+  .work-skill { border-top: var(--hair) solid var(--faint); }
+  @media (max-width: 680px) { .work-skills { grid-template-columns: 1fr; } }
+
+  .work-contact-card {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem 2rem;
+    padding: clamp(1.5rem, 4vw, 2.25rem);
+    background: var(--void-lift);
+    border: var(--hair) solid var(--faint);
+    border-radius: 6px;
+  }
+  .work-contact-card p { max-width: 52ch; margin: 0; }
+  .work-footer a:first-child { color: var(--bone); }
 `;
 
 export default function Work() {
@@ -841,41 +999,48 @@ export default function Work() {
       </button>
       <div className={`work-root${open ? ' work-root--split' : ''}`}>
         <div className="work-inner">
-          <header className="work-header">
-            <p className="mono work-masthead">
-              <strong>{identity.name}</strong> &middot; {identity.role} &middot; {identity.location}
+          <header className="work-bar">
+            <p>
+              <strong className="work-bar-name">{identity.name}</strong>
+              <span className="work-bar-role">{identity.role}</span>
             </p>
+            <a className="work-back" href="/">
+              <span aria-hidden="true">&larr;</span> <span className="work-back-long">Back to the&nbsp;</span>3D room
+            </a>
           </header>
 
           <main id="work-main" ref={mainRef} tabIndex={-1}>
             <section className="work-hero" aria-label="Introduction">
-              <h1 className="work-statement">{identity.name}</h1>
-              {identity.tagline && <p className="work-tagline">{identity.tagline}</p>}
+              <div>
+                <p className="mono work-status">Open to remote internships</p>
+                <h1 className="work-statement">{identity.name}</h1>
+                {identity.tagline && <p className="work-tagline">{identity.tagline}</p>}
+
+                {hasContact && (
+                  <div className="work-actions" aria-label="Contact">
+                    {contact.resume && (
+                      <a className="work-action work-action--primary" href={contact.resume} target="_blank" rel="noopener noreferrer">
+                        Résumé (PDF)
+                      </a>
+                    )}
+                    {contact.github && (
+                      <a className="work-action" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+                    )}
+                    {contact.linkedin && (
+                      <a className="work-action" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                    )}
+                    {contact.twitter && (
+                      <a className="work-action" href={contact.twitter} target="_blank" rel="noopener noreferrer">Twitter</a>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <ul className="work-wins" aria-label="Highlights">
                 {achievements.map((a) => (
                   <li key={a.id}><span>{a.result}</span>{a.label.split(' — ')[0].split(' (')[0]}</li>
                 ))}
               </ul>
-
-              {hasContact && (
-                <div className="work-actions" aria-label="Contact">
-                  {contact.resume && (
-                    <a className="work-action work-action--primary" href={contact.resume} target="_blank" rel="noopener noreferrer">
-                      Résumé (PDF)
-                    </a>
-                  )}
-                  {contact.github && (
-                    <a className="work-action" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
-                  )}
-                  {contact.linkedin && (
-                    <a className="work-action" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
-                  )}
-                  {contact.twitter && (
-                    <a className="work-action" href={contact.twitter} target="_blank" rel="noopener noreferrer">Twitter</a>
-                  )}
-                </div>
-              )}
             </section>
 
             <section className="work-section" aria-labelledby="work-experience-heading">
@@ -938,10 +1103,13 @@ export default function Work() {
             {contact.email && (
               <section className="work-section" aria-labelledby="work-contact-heading">
                 <h2 id="work-contact-heading" className="work-section-head">Contact</h2>
-                <p className="work-job-detail">
-                  Open to remote internships in AI engineering and growth engineering. Email:{' '}
-                  <a className="work-link" href={`mailto:${contact.email}`}>{contact.email}</a>
-                </p>
+                <div className="work-contact-card">
+                  <p>
+                    Open to remote internships in AI engineering and growth engineering. Email:{' '}
+                    <a className="work-link" href={`mailto:${contact.email}`}>{contact.email}</a>
+                  </p>
+                  <a className="work-action work-action--primary" href={`mailto:${contact.email}`}>Email me</a>
+                </div>
               </section>
             )}
 
@@ -968,23 +1136,6 @@ export default function Work() {
                 })}
               </ul>
             </section>
-            <section className="work-room" aria-labelledby="work-room-heading">
-              <div className="work-room-panel">
-                <h2 id="work-room-heading" className="work-section-head">
-                  The 3D room
-                </h2>
-                <p className="work-room-copy">
-                  The same projects, on a desk you can walk up to: a computer and a phone that run them.
-                </p>
-                <a className="work-room-cta" href="/">
-                  Enter the 3D room <span aria-hidden="true">&rarr;</span>
-                </a>
-                <p className="mono work-room-note">
-                  Needs a hardware GPU. If your device can&rsquo;t run it, you&rsquo;ll land back
-                  here automatically.
-                </p>
-              </div>
-            </section>
           </main>
 
           <footer className="work-footer">
@@ -993,7 +1144,7 @@ export default function Work() {
                 {contact.email}
               </a>
             )}
-            <p className="mono">{identity.name} &mdash; static build, zero WebGL</p>
+            <a className="mono" href="/">&larr; Back to the 3D room</a>
           </footer>
         </div>
         {open && (

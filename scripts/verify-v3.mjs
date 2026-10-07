@@ -194,6 +194,9 @@ try {
   record('scan: does not download a capture', pulledCapture.length === 0,
     pulledCapture.length ? pulledCapture.join(', ') : 'no splat asset requested');
 
+  // The front door covers the room until it is revealed; measure the room, not the door.
+  await page.waitForSelector('#front-door', { state: 'detached', timeout: 30_000 }).catch(() => {});
+  await page.waitForTimeout(1200);
   const cov = await screenCoverage(page);
   // The instrument chrome alone lights a few percent, so require clearly more
   // than the empty stage. The threshold keeps the old paint signal while

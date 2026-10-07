@@ -38,6 +38,29 @@
     <!-- Paint the background before any JS runs: no white flash on a dark site. -->
     <style>
       html, body { margin: 0; height: 100%; background: #0A0A0B; }
+      /* Front door: painted from HTML alone, so the first seconds are never a grey void.
+         The room dismisses it when its first frame is ready (src/v3/lib/frontDoor.js). */
+      #front-door {
+        position: fixed; inset: 0; z-index: 2147482000;
+        display: flex; align-items: center; justify-content: center;
+        background: #0A0A0B; color: #ececec; padding: 24px;
+        font-family: "Space Grotesk", system-ui, sans-serif;
+        transition: opacity .5s ease;
+      }
+      #front-door .fd-inner { width: min(520px, 100%); }
+      #front-door .fd-name { font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; margin: 0; }
+      #front-door .fd-tag { margin: 14px 0 0; font-size: 1.1rem; line-height: 1.4; color: #bdbdc4; }
+      #front-door .fd-load { margin-top: 36px; font: 500 12px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: #9C9CA4; display: flex; justify-content: space-between; }
+      #front-door .fd-track { height: 2px; background: #1d2122; margin-top: 10px; overflow: hidden; }
+      #front-door .fd-fill { display: block; height: 100%; background: #FF5F1F; transform-origin: left; transform: scaleX(.03); transition: transform .3s ease; }
+      #front-door .fd-skip {
+        display: inline-flex; align-items: center; gap: .6em; margin-top: 32px;
+        padding: 14px 20px; background: #FF5F1F; color: #0A0A0B; border-radius: 2px;
+        font: 600 14px/1 "Space Grotesk", system-ui, sans-serif; text-decoration: none;
+      }
+      #front-door .fd-skip:hover, #front-door .fd-skip:focus-visible { background: #ececec; outline: 2px solid #fff; outline-offset: 2px; }
+      #front-door .fd-note { margin: 14px 0 0; font-size: .85rem; color: #8a8a92; }
+      #front-door:not([data-leaving]) ~ .escape-link { visibility: hidden; }
       /* Escape hatch: plain markup, first in tab order, visible before any JS or 3D asset. */
       .escape-link {
         position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2147483000; white-space: nowrap;
@@ -49,6 +72,17 @@
     </style>
   </head>
   <body>
+    <div id="front-door" role="region" aria-label="Welcome">
+      <div class="fd-inner">
+        <p class="fd-name">Dhruv Kothari</p>
+        <p class="fd-tag">Full-stack developer building Android apps, Python backends and AI integrations.</p>
+        <div class="fd-load"><span id="front-door-label">Loading the 3D room</span><span id="front-door-pct">0%</span></div>
+        <div class="fd-track"><i class="fd-fill" id="front-door-bar"></i></div>
+        <a class="fd-skip" href="/work/">View work and r&eacute;sum&eacute; <span aria-hidden="true">&rarr;</span></a>
+        <p class="fd-note">Don&rsquo;t want to wait? Everything is on one page.</p>
+      </div>
+    </div>
+    <noscript><style>#front-door { display: none; } #front-door ~ .escape-link { visibility: visible !important; }</style></noscript>
     <a class="escape-link" href="/work/">View work and resume</a>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

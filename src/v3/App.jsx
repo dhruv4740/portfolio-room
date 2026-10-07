@@ -15,6 +15,7 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './tokens.css';
 import { resolveSurface } from './lib/capability.js';
 import { reportProgress, subscribeProgress } from './lib/loadProgress.js';
+import { dismissFrontDoor } from './lib/frontDoor.js';
 
 // The scan bundle is one weighted task; the hand bake reports its own bytes.
 const Scan = lazy(() => {
@@ -74,6 +75,9 @@ function Home() {
     }
     return s;
   }, []);
+
+  // The deck has no heavy scene to wait for; the room dismisses it itself.
+  useEffect(() => { if (surface === 'deck') dismissFrontDoor(); }, [surface]);
 
   if (surface === 'static') return <GoToWork />;
   return surface === 'deck' ? <Deck /> : <Scan />;
