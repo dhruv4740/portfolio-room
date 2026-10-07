@@ -6,7 +6,7 @@ import { createRig } from './cameraRig.js';
 // True-scale room (feat/true-scale-room). Old-room constants below were moved
 // with the seat (0,-0.49,-0.54); reach leans are halved with the shorter desk.
 import { buildCinematicWorkspace as buildWorkspace, WORKSPACE } from './buildCinematicWorkspace.js';
-import { ROOM } from './cinematicLayout.js';
+import { ROOM, WINDOW_VIEW } from './cinematicLayout.js';
 import { PHONE_SCREEN } from './phoneScreenSize.js';
 import { reportProgress } from '../lib/loadProgress.js';
 import { fetchGithubActivity, formatActivity } from '../lib/githubActivity.js';
@@ -74,6 +74,7 @@ export default function WorkspaceStage({
     let renderer, controls, model, resizeObserver, tween, rig, action, afterHours, director;
     // Nothing is drawn until every program the room needs is compiled (see below), so a first draw never blocks the page on shader compile.
     let gateOpen = false, revealed = Promise.resolve();
+      let windowView = false, windowLean = 0;
     let extraHeld = null;
     let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
     // null | 'in' | 'held' | 'out'. While set, PhoneScreen tracks the display.
@@ -163,7 +164,7 @@ export default function WorkspaceStage({
       model.setSky(initialSky);
       host.dataset.skyState = initialSky;
       host.dataset.windowOpen = String(model.roomActions.state.windowOpen);
-      const camera = new THREE.PerspectiveCamera(56, 1, 0.025, 140);
+      const camera = new THREE.PerspectiveCamera(56, 1, 0.025, 700);
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true; controls.dampingFactor = 0.075;
       controls.enablePan = false;
@@ -280,6 +281,7 @@ export default function WorkspaceStage({
         model.figure.head.visible = false;
         if (!gateOpen) return;
         afterHours?.update(state.current.reducedMotion ? 0 : performance.now()/1000,gov.getStats().medianMs||0);
+        if (windowView && !state.current.reducedMotion) invalidate();
         renderer.render(scene, camera); updateMarkers(); updateScreenAlign(); updatePhoneAlign(); }
       function resetTiming() { last = null; cadenceSum = 0; cpuSum = 0; count = 0; }
       // Re-arm the render loop from outside tick() itself — used wherever something
@@ -822,7 +824,7 @@ export default function WorkspaceStage({
         const index=keyIndexOf(event.key);if(index>=0)pressKey(event.key,index);
       }
       function finishExtra(id) {
-        extraHeld=null;model.hands.reset();model.setHandsVisible(true);host.dataset.actionState='idle';invalidate();
+        extraHeld=null;windowView=false;windowLean=0;model.hands.reset();model.setHandsVisible(true);host.dataset.actionState='idle';invalidate();
         if(state.current.activeAnchorId===id)callbacks.current.onAnchorSelect?.(id,{completed:true});else fly();
       }
       function roomAction(id,reduced) {
@@ -840,18 +842,31 @@ export default function WorkspaceStage({
           if(target===r.state.windowOpen){end();return;}
           const opening=target>r.state.windowOpen;
           const raiseBlindsFirst=opening&&r.state.blinds<0.5;
-          rig.flyTo({position:WORKSPACE.seat.position,target:opening?WORKSPACE.anchors.window:o.position.toArray()},{reduced,duration:1.05,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
+          const fov=opening?WINDOW_VIEW.fov:56;
+          const arrive=()=>{
+            host.dataset.actionState='idle';
+            if(opening){
+              // Hand over to drag-look and scroll-to-lean at the window.
+              windowView=true;windowLean=0;
+              headYaw=Math.atan2(camera.position.x-controls.target.x,camera.position.z-controls.target.z);
+              headPitch=Math.asin((controls.target.y-camera.position.y)/camera.position.distanceTo(controls.target));
+            }
+            invalidate();
+          };
+          windowView=false;windowLean=0;
+          model.setHandsVisible(false);
+          const view=opening?{position:WINDOW_VIEW.position,target:WINDOW_VIEW.target}:{position:WORKSPACE.seat.position,target:[0.08,1.02,0.04]};
+          const startFov=camera.fov,started=performance.now(),dur=opening?1.5:1.05;
+          rig.flyTo(view,{reduced,duration:dur,onUpdate(){const t=reduced?1:Math.min(1,(performance.now()-started)/(dur*1000));camera.fov=THREE.MathUtils.lerp(startFov,fov,t);camera.updateProjectionMatrix();invalidate();}});
           if(reduced){
             if(raiseBlindsFirst)r.state.blinds=1;
-            r.state.windowOpen=target;update();if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();return;
+            r.state.windowOpen=target;update();if(!opening){finishExtra(id);return;}arrive();return;
           }
-          action=gsap.timeline({onUpdate:update,onComplete(){if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();}});
-          // The sash sits behind the closed blinds — from the seat, sliding it
-          // is invisible until the blinds are out of the way. Opening always
-          // raises them first (same tween shape/duration as the BLINDS
-          // action); closing never lowers them back.
-          if(raiseBlindsFirst)action.to(r.state,{blinds:1,duration:0.65,ease:'power2.inOut'});
-          action.to(r.state,{windowOpen:target,duration:0.65,ease:'power2.inOut'});
+          action=gsap.timeline({onUpdate:update,onComplete(){if(!opening){finishExtra(id);return;}arrive();}});
+          // Blinds first (the sash sits behind them), then the casement swings out
+          // while the camera crosses to the window.
+          if(raiseBlindsFirst)action.to(r.state,{blinds:1,duration:0.7,ease:'power2.inOut'});
+          action.to(r.state,{windowOpen:target,duration:opening?1.0:0.7,ease:'power2.inOut'},opening?0.55:0);
           gsap.ticker.wake();return;
         }
         if(id==='drawer') {
@@ -1031,6 +1046,7 @@ export default function WorkspaceStage({
       function returnExtra(reduced) {
         const id=extraHeld,r=model.roomActions,o=r.objects[id];action?.kill();rig.dispose();
         if(id==='windowOpen'){
+          windowView=false;windowLean=0;
           // Back can arrive while the blinds/sash are moving. Finish the
           // requested open state so geometry and city audio cannot diverge.
           if(state.current.windowIntent && r.state.windowOpen<1){
@@ -1254,7 +1270,15 @@ export default function WorkspaceStage({
       }
       function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); if (penDrawing()) drawAt(event); }
       const reading = () => !!extraHeld && /-reading$/.test(host.dataset.actionState || '');
+      function leanWindow(delta) {
+        windowLean = THREE.MathUtils.clamp(windowLean + delta, 0, 1);
+        const [px, py, pz] = WINDOW_VIEW.position, [lx, ly, lz] = WINDOW_VIEW.leanTravel;
+        camera.position.set(px + lx * windowLean, py + ly * windowLean, pz + lz * windowLean);
+        controls.target.copy(camera.position).add(new THREE.Vector3(-Math.sin(headYaw) * Math.cos(headPitch), Math.sin(headPitch), -Math.cos(headYaw) * Math.cos(headPitch)));
+        camera.lookAt(controls.target); host.dataset.windowLean = windowLean.toFixed(2); invalidate();
+      }
       function wheelZoom(event) {
+        if (windowView) { event.preventDefault(); leanWindow(-event.deltaY * 0.0012); return; }
         if (!reading()) return;
         event.preventDefault();
         camera.fov = THREE.MathUtils.clamp(camera.fov + event.deltaY * 0.03, 18, 56); camera.updateProjectionMatrix(); invalidate();
@@ -1271,6 +1295,14 @@ export default function WorkspaceStage({
           const c = extraHeld === 'award' ? awardCenter() : PAGE_HELD;
           look.set(c.x + nx * 0.09 * zoom, c.y - ny * 0.13 * zoom, c.z);
           camera.lookAt(look); controls.target.copy(look); invalidate(); return;
+        }
+        if (windowView && down) {
+          headYaw = THREE.MathUtils.clamp(headYaw - (event.clientX - down.lx) * 0.005, -1.25, 1.25);
+          headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -.75, .85);
+          down.moved ||= Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6;
+          down.lx = event.clientX; down.ly = event.clientY;
+          controls.target.copy(camera.position).add(new THREE.Vector3(-Math.sin(headYaw) * Math.cos(headPitch), Math.sin(headPitch), -Math.cos(headYaw) * Math.cos(headPitch)));
+          camera.lookAt(controls.target); invalidate(); return;
         }
         if (notebookInHand || extraHeld) return;
         if (down && !phoneInHand && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {

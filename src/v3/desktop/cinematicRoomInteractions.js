@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import { WINDOW, BLINDS, MAT, DESK } from './cinematicLayout.js';
+import { WINDOW, BLINDS, MAT, DESK, ANCHORS } from './cinematicLayout.js';
 
 // Cinematic-room interactions. A candidate copy of buildRoomInteractions.js at
 // true metre scale — the live file is untouched and still used by the live
@@ -18,7 +18,7 @@ export const KEY_ROWS = ['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvb
 
 // World-space travels, re-derived for this room.
 export const DRAWER_TRAVEL = 0.29;
-export const SASH_TRAVEL = (WINDOW.opening.maxX - WINDOW.opening.minX) * 0.40;
+export const SASH_OPEN_ANGLE = 1.75;   // about 100 degrees, outward
 
 export function buildCinematicRoomInteractions({
   root, materials: m, canvasTexture, anchors, achievements, bulb, lampInterior,
@@ -139,21 +139,24 @@ export function buildCinematicRoomInteractions({
   band.rotation.x = -Math.PI / 2;
   for (const x of [-0.115, 0.115]) box(headphones, [0.055, 0.085, 0.09], [x, cupHalf, 0], m.dark);
 
-  // Sliding sash, authored against the aperture rather than scaled from the
-  // old one: half the opening wide, a 22 mm frame, and glass at 0.18 opacity
-  // so the reveal stays a window rather than a mirror.
+  // Casement sash, hinged on the right jamb and swinging outward, so opening it
+  // clears the whole aperture (the old half-width slider never exposed more than
+  // half the view). The group stays at the anchor; the leaf pivots inside it.
   const sash = group('windowOpen', 1);
   const sashZ = 0.02;
-  const sw = (WINDOW.opening.maxX - WINDOW.opening.minX) / 2 - 0.01;
-  const sh = WINDOW.opening.maxY - WINDOW.opening.minY - 0.02;
+  const J = WINDOW.jambSection;
+  const sw = WINDOW.opening.maxX - WINDOW.opening.minX - 2 * J - 0.01;
+  const sh = WINDOW.opening.maxY - WINDOW.opening.minY - 2 * WINDOW.railSection - 0.01;
+  const hingeX = WINDOW.opening.maxX - J - 0.005 - ANCHORS.windowOpen[0];
+  const leaf = new THREE.Group(); leaf.name = 'Sash leaf'; leaf.position.set(hingeX, 0, 0); sash.add(leaf);
   const sashFrame = new THREE.MeshStandardMaterial({ color: '#20242a', roughness: 0.5, metalness: 0.3 });
-  box(sash, [sw, 0.022, 0.022], [0, sh / 2, sashZ], sashFrame);
-  box(sash, [sw, 0.022, 0.022], [0, -sh / 2, sashZ], sashFrame);
-  box(sash, [0.022, sh, 0.022], [-sw / 2, 0, sashZ], sashFrame);
-  box(sash, [0.022, sh, 0.022], [sw / 2, 0, sashZ], sashFrame);
-  box(sash, [0.014, 0.06, 0.022], [-sw / 2 + 0.014, 0, sashZ + 0.014], m.dark);
-  const glassMat = new THREE.MeshStandardMaterial({ color: '#c5d9eb', roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.18, depthWrite: false });
-  mesh(sash, new THREE.PlaneGeometry(sw - 0.02, sh - 0.02), glassMat, [0, 0, sashZ]);
+  box(leaf, [sw, 0.022, 0.022], [-sw / 2, sh / 2, sashZ], sashFrame);
+  box(leaf, [sw, 0.022, 0.022], [-sw / 2, -sh / 2, sashZ], sashFrame);
+  box(leaf, [0.022, sh, 0.022], [0, 0, sashZ], sashFrame);
+  box(leaf, [0.022, sh, 0.022], [-sw, 0, sashZ], sashFrame);
+  box(leaf, [0.014, 0.10, 0.022], [-sw + 0.03, 0, sashZ + 0.016], m.dark);          // latch
+  const glassMat = new THREE.MeshStandardMaterial({ color: '#c5d9eb', roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.14, depthWrite: false });
+  mesh(leaf, new THREE.PlaneGeometry(sw - 0.02, sh - 0.02), glassMat, [-sw / 2, 0, sashZ]);
 
   const state = { lamp: 1, blinds: 0, drawer: 0, headphones: 0, coffeeLevel: 1, windowOpen: 0 };
   const homes = Object.fromEntries(Object.entries(objects).map(([id, g]) => [id, g.position.clone()]));
@@ -200,7 +203,7 @@ export function buildCinematicRoomInteractions({
     moon.intensity = closed * (1 - state.blinds);
     moonOpen.intensity = open * state.blinds;
     drawer.position.z = homes.drawer.z + state.drawer * DRAWER_TRAVEL;
-    if (objects.windowOpen) objects.windowOpen.position.x = homes.windowOpen.x - state.windowOpen * SASH_TRAVEL;
+    if (leaf) leaf.rotation.y = -state.windowOpen * SASH_OPEN_ANGLE;
     if (windowLight) windowLight.intensity = (keyConfig?.windowLight ?? 0.55) * state.windowOpen;
   }
 

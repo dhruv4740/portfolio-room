@@ -181,6 +181,15 @@ WINDOW.center = [
   (WINDOW.opening.minX + WINDOW.opening.maxX) / 2,
   (WINDOW.opening.minY + WINDOW.opening.maxY) / 2,
 ];
+// Standing at the window: right of the desk's end (x > 0.9) there is clear floor
+// 0.5 m from the glass, and the aperture is centred on a standing eye height.
+// The visitor can then lean out through the open casement (leanTravel).
+export const WINDOW_VIEW = {
+  position: [1.12, 1.62, WINDOW.wallZ + 0.54],
+  target: [1.02, 1.66, -3.0],
+  fov: 62,
+  leanTravel: [0.0, -0.16, -0.80],
+};
 // Venetian blinds: real slat geometry rather than the old 11 slats at 145 mm,
 // which read as a louvre grille at this opening height.
 export const BLINDS = {
@@ -189,7 +198,7 @@ export const BLINDS = {
   slatDepth: 0.050,
   slatThickness: 0.0016,
   closedPitch: 0.052,
-  openPitch: 0.009,
+  openPitch: 0.0065,
   closedTilt: -0.20,
   openTilt: -1.45,
   headY: WINDOW.opening.maxY - 0.03,

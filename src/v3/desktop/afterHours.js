@@ -197,7 +197,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
   return {
     ready:Promise.allSettled([cityPromise,mapsPromise,bakePromise,lampPromise,mousePromise,fixturePromise]),
     update(time,cost=0){uniforms.time.value=time;uniforms.lamp.value=model.roomActions.state.lamp;
-      model.taskLamp.update(uniforms.lamp.value);
+      model.taskLamp.update(uniforms.lamp.value);model.cityscape?.update(time);
       model.roomActions.objects.coffee.updateWorldMatrix(true,false);
       steamOrigin.set(0,.079,0).applyMatrix4(model.roomActions.objects.coffee.matrixWorld);
       steam.visible=model.roomActions.state.coffeeLevel>.01 && time!==0;

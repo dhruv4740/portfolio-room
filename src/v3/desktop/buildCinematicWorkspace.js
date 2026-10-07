@@ -9,11 +9,12 @@ import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
 import { createAuthoredMouse } from './authoredMouse.js';
 import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
 import { createAuthoredKeyboard } from './authoredKeyboard.js';
+import { createCityscape } from './cityscape.js';
 import { phoneFocusLockTexture, phoneHomeTexture, SKY_CONFIGS } from './buildWorkspace.js';
 import { achievements } from '../content/index.js';
 import {
   WORKSPACE, ROOM, DESK, DESK_BOUNDS, MAT, KEYBOARD, KEYBOARD_CHASSIS, CINEMATIC_KEYCAPS,
-  SCREEN, MONITOR, CAMERA, BODY, WINDOW, BLINDS, EXTERIOR, ANCHORS, MOUSE_ANCHOR,
+  SCREEN, MONITOR, CAMERA, BODY, WINDOW, BLINDS, ANCHORS, MOUSE_ANCHOR,
   CEILING_FIXTURE_SCALE, KEY_LIGHTS, KEY_TARGET, SPEAKER,
 } from './cinematicLayout.js';
 
@@ -78,45 +79,6 @@ function screenTexture() {
     });
     ctx.fillStyle = '#666e68'; ctx.font = '16px monospace'; ctx.fillText('DHRUV KOTHARI                                    ENTER ↗', 75, 591);
   }, 1024, 640);
-}
-
-// Skyline backdrop. Same authored-impression approach as the live room, but
-// the night variant is graded for the composition this study is after: the
-// far plane is the cool, low-contrast layer and carries most of the lit
-// windows, because the middle-distance block in front of it is modelled
-// geometry and supplies the near contrast on its own.
-function skylineTexture(state = 'night') {
-  return canvasTexture((ctx, w, h) => {
-    let seed = 47;
-    const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const sky = ctx.createLinearGradient(0, 0, 0, h);
-    if (state === 'day') { sky.addColorStop(0, '#4a78a6'); sky.addColorStop(0.6, '#89acc7'); sky.addColorStop(1, '#c5d8e2'); }
-    else if (state === 'dusk') { sky.addColorStop(0, '#23253b'); sky.addColorStop(0.55, '#9c4935'); sky.addColorStop(1, '#c97746'); }
-    else { sky.addColorStop(0, '#10161f'); sky.addColorStop(0.55, '#2b3440'); sky.addColorStop(1, '#4a4b48'); }
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, w, h);
-    let x = -30;
-    while (x < w) {
-      const width = 26 + random() * 46;
-      const tower = random() > 0.70;
-      const height = tower ? 400 + random() * 280 : 170 + random() * 200;
-      const roof = h - height;
-      ctx.fillStyle = state === 'day' ? (tower ? '#636e73' : '#5c676b')
-        : state === 'dusk' ? (tower ? '#393339' : '#40363a') : (tower ? '#2c3138' : '#2f3236');
-      ctx.fillRect(x, roof, width, height);
-      ctx.fillRect(x + width * 0.15, roof - 7, width * 0.7, 7);
-      if (random() > 0.4) ctx.fillRect(x + 9, roof - 20, width * 0.25, 20);
-      for (let y = roof + 16; y < h - 12; y += 22) {
-        for (let wx = x + 7; wx < x + width - 7; wx += 13) {
-          if (random() > 0.44) continue;
-          ctx.fillStyle = state === 'day' ? ['#9abacf', '#b4cee0', '#7d9cb3'][Math.floor(random() * 3)]
-            : state === 'dusk' ? ['#e8a855', '#d68b3e', '#f2c16b'][Math.floor(random() * 3)]
-              : ['#b68b52', '#d3a66a', '#8e775a', '#e0b57b'][Math.floor(random() * 4)];
-          ctx.fillRect(wx, y, 5, 9);
-        }
-      }
-      x += width + 6 + random() * 16;
-    }
-  }, 2048, 1024);
 }
 
 export function buildCinematicWorkspace(scene, options = {}) {
@@ -225,19 +187,11 @@ export function buildCinematicWorkspace(scene, options = {}) {
     box('Window jamb', [J, O.maxY - O.minY, WINDOW.reveal], [x, WINDOW.center[1], revZ], dark, 0.004, 'window');
   for (const y of [O.minY + R / 2, O.maxY - R / 2])
     box('Window rail', [O.maxX - O.minX, R, WINDOW.reveal], [WINDOW.center[0], y, revZ], dark, 0.004, 'window');
-  const mullion = box('Window mullion', [WINDOW.mullionWidth, O.maxY - O.minY - R * 2, 0.026],
-    [WINDOW.mullionX, WINDOW.center[1], IN.minZ - 0.013], bone);
-  mullion.castShadow = false;
 
-  // Sill: a real slab lapping into the reveal, with a foreground snow ledge.
+  // Sill: a real slab lapping into the reveal.
   const sill = WINDOW.sill;
   box('Window sill', [sill.width, sill.thickness, sill.depth],
     [WINDOW.center[0], sill.topY - sill.thickness / 2, IN.minZ - sill.depth / 2 + sill.projection], bone, 0.006);
-  const snow = box('Sill snow', [sill.width - 2 * WINDOW.snow.inset, WINDOW.snow.thickness, sill.depth - WINDOW.snow.inset],
-    [WINDOW.center[0], sill.topY + WINDOW.snow.thickness / 2 - 0.004,
-      IN.minZ - sill.depth / 2 + sill.projection - WINDOW.snow.inset / 2],
-    mat('snow', '#e9eef4', { roughness: 0.88 }), 0.011);
-  snow.castShadow = false;
 
   const blindsGroup = new THREE.Group(); blindsGroup.name = 'Blinds'; root.add(blindsGroup);
   for (let i = 0; i < BLINDS.slats; i++) {
@@ -247,55 +201,11 @@ export function buildCinematicWorkspace(scene, options = {}) {
   }
 
   // --- exterior --------------------------------------------------------------
-  // Three depths, placed against the sightline cone computed in
-  // cinematicLayout.sightlineAt(): a near parapet under the cone (visible only
-  // when you look down through the glass, so it never occludes the view), one
-  // modelled middle-distance block inside the cone, and the far skyline plane.
-  const city = new THREE.Group(); city.name = 'Winter city';
-  const cityTextures = { night: skylineTexture('night'), dusk: skylineTexture('dusk'), day: skylineTexture('day') };
-  const farPlane = new THREE.Mesh(
-    new THREE.PlaneGeometry(...EXTERIOR.farCity.size),
-    new THREE.MeshBasicMaterial({ map: cityTextures.night, toneMapped: false, fog: false }));
-  farPlane.position.set(...EXTERIOR.farCity.center);
-  farPlane.raycast = () => {}; tag(farPlane, 'window'); city.add(farPlane);
-
-  const facade = new THREE.MeshStandardMaterial({ color: '#232c35', roughness: 1 });
-  const litWindows = new THREE.MeshBasicMaterial({ color: '#c9ab7c', toneMapped: false });
-  // Windows are placed on a real metre pitch across the facade, so the window
-  // size is what sets the building's apparent scale — not a fraction of
-  // whatever the block happens to be. A facade whose windows are a fixed
-  // percentage of it can never read as the wrong size, which is exactly how
-  // the old 1.8 m block passed every numeric check and still looked wrong.
-  function block(center, size, win, lit = 0.45) {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(...size), facade);
-    b.position.set(...center); city.add(b);
-    let seed = 1201;
-    const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const cols = Math.max(1, Math.floor((size[0] - win.pitchX * 0.5) / win.pitchX));
-    const rows = Math.max(1, Math.floor((size[1] - win.pitchY * 0.5) / win.pitchY));
-    const spanX = cols * win.pitchX, spanY = rows * win.pitchY;
-    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-      if (random() > lit) continue;
-      const pane = new THREE.Mesh(new THREE.PlaneGeometry(win.width, win.height), litWindows);
-      pane.position.set(
-        center[0] - spanX / 2 + (col + 0.5) * win.pitchX,
-        center[1] - spanY / 2 + (row + 0.5) * win.pitchY,
-        center[2] + size[2] / 2 + 0.01);
-      city.add(pane);
-    }
-  }
-  block(EXTERIOR.midBlock.center, EXTERIOR.midBlock.size, EXTERIOR.midBlock.window);
-  // The parapet is a low roof structure, not a tower: a couple of service
-  // windows at domestic size, deliberately sparse.
-  block(EXTERIOR.nearParapet.center, EXTERIOR.nearParapet.size,
-    { width: 0.34, height: 0.42, pitchX: 0.62, pitchY: 0.60 }, 0.35);
-  for (const material of [facade, litWindows]) {
-    const parts = city.children.filter(o => o.material === material);
-    const gs = parts.map(o => { o.updateMatrix(); const g = o.geometry.clone().applyMatrix4(o.matrix); o.removeFromParent(); o.geometry.dispose(); return g; });
-    if (gs.length) { const combined = mergeGeometries(gs); gs.forEach(g => g.dispose()); city.add(new THREE.Mesh(combined, material)); }
-  }
-  city.traverse(o => { if (o.isMesh) { o.castShadow = false; o.raycast = () => {}; } });
-  root.add(city);
+  // A procedural Mumbai street and skyline (cityscape.js): real-scale towers in
+  // three depth bands, a sky dome and traffic. Scene fog supplies the haze.
+  const cityscape = createCityscape();
+  const city = cityscape.group; root.add(city);
+  scene.fog = new THREE.FogExp2(cityscape.fogFor('night').color, cityscape.fogFor('night').density);
 
   // --- desk ------------------------------------------------------------------
   const deskSurface = WORKSPACE.deskSurface, matSurface = WORKSPACE.matSurface;
@@ -647,7 +557,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
       ctx.fillText(`GITHUB  ${line}`.slice(0, 84), 96, 553);
       texture.needsUpdate = true;
     },
-    root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry,
+    root, interactive, materials, bakedMaterials, city, cityscape, bulb, hemiLight, contactGeometry,
     taskLamp, mouse, ceilingFixture, keyboard,
     contactSurfaces: { desk: deskSurface, mat: matSurface },
     hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
@@ -682,8 +592,8 @@ export function buildCinematicWorkspace(scene, options = {}) {
       const key = KEY_LIGHTS[skyState];
       if (key) { moon.position.set(...key.position); moonOpen.position.set(...key.position); }
       keyConfig.closed = cfg.key.closed; keyConfig.open = cfg.key.open; keyConfig.windowLight = cfg.windowLight;
-      farPlane.material.map = cityTextures[skyState];
-      farPlane.material.needsUpdate = true;
+      cityscape.apply(skyState);
+      const fog = cityscape.fogFor(skyState); scene.fog.color.set(fog.color); scene.fog.density = fog.density;
       roomActions.apply();
       options.onShadowNeedsUpdate?.();
     },
