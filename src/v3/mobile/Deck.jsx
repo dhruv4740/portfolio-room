@@ -56,7 +56,7 @@ const css = `
   .deck-more .deck-ph { display: grid; place-items: center; color: var(--dim); font-size: 1.3rem; width: 64px; height: 48px; flex: none; background: var(--void-lift); border: var(--hair) solid var(--faint); }
   .deck-more b { display: block; font-weight: 500; font-size: .95rem; }
   .deck-more span { display: block; color: var(--dim); font-size: .8125rem; line-height: 1.3; }
-  .deck-foot { display: flex; justify-content: space-between; margin-top: .5rem; }
+  .deck-foot { display: flex; justify-content: flex-end; margin-top: .5rem; }
   @media (prefers-reduced-motion: reduce) { .deck-card { opacity: 1; transform: none; transition: none; } .deck-shot img { transform: none !important; } }
 `;
 
@@ -169,7 +169,6 @@ export default function Deck() {
           </ul>
 
           <div className="deck-foot">
-            <a className="mono deck-link" href="/work/">TEXT VERSION</a>
             <button type="button" className="mono deck-link" onClick={enterRoom}>DESKTOP VERSION</button>
           </div>
         </div>
