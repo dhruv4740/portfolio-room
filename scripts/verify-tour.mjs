@@ -26,7 +26,7 @@ const state = (p) => p.evaluate(() => ({
 }));
 {
   const { p, errors } = await open();
-  await p.keyboard.press('6');
+  await p.keyboard.press('5');
   const seen = [];
   // Each step's hold starts once its scene is in place, so a slow load
   // stretches the tour; sample until it ends.

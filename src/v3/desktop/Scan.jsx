@@ -301,24 +301,26 @@ export default function Scan() {
     launchLocked.current = false;
   }, [beginLaunch]);
 
-  const handleRecruiter = useCallback(() => {
-    cancelArrival();
-    navigate('/work');
-  }, [cancelArrival, navigate]);
-
   const closeAbout = useCallback(() => {
     setAboutOpen(false);
     setTimeout(() => document.querySelector('[data-launchpad-action="about"]')?.focus(), 0);
   }, []);
 
+  // The launchpad's WORK link is the single recruiter entry while it is open.
+  useEffect(() => {
+    const on = introDone && overviewOpen && screenPhase === 'room';
+    document.body.toggleAttribute('data-launchpad-open', on);
+    return () => document.body.removeAttribute('data-launchpad-open');
+  }, [introDone, overviewOpen, screenPhase]);
+
   // Keys 1–5 mirror the launchpad buttons while it is on screen.
   useEffect(() => {
     if (!introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen) return undefined;
-    const order = ['desktop-projects', 'mobile-projects', 'explore-room', 'recruiter', 'about', 'tour'];
+    const order = ['desktop-projects', 'mobile-projects', 'explore-room', 'about', 'tour'];
     const onKey = (e) => {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       if (e.target?.closest?.('input, textarea, [contenteditable="true"]')) return;
-      const i = '123456'.indexOf(e.key);
+      const i = '12345'.indexOf(e.key);
       if (i < 0) return;
       const button = document.querySelector(`[data-launchpad-action="${order[i]}"]`);
       if (!button) return;
@@ -840,14 +842,11 @@ export default function Scan() {
             <button data-launchpad-action="explore-room" onClick={gate(handleExploreRoom)}>
               <kbd className="mono">3</kbd><span className="mono">EXPLORE THE ROOM</span><small>Play with everything on the desk · open-ended</small>
             </button>
-            <button data-launchpad-action="recruiter" onClick={handleRecruiter}>
-              <kbd className="mono">4</kbd><span className="mono">RECRUITER? 30-SECOND VERSION</span><small>One page: projects, experience, skills · 30 s</small>
-            </button>
             <button data-launchpad-action="about" onClick={() => setAboutOpen(true)}>
-              <kbd className="mono">5</kbd><span className="mono">ABOUT ME</span><small>Who I am, where I've worked, what I've won · 1 min</small>
+              <kbd className="mono">4</kbd><span className="mono">ABOUT ME</span><small>Who I am, where I've worked, what I've won · 1 min</small>
             </button>
             <button data-launchpad-action="tour" onClick={gate(startTour)}>
-              <kbd className="mono">6</kbd><span className="mono">GUIDED TOUR</span><small>Sit back: the room shows itself · 60 s</small>
+              <kbd className="mono">5</kbd><span className="mono">GUIDED TOUR</span><small>Sit back: the room shows itself · 60 s</small>
             </button>
           </div>
           {queuedAction && <p className="launchpad-pending mono" role="status">PREPARING THE ROOM… YOUR CHOICE STARTS AUTOMATICALLY</p>}
@@ -1065,6 +1064,7 @@ const css = `
 .launchpad-links a,.launchpad-links button { color:var(--bone); min-height:32px; }
 @keyframes launchpad-in { from { opacity:0; } }
 @media(max-height:650px) { .launchpad-statement { display:none; } .launchpad-actions {top:136px;} .launchpad-actions button {min-height:52px;padding-top:8px;padding-bottom:8px;} .launchpad h1 {font-size:30px;} .launchpad-role {top:98px;} }
+body[data-launchpad-open] .escape-link { display:none; }
 @media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;width:min(560px,calc(100vw - 2*var(--gutter)));display:grid;grid-template-columns:1fr 1fr;gap:6px;} .launchpad-actions button {min-height:44px;padding:6px 10px 6px 46px;} .launchpad-actions kbd {left:10px;} .launchpad-actions span {font-size:12px;} }
 @media(pointer:coarse) and (max-height:450px) { .escape-link { display:none !important; } }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
