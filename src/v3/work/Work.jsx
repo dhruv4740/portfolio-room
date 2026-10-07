@@ -931,6 +931,16 @@ export default function Work() {
               </section>
             )}
 
+            {contact.email && (
+              <section className="work-section" aria-labelledby="work-contact-heading">
+                <h2 id="work-contact-heading" className="work-section-head">Contact</h2>
+                <p className="work-job-detail">
+                  Looking for an internship? Email me at{' '}
+                  <a className="work-link" href={`mailto:${contact.email}`}>{contact.email}</a>.
+                </p>
+              </section>
+            )}
+
             <section className="work-section" aria-labelledby="work-skills-heading">
               <h2 id="work-skills-heading" className="work-section-head">
                 Skills
