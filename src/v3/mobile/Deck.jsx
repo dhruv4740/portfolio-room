@@ -1,448 +1,124 @@
 // ============================================================================
-// Deck — mobile surface. A vertical, full-bleed, swipeable card deck
-// (Stories/Reels format) where the phone's gyroscope drives parallax.
-// Not a degraded copy of the desktop splat scan — a different genre.
+// Deck — mobile surface. A dense, scrolling page: who I am, the résumé one tap
+// away, and project cards with real previews. The phone's gyroscope still
+// nudges the preview images; taps and section changes give haptic feedback.
+// The 3D room is optional (best in landscape).
 // ============================================================================
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import '../tokens.css';
 import { identity, contact, projects, featuredProjectIds, moreProjectIds } from '../content/index.js';
 import { prefersReducedMotion, setOverride } from '../lib/capability.js';
 import { useGyro } from './useGyro.js';
 
-const BG_MULT = 18;
-const FG_MULT = 6;
+const PREVIEW = {
+  focuslock: '/previews/focuslock.jpg',
+  darksentinel: '/previews/darksentinel.jpg',
+  crisiswatch: '/previews/crisiswatch.jpg',
+  fraud: '/previews/fraud.jpg',
+  portfolio3d: '/og.jpg',
+};
+const SHIFT = 10;
 
 const css = `
-  .deck-root {
-    position: relative;
-    background: var(--void);
-    color: var(--bone);
-    font-family: var(--font-display);
-    width: 100%;
-    height: 100dvh;
-    overflow: hidden;
-  }
-
-  .deck-scroll {
-    height: 100dvh;
-    overflow-y: auto;
-    overflow-x: hidden;
-    scroll-snap-type: y mandatory;
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-
-  .deck-scroll::-webkit-scrollbar {
-    display: none;
-  }
-
-  .deck-card {
-    position: relative;
-    height: 100dvh;
-    width: 100%;
-    scroll-snap-align: start;
-    scroll-snap-stop: always;
-    overflow: hidden;
-    display: flex;
-    align-items: flex-end;
-  }
-
-  .deck-card + .deck-card {
-    border-top: var(--hair) solid var(--faint);
-  }
-
-  .deck-bg {
-    position: absolute;
-    inset: -24px;
-    will-change: transform;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-  }
-
-  .deck-bg-index {
-    font-size: clamp(9rem, 42vw, 15rem);
-    font-weight: 600;
-    color: var(--void-lift);
-    letter-spacing: 0;
-    user-select: none;
-  }
-
-  .deck-fg {
-    position: relative;
-    z-index: 2;
-    will-change: transform;
-    width: 100%;
-    padding: var(--gutter);
-    padding-right: 1.75rem;
-    padding-bottom: clamp(4.5rem, 14vh, 6rem);
-    display: flex;
-    flex-direction: column;
-    gap: 0.9rem;
-  }
-
   .escape-link { display: none !important; }
-
-  .deck-kicker {
-    color: var(--dim);
-    font-size: 0.875rem;
-  }
-
-  .deck-cta {
-    display: flex;
-    gap: 0.75rem;
-    flex-wrap: wrap;
-    margin-top: 0.5rem;
-  }
-
-  .deck-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 52px;
-    padding: 0 1.4rem;
-    font-size: 0.95rem;
-    color: var(--bone);
-    border: var(--hair) solid var(--faint);
-    text-decoration: none;
-  }
-
-  .deck-btn--primary {
-    background: var(--signal);
-    color: var(--void);
-    border-color: var(--signal);
-  }
-
-  .deck-hint {
-    color: var(--dim);
-    font-size: 0.875rem;
-    margin-top: 0.5rem;
-  }
-
-  .deck-more {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .deck-more li {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    padding: 0.55rem 0;
-    border-bottom: var(--hair) solid var(--faint);
-    font-size: 0.95rem;
-  }
-
-  .deck-more span:last-child {
-    color: var(--dim);
-    text-align: right;
-  }
-
-  .deck-title {
-    font-size: var(--t-hero);
-    font-weight: 600;
-    letter-spacing: var(--track-hero);
-    line-height: 1.02;
-  }
-
-  .deck-title--card {
-    font-size: var(--t-head);
-  }
-
-  .deck-statement,
-  .deck-tagline,
-  .deck-desc {
-    color: var(--bone);
-    max-width: 34ch;
-  }
-
-  .deck-tagline {
-    color: var(--dim);
-  }
-
-  .deck-tap {
-    align-self: flex-start;
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 0.2rem;
-    color: var(--signal);
-    border-bottom: var(--hair) solid var(--signal);
-    transition: opacity var(--d-feedback) var(--ease);
-  }
-
-  .deck-tap:active {
-    opacity: 0.6;
-  }
-
-  .deck-note {
-    max-width: 34ch;
-    color: var(--bone);
-  }
-
-  .deck-note-label {
-    display: block;
-    margin-bottom: 0.25rem;
-  }
-
-  .deck-tech {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    list-style: none;
-  }
-
-  .deck-tech li {
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    color: var(--dim);
-    border: var(--hair) solid var(--faint);
-    padding: 0.3rem 0.55rem;
-  }
-
-  .deck-links,
-  .deck-contact-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
-  }
-
-  .deck-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    color: var(--bone);
-    border-bottom: var(--hair) solid var(--faint);
-    transition: color var(--d-feedback) var(--ease), border-color var(--d-feedback) var(--ease);
-  }
-
-  .deck-link:hover,
-  .deck-link:focus-visible {
-    color: var(--signal);
-    border-color: var(--signal);
-  }
-
-  .deck-progress {
-    position: fixed;
-    right: max(0.9rem, env(safe-area-inset-right));
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: var(--z-hud);
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-    pointer-events: none;
-  }
-
-  .deck-progress-dot {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: var(--faint);
-    transition: background var(--d-transition) var(--ease), transform var(--d-transition) var(--ease);
-  }
-
-  .deck-progress-dot.is-active {
-    background: var(--signal);
-    transform: scale(1.6);
-  }
-
-  .deck-footer {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: max(0.6rem, env(safe-area-inset-bottom));
-    z-index: var(--z-hud);
-    display: flex;
-    justify-content: center;
-    gap: 1.5rem;
-    pointer-events: none;
-  }
-
-  .deck-footer-link {
-    pointer-events: auto;
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 0.6rem;
-    font-size: 0.875rem;
-    color: var(--dim);
-    transition: color var(--d-feedback) var(--ease);
-  }
-
-  .deck-footer-link:hover,
-  .deck-footer-link:focus-visible {
-    color: var(--bone);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .deck-bg,
-    .deck-fg {
-      transform: none !important;
-    }
-  }
+  .deck-root { background: var(--void); color: var(--bone); font-family: var(--font-display); min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
+  .deck-wrap { max-width: 560px; margin: 0 auto; padding: max(1.25rem, env(safe-area-inset-top)) 1.1rem 2rem; display: flex; flex-direction: column; gap: 1.1rem; }
+  .deck-pill { align-self: flex-start; display: inline-flex; align-items: center; gap: .5rem; font-size: .8125rem; color: var(--bone); border: var(--hair) solid var(--faint); padding: .4rem .75rem; border-radius: 999px; }
+  .deck-pill i { width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; }
+  .deck-name { font-size: clamp(2.4rem, 12vw, 3.2rem); font-weight: 600; letter-spacing: -0.03em; line-height: 1.02; margin: 0; }
+  .deck-role { color: var(--dim); font-size: .875rem; }
+  .deck-lede { font-size: 1.05rem; line-height: 1.45; max-width: 36ch; }
+  .deck-cta { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+  .deck-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; font-size: .9rem; color: var(--bone); border: var(--hair) solid var(--faint); text-decoration: none; background: var(--void-lift); font-family: inherit; cursor: pointer; }
+  .deck-btn--primary { background: var(--signal); color: var(--void); border-color: var(--signal); font-weight: 600; }
+  .deck-btn:active { opacity: .7; }
+  .deck-links { display: flex; gap: 1.4rem; }
+  .deck-link { display: inline-flex; align-items: center; min-height: 44px; font-size: .875rem; color: var(--bone); border: 0; border-bottom: var(--hair) solid var(--faint); text-decoration: none; background: none; font-family: inherit; cursor: pointer; padding: 0; }
+  .deck-room { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .85rem 1rem; background: var(--void-lift); border: var(--hair) solid var(--faint); text-align: left; color: var(--bone); font-family: inherit; cursor: pointer; width: 100%; }
+  .deck-room b { display: block; font-weight: 500; font-size: .95rem; }
+  .deck-room span span { display: block; color: var(--dim); font-size: .8125rem; margin-top: .15rem; }
+  .deck-room .deck-rot { font-size: 1.5rem; color: var(--signal); }
+  .deck-h { font-size: .8125rem; color: var(--dim); letter-spacing: .12em; text-transform: uppercase; margin: .6rem 0 -.2rem; }
+  .deck-card { background: var(--void-lift); border: var(--hair) solid var(--faint); overflow: hidden; display: flex; flex-direction: column; opacity: 0; transform: translateY(14px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
+  .deck-card.is-in { opacity: 1; transform: none; }
+  .deck-shot { aspect-ratio: 3 / 2; overflow: hidden; background: #0d0d10; }
+  .deck-shot img { width: calc(100% + ${SHIFT * 2}px); height: calc(100% + ${SHIFT * 2}px); margin: -${SHIFT}px; object-fit: cover; object-position: top; display: block; will-change: transform; }
+  .deck-body { padding: .9rem 1rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
+  .deck-kicker { color: var(--dim); font-size: .8125rem; }
+  .deck-title { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
+  .deck-desc { color: var(--bone); font-size: .95rem; line-height: 1.4; }
+  .deck-tech { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; margin: 0; padding: 0; }
+  .deck-tech li { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); border: var(--hair) solid var(--faint); padding: .25rem .5rem; }
+  .deck-more { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .deck-more li { display: flex; align-items: center; gap: .8rem; padding: .7rem 0; border-bottom: var(--hair) solid var(--faint); }
+  .deck-more img { width: 64px; height: 48px; object-fit: cover; object-position: top; border: var(--hair) solid var(--faint); flex: none; }
+  .deck-more .deck-ph { display: grid; place-items: center; color: var(--dim); font-size: 1.3rem; width: 64px; height: 48px; flex: none; background: var(--void-lift); border: var(--hair) solid var(--faint); }
+  .deck-more b { display: block; font-weight: 500; font-size: .95rem; }
+  .deck-more span { display: block; color: var(--dim); font-size: .8125rem; line-height: 1.3; }
+  .deck-foot { display: flex; justify-content: space-between; margin-top: .5rem; }
+  @media (prefers-reduced-motion: reduce) { .deck-card { opacity: 1; transform: none; transition: none; } .deck-shot img { transform: none !important; } }
 `;
 
-function ProjectCard({ project }) {
+const buzz = (ms = 8) => {
+  if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.(ms);
+};
+
+function ProjectCard({ project, tilt, reduced }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        el.classList.add('is-in');
+        buzz(6);
+        io.disconnect();
+      }
+    }, { threshold: 0, rootMargin: '0px 0px -8% 0px' });
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  const src = PREVIEW[project.id];
   const live = project.links?.live?.startsWith('http') ? project.links.live : '';
-  const hasLinks = Boolean(live || project.links?.github);
+  const shift = reduced ? undefined : { transform: `translate3d(${(tilt.x * SHIFT).toFixed(1)}px, ${(tilt.y * SHIFT).toFixed(1)}px, 0)` };
 
   return (
-    <>
-      <p className="mono deck-kicker">
-        {project.kind} &middot; {project.year}
-      </p>
-      <h2 className="deck-title deck-title--card">{project.name}</h2>
-      <p className="deck-desc">{project.summary || project.tagline}</p>
-
-      {project.tech?.length > 0 && (
-        <ul className="deck-tech" aria-label={`${project.name} technologies`}>
-          {project.tech.map((tech) => (
-            <li key={tech}>{tech}</li>
-          ))}
-        </ul>
-      )}
-
-      {hasLinks && (
-        <div className="deck-links">
-          {live && (
-            <a className="mono deck-link" href={live} target="_blank" rel="noopener noreferrer">
-              VIEW LIVE
-            </a>
-          )}
-          {project.links.github && (
-            <a className="mono deck-link" href={project.links.github} target="_blank" rel="noopener noreferrer">
-              SOURCE
-            </a>
-          )}
+    <article className="deck-card" ref={ref}>
+      {src && (
+        <div className="deck-shot">
+          <img src={src} alt={`${project.name} screenshot`} loading="lazy" style={shift} />
         </div>
       )}
-    </>
+      <div className="deck-body">
+        <p className="mono deck-kicker">{project.kind} &middot; {project.year}</p>
+        <h2 className="deck-title">{project.name}</h2>
+        <p className="deck-desc">{project.summary || project.tagline}</p>
+        {project.tech?.length > 0 && (
+          <ul className="deck-tech" aria-label={`${project.name} technologies`}>
+            {project.tech.map((t) => <li key={t}>{t}</li>)}
+          </ul>
+        )}
+        {(live || project.links?.github) && (
+          <div className="deck-links">
+            {live && <a className="mono deck-link" href={live} target="_blank" rel="noopener noreferrer" onClick={() => buzz()}>VIEW LIVE</a>}
+            {project.links?.github && <a className="mono deck-link" href={project.links.github} target="_blank" rel="noopener noreferrer" onClick={() => buzz()}>SOURCE</a>}
+          </div>
+        )}
+      </div>
+    </article>
   );
-}
-
-function MoreCard() {
-  const list = moreProjectIds.map((id) => projects.find((p) => p.id === id)).filter(Boolean);
-  return (
-    <>
-      <p className="mono deck-kicker">MORE PROJECTS</p>
-      <ul className="deck-more">
-        {list.map((p) => (
-          <li key={p.id}>
-            <span>{p.name}</span>
-            <span>{p.tagline}</span>
-          </li>
-        ))}
-      </ul>
-      <a className="mono deck-link" href="/work/">ALL DETAILS</a>
-    </>
-  );
-}
-
-function ContactCard() {
-  const hasAny =
-    contact.email || contact.github || contact.linkedin || contact.twitter || contact.resume;
-
-  return (
-    <>
-      <p className="mono deck-kicker">GET IN TOUCH</p>
-      <h2 className="deck-title deck-title--card">Let&rsquo;s talk.</h2>
-      {hasAny && (
-        <div className="deck-contact-list">
-          {contact.email && (
-            <a className="mono deck-link" href={`mailto:${contact.email}`}>
-              {contact.email}
-            </a>
-          )}
-          {contact.github && (
-            <a className="mono deck-link" href={contact.github} target="_blank" rel="noopener noreferrer">
-              {contact.githubLabel || contact.github}
-            </a>
-          )}
-          {contact.linkedin && (
-            <a className="mono deck-link" href={contact.linkedin} target="_blank" rel="noopener noreferrer">
-              LINKEDIN
-            </a>
-          )}
-          {contact.twitter && (
-            <a className="mono deck-link" href={contact.twitter} target="_blank" rel="noopener noreferrer">
-              TWITTER
-            </a>
-          )}
-          {contact.resume && (
-            <a className="mono deck-link" href={contact.resume} target="_blank" rel="noopener noreferrer">
-              RESUME
-            </a>
-          )}
-        </div>
-      )}
-    </>
-  );
-}
-
-function buildCards() {
-  return [
-    { type: 'intro', id: 'intro' },
-    ...featuredProjectIds
-      .map((id) => projects.find((p) => p.id === id))
-      .filter(Boolean)
-      .map((project) => ({ type: 'project', id: project.id, project })),
-    { type: 'more', id: 'more' },
-    { type: 'contact', id: 'contact' },
-  ];
 }
 
 export default function Deck() {
   const { tilt, permission, request } = useGyro();
   const reduced = prefersReducedMotion();
-  const cards = useMemo(buildCards, []);
+  const featured = useMemo(() => featuredProjectIds.map((id) => projects.find((p) => p.id === id)).filter(Boolean), []);
+  const more = useMemo(() => moreProjectIds.map((id) => projects.find((p) => p.id === id)).filter(Boolean), []);
 
-  const [activeIndex, setActiveIndex] = useState(0);
-  const cardRefs = useRef([]);
-  const prevIndexRef = useRef(0);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting);
-        if (visible.length === 0) return;
-        const top = visible.reduce((a, b) => (a.intersectionRatio > b.intersectionRatio ? a : b));
-        const idx = Number(top.target.dataset.index);
-        if (!Number.isNaN(idx)) setActiveIndex(idx);
-      },
-      { threshold: 0.6 }
-    );
-
-    cardRefs.current.forEach((el) => {
-      if (el) observer.observe(el);
-    });
-
-    return () => observer.disconnect();
-  }, [cards.length]);
-
-  useEffect(() => {
-    if (activeIndex !== prevIndexRef.current) {
-      prevIndexRef.current = activeIndex;
-      navigator.vibrate?.(8);
-    }
-  }, [activeIndex]);
-
-  const setCardRef = useCallback((index) => (el) => {
-    cardRefs.current[index] = el;
-  }, []);
-
-  const layerStyle = (mult) =>
-    reduced
-      ? undefined
-      : { transform: `translate3d(${(tilt.x * mult).toFixed(2)}px, ${(tilt.y * mult).toFixed(2)}px, 0)` };
-
-  const switchToScan = () => {
+  const enterRoom = () => {
+    buzz(12);
     setOverride('scan');
     window.location.reload();
   };
@@ -450,63 +126,54 @@ export default function Deck() {
   return (
     <>
       <style>{css}</style>
-      <div className="deck-root">
-        <div className="deck-progress" aria-hidden="true">
-          {cards.map((card, i) => (
-            <span
-              key={card.id}
-              className={`deck-progress-dot${i === activeIndex ? ' is-active' : ''}`}
-            />
-          ))}
-        </div>
+      <main className="deck-root">
+        <div className="deck-wrap">
+          <span className="deck-pill"><i /> Open to remote internships</span>
+          <div>
+            <h1 className="deck-name">{identity.name}</h1>
+            <p className="mono deck-role">{identity.role} &middot; {identity.location}</p>
+          </div>
+          <p className="deck-lede">{identity.tagline}</p>
+          <div className="deck-cta">
+            <a className="mono deck-btn deck-btn--primary" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={() => buzz()}>RESUME</a>
+            <a className="mono deck-btn" href={`mailto:${contact.email}`} onClick={() => buzz()}>EMAIL</a>
+          </div>
+          <div className="deck-links">
+            <a className="mono deck-link" href={contact.github} target="_blank" rel="noopener noreferrer">GITHUB</a>
+            <a className="mono deck-link" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LINKEDIN</a>
+            <a className="mono deck-link" href="/work/">FULL DETAILS</a>
+          </div>
 
-        <div className="deck-scroll" role="region" aria-label="Portfolio deck">
-          {cards.map((card, i) => (
-            <section key={card.id} className="deck-card" data-index={i} ref={setCardRef(i)}>
-              <div className="deck-bg" style={layerStyle(BG_MULT)} aria-hidden="true">
-                <span className="deck-bg-index mono">{String(i + 1).padStart(2, '0')}</span>
-              </div>
-
-              <div className="deck-fg" style={layerStyle(FG_MULT)}>
-                {card.type === 'intro' && (
-                  <>
-                    <p className="mono deck-kicker">{identity.role}</p>
-                    <h1 className="deck-title">{identity.name}</h1>
-                    <p className="deck-statement">{identity.tagline}</p>
-                    <div className="deck-cta">
-                      <a className="mono deck-btn deck-btn--primary" href={contact.resume} target="_blank" rel="noopener noreferrer">
-                        RESUME
-                      </a>
-                      <a className="mono deck-btn" href={`mailto:${contact.email}`}>EMAIL</a>
-                    </div>
-                    {permission === 'prompt' && (
-                      <button type="button" className="mono deck-tap" onClick={request}>
-                        TAP TO ENABLE TILT
-                      </button>
-                    )}
-                    <p className="mono deck-hint">SWIPE UP FOR PROJECTS &uarr;</p>
-                  </>
-                )}
-
-                {card.type === 'more' && <MoreCard />}
-
-                {card.type === 'project' && <ProjectCard project={card.project} />}
-
-                {card.type === 'contact' && <ContactCard />}
-              </div>
-            </section>
-          ))}
-        </div>
-
-        <footer className="deck-footer">
-          <a className="mono deck-footer-link" href="/work/">
-            TEXT VERSION
-          </a>
-          <button type="button" className="mono deck-footer-link" onClick={switchToScan}>
-            DESKTOP VERSION
+          <button type="button" className="deck-room" onClick={enterRoom}>
+            <span>
+              <b>Step into the 3D room</b>
+              <span>Optional. Best with your phone turned sideways.</span>
+            </span>
+            <span className="deck-rot" aria-hidden="true">&#x21BB;</span>
           </button>
-        </footer>
-      </div>
+          {permission === 'prompt' && (
+            <button type="button" className="mono deck-link" onClick={request}>TAP TO ENABLE TILT</button>
+          )}
+
+          <h2 className="mono deck-h">Selected projects</h2>
+          {featured.map((p) => <ProjectCard key={p.id} project={p} tilt={tilt} reduced={reduced} />)}
+
+          <h2 className="mono deck-h">More projects</h2>
+          <ul className="deck-more">
+            {more.map((p) => (
+              <li key={p.id}>
+                {PREVIEW[p.id] ? <img src={PREVIEW[p.id]} alt="" loading="lazy" /> : <span className="deck-ph" aria-hidden="true">{p.name[0]}</span>}
+                <div><b>{p.name}</b><span>{p.tagline}</span></div>
+              </li>
+            ))}
+          </ul>
+
+          <div className="deck-foot">
+            <a className="mono deck-link" href="/work/">TEXT VERSION</a>
+            <button type="button" className="mono deck-link" onClick={enterRoom}>DESKTOP VERSION</button>
+          </div>
+        </div>
+      </main>
     </>
   );
 }

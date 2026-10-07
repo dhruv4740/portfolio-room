@@ -1065,6 +1065,8 @@ const css = `
 .launchpad-links a,.launchpad-links button { color:var(--bone); min-height:32px; }
 @keyframes launchpad-in { from { opacity:0; } }
 @media(max-height:650px) { .launchpad-statement { display:none; } .launchpad-actions {top:136px;} .launchpad-actions button {min-height:52px;padding-top:8px;padding-bottom:8px;} .launchpad h1 {font-size:30px;} .launchpad-role {top:98px;} }
+@media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;width:min(560px,calc(100vw - 2*var(--gutter)));display:grid;grid-template-columns:1fr 1fr;gap:6px;} .launchpad-actions button {min-height:44px;padding:6px 10px 6px 46px;} .launchpad-actions kbd {left:10px;} .launchpad-actions span {font-size:12px;} }
+@media(pointer:coarse) and (max-height:450px) { .escape-link { display:none !important; } }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
 
 .seat-exit { display:flex; align-items:center; gap:10px; flex-wrap:wrap; max-width:calc(100% - 280px); position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:9px 12px; color:var(--bone); background:color-mix(in srgb, var(--void) 92%, transparent); border:1px solid var(--dim); }
