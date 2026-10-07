@@ -418,7 +418,7 @@ async function runHiddenTabAndLifecycle(browser) {
       // the seat-exit panel has no route link, so stand up first.
       await page.getByRole('button', { name: 'STAND UP / ESC', exact: true }).click();
       await page.locator('[data-testid="room-overview"]').waitFor({ timeout: 8_000 });
-      await page.locator('.launchpad-links a[href*="/work"]').first().click();
+      await page.locator('[data-testid="room-overview"] a[href*="/work"]').first().click();
       const reachedWork = await page.waitForURL(/#\/work|\/work/, { timeout: 8_000 }).then(() => true).catch(() => false);
       await page.waitForTimeout(200);
       const afterUnmount = await probeSnapshot(page);

@@ -316,11 +316,11 @@ export default function Scan() {
   // Keys 1–5 mirror the launchpad buttons while it is on screen.
   useEffect(() => {
     if (!introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen) return undefined;
-    const order = ['desktop-projects', 'mobile-projects', 'explore-room', 'about', 'tour'];
+    const order = ['desktop-projects', 'explore-room', 'mobile-projects', 'tour'];
     const onKey = (e) => {
       if (e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey || e.repeat) return;
       if (e.target?.closest?.('input, textarea, [contenteditable="true"]')) return;
-      const i = '12345'.indexOf(e.key);
+      const i = '1234'.indexOf(e.key);
       if (i < 0) return;
       const button = document.querySelector(`[data-launchpad-action="${order[i]}"]`);
       if (!button) return;
@@ -833,28 +833,20 @@ export default function Scan() {
           <p className="launchpad-role mono">{identity.role} · {identity.location}</p>
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
-            <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>
-              <kbd className="mono">1</kbd><span className="mono">TRY MY PROJECTS</span><small>Run the real web apps on the computer · ~3 min</small>
-            </button>
-            <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>
-              <kbd className="mono">2</kbd><span className="mono">PHONE APPS</span><small>Try the Android apps on the phone · ~2 min</small>
-            </button>
-            <button data-launchpad-action="explore-room" onClick={gate(handleExploreRoom)}>
-              <kbd className="mono">3</kbd><span className="mono">EXPLORE THE ROOM</span><small>Play with everything on the desk · open-ended</small>
-            </button>
-            <button data-launchpad-action="about" onClick={() => setAboutOpen(true)}>
-              <kbd className="mono">4</kbd><span className="mono">ABOUT ME</span><small>Who I am, where I've worked, what I've won · 1 min</small>
-            </button>
-            <button data-launchpad-action="tour" onClick={gate(startTour)}>
-              <kbd className="mono">5</kbd><span className="mono">GUIDED TOUR</span><small>Sit back: the room shows itself · 60 s</small>
+            <a className="launchpad-primary" href="/work/" onClick={cancelArrival}>
+              <span className="mono">RÉSUMÉ &amp; WORK →</span><small>One page: projects, experience, résumé PDF · 30 s</small>
+            </a>
+            <button className="launchpad-secondary" data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>
+              <span className="mono">TRY MY LIVE APPS</span><small>Run the real web apps on the computer · ~3 min</small>
             </button>
           </div>
+          <p className="launchpad-more mono">
+            <span>or</span>
+            <button data-launchpad-action="explore-room" onClick={gate(handleExploreRoom)}>explore the room</button>
+            <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>phone apps</button>
+            <button data-launchpad-action="tour" onClick={gate(startTour)}>guided tour</button>
+          </p>
           {queuedAction && <p className="launchpad-pending mono" role="status">PREPARING THE ROOM… YOUR CHOICE STARTS AUTOMATICALLY</p>}
-          <nav className="launchpad-links mono" aria-label="Portfolio links">
-            <Link to="/work" onClick={cancelArrival}>WORK</Link>
-            <a href={contact.github} target="_blank" rel="noreferrer">GITHUB</a>
-            <button data-launchpad-action="contact" onClick={handleOpenContact}>CONTACT</button>
-          </nav>
         </section>
       )}
 
@@ -1065,7 +1057,18 @@ const css = `
 @keyframes launchpad-in { from { opacity:0; } }
 @media(max-height:650px) { .launchpad-statement { display:none; } .launchpad-actions {top:136px;} .launchpad-actions button {min-height:52px;padding-top:8px;padding-bottom:8px;} .launchpad h1 {font-size:30px;} .launchpad-role {top:98px;} }
 body[data-launchpad-open] .escape-link { display:none; }
-@media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;width:min(560px,calc(100vw - 2*var(--gutter)));display:grid;grid-template-columns:1fr 1fr;gap:6px;} .launchpad-actions button {min-height:44px;padding:6px 10px 6px 46px;} .launchpad-actions kbd {left:10px;} .launchpad-actions span {font-size:12px;} }
+.launchpad-actions { width:min(420px,calc(100vw - 2*var(--gutter))); }
+.launchpad-actions a, .launchpad-actions button { position:relative; display:block; min-height:64px; padding:14px 20px; text-align:left; text-decoration:none; transition:transform .18s,border-color .18s,background .18s; }
+.launchpad-actions .launchpad-primary { background:var(--signal); color:#0A0A0B; border:1px solid var(--signal); }
+.launchpad-actions .launchpad-primary span { color:#0A0A0B; font-size:15px; font-weight:600; letter-spacing:.08em; }
+.launchpad-actions .launchpad-primary small { color:#2b1a12; }
+.launchpad-actions .launchpad-primary:hover,.launchpad-actions .launchpad-primary:focus-visible { background:var(--bone); border-color:var(--bone); transform:translateX(4px); }
+.launchpad-actions .launchpad-secondary { padding-left:20px; }
+.launchpad-more { top:400px; display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; pointer-events:auto; font-size:12px; letter-spacing:.1em; color:#b7b9b2; text-shadow:0 1px 10px #000; }
+.launchpad-more button { color:var(--bone); border-bottom:1px solid #6b716e; min-height:32px; }
+.launchpad-more button:hover,.launchpad-more button:focus-visible { color:var(--signal); border-color:var(--signal); }
+@media(max-height:650px) { .launchpad-more {top:284px;} }
+@media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;} .launchpad-more {top:226px;} .launchpad-actions a,.launchpad-actions button {min-height:52px;padding:8px 16px;} }
 @media(pointer:coarse) and (max-height:450px) { .escape-link { display:none !important; } }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
 
