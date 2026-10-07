@@ -735,9 +735,10 @@ const css = `
     gap: 1rem;
     margin: 0 calc(var(--gutter) * -1);
     padding: 0.7rem var(--gutter);
-    background: rgba(10, 10, 11, 0.94);
+    background: #0A0A0B;
     border-bottom: var(--hair) solid var(--faint);
   }
+  .work-section-head { scroll-margin-top: 4.5rem; }
   .work-bar-name { font-weight: 600; font-size: 1rem; }
   .work-bar-role { color: var(--dim); font-size: 0.9rem; margin-left: 0.75rem; }
   .work-back {
