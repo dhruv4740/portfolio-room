@@ -14,17 +14,19 @@
     <!-- Open Graph: this link gets pasted into DMs and LinkedIn far more often
          than it gets typed. The unfurl is part of the first impression. -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="%VITE_SITE_URL%/" />
+    <link rel="canonical" href="%VITE_SITE_URL%/" />
     <meta property="og:title" content="Dhruv Kothari — Full-stack developer" />
     <meta
       property="og:description"
       content="Sit at my desk in a 3D room and run eight of my real projects: web apps on the computer, mobile apps on the phone."
     />
-    <meta property="og:image" content="/og.jpg" />
+    <meta property="og:image" content="%VITE_SITE_URL%/og.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="A desk with a monitor, lamp and phone in a dark room at night" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="/og.jpg" />
+    <meta name="twitter:image" content="%VITE_SITE_URL%/og.jpg" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -36,9 +38,18 @@
     <!-- Paint the background before any JS runs: no white flash on a dark site. -->
     <style>
       html, body { margin: 0; height: 100%; background: #0A0A0B; }
+      /* Escape hatch: plain markup, first in tab order, visible before any JS or 3D asset. */
+      .escape-link {
+        position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2147483000; white-space: nowrap;
+        padding: 10px 14px; background: #0A0A0B; color: #ececec;
+        border: 1px solid #3a3d41; border-radius: 4px;
+        font: 600 14px/1 "Space Grotesk", system-ui, sans-serif; text-decoration: none;
+      }
+      .escape-link:hover, .escape-link:focus-visible { background: #e4572e; color: #0A0A0B; outline: 2px solid #fff; outline-offset: 2px; }
     </style>
   </head>
   <body>
+    <a class="escape-link" href="/work/">View work and resume</a>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

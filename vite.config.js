@@ -21,17 +21,39 @@ const staticAppIndex = {
   },
 }
 
+// Local parity with the host's _redirects: /work -> /work/ , /resume -> /resume/.
+const slashRedirects = {
+  name: 'slash-redirects',
+  configureServer(server) { server.middlewares.use(redirect) },
+  configurePreviewServer(server) { server.middlewares.use(redirect) },
+}
+function redirect(req, res, next) {
+  const m = /^\/(work|resume)(\?.*)?$/.exec(req.url || '')
+  if (!m) return next()
+  res.statusCode = 301
+  res.setHeader('Location', `/${m[1]}/${m[2] || ''}`)
+  res.end()
+}
+
 export default defineConfig({
-  plugins: [react(), staticAppIndex],
+  plugins: [react(), staticAppIndex, slashRedirects],
   // Production builds were emitting classic React.createElement with no React
   // in scope ("React is not defined" on first paint) even though the resolved
   // oxc config says automatic. Pinning esbuild's JSX mode fixes the output.
   esbuild: { jsx: 'automatic' },
+  // Real HTML files for / , /work/ and /resume/. No SPA fallback: an unknown
+  // path must 404, never answer with the room's index.html.
+  appType: 'mpa',
   build: {
     // Nothing on the /work path may pull in three or the scan bundle — if this
     // warning starts naming a chunk on the fast path, that is a regression.
     chunkSizeWarningLimit: 2048,
     rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        work: resolve(import.meta.dirname, 'work/index.html'),
+        resume: resolve(import.meta.dirname, 'resume/index.html'),
+      },
       output: {
         manualChunks(id) {
           // three is shared by the scan surface only, but splitting it keeps

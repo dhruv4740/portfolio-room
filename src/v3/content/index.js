@@ -11,7 +11,7 @@ export const identity = {
   name: 'Dhruv Kothari',
   role: 'Full-stack developer',
   location: 'Mumbai, India',
-  tagline: 'Third-year IT student. Previously growth intern at Blink.new (YC). Open to internships.',
+  tagline: 'Full-stack developer building Android apps, Python backends and AI integrations.',
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
     'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',
@@ -38,12 +38,26 @@ export const experience = [
   {
     id: 'blink',
     role: 'Growth Intern',
-    org: 'Blink.new (1Flow Inc.)',
-    note: 'YC-backed AI app builder',
+    org: 'Blink.new',
+    note: 'YC-backed AI app builder, remote',
     from: 'Jan 2026',
-    to: 'Present',
+    to: 'Oct 2026',
     detail:
-      'Ran organic growth experiments across search and community channels; analysed onboarding and engagement metrics to lift activation.',
+      'Built 4 internal growth tools: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.',
+    bullets: [
+      'Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).',
+      'Built a link-building engine (Flask dashboard) that found and scored prospect sites and extracted contacts.',
+      'Tracked AI-search citations across 18 prompts and found competitor docs were cited over Reddit threads.',
+    ],
+    metrics: [
+      { value: '4', label: 'internal growth tools' },
+      { value: '650', label: 'leads sourced' },
+      { value: '489', label: 'emails sent' },
+      { value: '18%', label: 'human reply rate' },
+      { value: '14', label: 'positive responses' },
+      { value: '676', label: 'prospect sites found and scored' },
+      { value: '29.85%', label: 'of Blink social traffic from Reddit (Jun 2026)' },
+    ],
   },
   {
     id: 'arh',
@@ -52,7 +66,7 @@ export const experience = [
     from: 'Dec 2025',
     to: 'Jan 2026',
     detail:
-      'UI refactoring and asset handling for page responsiveness; integrated backend APIs and reduced UI inconsistencies.',
+      'Built and launched the company e-commerce storefront, tanttu.in, on Shopify.',
   },
   {
     id: 'efarm',
@@ -103,6 +117,8 @@ export const projects = [
       'It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem — and bought a real tradeoff: Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.',
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
+    summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
+    detail: 'Enforces at the OS level, so switching browsers cannot bypass it. 200+ unit tests; CI builds a signed APK and installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
@@ -148,6 +164,9 @@ export const projects = [
       'I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
     broke:
       'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
+    summary: 'A team dark-web traffic monitor that classifies network traffic and shows alerts on a live dashboard.',
+    detail: 'I built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded.',
+    badge: 'Top 5 in problem statement, IIT Madras & BITS Goa hackathon 2026',
     tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
     links: { live: '', github: '' },
     note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture; I built the dashboards, the API features and the uncertain-zone Claude call.',
@@ -193,6 +212,36 @@ export const projects = [
     tech: ['ESP32', 'Sensors', 'C++'],
     links: { live: '', github: '' },
   },
+  {
+    id: 'portfolio3d',
+    name: '3D Portfolio',
+    year: 2026,
+    kind: 'product',
+    tagline: 'This site: a 3D studio room whose monitor runs live demos of other projects.',
+    description: '',
+    decision: '',
+    broke: '',
+    summary: 'An interactive 3D studio room whose monitor runs live demos of my other projects.',
+    detail:
+      'Detects each visitor\'s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
+    tech: ['Three.js', 'React 19', 'GSAP', 'GLSL', 'Playwright'],
+    links: { live: '/', github: '' },
+  },
+  {
+    id: 'blackout',
+    name: 'Blackout',
+    year: 2026,
+    kind: 'product',
+    tagline: 'Turns an OLED phone screen fully black while audio keeps playing.',
+    description: '',
+    decision: '',
+    broke: '',
+    summary: 'Turns an OLED phone screen fully black while audio keeps playing, saving battery.',
+    detail:
+      'Fingerprint unlock, a Quick Settings tile, and it uncovers automatically for calls and alarms. No internet permission.',
+    tech: ['Kotlin', 'Android'],
+    links: { live: '', github: '' },
+  },
 ];
 
 // Anchors are authored against the modeled room. `ref` points at a project id,
@@ -220,3 +269,7 @@ export const anchors = [
     body: `Based in ${identity.location}. Reach me at ${contact.email}.`,
   },
 ];
+
+// /work shows these first, in the resume's order, as full cards; every other
+// listed project goes under "More projects".
+export const featuredProjectIds = ['focuslock', 'portfolio3d', 'darksentinel', 'blackout'];

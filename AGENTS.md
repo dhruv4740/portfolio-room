@@ -15,14 +15,18 @@ exists for menial, well-specified work: write a self-contained prompt (template
 forwards it, and nothing blocks on it. Old team, ownership and prompt documents
 are in `docs/archive/` and are historical only.
 
-**Direction.** GTA V/RDR2-feeling physical realism for one room is the
-owner-approved target, not an achieved claim. The room is set in Mumbai: the sky
-follows IST and the weather is live (never snow).
+**Direction.** The goal is a good portfolio that gets the owner an internship.
+The recruiter path (`/work/`, `/resume/`, the escape link on `/`) comes first and
+must stay light: no three.js, models or audio. The 3D room, phone apps and
+laptop apps are the memorable part, and small fun details stay small: one
+camera or animation beat each, no new subsystems. Photoreal graphics (GTA V or
+RDR2 style realism) is not a goal. The room is set in Mumbai: the sky follows
+IST and the weather is live (never snow).
 
 ## What this is
 
-A personal portfolio (Dhruv Kothari). Its first job is to impress other
-builders; its second is to get an internship screener to the facts fast. One
+A personal portfolio (Dhruv Kothari). Its first job is to get an internship
+screener to the facts fast; its second is to show the work through the room. One
 content source drives three surfaces chosen at runtime by device capability:
 
 | Surface  | Route   | Who gets it                                       | Source            |

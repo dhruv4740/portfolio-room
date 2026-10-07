@@ -23,7 +23,7 @@ The desktop surface is a first-person 3D room at a desk in Mumbai:
 - The phone runs the Android apps.
 - Every object on the desk can be picked up or used.
 
-The target is a room that feels like GTA V or RDR2. It hasn't got there yet.
+The room is a memorable extra, not the goal. The goal is a portfolio that gets an internship: `/work/` and `/resume/` are static pages with no three.js. Photoreal realism is not pursued.
 
 ## Branches
 

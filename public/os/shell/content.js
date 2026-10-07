@@ -6,7 +6,7 @@ export default Object.freeze({
     "name": "Dhruv Kothari",
     "role": "Full-stack developer",
     "location": "Mumbai, India",
-    "tagline": "Third-year IT student. Growth intern at Blink.new (YC).",
+    "tagline": "Full-stack developer building Android apps, Python backends and AI integrations.",
     "statement": "I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure."
   },
   "contact": {
@@ -15,7 +15,7 @@ export default Object.freeze({
     "githubLabel": "github.com/dhruv4740",
     "linkedin": "https://linkedin.com/in/dhruv4740",
     "twitter": "",
-    "resume": ""
+    "resume": "/resume.pdf"
   },
   "education": {
     "school": "KJ Somaiya College of Engineering",
@@ -26,11 +26,46 @@ export default Object.freeze({
     {
       "id": "blink",
       "role": "Growth Intern",
-      "org": "Blink.new (1Flow Inc.)",
-      "note": "YC-backed AI app builder",
+      "org": "Blink.new",
+      "note": "YC-backed AI app builder, remote",
       "from": "Jan 2026",
-      "to": "Present",
-      "detail": "Ran organic growth experiments across search and community channels; analysed onboarding and engagement metrics to lift activation."
+      "to": "Oct 2026",
+      "detail": "Built 4 internal growth tools: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.",
+      "bullets": [
+        "Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).",
+        "Built a link-building engine (Flask dashboard) that found and scored prospect sites and extracted contacts.",
+        "Tracked AI-search citations across 18 prompts and found competitor docs were cited over Reddit threads."
+      ],
+      "metrics": [
+        {
+          "value": "4",
+          "label": "internal growth tools"
+        },
+        {
+          "value": "650",
+          "label": "leads sourced"
+        },
+        {
+          "value": "489",
+          "label": "emails sent"
+        },
+        {
+          "value": "18%",
+          "label": "human reply rate"
+        },
+        {
+          "value": "14",
+          "label": "positive responses"
+        },
+        {
+          "value": "676",
+          "label": "prospect sites found and scored"
+        },
+        {
+          "value": "29.85%",
+          "label": "of Blink social traffic from Reddit (Jun 2026)"
+        }
+      ]
     },
     {
       "id": "arh",
@@ -38,7 +73,7 @@ export default Object.freeze({
       "org": "ARH Tubes Pvt. Ltd.",
       "from": "Dec 2025",
       "to": "Jan 2026",
-      "detail": "UI refactoring and asset handling for page responsiveness; integrated backend APIs and reduced UI inconsistencies."
+      "detail": "Built and launched the company e-commerce storefront, tanttu.in, on Shopify."
     },
     {
       "id": "efarm",
@@ -297,6 +332,49 @@ export default Object.freeze({
         "ESP32",
         "Sensors",
         "C++"
+      ],
+      "links": {
+        "live": "",
+        "github": ""
+      },
+      "note": ""
+    },
+    {
+      "id": "portfolio3d",
+      "name": "3D Portfolio",
+      "year": 2026,
+      "kind": "product",
+      "type": "SIDE QUEST",
+      "tagline": "This site: a 3D studio room whose monitor runs live demos of other projects.",
+      "description": "",
+      "decision": "",
+      "broke": "",
+      "tech": [
+        "Three.js",
+        "React 19",
+        "GSAP",
+        "GLSL",
+        "Playwright"
+      ],
+      "links": {
+        "live": "/",
+        "github": ""
+      },
+      "note": ""
+    },
+    {
+      "id": "blackout",
+      "name": "Blackout",
+      "year": 2026,
+      "kind": "product",
+      "type": "SIDE QUEST",
+      "tagline": "Turns an OLED phone screen fully black while audio keeps playing.",
+      "description": "",
+      "decision": "",
+      "broke": "",
+      "tech": [
+        "Kotlin",
+        "Android"
       ],
       "links": {
         "live": "",

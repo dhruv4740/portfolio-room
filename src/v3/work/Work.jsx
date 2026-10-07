@@ -1,7 +1,8 @@
 import { useCallback, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import '../tokens.css';
-import { identity, contact, education, experience, achievements, skills, projects } from '../content/index.js';
+import {
+  identity, contact, education, experience, achievements, skills, projects, featuredProjectIds,
+} from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 
 /** Resolve a skill's `proof` ids to the project names they reference.
@@ -688,6 +689,35 @@ const css = `
       outline: none;
     }
   }
+
+  .work-metrics {
+    list-style: none;
+    margin: 1rem 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+    gap: 0.6rem;
+  }
+  .work-metrics li {
+    border: 1px solid var(--line, #26282b);
+    padding: 0.6rem 0.75rem;
+  }
+  .work-metrics strong {
+    display: block;
+    font-size: 1.35rem;
+    line-height: 1.1;
+    color: var(--ink, #ececec);
+  }
+  .work-metrics span { font-size: 0.82rem; color: var(--dim); }
+  .work-bullets { margin: 0.9rem 0 0; padding-left: 1.1rem; color: var(--dim); }
+  .work-bullets li { margin: 0.3rem 0; }
+
+  .work-project-summary { margin: 0.5rem 0 0; font-size: 1.05rem; }
+  .work-project-detail { margin: 0.4rem 0 0; color: var(--dim); }
+  .work-project-badge { margin: 0.5rem 0 0; color: var(--signal); font-size: var(--t-data); }
+  .work-projects--compact .work-project { padding-block: 1rem; }
+  .work-projects--compact .work-project-name { font-size: 1.1rem; }
+  .work-projects--compact .work-project-tagline { margin: 0.3rem 0 0; }
 `;
 
 export default function Work() {
@@ -704,6 +734,93 @@ export default function Work() {
   // chip, which reads as a broken stub rather than as work. Withhold it until
   // there is something true to say about it.
   const listed = projects.filter((p) => p.description || p.tagline);
+  const featured = featuredProjectIds
+    .map((id) => listed.find((p) => p.id === id))
+    .filter(Boolean);
+  const more = listed.filter((p) => !featuredProjectIds.includes(p.id));
+
+  const renderProject = (project, index, total, compact) => {
+    const hasLinks = project.links?.live || project.links?.github;
+    const ordinal = String(index + 1).padStart(2, '0');
+    return (
+      <li key={project.id} className="work-project">
+        <div className="work-project-meta mono">
+          <span className="work-project-index">{ordinal}/{String(total).padStart(2, '0')}</span>
+          <span>{project.year}</span>
+          <span>{project.kind}</span>
+        </div>
+        <h3 className="work-project-name">{project.name}</h3>
+        {compact ? (
+          project.tagline && <p className="work-project-tagline">{project.tagline}</p>
+        ) : (
+          <>
+            <p className="work-project-summary">{project.summary || project.tagline}</p>
+            {project.detail && <p className="work-project-detail">{project.detail}</p>}
+            {project.badge && <p className="mono work-project-badge">{project.badge}</p>}
+            {!project.summary && project.description && (
+              <p className="work-project-desc">{project.description}</p>
+            )}
+          </>
+        )}
+
+        {DEMOS[project.id] && (
+          <div className="work-demos" aria-label={`Try ${project.name}`}>
+            {DEMOS[project.id].map((demo, i) => (
+              <button
+                key={demo.label}
+                type="button"
+                className="work-demo-btn"
+                aria-pressed={open?.id === project.id && open.index === i}
+                onClick={(event) => { trigger.current = event.currentTarget; setOpen({ id: project.id, index: i }); }}
+              >
+                Try it · {demo.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {project.tech?.length > 0 && (
+          <ul className="work-tech" aria-label={`${project.name} technologies`}>
+            {project.tech.map((tech) => (<li key={tech}>{tech}</li>))}
+          </ul>
+        )}
+
+        {!compact && (project.decision || project.broke) && (
+          <details className="work-more">
+            <summary>Engineering notes</summary>
+            {project.decision && (
+              <div className="work-note">
+                <span className="mono work-note-label">Decision</span>
+                <p>{project.decision}</p>
+              </div>
+            )}
+            {project.broke && (
+              <div className="work-note">
+                <span className="mono work-note-label">What broke</span>
+                <p>{project.broke}</p>
+              </div>
+            )}
+          </details>
+        )}
+
+        {hasLinks && (
+          <div className="work-project-links">
+            {project.links.live && (
+              <a className="mono work-link" href={project.links.live}
+                {...(project.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>
+                Live
+              </a>
+            )}
+            {project.links.github && (
+              <a className="mono work-link" href={project.links.github} target="_blank" rel="noopener noreferrer">
+                Source
+              </a>
+            )}
+          </div>
+        )}
+      </li>
+    );
+  };
 
   const hasContact =
     contact.email || contact.github || contact.linkedin || contact.twitter || contact.resume;
@@ -728,8 +845,8 @@ export default function Work() {
 
           <main id="work-main" ref={mainRef} tabIndex={-1}>
             <section className="work-hero" aria-label="Introduction">
-              <h1 className="work-statement">{identity.statement}</h1>
-              {identity.tagline && <p className="mono work-tagline">{identity.tagline}</p>}
+              <h1 className="work-statement">{identity.name}</h1>
+              {identity.tagline && <p className="work-tagline">{identity.tagline}</p>}
 
               <ul className="work-wins" aria-label="Highlights">
                 {achievements.map((a) => (
@@ -743,9 +860,6 @@ export default function Work() {
                     <a className="work-action work-action--primary" href={contact.resume} target="_blank" rel="noopener noreferrer">
                       Résumé (PDF)
                     </a>
-                  )}
-                  {contact.email && (
-                    <a className="work-action" href={`mailto:${contact.email}`}>Email</a>
                   )}
                   {contact.github && (
                     <a className="work-action" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -772,6 +886,18 @@ export default function Work() {
                       <h3 className="work-job-role">{job.role}</h3>
                       <p className="work-job-org">{job.org}{job.note ? ` · ${job.note}` : ''}</p>
                       {job.detail && <p className="work-job-detail">{job.detail}</p>}
+                      {job.metrics && (
+                        <ul className="work-metrics" aria-label={`${job.org} results`}>
+                          {job.metrics.map((m) => (
+                            <li key={m.label}><strong>{m.value}</strong><span>{m.label}</span></li>
+                          ))}
+                        </ul>
+                      )}
+                      {job.bullets && (
+                        <ul className="work-bullets">
+                          {job.bullets.map((b) => (<li key={b}>{b}</li>))}
+                        </ul>
+                      )}
                     </div>
                   </li>
                 ))}
@@ -790,99 +916,20 @@ export default function Work() {
                 Projects
               </h2>
               <ol className="work-projects">
-                {listed.map((project, index) => {
-                  const hasLinks = project.links?.live || project.links?.github;
-                  const ordinal = String(index + 1).padStart(2, '0');
-                  const total = String(listed.length).padStart(2, '0');
-                  return (
-                    <li key={project.id} className="work-project">
-                      <div className="work-project-meta mono">
-                        <span className="work-project-index">
-                          {ordinal}/{total}
-                        </span>
-                        <span>{project.year}</span>
-                        <span>{project.kind}</span>
-                      </div>
-                      <h3 className="work-project-name">{project.name}</h3>
-                      {project.tagline && (
-                        <p className="work-project-tagline">{project.tagline}</p>
-                      )}
-                      {project.description && (
-                        <p className="work-project-desc">{project.description}</p>
-                      )}
-
-                      {DEMOS[project.id] && (
-                        <div className="work-demos" aria-label={`Try ${project.name}`}>
-                          {DEMOS[project.id].map((demo, i) => (
-                            <button
-                              key={demo.label}
-                              type="button"
-                              className="work-demo-btn"
-                              aria-pressed={open?.id === project.id && open.index === i}
-                              onClick={(event) => { trigger.current = event.currentTarget; setOpen({ id: project.id, index: i }); }}
-                            >
-                              Try it · {demo.label}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {project.tech?.length > 0 && (
-                        <ul className="work-tech" aria-label={`${project.name} technologies`}>
-                          {project.tech.map((tech) => (
-                            <li key={tech}>{tech}</li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {(project.decision || project.broke) && (
-                        <details className="work-more">
-                          <summary>Engineering notes</summary>
-                        {project.decision && (
-                          <div className="work-note">
-                            <span className="mono work-note-label">Decision</span>
-                            <p>{project.decision}</p>
-                          </div>
-                        )}
-
-                        {project.broke && (
-                          <div className="work-note">
-                            <span className="mono work-note-label">What broke</span>
-                            <p>{project.broke}</p>
-                          </div>
-                        )}
-                        </details>
-                      )}
-
-                      {hasLinks && (
-                        <div className="work-project-links">
-                          {project.links.live && (
-                            <a
-                              className="mono work-link"
-                              href={project.links.live}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Live
-                            </a>
-                          )}
-                          {project.links.github && (
-                            <a
-                              className="mono work-link"
-                              href={project.links.github}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Source
-                            </a>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
+                {featured.map((project, index) => renderProject(project, index, featured.length, false))}
               </ol>
             </section>
+
+            {more.length > 0 && (
+              <section className="work-section" aria-labelledby="work-more-projects-heading">
+                <h2 id="work-more-projects-heading" className="work-section-head">
+                  More projects
+                </h2>
+                <ol className="work-projects work-projects--compact">
+                  {more.map((project, index) => renderProject(project, index, more.length, true))}
+                </ol>
+              </section>
+            )}
 
             <section className="work-section" aria-labelledby="work-skills-heading">
               <h2 id="work-skills-heading" className="work-section-head">
@@ -915,9 +962,9 @@ export default function Work() {
                 <p className="work-room-copy">
                   The same projects, on a desk you can walk up to: a computer and a phone that run them.
                 </p>
-                <Link className="work-room-cta" to="/">
+                <a className="work-room-cta" href="/">
                   Enter the 3D room <span aria-hidden="true">&rarr;</span>
-                </Link>
+                </a>
                 <p className="mono work-room-note">
                   Needs a hardware GPU. If your device can&rsquo;t run it, you&rsquo;ll land back
                   here automatically.

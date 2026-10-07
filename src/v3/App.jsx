@@ -22,7 +22,6 @@ const Scan = lazy(() => {
   return import('./desktop/Scan.jsx').then(m => { reportProgress('bundle', 1_000_000, 1_000_000); return m; });
 });
 const Deck = lazy(() => import('./mobile/Deck.jsx'));
-const Work = lazy(() => import('./work/Work.jsx'));
 const CommandPalette = lazy(() => import('./ui/CommandPalette.jsx'));
 
 /** Minimal first paint. Never a blank screen — see ScanIntro's same rule. */
@@ -54,6 +53,14 @@ function Booting() {
   );
 }
 
+/** /work is a static page (work/index.html), not a route in this app. Old
+ *  /#/work links and the no-WebGL surface both land there with a real load,
+ *  so the router and the 3D chunks are never part of the recruiter path. */
+function GoToWork() {
+  useEffect(() => { window.location.replace('/work/'); }, []);
+  return null;
+}
+
 function Home() {
   // Resolved once per load. A visitor who overrides surface reloads the page,
   // so there is no need to react to live media-query changes here.
@@ -68,7 +75,7 @@ function Home() {
     return s;
   }, []);
 
-  if (surface === 'static') return <Navigate to="/work" replace />;
+  if (surface === 'static') return <GoToWork />;
   return surface === 'deck' ? <Deck /> : <Scan />;
 }
 
@@ -79,7 +86,7 @@ export default function App() {
       <Suspense fallback={<Booting />}>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/work" element={<Work />} />
+          <Route path="/work" element={<GoToWork />} />
           {/* Deep links into the room; Scan consumes them once it is ready. */}
           {['/os/:app', '/phone', '/phone/:app', '/about', '/contact', '/room/:object'].map(path => (
             <Route key={path} path={path} element={<Home />} />
