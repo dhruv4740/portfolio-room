@@ -11,5 +11,12 @@ Rollback point: production deployment 15116623 (deck v2 live). Preview alias: pr
 - public/_headers: immutable assets, 7-day models/previews. Live on preview alias (checked with curl).
 - verify-after-hours-audio: 33/35. The two lifecycle failures also occur on commit 41db62c, so they predate tonight's changes.
 
-## In progress
-- Pill coverage audit, cold-load measurement and model compression, seated touch look-around check, Haiku live-URL pass, then promote to production.
+- Deck: single route to /work (FULL DETAILS). The orange primary opens the PDF; flip it to /work if preferred.
+- /work: opaque sticky bar, heading scroll margin (heading was bleeding through).
+- verify-tour needs GPU=1 (passes). verify-v3 45/45, verify-recruiter 22/22 on preview and production.
+- PROMOTED to production: deployment 5bb077dd (commit 0399d1a label). Rollback: 15116623.
+
+## Not done
+- Model/texture compression and cold-load re-measure: remaining non-hand GLBs total ~2.8 MB, now cached 7 days; skipped as low gain vs. visual risk.
+- Seated touch look-around in landscape: still UNVERIFIED.
+- Open: Fact or Cap naming on the CrisisWatch card, empty dk-dev Pages project, URL stays pages.dev, dead aboutOpen panel code in Scan.jsx.
