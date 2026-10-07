@@ -5,9 +5,8 @@
 // ============================================================================
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import '../tokens.css';
-import { identity, contact, projects } from '../content/index.js';
+import { identity, contact, projects, featuredProjectIds, moreProjectIds } from '../content/index.js';
 import { prefersReducedMotion, setOverride } from '../lib/capability.js';
 import { useGyro } from './useGyro.js';
 
@@ -78,14 +77,69 @@ const css = `
     will-change: transform;
     width: 100%;
     padding: var(--gutter);
+    padding-right: 1.75rem;
     padding-bottom: clamp(4.5rem, 14vh, 6rem);
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
   }
 
+  .escape-link { display: none !important; }
+
   .deck-kicker {
     color: var(--dim);
+    font-size: 0.875rem;
+  }
+
+  .deck-cta {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+
+  .deck-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 52px;
+    padding: 0 1.4rem;
+    font-size: 0.95rem;
+    color: var(--bone);
+    border: var(--hair) solid var(--faint);
+    text-decoration: none;
+  }
+
+  .deck-btn--primary {
+    background: var(--signal);
+    color: var(--void);
+    border-color: var(--signal);
+  }
+
+  .deck-hint {
+    color: var(--dim);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+
+  .deck-more {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .deck-more li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.55rem 0;
+    border-bottom: var(--hair) solid var(--faint);
+    font-size: 0.95rem;
+  }
+
+  .deck-more span:last-child {
+    color: var(--dim);
+    text-align: right;
   }
 
   .deck-title {
@@ -144,7 +198,7 @@ const css = `
 
   .deck-tech li {
     font-family: var(--font-mono);
-    font-size: var(--t-micro);
+    font-size: 0.75rem;
     letter-spacing: var(--track-data);
     text-transform: uppercase;
     color: var(--dim);
@@ -217,6 +271,7 @@ const css = `
     align-items: center;
     min-height: 44px;
     padding: 0 0.6rem;
+    font-size: 0.875rem;
     color: var(--dim);
     transition: color var(--d-feedback) var(--ease);
   }
@@ -235,7 +290,8 @@ const css = `
 `;
 
 function ProjectCard({ project }) {
-  const hasLinks = Boolean(project.links?.live || project.links?.github);
+  const live = project.links?.live?.startsWith('http') ? project.links.live : '';
+  const hasLinks = Boolean(live || project.links?.github);
 
   return (
     <>
@@ -243,22 +299,7 @@ function ProjectCard({ project }) {
         {project.kind} &middot; {project.year}
       </p>
       <h2 className="deck-title deck-title--card">{project.name}</h2>
-      {project.tagline && <p className="deck-tagline">{project.tagline}</p>}
-      {project.description && <p className="deck-desc">{project.description}</p>}
-
-      {project.decision && (
-        <p className="deck-note">
-          <span className="mono deck-note-label signal">DECISION</span>
-          {project.decision}
-        </p>
-      )}
-
-      {project.broke && (
-        <p className="deck-note">
-          <span className="mono deck-note-label signal">BROKE</span>
-          {project.broke}
-        </p>
-      )}
+      <p className="deck-desc">{project.summary || project.tagline}</p>
 
       {project.tech?.length > 0 && (
         <ul className="deck-tech" aria-label={`${project.name} technologies`}>
@@ -270,8 +311,8 @@ function ProjectCard({ project }) {
 
       {hasLinks && (
         <div className="deck-links">
-          {project.links.live && (
-            <a className="mono deck-link" href={project.links.live} target="_blank" rel="noopener noreferrer">
+          {live && (
+            <a className="mono deck-link" href={live} target="_blank" rel="noopener noreferrer">
               VIEW LIVE
             </a>
           )}
@@ -282,6 +323,24 @@ function ProjectCard({ project }) {
           )}
         </div>
       )}
+    </>
+  );
+}
+
+function MoreCard() {
+  const list = moreProjectIds.map((id) => projects.find((p) => p.id === id)).filter(Boolean);
+  return (
+    <>
+      <p className="mono deck-kicker">MORE PROJECTS</p>
+      <ul className="deck-more">
+        {list.map((p) => (
+          <li key={p.id}>
+            <span>{p.name}</span>
+            <span>{p.tagline}</span>
+          </li>
+        ))}
+      </ul>
+      <a className="mono deck-link" href="/work/">ALL DETAILS</a>
     </>
   );
 }
@@ -330,7 +389,11 @@ function ContactCard() {
 function buildCards() {
   return [
     { type: 'intro', id: 'intro' },
-    ...projects.map((project) => ({ type: 'project', id: project.id, project })),
+    ...featuredProjectIds
+      .map((id) => projects.find((p) => p.id === id))
+      .filter(Boolean)
+      .map((project) => ({ type: 'project', id: project.id, project })),
+    { type: 'more', id: 'more' },
     { type: 'contact', id: 'contact' },
   ];
 }
@@ -409,14 +472,23 @@ export default function Deck() {
                   <>
                     <p className="mono deck-kicker">{identity.role}</p>
                     <h1 className="deck-title">{identity.name}</h1>
-                    {identity.statement && <p className="deck-statement">{identity.statement}</p>}
+                    <p className="deck-statement">{identity.tagline}</p>
+                    <div className="deck-cta">
+                      <a className="mono deck-btn deck-btn--primary" href={contact.resume} target="_blank" rel="noopener noreferrer">
+                        RESUME
+                      </a>
+                      <a className="mono deck-btn" href={`mailto:${contact.email}`}>EMAIL</a>
+                    </div>
                     {permission === 'prompt' && (
                       <button type="button" className="mono deck-tap" onClick={request}>
                         TAP TO ENABLE TILT
                       </button>
                     )}
+                    <p className="mono deck-hint">SWIPE UP FOR PROJECTS &uarr;</p>
                   </>
                 )}
+
+                {card.type === 'more' && <MoreCard />}
 
                 {card.type === 'project' && <ProjectCard project={card.project} />}
 
@@ -427,9 +499,9 @@ export default function Deck() {
         </div>
 
         <footer className="deck-footer">
-          <Link className="mono deck-footer-link" to="/work">
+          <a className="mono deck-footer-link" href="/work/">
             TEXT VERSION
-          </Link>
+          </a>
           <button type="button" className="mono deck-footer-link" onClick={switchToScan}>
             DESKTOP VERSION
           </button>
