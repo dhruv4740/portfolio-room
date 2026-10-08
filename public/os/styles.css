@@ -227,6 +227,7 @@ html, body {
 .os-window.maximized { border-radius: 0; }
 .iframe-banner { display:flex; align-items:center; gap:14px; padding:8px 14px; background:#16211d; border-bottom:1px solid rgba(92,255,208,0.22); color:#d8e4d8; font:13px/1.4 Inter,system-ui,sans-serif; flex-shrink:0; }
 .iframe-banner span { flex:1; }
+@media (max-height:520px) { .iframe-banner { padding:4px 10px; justify-content:flex-end; } .iframe-banner span { display:none; } }
 .iframe-banner button { font:12px system-ui,sans-serif; padding:6px 12px; border:1px solid #5cffd0; border-radius:4px; background:transparent; color:#5cffd0; cursor:pointer; white-space:nowrap; }
 .iframe-banner button:hover { background:rgba(92,255,208,0.1); }
 .os-window.maximized .win-titlebar { cursor: default; }

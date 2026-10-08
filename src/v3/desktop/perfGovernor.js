@@ -27,7 +27,7 @@
 
 const OVERRIDE_KEY = 'v3:perf-tier';
 
-const FRAME_BUDGET_MS = 1000 / 30; // room art prioritizes a stable cinematic 30Hz
+const FRAME_BUDGET_MS = 1000 / 60; // 60Hz cap: 30Hz read as lag on 60/120Hz phone screens
 const PR_FLOOR = 0.8;
 const PR_CEIL_DEFAULT = 1.25;
 
@@ -130,6 +130,7 @@ export function createPerfGovernor(renderer) {
   let overCount = 0;
   let underCount = 0;
   let lastStepAt = 0;
+  let loweredOnce = false; // never raise resolution again after lowering it: each step reallocates the buffer and shows as a hitch
   let lastStats = { tier, pixelRatio, medianMs: null };
 
   const api = {
@@ -174,9 +175,10 @@ export function createPerfGovernor(renderer) {
       if (now - lastStepAt < COOLDOWN_MS) return;
       if (overCount >= PERSIST && pixelRatio > PR_FLOOR) {
         pixelRatio = Math.max(PR_FLOOR, +(pixelRatio - STEP).toFixed(3));
+        loweredOnce = true;
         renderer.setPixelRatio(pixelRatio);
         lastStepAt = now; overCount = 0; samples.length = 0;
-      } else if (underCount >= PERSIST && pixelRatio < ceiling) {
+      } else if (!loweredOnce && underCount >= PERSIST && pixelRatio < ceiling) {
         pixelRatio = Math.min(ceiling, +(pixelRatio + STEP).toFixed(3));
         renderer.setPixelRatio(pixelRatio);
         lastStepAt = now; underCount = 0; samples.length = 0;
