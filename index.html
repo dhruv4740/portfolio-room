@@ -42,6 +42,8 @@
       rel="stylesheet"
     />
 
+    <!-- Touch devices get the phone page, which has its own choices: skip the door so it is not replaced a moment later. -->
+    <script>try{if(matchMedia('(pointer:coarse)').matches&&localStorage.getItem('v3:surface-override')!=='scan')document.documentElement.className='no-door'}catch(e){}</script>
     <!-- Paint the background before any JS runs: no white flash on a dark site. -->
     <style>
       html, body { margin: 0; height: 100%; background: #0A0A0B; }
@@ -54,6 +56,7 @@
         font-family: "Space Grotesk", system-ui, sans-serif;
         transition: opacity .5s ease;
       }
+      .no-door #front-door { display: none; }
       #front-door .fd-inner { width: min(520px, 100%); }
       #front-door .fd-name { font-size: clamp(2.2rem, 7vw, 3.4rem); font-weight: 500; letter-spacing: -0.03em; line-height: 1.05; margin: 0; }
       #front-door .fd-tag { margin: 14px 0 0; font-size: 1.1rem; line-height: 1.4; color: #bdbdc4; }
