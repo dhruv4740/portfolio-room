@@ -48,6 +48,7 @@ export default defineConfig({
     // Nothing on the /work path may pull in three or the scan bundle — if this
     // warning starts naming a chunk on the fast path, that is a regression.
     chunkSizeWarningLimit: 2048,
+    manifest: 'manifest.json',
     rollupOptions: {
       input: {
         main: resolve(import.meta.dirname, 'index.html'),

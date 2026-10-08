@@ -3,6 +3,9 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import Work from './Work.jsx';
+import { prefetchRoom } from './prefetchRoom.js';
+
+prefetchRoom();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
