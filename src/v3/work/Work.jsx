@@ -119,16 +119,16 @@ const css = `
 
   /* ---- page: light editorial layout (scoped to .w-root) ------------------- */
 
-  html, body { background: #f4f2ed; }
+  html, body { background: #ece7de; }
   body { color: #17160f; }
 
   .w-root {
-    --bg: #f4f2ed;
+    --bg: #ece7de;
     --paper: #fbfaf7;
     --ink: #17160f;
-    --ink2: #46443d;
-    --mute: #86837a;
-    --line: #e2dfd6;
+    --ink2: #3a3832;
+    --mute: #6b675e;
+    --line: #d8d2c6;
     --acc: #c2410c;
     --r: 14px;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
@@ -146,10 +146,10 @@ const css = `
   .w-wrap { max-width: 1180px; margin: auto; padding: 24px 20px 112px; }
   .w-side { display: flex; flex-direction: column; }
   .w-desk { width: 100%; max-width: 420px; height: auto; display: block; }
-  .w-status { display: flex; align-items: center; gap: 8px; font: 12.5px/1.4 var(--mono); color: var(--mute); margin-top: 10px; }
+  .w-status { display: flex; align-items: center; gap: 8px; font: 13px/1.4 var(--mono); color: var(--mute); margin-top: 10px; }
   .w-dot { width: 6px; height: 6px; border-radius: 50%; background: #d9a514; box-shadow: 0 0 0 3px #d9a51422; flex: none; }
   .w-lede { font-size: 20px; line-height: 1.4; letter-spacing: -0.01em; margin-top: 10px; color: var(--ink); }
-  .w-sub { color: var(--ink2); margin-top: 14px; font-size: 15.5px; max-width: 34ch; }
+  .w-sub { color: var(--ink2); margin-top: 14px; font-size: 16px; max-width: 34ch; }
   .w-cta { display: none; gap: 10px; margin-top: 24px; }
   .w-btn {
     flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -159,18 +159,21 @@ const css = `
   }
   .w-btn:active { transform: scale(0.98); }
   .w-root .w-btn--p { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-  .w-links { display: flex; gap: 18px; margin-top: 18px; font-size: 14.5px; color: var(--ink2); }
-  .w-links a { text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 1px; }
+  .w-links { display: flex; gap: 10px; margin-top: 12px; font-size: 15px; }
+  .w-links a { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font-weight: 500; text-decoration: none; }
+  .w-links a span { color: var(--mute); }
   .w-room { margin-top: 22px; display: none; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--paper); text-decoration: none; }
   .w-room b { font-weight: 500; display: block; }
-  .w-room small { color: var(--mute); font-size: 13px; }
+  .w-laptop { display: none; color: var(--mute); }
+  @media (pointer: coarse) { .w-roomlink, .w-room { display: none !important; } .w-laptop { display: inline; } }
+  .w-room small { color: var(--mute); font-size: 13.5px; }
   .w-ar { margin-left: auto; font-family: var(--mono); color: var(--acc); }
 
-  .w-label { font: 500 12px/1 var(--mono); letter-spacing: 0.02em; color: var(--mute); margin: 48px 0 16px; display: flex; justify-content: space-between; }
+  .w-label { font: 500 13px/1 var(--mono); letter-spacing: 0.02em; color: var(--mute); margin: 48px 0 16px; display: flex; justify-content: space-between; }
   .w-proof { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
   .w-proof > div { background: var(--paper); padding: 16px 18px; display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: baseline; }
   .w-n { font: 600 22px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.02em; color: var(--acc); }
-  .w-proof p { font-size: 15px; color: var(--ink2); }
+  .w-proof p { font-size: 15.5px; color: var(--ink2); }
 
   .w-feat { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 0 20px 4px; scrollbar-width: none; }
   .w-feat::-webkit-scrollbar { display: none; }
@@ -179,31 +182,31 @@ const css = `
   .w-shot img, .w-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .w-shot > span { position: absolute; left: 12px; bottom: 10px; font: 11.5px var(--mono); color: var(--mute); }
   .w-ci { padding: 14px 8px 8px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
-  .w-meta { font: 12px var(--mono); color: var(--mute); }
+  .w-meta { font: 12.5px var(--mono); color: var(--mute); }
   .w-card h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
-  .w-card p { font-size: 14.5px; color: var(--ink2); }
+  .w-card p { font-size: 15px; color: var(--ink2); }
   .w-res { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
   .w-res b { font: 500 20px var(--mono); letter-spacing: -0.03em; }
-  .w-res small { font-size: 13px; color: var(--mute); }
+  .w-res small { font-size: 13.5px; color: var(--mute); }
   .w-go { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 44px; margin-top: 6px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--bg); text-decoration: none; font: 500 14.5px "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); cursor: pointer; list-style: none; }
   .w-go::-webkit-details-marker { display: none; }
   .w-case { margin-top: 6px; }
   .w-case > summary { margin-top: 0; }
   .w-case[open] > summary { margin-bottom: 10px; }
-  .w-bul { font-size: 14px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
+  .w-bul { font-size: 14.5px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
 
   .w-list { border-top: 1px solid var(--line); }
   .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
   .w-row--xp { grid-template-columns: 118px 1fr; }
   @media (max-width: 559px) { .w-row--xp { grid-template-columns: 1fr; gap: 4px; } }
-  .w-y { font: 12.5px var(--mono); color: var(--mute); }
+  .w-y { font: 13px var(--mono); color: var(--mute); }
   .w-row b { font-weight: 500; }
-  .w-row p { font-size: 14.5px; color: var(--ink2); margin-top: 2px; }
+  .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
   .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 1px; cursor: pointer; text-decoration: none; }
   .w-contact { font-size: 15.5px; color: var(--ink2); max-width: 46ch; }
   .w-contact a { color: var(--ink); border-bottom: 1px solid var(--line); text-decoration: none; }
-  .w-foot { margin-top: 40px; font-size: 13px; color: var(--mute); }
+  .w-foot { margin-top: 40px; font-size: 14px; color: var(--mute); }
 
   .w-bar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
@@ -335,9 +338,10 @@ export default function Work() {
       </span>
       <span className="w-acts">
         {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
+        {p.links?.live === '/' && <span className="w-act w-laptop">Laptop only</span>}
         {p.links?.live && (
-          <a className="w-act" href={p.links.live}
-            {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>Live</a>
+          <a className={`w-act${p.links.live === '/' ? ' w-roomlink' : ''}`} href={p.links.live}
+            {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>{p.links.live === '/' ? 'Walk through it' : 'Visit'}</a>
         )}
         {p.links?.github && (
           <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
@@ -351,7 +355,7 @@ export default function Work() {
       <div className="w-shot">
         {PREVIEWS[project.id]
           ? <img src={PREVIEWS[project.id]} alt={`${project.name} screenshot`} loading="lazy" />
-          : <span>screenshot pending</span>}
+          : <span aria-hidden="true" />}
       </div>
       <div className="w-ci">
         <span className="w-meta">{project.year} · {project.tech.slice(0, 3).join(', ')}</span>
@@ -370,7 +374,7 @@ export default function Work() {
   );
 
   const statusText = `${formatIst(now)} in Mumbai${temperature !== null ? ` · ${temperature}°C` : ''}`;
-  const footText = 'Built by hand. The desk above is a real room you can walk through on a laptop.';
+  const footText = 'Built by hand. The desk at the top is a real 3D room you can walk through on a laptop.';
 
   return (
     <>
@@ -410,12 +414,12 @@ export default function Work() {
               <a className="w-btn" href={`mailto:${contact.email}`}>Email me</a>
             </div>
             <div className="w-links">
-              <a href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
-              <a href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+              <a href={contact.github} target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+              <a href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a>
             </div>
             <a className="w-room" href="/?tour=1">
-              <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#17160f" strokeWidth="1.2" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" stroke="#e2dfd6"/><path d="M9 23h16M12 23v-8h10v8M15 15v-3h4v3"/></svg>
-              <span><b>Walk through my desk</b><small>Guided 3D tour · 60 seconds</small></span>
+              <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#17160f" strokeWidth="1.2" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" stroke="#d8d2c6"/><path d="M9 23h16M12 23v-8h10v8M15 15v-3h4v3"/></svg>
+              <span><b>See my portfolio in 3D</b><small>Walk through my desk and try my projects live · 60-second guided tour</small></span>
               <span className="w-ar">→</span>
             </a>
           </aside>

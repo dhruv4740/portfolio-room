@@ -22,7 +22,7 @@ export const identity = {
 export const proofPoints = [
   { value: '18%', text: 'of contacted creators replied, across 489 outreach emails from an LLM pipeline I built at Blink' },
   { value: '4', text: 'internal growth tools shipped at Blink: outreach, link building, SEO tracking, Reddit copilot' },
-  { value: 'Top 5', text: "at IIT Madras × BITS Goa for DarkSentinel's LLM review layer" },
+  { value: 'Top 5', text: "at the IIT Madras × BITS Goa security hackathon, for DarkSentinel's LLM review layer" },
   { value: '2×', text: 'hackathon wins: Innovathon 2025 and REALMS 2025' },
 ];
 
@@ -166,7 +166,7 @@ export const projects = [
     name: 'DarkSentinel',
     year: 2026,
     kind: 'research',
-    tagline: 'Darknet threat monitoring. Top 5 in problem statement.',
+    tagline: 'Darknet threat monitoring. Top 5 at the IIT Madras × BITS Goa hackathon.',
     description:
       'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it placed top 5 in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
     decision:
