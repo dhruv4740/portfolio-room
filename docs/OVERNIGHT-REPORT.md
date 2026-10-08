@@ -16,6 +16,9 @@ Rollback point: production deployment 15116623 (deck v2 live). Preview alias: pr
 - verify-tour needs GPU=1 (passes). verify-v3 45/45, verify-recruiter 22/22 on preview and production.
 - PROMOTED to production: deployment 5bb077dd (commit 0399d1a label). Rollback: 15116623.
 
+- /work restyle: alternating section bands, numbered section heads, one spacing rhythm, card internals regapped, opaque full-bleed sticky bar.
+- Back-to-room speed: /work idle-prefetches the room (Scan + three chunks, 4 GLBs) 8 s after load, only on 4g, not saveData, not coarse pointer, tab visible; hover on the back button triggers it at once. 0 long tasks in the window; return trip loads them with 0 transfer from cache. Hands are not prefetched. Not C (no SPA merge).
+
 ## Not done
 - Model/texture compression and cold-load re-measure: remaining non-hand GLBs total ~2.8 MB, now cached 7 days; skipped as low gain vs. visual risk.
 - Seated touch look-around in landscape: still UNVERIFIED.
