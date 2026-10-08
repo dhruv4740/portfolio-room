@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../tokens.css';
-import { identity, contact, education, experience, projects, moreProjectIds, proofPoints } from '../content/index.js';
+import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds } from '../content/index.js';
 import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 
@@ -236,8 +236,8 @@ const css = `
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
 
-// The three cards in the "Featured" band. Blink is built from experience[0].
-const FEATURED_IDS = ['focuslock', 'darksentinel'];
+// The cards in the "Featured" band, after Blink (built from experience[0]).
+const FEATURED_IDS = ['focuslock', 'basket'];
 
 // Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
 // Android shows nothing), so there the button opens the file in its own tab.
@@ -308,9 +308,10 @@ export default function Work() {
   // chip, which reads as a broken stub rather than as work. Withhold it until
   // there is something true to say about it.
   const listed = projects.filter((p) => p.description || p.tagline);
-  const featured = FEATURED_IDS.map((id) => listed.find((p) => p.id === id)).filter(Boolean);
-  const rank = (p) => { const i = moreProjectIds.indexOf(p.id); return i < 0 ? moreProjectIds.length : i; };
-  const more = listed.filter((p) => !FEATURED_IDS.includes(p.id)).sort((a, b) => rank(a) - rank(b));
+  const pick = (ids) => ids.map((id) => listed.find((p) => p.id === id)).filter(Boolean);
+  const featured = pick(FEATURED_IDS);
+  const personal = pick(personalProjectIds);
+  const hackathon = pick(hackathonProjectIds);
 
   const blink = experience[0];
   const openResume = (e) => {
@@ -323,6 +324,27 @@ export default function Work() {
     trigger.current = e.currentTarget;
     setOpen({ id: project.id, index: 0 });
   };
+
+  const renderRow = (p) => (
+    <div className="w-row" key={p.id}>
+      <span className="w-y">{p.year}</span>
+      <span>
+        <b>{p.name}</b>
+        <p>{p.tagline || p.description}</p>
+        {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
+      </span>
+      <span className="w-acts">
+        {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
+        {p.links?.live && (
+          <a className="w-act" href={p.links.live}
+            {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>Live</a>
+        )}
+        {p.links?.github && (
+          <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
+        )}
+      </span>
+    </div>
+  );
 
   const renderFeatured = (project) => (
     <article className="w-card" key={project.id}>
@@ -415,8 +437,8 @@ export default function Work() {
                 <div className="w-ci">
                   <span className="w-meta">Blink.new · {blink.from.slice(-4)} · Python, Gmail API, LLM</span>
                   <h3>An outreach pipeline people actually replied to</h3>
-                  <p>Sourced 650 creators from YouTube, drafted each email with an LLM, and a human approved every send.</p>
-                  <div className="w-res"><b>18%</b><small>reply rate · 14 positive</small></div>
+                  <p>Sole developer on four growth tools I built and maintained: a creator outreach pipeline that sourced 650 creators, a link-building engine, SEO and AI-search mention tracking, and a Reddit growth copilot.</p>
+                  <div className="w-res"><b>18%</b><small>of contacted creators replied · 14 positive</small></div>
                   <details className="w-case">
                     <summary className="w-go">Read the case<span>→</span></summary>
                     <ul className="w-bul">
@@ -427,6 +449,22 @@ export default function Work() {
               </article>
               {featured.map(renderFeatured)}
             </div>
+
+            <div className="w-label"><span>At Blink.new (internship)</span></div>
+            <div className="w-list">
+              {blinkTools.map((t) => (
+                <div className="w-row" key={t.id}>
+                  <span className="w-y">2026</span>
+                  <span><b>{t.name}</b><p>{t.detail}</p></span>
+                </div>
+              ))}
+            </div>
+
+            <div className="w-label"><span>Personal projects</span><span>{personal.length}</span></div>
+            <div className="w-list">{personal.map(renderRow)}</div>
+
+            <div className="w-label"><span>Hackathon projects</span><span>{hackathon.length}</span></div>
+            <div className="w-list">{hackathon.map(renderRow)}</div>
 
             <div className="w-label"><span>Experience</span></div>
             <div className="w-list">
@@ -440,26 +478,6 @@ export default function Work() {
                 <span className="w-y">{education.year}</span>
                 <span><b>{education.degree}</b><p>{education.school}</p></span>
               </div>
-            </div>
-
-            <div className="w-label"><span>More work</span><span>{more.length}</span></div>
-            <div className="w-list">
-              {more.map((p) => (
-                <div className="w-row" key={p.id}>
-                  <span className="w-y">{p.year}</span>
-                  <span><b>{p.name}</b><p>{p.tagline || p.description}</p></span>
-                  <span className="w-acts">
-                    {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
-                    {p.links?.live && (
-                      <a className="w-act" href={p.links.live}
-                        {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>Live</a>
-                    )}
-                    {p.links?.github && (
-                      <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
-                    )}
-                  </span>
-                </div>
-              ))}
             </div>
 
             <div className="w-label"><span>Contact</span></div>

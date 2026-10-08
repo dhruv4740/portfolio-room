@@ -82,10 +82,10 @@ try {
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.
-  // Featured band: the Blink outreach card, then FocusLock and DarkSentinel (Skills section removed on purpose).
+  // Featured band: the Blink outreach card, then FocusLock and BasketProof.
   const featured = page.locator('.w-feat > article');
   const featuredNames = (await featured.locator('h3').allInnerTexts()).map((s) => s.trim());
-  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'DarkSentinel'];
+  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'BasketProof'];
   check('exactly three featured cards in order', featuredNames.length === 3
     && expectedNames.every((n, i) => featuredNames[i] === n), featuredNames.join(' | ') || 'none');
   let featuredVisible = true;
@@ -94,11 +94,23 @@ try {
     if (!(await featured.nth(i).isVisible())) featuredVisible = false;
   }
   check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 3);
-  const moreLabel = page.locator('.w-label', { hasText: 'More work' });
-  const moreHeading = (await moreLabel.innerText().catch(() => '')).trim();
-  const moreCount = await moreLabel.locator('xpath=following-sibling::div[1]').locator('.w-row').count();
-  check('"More work" section has at least one project', /More work/i.test(moreHeading) && moreCount >= 1,
-    `heading "${moreHeading}", ${moreCount} row(s)`);
+  // Section labels after the featured band, in order, each followed by its row group.
+  const sectionLabels = (await page.locator('main .w-label > span:first-child').allInnerTexts()).map((s) => s.trim());
+  const expectedSections = ['At Blink.new (internship)', 'Personal projects', 'Hackathon projects'];
+  const sectionStart = sectionLabels.indexOf(expectedSections[0]);
+  check('sections in order: Blink internship, Personal projects, Hackathon projects',
+    sectionStart >= 0 && expectedSections.every((s, i) => sectionLabels[sectionStart + i] === s),
+    sectionLabels.join(' | ') || 'none');
+  const rowCounts = [];
+  for (const heading of expectedSections) {
+    const label = page.locator('main .w-label', { hasText: heading });
+    rowCounts.push(await label.locator('xpath=following-sibling::div[1]').locator('.w-row').count());
+  }
+  check('row counts: Blink 4, Personal 5, Hackathon 3', rowCounts.join(', ') === '4, 5, 3', rowCounts.join(', '));
+  const personalNames = (await page.locator('main .w-label', { hasText: 'Personal projects' })
+    .locator('xpath=following-sibling::div[1]').locator('.w-row b').allInnerTexts()).map((s) => s.trim());
+  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout | Eco Water System',
+    personalNames.join(' | '));
 
   // 5. Blink metrics. textContent, not innerText: the "Read the case" bullets sit in a closed <details>.
   const blinkText = await page.locator('main').textContent().catch(() => '');

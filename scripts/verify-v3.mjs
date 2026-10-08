@@ -123,7 +123,7 @@ try {
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
 
-  await page.goto(`${BASE}/#/work`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/work/`, { waitUntil: 'networkidle' });
   await saveScreenshot(page, { path: `${SHOTS}/v3-work.png`, fullPage: true });
 
   const pulledSpark = requests.filter((u) => /spark/i.test(u));

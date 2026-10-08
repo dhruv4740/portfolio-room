@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <script>(function(){try{var o=null;try{o=localStorage.getItem('v3:surface-override')}catch(e){}var forced=o==='scan'||o==='deck';var h=location.hash;var deep=!!h&&h!=='#';var entering=/[?&](room|tour)(=|&|$)/.test(location.search);if(!forced&&(matchMedia('(pointer:coarse)').matches||(!entering&&!deep))){location.replace('/work/');return}if(entering)document.documentElement.classList.add('fd-entering')}catch(e){}})();</script>
+    <script>(function(){try{var o=null;try{o=localStorage.getItem('v3:surface-override')}catch(e){}var forced=o==='scan'||o==='deck';var h=location.hash;if(/^#\/work(\/|$)/.test(h)){location.replace('/work/');return}var deep=!!h&&h!=='#';var entering=/[?&](room|tour)(=|&|$)/.test(location.search);if(!forced&&(matchMedia('(pointer:coarse)').matches||(!entering&&!deep))){location.replace('/work/');return}if(entering)document.documentElement.classList.add('fd-entering')}catch(e){}})();</script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />

@@ -9,18 +9,18 @@
 
 export const identity = {
   name: 'Dhruv Kothari',
-  role: 'Full-stack developer',
+  role: 'AI & growth engineer',
   location: 'Mumbai, India',
   pitch: 'I build AI tools that move growth numbers.',
   now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote internships in AI and growth engineering.',
-  tagline: 'Full-stack developer building Android apps, Python backends and AI integrations.',
+  tagline: 'I build AI tools that move growth numbers.',
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
     'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',
 };
 
 export const proofPoints = [
-  { value: '18%', text: 'human reply rate on 489 outreach emails, from an LLM pipeline I built at Blink' },
+  { value: '18%', text: 'of contacted creators replied, across 489 outreach emails from an LLM pipeline I built at Blink' },
   { value: '4', text: 'internal growth tools shipped at Blink: outreach, link building, SEO tracking, Reddit copilot' },
   { value: 'Top 5', text: "at IIT Madras × BITS Goa for DarkSentinel's LLM review layer" },
   { value: '2×', text: 'hackathon wins: Innovathon 2025 and REALMS 2025' },
@@ -62,7 +62,7 @@ export const experience = [
       { value: '4', label: 'internal growth tools' },
       { value: '650', label: 'leads sourced' },
       { value: '489', label: 'emails sent' },
-      { value: '18%', label: 'human reply rate' },
+      { value: '18%', label: 'of contacted creators replied (41 of 228)' },
       { value: '14', label: 'positive responses' },
       { value: '676', label: 'prospect sites found and scored' },
       { value: '29.85%', label: 'of Blink social traffic from Reddit (Jun 2026)' },
@@ -108,7 +108,7 @@ export const skills = [
   { id: 'python',   label: 'Python',               proof: ['darksentinel', 'fraud', 'basket'],  note: 'FastAPI, Flask, pandas' },
   { id: 'kotlin',   label: 'Kotlin / Android',     proof: ['focuslock', 'expense'],             note: 'native modules, accessibility services' },
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
-  { id: 'ml',       label: 'ML / data',            proof: ['fraud'],                            note: 'XGBoost, pandas' },
+  { id: 'ml',       label: 'ML / data',            proof: ['darksentinel'],                     note: 'scikit-learn, pandas' },
   { id: 'iot',      label: 'ESP32 / Raspberry Pi', proof: ['ecowater'],                         note: 'sensor integration, control logic' },
   { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: DarkSentinel, Expense Tracker' },
 ];
@@ -127,7 +127,7 @@ export const projects = [
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
-    detail: 'Enforces at the OS level, so switching browsers cannot bypass it. 200+ unit tests; CI builds a signed APK and installer.',
+    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK and installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
@@ -203,7 +203,7 @@ export const projects = [
     tagline: 'Fraud detection for small businesses.',
     badge: 'Winner, Innovathon 2025',
     description:
-      'Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Around 85% accuracy on the test set.',
+      'Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Built with a team; won Innovathon 2025.',
     decision: '',
     broke: '',
     tech: ['Python', 'XGBoost', 'Flask', 'pandas'],
@@ -214,9 +214,10 @@ export const projects = [
     name: 'Eco Water System',
     year: 2025,
     kind: 'hardware',
+    label: 'College project',
     tagline: 'Irrigation that waters when the soil says so.',
     description:
-      'ESP32 and soil sensors driving threshold-based pump control with live monitoring.',
+      'ESP32 and soil sensors driving threshold-based pump control with live monitoring. The pump starts automatically when the soil is dry and stops when it is wet.',
     decision: '',
     broke: '',
     tech: ['ESP32', 'Sensors', 'C++'],
@@ -300,3 +301,15 @@ export const featuredProjectIds = ['focuslock', 'portfolio3d', 'darksentinel', '
 
 // Order of the compact "More projects" list on /work.
 export const moreProjectIds = ['fraud', 'crisiswatch', 'cellbook', 'expense', 'basket', 'ecowater'];
+
+// /work sections after the featured cards, in display order.
+export const blinkTools = [
+  { id: 'outreach', name: 'Creator outreach pipeline', detail: 'Python, SQLite, YouTube Data API and Gmail API, with LLM drafting and human approval before every send.' },
+  { id: 'links', name: 'Link-building engine', detail: 'Flask dashboard that found and scored 676 prospect sites and extracted contacts.' },
+  { id: 'seo', name: 'SEO and AI-search mention tracking', detail: 'Tracked AI-search citations across 18 prompts.' },
+  { id: 'reddit', name: 'Reddit growth copilot', detail: 'Reddit was 29.85% of Blink social traffic (Jun 2026).' },
+];
+
+export const personalProjectIds = ['cellbook', 'portfolio3d', 'expense', 'blackout', 'ecowater'];
+
+export const hackathonProjectIds = ['darksentinel', 'crisiswatch', 'fraud'];
