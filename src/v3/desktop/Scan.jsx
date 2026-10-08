@@ -582,6 +582,9 @@ export default function Scan() {
     r.remaining = ms; r.holdStart = performance.now();
     if (r.paused) return;
     const id = r.id;
+    // The progress bar replays the hold from where it stands (resume keeps the elapsed part).
+    const total = Math.max(ms, TOUR[r.step]?.hold || ms);
+    setTour((t) => (t && !t.done ? { ...t, holdMs: total, holdDelay: ms - total, holdKey: (t.holdKey || 0) + 1 } : t));
     r.timer = setTimeout(() => { if (tourRun.current.id === id) goTourRef.current(tourRun.current.step + 1); }, ms);
   }, []);
   goTourRef.current = async (step) => {
@@ -862,6 +865,7 @@ export default function Scan() {
       {tour && !tour.done && (
         <div className="tour-ui tour-caption" role="status" aria-live="polite" data-testid="tour-caption" data-paused={tour.paused ? 'true' : 'false'} data-step={tour.step}>
           {/* Paused, the caption shrinks so it doesn't cover what the visitor stopped to use. */}
+          <div className="tour-bar" aria-hidden="true">{tour.holdMs ? <i key={tour.holdKey} style={{ animationDuration: `${tour.holdMs}ms`, animationDelay: `${tour.holdDelay}ms` }} /> : null}</div>
           {tour.paused ? <p className="tour-paused mono">PAUSED · LOOK AROUND, THEN RESUME</p> : <p>{TOUR[tour.step].caption}</p>}
           <div className="tour-controls">
             <span className="mono tour-count">{tour.step + 1} / {TOUR.length}</span>
@@ -1030,6 +1034,10 @@ const css = `
 .room-load span { position:absolute; top:8px; left:50%; transform:translateX(-50%); color:#9ea39f; font-size:10px; letter-spacing:.16em; }
 .mumbai-readout { position:fixed; right:var(--gutter); bottom:14px; z-index:var(--z-panel); margin:0; padding:5px 9px; background:rgba(10,12,13,.72); color:#b2b7b4; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
 .tour-caption { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); z-index:calc(var(--z-panel) + 4); width:min(640px, calc(100vw - 32px)); padding:14px 18px; border:1px solid #555b59; border-left:2px solid var(--signal); background:rgba(13,16,17,.92); color:var(--bone); display:flex; gap:16px; align-items:center; justify-content:space-between; }
+.tour-bar { height:3px; margin:-14px -18px 12px; background:#2a2f2d; overflow:hidden; }
+.tour-bar i { display:block; height:100%; background:var(--signal); transform-origin:left; transform:scaleX(0); animation:tour-fill linear forwards; }
+.tour-caption[data-paused='true'] .tour-bar i { animation-play-state:paused; }
+@keyframes tour-fill { to { transform:scaleX(1); } }
 .tour-caption p { margin:0; font-size:15px; line-height:1.45; }
 .tour-caption { flex-direction:column; align-items:stretch; }
 .tour-caption .tour-paused { font-size:10.5px; letter-spacing:.14em; color:var(--signal); }
