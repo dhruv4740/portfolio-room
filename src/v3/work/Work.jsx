@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import '../tokens.css';
 import {
   identity, contact, education, experience, achievements, skills, projects, featuredProjectIds, moreProjectIds,
@@ -62,6 +62,12 @@ const css = `
   .work-action:hover,
   .work-action:focus-visible { border-color: var(--dim); color: var(--bone); }
 
+  .work-reader { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; background: #0A0A0B; }
+  .work-reader-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 0.5rem 1rem; border-bottom: var(--hair) solid var(--faint); }
+  .work-reader-bar strong { margin-right: auto; }
+  .work-reader-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border: var(--hair) solid var(--faint); background: transparent; color: var(--bone); font: inherit; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
+  .work-reader-btn:hover, .work-reader-btn:focus-visible { background: var(--bone); color: var(--void); }
+  .work-reader-frame { flex: 1; width: 100%; border: 0; background: #fff; }
   .work-action--primary { background: var(--signal); border-color: var(--signal); color: var(--void); }
   .work-action--primary:hover,
   .work-action--primary:focus-visible { background: var(--bone); border-color: var(--bone); color: var(--void); }
@@ -970,8 +976,43 @@ const css = `
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
 
+// Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
+// Android shows nothing), so there the button opens the file in its own tab.
+const canEmbedPdf = () => typeof navigator !== 'undefined'
+  && navigator.pdfViewerEnabled !== false
+  && !window.matchMedia('(pointer: coarse)').matches;
+
+function ResumeReader({ src, onClose }) {
+  const closeRef = useRef(null);
+  useEffect(() => {
+    closeRef.current?.focus();
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+  }, [onClose]);
+  return (
+    <div className="work-reader" role="dialog" aria-modal="true" aria-label="Résumé">
+      <div className="work-reader-bar">
+        <strong>Résumé</strong>
+        <a className="work-reader-btn" href={src} download="Dhruv-Kothari-Resume.pdf">Download PDF</a>
+        <a className="work-reader-btn" href={src} target="_blank" rel="noopener noreferrer">Open in new tab</a>
+        <button type="button" className="work-reader-btn" ref={closeRef} onClick={onClose}>Close</button>
+      </div>
+      <iframe className="work-reader-frame" src={`${src}#view=FitH`} title="Résumé PDF" />
+    </div>
+  );
+}
+
 export default function Work() {
   const mainRef = useRef(null);
+  const [readerOpen, setReaderOpen] = useState(false);
+  const readerTrigger = useRef(null);
+  const closeReader = useCallback(() => {
+    setReaderOpen(false);
+    readerTrigger.current?.focus({ preventScroll: true });
+  }, []);
   // { id, index } of the open demo; the trigger gets focus back on close.
   const [open, setOpen] = useState(null);
   const trigger = useRef(null);
@@ -1114,9 +1155,19 @@ export default function Work() {
                 {hasContact && (
                   <div className="work-actions" aria-label="Contact">
                     {contact.resume && (
-                      <a className="work-action work-action--primary" href={contact.resume} target="_blank" rel="noopener noreferrer">
-                        Résumé (PDF)
-                      </a>
+                      <>
+                        <a
+                          className="work-action work-action--primary"
+                          href={contact.resume}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          ref={readerTrigger}
+                          onClick={(e) => { if (canEmbedPdf()) { e.preventDefault(); setReaderOpen(true); } }}
+                        >
+                          View résumé
+                        </a>
+                        <a className="work-action" href={contact.resume} download="Dhruv-Kothari-Resume.pdf">Download PDF</a>
+                      </>
                     )}
                     {contact.github && (
                       <a className="work-action" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
@@ -1242,6 +1293,7 @@ export default function Work() {
             <a className="mono" href="/">&larr; Back to the 3D room</a>
           </footer>
         </div>
+        {readerOpen && contact.resume && <ResumeReader src={contact.resume} onClose={closeReader} />}
         {open && (
           <DemoPanel
             project={projects.find((p) => p.id === open.id)}

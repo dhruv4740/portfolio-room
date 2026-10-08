@@ -317,8 +317,6 @@ export default function Scan() {
   useEffect(() => {
     const on = introDone && overviewOpen && screenPhase === 'room';
     document.body.toggleAttribute('data-launchpad-open', on);
-    // The choices are real DOM from here on and queue until the room is warm, so the front door has done its job.
-    if (on) dismissFrontDoor();
     return () => document.body.removeAttribute('data-launchpad-open');
   }, [introDone, overviewOpen, screenPhase]);
 
@@ -845,15 +843,13 @@ export default function Scan() {
           <p className="launchpad-role mono">{identity.role} · {identity.location}</p>
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
-            <Link className="launchpad-primary" to="/work" onClick={cancelArrival}>
-              <span className="mono">SEE MY RÉSUMÉ &amp; PROJECTS →</span><small>Projects, experience, résumé PDF · about a minute</small>
-            </Link>
-            <button className="launchpad-secondary" data-launchpad-action="tour" onClick={gate(startTour)}>
+            <button className="launchpad-primary" data-launchpad-action="tour" onClick={gate(startTour)}>
               <span className="mono">TAKE THE GUIDED TOUR</span><small>A short walk through the room. No clicking needed.</small>
             </button>
             <button className="launchpad-secondary" data-launchpad-action="explore-room" onClick={gate(handleExploreRoom)}>
               <span className="mono">LOOK AROUND YOURSELF</span><small>Click the monitor, phone and keyboard to open things.</small>
             </button>
+            <Link className="launchpad-quick mono" to="/work" onClick={cancelArrival}>Skip the 3D: résumé &amp; projects →</Link>
             <details className="launchpad-extra mono">
               <summary>More: live apps, phone demos</summary>
               <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>Live apps on the computer</button>
@@ -1084,6 +1080,7 @@ body[data-launchpad-open] .escape-link { display:none; }
 .launchpad-actions .launchpad-primary:hover,.launchpad-actions .launchpad-primary:focus-visible { background:var(--bone); border-color:var(--bone); transform:translateX(4px); }
 .launchpad-actions .launchpad-secondary { padding-left:20px; }
 .launchpad-actions .launchpad-secondary span { color:#F2EEE6; }
+.launchpad-quick { display:flex; align-items:center; min-height:44px; color:#F2EEE6; font-size:13px; letter-spacing:.06em; text-decoration:underline; text-underline-offset:3px; }
 .launchpad-extra { color:#b7b9b2; font-size:13px; letter-spacing:.06em; }
 .launchpad-extra summary { display:flex; align-items:center; min-height:44px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
 .launchpad-extra button { display:block; width:100%; min-height:44px; margin-top:6px; padding:8px 16px; color:#F2EEE6; background:rgba(10,10,11,.72); border:1px solid #8a908c; text-align:left; }

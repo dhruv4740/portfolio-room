@@ -1340,6 +1340,7 @@ export default function WorkspaceStage({
       // then fade the whole room in at once. The launchpad is DOM and stays
       // responsive meanwhile.
       renderer.domElement.style.opacity = '0';
+      reportProgress('warm', 0, 1, 6);
       revealed = Promise.race([
         afterHours.ready.then(() => Promise.all([renderer.compileAsync(scene, camera), afterHours.warmContacts()])).then(() => renderer.compileAsync(scene, camera)).then(async () => {
           // compileAsync misses the programs three builds at draw time (different light state), and those compile
@@ -1352,8 +1353,10 @@ export default function WorkspaceStage({
           const chain = o => { for (let n = o; n; n = n.parent) shown.add(n); };
           const mats = [...byMat.values()];
           const lights = all.map(([o]) => o).filter(o => o.isLight);
+          let warmed = 0;
           try {
             for (const target of mats) {
+              reportProgress('warm', 0.3 + 0.7 * (warmed++ / mats.length), 1);
               if (disposed || gateOpen) return;
               shown.clear(); chain(target); lights.forEach(chain);
               for (const [o] of all) o.visible = shown.has(o);
@@ -1368,6 +1371,7 @@ export default function WorkspaceStage({
       ]).catch(() => {}).then(() => {
         if (disposed) return;
         gateOpen = true;
+        reportProgress('warm', 1, 1);
         const fade = !state.current.reducedMotion;
         renderer.domElement.style.transition = fade ? 'opacity .7s ease' : 'none';
         renderer.domElement.style.opacity = '1';

@@ -7,7 +7,7 @@ const record = (name, ok, detail = '') => { console.log(`${ok ? 'PASS' : 'FAIL'}
 async function open() {
   const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
   const errors = []; p.on('pageerror', e => errors.push(e.message));
-  await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); });
+  await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); localStorage.setItem('v3:surface-override', 'scan'); });
   await p.goto(`${BASE}/#/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   await p.locator('[data-testid="room-overview"]').waitFor({ timeout: 60000 });
   await p.waitForTimeout(1000);

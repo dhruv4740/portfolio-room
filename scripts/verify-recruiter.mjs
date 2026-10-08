@@ -71,11 +71,11 @@ try {
   const actions = page.locator('.work-actions a');
   // textContent, not innerText: the site uppercases these via CSS, and innerText reports the rendered case.
   const actionTexts = await actions.evaluateAll((els) => els.map((e) => e.textContent || ''));
-  const wanted = [/Résumé/, /GitHub/, /LinkedIn/];
-  const actionsOk = actionTexts.length === 3 && wanted.every((re) => actionTexts.some((t) => re.test(t)));
+  const wanted = [/View résumé/, /Download PDF/, /GitHub/, /LinkedIn/];
+  const actionsOk = actionTexts.length === 4 && wanted.every((re) => actionTexts.some((t) => re.test(t)));
   let actionsVisible = actionsOk;
   for (let i = 0; i < actionTexts.length && actionsVisible; i++) actionsVisible = await actions.nth(i).isVisible();
-  check('three action links: Résumé, GitHub, LinkedIn — visible', actionsOk && actionsVisible,
+  check('action links: View résumé, Download PDF, GitHub, LinkedIn — visible', actionsOk && actionsVisible,
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.

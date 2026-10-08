@@ -7,10 +7,11 @@ const listeners = new Set();
 // its own fraction; `progress` is their mean.
 function snapshot() {
   const fractions = {};
-  for (const [name, t] of tasks) fractions[name] = Math.min(t.loaded / t.total, 1);
+  let sum = 0, weights = 0;
+  for (const [name, t] of tasks) { fractions[name] = Math.min(t.loaded / t.total, 1); sum += fractions[name] * t.weight; weights += t.weight; }
   const values = Object.values(fractions);
   return {
-    progress: values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0,
+    progress: weights ? sum / weights : 0,
     pending: values.filter(f => f < 1).length,
     tasks: fractions,
   };
@@ -21,8 +22,10 @@ function emit() {
   listeners.forEach(fn => fn(s));
 }
 
-export function reportProgress(name, loaded, total) {
-  tasks.set(name, { loaded, total: Math.max(total, 1) });
+// `weight` counts a task for more than one share of the mean (the shader warm-up is
+// most of the wait, so it must move the bar). Later calls keep the weight they set.
+export function reportProgress(name, loaded, total, weight) {
+  tasks.set(name, { loaded, total: Math.max(total, 1), weight: weight ?? tasks.get(name)?.weight ?? 1 });
   emit();
 }
 

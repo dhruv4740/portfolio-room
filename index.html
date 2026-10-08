@@ -60,12 +60,16 @@
       #front-door .fd-load { margin-top: 36px; font: 500 12px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: #9C9CA4; display: flex; justify-content: space-between; }
       #front-door .fd-track { height: 2px; background: #1d2122; margin-top: 10px; overflow: hidden; }
       #front-door .fd-fill { display: block; height: 100%; background: #FF5F1F; transform-origin: left; transform: scaleX(.03); transition: transform .3s ease; }
-      #front-door .fd-skip {
-        display: inline-flex; align-items: center; gap: .6em; margin-top: 32px;
-        padding: 14px 20px; background: #FF5F1F; color: #0A0A0B; border-radius: 2px;
-        font: 600 14px/1 "Space Grotesk", system-ui, sans-serif; text-decoration: none;
+      #front-door .fd-choices { display: grid; gap: 12px; margin-top: 28px; }
+      #front-door .fd-choice {
+        display: block; box-sizing: border-box; width: 100%; min-height: 76px; padding: 16px 20px; text-align: left; cursor: pointer;
+        background: #141418; color: #ececec; border: 1px solid #6b6f74; border-radius: 2px; text-decoration: none;
+        font: 600 17px/1.2 "Space Grotesk", system-ui, sans-serif;
       }
-      #front-door .fd-skip:hover, #front-door .fd-skip:focus-visible { background: #ececec; outline: 2px solid #fff; outline-offset: 2px; }
+      #front-door .fd-choice small { display: block; margin-top: 6px; font: 400 14px/1.35 "Space Grotesk", system-ui, sans-serif; color: #bdbdc4; }
+      #front-door .fd-choice--primary { background: #FF5F1F; border-color: #FF5F1F; color: #0A0A0B; }
+      #front-door .fd-choice--primary small { color: #2b1a12; }
+      #front-door .fd-choice:hover, #front-door .fd-choice:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
       #front-door .fd-note { margin: 14px 0 0; font-size: .85rem; color: #8a8a92; }
       #front-door:not([data-leaving]) ~ .escape-link { visibility: hidden; }
       /* Escape hatch: plain markup, first in tab order, visible before any JS or 3D asset. */
@@ -83,10 +87,12 @@
       <div class="fd-inner">
         <p class="fd-name">Dhruv Kothari</p>
         <p class="fd-tag">Full-stack developer building Android apps, Python backends and AI integrations.</p>
-        <div class="fd-load"><span id="front-door-label">Loading the 3D room</span><span id="front-door-pct">0%</span></div>
+        <div class="fd-choices">
+          <a class="fd-choice fd-choice--primary" href="/work/">Quick view<small>R&eacute;sum&eacute;, projects and experience on one page</small></a>
+          <button type="button" class="fd-choice" id="fd-room">3D room walkthrough<small id="fd-room-sub">A guided tour, or explore my desk yourself</small></button>
+        </div>
+        <div class="fd-load"><span id="front-door-label">Getting the 3D room ready</span><span id="front-door-pct">0%</span></div>
         <div class="fd-track"><i class="fd-fill" id="front-door-bar"></i></div>
-        <a class="fd-skip" href="/work/">See my r&eacute;sum&eacute; &amp; projects <span aria-hidden="true">&rarr;</span></a>
-        <p class="fd-note">Prefer to wait? My 3D room opens here in a few seconds, with a guided tour. Or skip it: everything is on one page.</p>
       </div>
     </div>
     <noscript><style>#front-door { display: none; } #front-door ~ .escape-link { visibility: visible !important; }</style></noscript>
