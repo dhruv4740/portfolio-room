@@ -779,20 +779,6 @@ const css = `
     align-items: end;
     padding: clamp(2.5rem, 7vw, 5rem) 0 clamp(2rem, 5vw, 3.5rem);
   }
-  .work-status {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6em;
-    margin-bottom: 1.25rem;
-    color: var(--bone);
-  }
-  .work-status::before {
-    content: '';
-    width: 0.55rem;
-    height: 0.55rem;
-    border-radius: 50%;
-    background: var(--signal);
-  }
   .work-statement { font-size: clamp(2.75rem, 7vw, 5rem); line-height: 1.02; max-width: none; }
   .work-tagline { font-size: 1.3rem; color: var(--bone); max-width: 34ch; margin-top: 1.1rem; }
   .work-actions { margin-top: 2rem; align-items: center; gap: 0.75rem; }
@@ -1148,7 +1134,6 @@ export default function Work() {
           <main id="work-main" ref={mainRef} tabIndex={-1}>
             <section className="work-hero" aria-label="Introduction">
               <div>
-                <p className="mono work-status">Open to remote internships</p>
                 <h1 className="work-statement">{identity.name}</h1>
                 {identity.tagline && <p className="work-tagline">{identity.tagline}</p>}
 
