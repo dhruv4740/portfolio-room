@@ -1,17 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../tokens.css';
-import {
-  identity, contact, education, experience, achievements, skills, projects, featuredProjectIds, moreProjectIds,
-} from '../content/index.js';
+import { identity, contact, education, experience, projects, moreProjectIds, proofPoints } from '../content/index.js';
+import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
-
-/** Resolve a skill's `proof` ids to the project names they reference.
- *  Evidence, not a percentage bar — the whole point of the content model. */
-function resolveProof(proofIds) {
-  return proofIds
-    .map((id) => projects.find((p) => p.id === id)?.name)
-    .filter(Boolean);
-}
 
 const css = `
   /* ---- skip link --------------------------------------------------------- */
@@ -36,31 +27,7 @@ const css = `
     outline-offset: 0;
   }
 
-
-  /* Readable secondary text: --dim on --void is ~3.7:1; this is ~7:1. Scoped to /work. */
-  .work-root { --dim: #9C9CA4; }
-
-  .work-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin-top: 1.75rem;
-  }
-
-  .work-action {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.7rem 1.1rem;
-    border: var(--hair) solid var(--faint);
-    font-family: var(--font-mono);
-    font-size: var(--t-data);
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease), border-color var(--d-feedback) var(--ease);
-  }
-
-  .work-action:hover,
-  .work-action:focus-visible { border-color: var(--dim); color: var(--bone); }
+  /* ---- résumé reader (full screen) ---------------------------------------- */
 
   .work-reader { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; background: #0A0A0B; }
   .work-reader-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 0.5rem 1rem; border-bottom: var(--hair) solid var(--faint); }
@@ -68,374 +35,13 @@ const css = `
   .work-reader-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border: var(--hair) solid var(--faint); background: transparent; color: var(--bone); font: inherit; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
   .work-reader-btn:hover, .work-reader-btn:focus-visible { background: var(--bone); color: var(--void); }
   .work-reader-frame { flex: 1; width: 100%; border: 0; background: #fff; }
-  .work-action--primary { background: var(--signal); border-color: var(--signal); color: var(--void); }
-  .work-action--primary:hover,
-  .work-action--primary:focus-visible { background: var(--bone); border-color: var(--bone); color: var(--void); }
 
-  .work-wins {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    list-style: none;
-    margin-top: 1.5rem;
-  }
-
-  .work-wins li {
-    font-family: var(--font-mono);
-    font-size: var(--t-data);
-    letter-spacing: 0.06em;
-    color: var(--bone);
-    border: var(--hair) solid var(--faint);
-    padding: 0.35rem 0.65rem;
-  }
-
-  .work-wins li span { color: var(--signal); margin-right: 0.5em; text-transform: uppercase; }
-
-  /* ---- experience / education ----------------------------------------------- */
-
-  .work-timeline { list-style: none; display: flex; flex-direction: column; gap: 1.5rem; }
-
-  .work-job { display: grid; grid-template-columns: 9.5rem 1fr; gap: 0.25rem 1.5rem; }
-  .work-job-when { color: var(--dim); padding-top: 0.2rem; }
-  .work-job-role { font-size: 1.15rem; font-weight: 500; }
-  .work-job-org { color: var(--dim); }
-  .work-job-detail { margin-top: 0.4rem; max-width: 62ch; }
-
-  @media (max-width: 640px) {
-    .work-job { grid-template-columns: 1fr; }
-  }
-
-  /* ---- project notes fold ---------------------------------------------------- */
-
-  .work-more { margin-top: 1rem; border-top: var(--hair) solid var(--faint); }
-  .work-more > summary {
-    cursor: pointer;
-    padding: 0.8rem 0;
-    font-family: var(--font-mono);
-    font-size: var(--t-data);
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    color: var(--dim);
-    list-style: none;
-  }
-  .work-more > summary::-webkit-details-marker { display: none; }
-  .work-more > summary::before { content: '+ '; color: var(--signal); }
-  .work-more[open] > summary::before { content: '− '; }
-  .work-more > summary:hover,
-  .work-more > summary:focus-visible { color: var(--bone); }
-
-  .work-root {
-    background: var(--void);
-    color: var(--bone);
-    font-family: var(--font-display);
-    min-height: 100vh;
-    width: 100%;
-  }
-
-  .work-inner {
-    max-width: 860px;
-    margin: 0 auto;
-    padding: var(--gutter);
-  }
-
-  main:focus {
-    outline: none;
-  }
-
-  /* ---- header ------------------------------------------------------------ */
-
-  .work-header {
-    padding-bottom: 1.25rem;
-    border-bottom: var(--hair) solid var(--faint);
-  }
-
-  .work-masthead {
-    color: var(--dim);
-  }
-
-  .work-masthead strong {
-    color: var(--bone);
-    font-weight: 500;
-  }
-
-  /* ---- hero / introduction ------------------------------------------------ */
-
-  .work-hero {
-    padding: clamp(1.75rem, 5vw, 3rem) 0 clamp(1.75rem, 5vw, 2.5rem);
-    border-bottom: var(--hair) solid var(--faint);
-  }
-
-  .work-statement {
-    font-size: var(--t-lede);
-    font-weight: 500;
-    letter-spacing: var(--track-hero);
-    line-height: 1.1;
-    max-width: 34ch;
-  }
-
-  .work-tagline {
-    margin-top: 1rem;
-    color: var(--dim);
-  }
-
-  .work-contact-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem 1.5rem;
-    list-style: none;
-    margin-top: 1.75rem;
-  }
-
-  .work-contact-list a {
-    transition: color var(--d-feedback) var(--ease), border-color var(--d-feedback) var(--ease);
-    border-bottom: var(--hair) solid var(--faint);
-    padding-bottom: 0.15rem;
-    display: inline-block;
-  }
-
-  .work-contact-list a:hover,
-  .work-contact-list a:focus-visible {
-    color: var(--bone);
-    border-bottom-color: var(--dim);
-  }
-
-  /* ---- room callout -------------------------------------------------------- */
-
-  .work-room {
-    padding: clamp(2rem, 5vw, 3rem) 0;
-    border-bottom: var(--hair) solid var(--faint);
-  }
-
-  .work-room-panel {
-    background: var(--void-lift);
-    border: var(--hair) solid var(--faint);
-    padding: clamp(1.5rem, 4vw, 2.25rem);
-  }
-
-  .work-room-copy {
-    max-width: 56ch;
-    margin-top: 0.85rem;
-  }
-
-  .work-room-cta {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.6em;
-    margin-top: 1.5rem;
-    padding: 0.85rem 1.4rem;
-    border: var(--hair) solid var(--signal);
-    color: var(--signal);
-    font-family: var(--font-mono);
-    font-size: var(--t-data);
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease);
-  }
-
-  .work-room-cta:hover,
-  .work-room-cta:focus-visible {
-    background: var(--signal);
-    color: var(--void);
-  }
-
-  .work-room-note {
-    margin-top: 1rem;
-    color: var(--dim);
-  }
-
-  /* ---- shared section head ------------------------------------------------- */
-
-  .work-section {
-    padding: clamp(2.25rem, 6vw, 4rem) 0;
-    border-bottom: var(--hair) solid var(--faint);
-  }
-
-  .work-section-head {
-    font-family: var(--font-mono);
-    font-size: var(--t-data);
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    color: var(--dim);
-    margin-bottom: 2rem;
-    padding-bottom: 0.75rem;
-    border-bottom: var(--hair) solid var(--faint);
-  }
-
-  /* ---- projects -------------------------------------------------------------- */
-
-  .work-projects {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .work-project {
-    padding: 1.75rem 0;
-  }
-
-  .work-project + .work-project {
-    border-top: var(--hair) solid var(--faint);
-  }
-
-  .work-project-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
-    margin-bottom: 0.75rem;
-    color: var(--dim);
-  }
-
-  .work-project-index {
-    color: var(--dim);
-  }
-
-  .work-project-name {
-    font-size: var(--t-head);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    margin-bottom: 0.5rem;
-  }
-
-  .work-project-tagline {
-    color: var(--dim);
-    max-width: 52ch;
-    margin-bottom: 0.75rem;
-  }
-
-  .work-project-desc {
-    max-width: 60ch;
-    margin-bottom: 1.25rem;
-  }
-
-  .work-tech {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    list-style: none;
-    margin-bottom: 1.25rem;
-  }
-
-  .work-tech li {
-    font-family: var(--font-mono);
-    font-size: var(--t-micro);
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    color: var(--dim);
-    border: var(--hair) solid var(--faint);
-    padding: 0.3rem 0.55rem;
-  }
-
-  .work-note {
-    margin-bottom: 1.25rem;
-    max-width: 60ch;
-  }
-
-  .work-note-label {
-    display: block;
-    color: var(--dim);
-    margin-bottom: 0.35rem;
-  }
-
-  .work-note p {
-    color: var(--bone);
-  }
-
-  .work-project-links {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    margin-top: 0.25rem;
-  }
-
-  .work-link {
-    transition: color var(--d-feedback) var(--ease), border-color var(--d-feedback) var(--ease);
-    border-bottom: var(--hair) solid var(--faint);
-    padding-bottom: 0.15rem;
-  }
-
-  .work-link:hover,
-  .work-link:focus-visible {
-    color: var(--bone);
-    border-bottom-color: var(--dim);
-  }
-
-  .work-demos {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    margin: 0.25rem 0 1.25rem;
-  }
-
-  /* Solid bone buttons: the hero CTA already holds the one accent. */
-  .work-demo-btn {
-    font-family: var(--font-mono);
-    font-size: 0.95rem;
-    font-weight: 600;
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    padding: 0.95rem 1.5rem;
-    min-height: 3rem;
-    border: 2px solid var(--bone);
-    color: var(--void);
-    background: var(--bone);
-    cursor: pointer;
-    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease);
-  }
-
-  .work-demo-btn::before {
-    content: '▶ ';
-  }
-
-  .work-demo-btn:hover,
-  .work-demo-btn:focus-visible {
-    background: transparent;
-    color: var(--bone);
-  }
-
-  .work-demo-btn:focus-visible {
-    outline: 2px solid var(--bone);
-    outline-offset: 3px;
-  }
-
-  .work-demo-btn[aria-pressed="true"] {
-    background: transparent;
-    color: var(--bone);
-    box-shadow: inset 0 -4px 0 var(--bone);
-  }
-
-  /* ---- live demo panel ---------------------------------------------------------- */
-
-  /* Wide screens: the page keeps its reading column and the demo sits beside
-     it, sticky, so a visitor can read about a project while using it. */
-  @media (min-width: 1100px) {
-    .work-root--split {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(440px, 46vw);
-    }
-
-    .work-root--split .work-inner {
-      margin: 0 0 0 auto;
-      width: 100%;
-    }
-
-    .work-root--split .work-demo {
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      border-left: var(--hair) solid var(--faint);
-    }
-  }
-
-  /* Narrow screens: the demo takes the screen until it is closed. */
-  @media (max-width: 1099px) {
-    .work-demo {
-      position: fixed;
-      inset: 0;
-      z-index: 60;
-    }
-  }
+  /* ---- live demo panel (overlay at every width) --------------------------- */
 
   .work-demo {
+    position: fixed;
+    inset: 0;
+    z-index: 60;
     display: flex;
     flex-direction: column;
     background: var(--void-lift);
@@ -511,456 +117,127 @@ const css = `
     color: var(--dim);
   }
 
-  /* ---- skills ---------------------------------------------------------------- */
+  /* ---- page: light editorial layout (scoped to .w-root) ------------------- */
 
-  .work-skills {
-    list-style: none;
-    display: flex;
-    flex-direction: column;
+  html, body { background: #f4f2ed; }
+  body { color: #17160f; }
+
+  .w-root {
+    --bg: #f4f2ed;
+    --paper: #fbfaf7;
+    --ink: #17160f;
+    --ink2: #46443d;
+    --mute: #86837a;
+    --line: #e2dfd6;
+    --acc: #c2410c;
+    --r: 14px;
+    --mono: "IBM Plex Mono", ui-monospace, monospace;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.6 "IBM Plex Sans", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+  .w-root *, .w-root *::before, .w-root *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  .w-root a { color: inherit; }
+  .w-root h1 { font-size: 34px; line-height: 1.1; font-weight: 600; letter-spacing: -0.022em; margin-top: 28px; }
+  .w-root h3 { font-weight: 600; }
+
+  .w-wrap { max-width: 1180px; margin: auto; padding: 24px 20px 112px; }
+  .w-side { display: flex; flex-direction: column; }
+  .w-desk { width: 100%; max-width: 420px; height: auto; display: block; }
+  .w-status { display: flex; align-items: center; gap: 8px; font: 12.5px/1.4 var(--mono); color: var(--mute); margin-top: 10px; }
+  .w-dot { width: 6px; height: 6px; border-radius: 50%; background: #d9a514; box-shadow: 0 0 0 3px #d9a51422; flex: none; }
+  .w-lede { font-size: 20px; line-height: 1.4; letter-spacing: -0.01em; margin-top: 10px; color: var(--ink); }
+  .w-sub { color: var(--ink2); margin-top: 14px; font-size: 15.5px; max-width: 34ch; }
+  .w-cta { display: none; gap: 10px; margin-top: 24px; }
+  .w-btn {
+    flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 50px; padding: 0 20px; border-radius: 12px; font-weight: 500; font-size: 15.5px;
+    text-decoration: none; border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    transition: transform 0.15s, background 0.15s;
+  }
+  .w-btn:active { transform: scale(0.98); }
+  .w-root .w-btn--p { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .w-links { display: flex; gap: 18px; margin-top: 18px; font-size: 14.5px; color: var(--ink2); }
+  .w-links a { text-decoration: none; border-bottom: 1px solid var(--line); padding-bottom: 1px; }
+  .w-room { margin-top: 22px; display: none; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--paper); text-decoration: none; }
+  .w-room b { font-weight: 500; display: block; }
+  .w-room small { color: var(--mute); font-size: 13px; }
+  .w-ar { margin-left: auto; font-family: var(--mono); color: var(--acc); }
+
+  .w-label { font: 500 12px/1 var(--mono); letter-spacing: 0.02em; color: var(--mute); margin: 48px 0 16px; display: flex; justify-content: space-between; }
+  .w-proof { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+  .w-proof > div { background: var(--paper); padding: 16px 18px; display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: baseline; }
+  .w-n { font: 600 22px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.02em; color: var(--acc); }
+  .w-proof p { font-size: 15px; color: var(--ink2); }
+
+  .w-feat { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 0 20px 4px; scrollbar-width: none; }
+  .w-feat::-webkit-scrollbar { display: none; }
+  .w-card { flex: 0 0 84%; scroll-snap-align: start; scroll-margin-left: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; }
+  .w-shot { aspect-ratio: 16 / 10; border-radius: 10px; background: #ebe8e0; position: relative; overflow: hidden; }
+  .w-shot img, .w-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .w-shot > span { position: absolute; left: 12px; bottom: 10px; font: 11.5px var(--mono); color: var(--mute); }
+  .w-ci { padding: 14px 8px 8px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+  .w-meta { font: 12px var(--mono); color: var(--mute); }
+  .w-card h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
+  .w-card p { font-size: 14.5px; color: var(--ink2); }
+  .w-res { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
+  .w-res b { font: 500 20px var(--mono); letter-spacing: -0.03em; }
+  .w-res small { font-size: 13px; color: var(--mute); }
+  .w-go { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 44px; margin-top: 6px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--bg); text-decoration: none; font: 500 14.5px "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); cursor: pointer; list-style: none; }
+  .w-go::-webkit-details-marker { display: none; }
+  .w-case { margin-top: 6px; }
+  .w-case > summary { margin-top: 0; }
+  .w-case[open] > summary { margin-bottom: 10px; }
+  .w-bul { font-size: 14px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
+
+  .w-list { border-top: 1px solid var(--line); }
+  .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  .w-row--xp { grid-template-columns: 118px 1fr; }
+  @media (max-width: 559px) { .w-row--xp { grid-template-columns: 1fr; gap: 4px; } }
+  .w-y { font: 12.5px var(--mono); color: var(--mute); }
+  .w-row b { font-weight: 500; }
+  .w-row p { font-size: 14.5px; color: var(--ink2); margin-top: 2px; }
+  .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
+  .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 1px; cursor: pointer; text-decoration: none; }
+  .w-contact { font-size: 15.5px; color: var(--ink2); max-width: 46ch; }
+  .w-contact a { color: var(--ink); border-bottom: 1px solid var(--line); text-decoration: none; }
+  .w-foot { margin-top: 40px; font-size: 13px; color: var(--mute); }
+
+  .w-bar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    display: flex; gap: 10px; padding: 10px 20px calc(10px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    border-top: 1px solid var(--line);
+  }
+  .w-bar .w-btn { height: 48px; }
+
+  @media (min-width: 960px) {
+    .w-wrap { display: grid; grid-template-columns: 400px 1fr; gap: 88px; padding: 56px 48px; }
+    .w-side { position: sticky; top: 56px; align-self: start; }
+    .w-cta { display: flex; }
+    .w-room { display: flex; }
+    .w-bar { display: none; }
+    .w-root h1 { font-size: 40px; }
+    .w-label:first-child { margin-top: 4px; }
+    .w-feat { display: grid; grid-template-columns: 1fr 1fr; margin: 0; padding: 0; overflow: visible; }
+    .w-feat .w-card:first-child { grid-column: 1 / -1; }
+    .w-feat .w-card:first-child .w-shot { aspect-ratio: 3 / 1; }
+    .w-hint { display: none; }
+    .w-card:hover { border-color: #cfcbc0; }
   }
 
-  .work-skill {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    padding: 0.9rem 0;
+  @media (prefers-reduced-motion: reduce) {
+    .w-root *, .w-root *::before, .w-root *::after { transition: none !important; scroll-behavior: auto !important; }
   }
-
-  .work-skill + .work-skill {
-    border-top: var(--hair) solid var(--faint);
-  }
-
-  .work-skill-label {
-    font-size: var(--t-body);
-  }
-
-  .work-skill-meta {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .work-skill-proof,
-  .work-skill-note {
-    color: var(--dim);
-  }
-
-  /* ---- footer ------------------------------------------------------------------ */
-
-  .work-footer {
-    padding: 1.75rem 0 clamp(2rem, 6vw, 3rem);
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .work-footer a {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    transition: color var(--d-feedback) var(--ease);
-    width: fit-content;
-  }
-
-  .work-footer a:hover,
-  .work-footer a:focus-visible {
-    color: var(--bone);
-  }
-
-  /* ---- responsive: widen up from mobile base ----------------------------------- */
-
-  @media (min-width: 560px) {
-    .work-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-
-    .work-project-meta {
-      gap: 1.25rem;
-    }
-
-    .work-skill {
-      flex-direction: row;
-      flex-wrap: wrap;
-      align-items: baseline;
-      justify-content: space-between;
-      gap: 0.35rem 1rem;
-    }
-
-    .work-skill-meta {
-      flex-direction: row;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 0.25rem 1.25rem;
-      margin-left: auto;
-      min-width: 0;
-    }
-
-    /* Wraps rather than nowrap: long notes overflowed the page at ~625 px. */
-    .work-skill-proof,
-    .work-skill-note {
-      overflow-wrap: anywhere;
-    }
-
-    .work-footer {
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: baseline;
-    }
-  }
-
-  /* ---- print ---------------------------------------------------------------------- */
-
-  @media print {
-    @page {
-      margin: 1.6cm;
-    }
-
-    html, body, #root {
-      height: auto;
-    }
-
-    body {
-      background: #fff;
-      color: #000;
-    }
-
-    .work-root {
-      background: #fff;
-      color: #000;
-      min-height: 0;
-    }
-
-    .work-skip,
-    .work-room,
-    .work-demos,
-    .work-demo {
-      display: none;
-    }
-
-    .work-inner {
-      max-width: none;
-      padding: 0;
-    }
-
-    * {
-      animation: none !important;
-      transition: none !important;
-      box-shadow: none !important;
-      text-shadow: none !important;
-    }
-
-    .work-header,
-    .work-hero,
-    .work-section {
-      border-bottom-color: #ccc;
-    }
-
-    .work-section-head {
-      border-bottom-color: #ccc;
-      color: #444;
-    }
-
-    .work-masthead,
-    .work-tagline,
-    .work-project-meta,
-    .work-project-tagline,
-    .work-project-index,
-    .work-note-label,
-    .work-skill-proof,
-    .work-skill-note {
-      color: #444;
-    }
-
-    .work-tech li {
-      color: #444;
-      border-color: #ccc;
-    }
-
-    .work-contact-list a,
-    .work-link,
-    .work-footer a {
-      color: #000;
-      border-bottom-color: #999;
-    }
-
-    a[href^="http"]::after {
-      content: " (" attr(href) ")";
-      font-size: 0.7em;
-      color: #666;
-    }
-
-    .work-project {
-      break-inside: avoid;
-    }
-
-    :focus-visible {
-      outline: none;
-    }
-  }
-
-  .work-metrics {
-    list-style: none;
-    margin: 1rem 0 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
-    gap: 0.6rem;
-  }
-  .work-metrics li {
-    border: 1px solid var(--line, #26282b);
-    padding: 0.6rem 0.75rem;
-  }
-  .work-metrics strong {
-    display: block;
-    font-size: 1.35rem;
-    line-height: 1.1;
-    color: var(--ink, #ececec);
-  }
-  .work-metrics span { font-size: 0.82rem; color: var(--dim); }
-  .work-bullets { margin: 0.9rem 0 0; padding-left: 1.1rem; color: var(--dim); }
-  .work-bullets li { margin: 0.3rem 0; }
-
-  .work-project-shot { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; object-fit: cover; object-position: top; margin-bottom: 1rem; border: var(--hair) solid var(--faint); }
-  .work-project-summary { margin: 0.5rem 0 0; font-size: 1.05rem; }
-  .work-project-detail { margin: 0.4rem 0 0; color: var(--dim); }
-  .work-project-badge { margin: 0.5rem 0 0; color: var(--signal); font-size: var(--t-data); }
-  .work-projects--compact .work-project { padding-block: 1rem; }
-  .work-projects--compact .work-project-name { font-size: 1.1rem; }
-  .work-projects--compact .work-project-tagline { margin: 0.3rem 0 0; }
-
-  /* ---- layout v2: wide, card-based, one primary action ------------------------ */
-
-  .work-root { font-size: 1.0625rem; line-height: 1.6; }
-  .work-inner { max-width: 1180px; padding-top: 0; }
-
-  .work-bar {
-    position: sticky;
-    top: 0;
-    z-index: 40;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin: 0 calc(var(--gutter) * -1);
-    padding: 0.7rem var(--gutter);
-    background: #0A0A0B;
-    border-bottom: var(--hair) solid var(--faint);
-  }
-  .work-section-head { scroll-margin-top: 4.5rem; }
-  .work-bar-name { font-weight: 600; font-size: 1rem; }
-  .work-bar-role { color: var(--dim); font-size: 0.9rem; margin-left: 0.75rem; }
-  .work-back {
-    min-height: 44px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5em;
-    padding: 0.55rem 0.95rem;
-    border: var(--hair) solid var(--signal);
-    color: var(--signal);
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    letter-spacing: var(--track-data);
-    text-transform: uppercase;
-    white-space: nowrap;
-    transition: background var(--d-feedback) var(--ease), color var(--d-feedback) var(--ease);
-  }
-  .work-back:hover,
-  .work-back:focus-visible { background: var(--signal); color: var(--void); }
-  @media (max-width: 560px) {
-    .work-bar-role, .work-back-long { display: none; }
-  }
-
-  .work-hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
-    gap: 2rem 3.5rem;
-    align-items: end;
-    padding: clamp(2.5rem, 7vw, 5rem) 0 clamp(2rem, 5vw, 3.5rem);
-  }
-  .work-statement { font-size: clamp(2.75rem, 7vw, 5rem); line-height: 1.02; max-width: none; }
-  .work-tagline { font-size: 1.3rem; color: var(--bone); max-width: 34ch; margin-top: 1.1rem; }
-  .work-actions { margin-top: 2rem; align-items: center; gap: 0.75rem; }
-  .work-action { color: var(--dim); padding: 0.8rem 1.1rem; }
-  .work-action--primary { padding: 1rem 1.75rem; font-size: 0.8rem; font-weight: 600; color: var(--void); }
-  .work-wins { flex-direction: column; flex-wrap: nowrap; gap: 0.6rem; margin-top: 0; }
-  .work-wins li {
-    display: flex;
-    gap: 0.9rem;
-    align-items: baseline;
-    padding: 0.8rem 1rem;
-    background: var(--void-lift);
-    font-size: 0.78rem;
-  }
-  .work-wins li span { margin-right: 0; min-width: 8.5rem; }
-  @media (max-width: 860px) {
-    .work-hero { grid-template-columns: 1fr; }
-    .work-wins li span { min-width: 0; }
-  }
-
-  .work-section-head {
-    font-family: var(--font-display);
-    font-size: clamp(1.5rem, 2.6vw, 2rem);
-    font-weight: 500;
-    letter-spacing: -0.01em;
-    text-transform: none;
-    color: var(--bone);
-    margin-bottom: 1.75rem;
-    padding-bottom: 0;
-    border-bottom: 0;
-  }
-
-  .work-job { grid-template-columns: 11rem 1fr; }
-  .work-job-detail { max-width: 70ch; }
-  .work-metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-top: 1.25rem; }
-  @media (max-width: 640px) { .work-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  .work-metrics li { background: var(--void-lift); border-color: var(--faint); padding: 0.85rem 1rem; }
-  .work-metrics strong { font-size: 2rem; font-weight: 500; color: var(--bone); }
-  .work-bullets { color: var(--bone); max-width: 70ch; }
-
-  .work-projects {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1.25rem;
-  }
-  .work-project {
-    display: flex;
-    flex-direction: column;
-    padding: 1.6rem;
-    background: var(--void-lift);
-    border: var(--hair) solid var(--faint);
-    border-radius: 6px;
-    transition: border-color var(--d-feedback) var(--ease);
-  }
-  .work-project + .work-project { border-top: var(--hair) solid var(--faint); }
-  .work-project:hover { border-color: #46464d; }
-  .work-project-name { font-size: 1.6rem; }
-  .work-project-links { margin-top: auto; padding-top: 1.25rem; gap: 0.6rem; }
-  .work-project-links .work-link { border: var(--hair) solid var(--faint); padding: 0.55rem 1rem; min-height: 44px; display: inline-flex; align-items: center; }
-  .work-project-links .work-link:first-child:not(:only-child),
-  .work-project-links .work-link:only-child { border-color: var(--bone); }
-  .work-project-links .work-link:hover,
-  .work-project-links .work-link:focus-visible { background: var(--bone); color: var(--void); }
-  .work-demo-btn { font-size: 0.8rem; padding: 0.75rem 1.1rem; min-height: 2.75rem; }
-  .work-projects--compact { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .work-projects--compact .work-project { padding: 1.15rem; }
-  .work-projects--compact .work-project-name { font-size: 1.15rem; }
-  @media (max-width: 900px) {
-    .work-projects--compact { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media (max-width: 680px) {
-    .work-projects, .work-projects--compact { grid-template-columns: 1fr; }
-    .work-job { grid-template-columns: 1fr; }
-  }
-  .work-root--split .work-projects,
-  .work-root--split .work-projects--compact { grid-template-columns: 1fr; }
-
-  .work-skills { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 3rem; }
-  .work-skill { flex-direction: column; align-items: flex-start; gap: 0.2rem; }
-  .work-skill-meta { margin-left: 0; justify-content: flex-start; }
-  .work-skill { border-top: var(--hair) solid var(--faint); }
-  @media (max-width: 680px) { .work-skills { grid-template-columns: 1fr; } }
-
-  .work-contact-card {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.25rem 2rem;
-    padding: clamp(1.5rem, 4vw, 2.25rem);
-    background: var(--void-lift);
-    border: var(--hair) solid var(--faint);
-    border-radius: 6px;
-  }
-  .work-contact-card p { max-width: 52ch; margin: 0; }
-  .work-footer a:first-child { color: var(--bone); }
-
-  /* ---- layout v3: clear section bands, one spacing rhythm, readable type ---- */
-
-  .work-inner { counter-reset: sec; }
-  .work-bar {
-    box-shadow: 0 0 0 100vmax #0A0A0B;
-    clip-path: inset(0 -100vmax -1px -100vmax);
-    border-bottom: 1px solid transparent;
-    border-image: linear-gradient(var(--faint), var(--faint)) 0 0 1 0 / 0 0 1px 0 / 0 100vmax 0 100vmax;
-  }
-
-  .work-hero { border-bottom: 0; }
-  .work-section {
-    padding: clamp(3.5rem, 8vw, 6rem) 0;
-    border-bottom: 0;
-    clip-path: inset(0 -100vmax);
-  }
-  .work-section:nth-of-type(even) {
-    background: #141418;
-    box-shadow: 0 0 0 100vmax #141418;
-  }
-  .work-section:nth-of-type(even) .work-project,
-  .work-section:nth-of-type(even) .work-metrics li,
-  .work-section:nth-of-type(even) .work-contact-card { background: #1c1c21; }
-
-  .work-section-head {
-    counter-increment: sec;
-    font-size: clamp(1.9rem, 3.6vw, 2.75rem);
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
-  }
-  .work-section-head::before {
-    content: '0' counter(sec);
-    display: block;
-    margin-bottom: 0.75rem;
-    font-family: var(--font-mono);
-    font-size: 0.75rem;
-    font-weight: 500;
-    letter-spacing: var(--track-data);
-    color: var(--signal);
-  }
-
-  .work-timeline { gap: 0; }
-  .work-job { padding: 2rem 0; border-top: var(--hair) solid var(--faint); }
-  .work-job:first-child { border-top: 0; padding-top: 0; }
-  .work-job:last-child { padding-bottom: 0; }
-  .work-job-role { font-size: 1.3rem; }
-  .work-job-detail { margin-top: 0.75rem; }
-  .work-metrics { margin: 1.5rem 0 0; }
-  .work-bullets { margin-top: 1.5rem; }
-  .work-bullets li { margin: 0.55rem 0; }
-
-  .work-projects { gap: 1.5rem; }
-  .work-project { padding: 1.75rem; gap: 1rem; }
-  .work-project > * { margin-top: 0; margin-bottom: 0; }
-  .work-project-shot { margin-bottom: 0.5rem; }
-  .work-project-meta { font-size: 0.75rem; }
-  .work-project-name { font-size: 1.75rem; line-height: 1.15; }
-  .work-project-summary { font-size: 1.1rem; color: var(--bone); }
-  .work-project-detail { font-size: 1rem; line-height: 1.55; }
-  .work-demos { margin: 0; }
-  .work-demo-btn { font-size: 0.78rem; padding: 0.7rem 1rem; min-height: 2.75rem; }
-  .work-tech li { font-size: 0.72rem; color: #B4B4BB; padding: 0.3rem 0.6rem; }
-  .work-more { margin-top: 0; }
-  .work-project-links { margin-top: auto; padding-top: 0.5rem; }
-  .work-projects--compact .work-project { padding: 1.4rem; gap: 0.75rem; }
-  .work-projects--compact .work-project-name { font-size: 1.25rem; }
-
-  .work-skill { gap: 0; padding: 1.1rem 0; }
-  .work-skill-meta { gap: 0.2rem; margin-top: 0.35rem; }
-  .work-skill-label { font-weight: 500; }
-  .work-skill-proof, .work-skill-note {
-    display: block;
-    margin: 0;
-    font-size: 0.82rem;
-    line-height: 1.5;
-    letter-spacing: 0.02em;
-    text-transform: none;
-  }
-
-  .work-footer { padding-top: 2.5rem; }
-  @media (max-width: 560px) { .work-action--primary { flex: 1 0 100%; justify-content: center; } }
 `;
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
+
+// The three cards in the "Featured" band. Blink is built from experience[0].
+const FEATURED_IDS = ['focuslock', 'darksentinel'];
 
 // Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
 // Android shows nothing), so there the button opens the file in its own tab.
@@ -991,6 +268,12 @@ function ResumeReader({ src, onClose }) {
   );
 }
 
+// "3:28 pm" in Mumbai time.
+function formatIst(date) {
+  const { hour, minute } = istParts(date);
+  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'am' : 'pm'}`;
+}
+
 export default function Work() {
   const mainRef = useRef(null);
   const [readerOpen, setReaderOpen] = useState(false);
@@ -1007,107 +290,65 @@ export default function Work() {
     trigger.current?.focus({ preventScroll: true });
   }, []);
 
+  const [now, setNow] = useState(() => new Date());
+  const [temperature, setTemperature] = useState(null);
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {
+    let alive = true;
+    fetchMumbaiWeather()
+      .then((w) => { if (alive && typeof w?.temperature === 'number') setTemperature(w.temperature); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   // A project with no description yet renders as a bare title and a lone tech
   // chip, which reads as a broken stub rather than as work. Withhold it until
   // there is something true to say about it.
   const listed = projects.filter((p) => p.description || p.tagline);
-  const featured = featuredProjectIds
-    .map((id) => listed.find((p) => p.id === id))
-    .filter(Boolean);
+  const featured = FEATURED_IDS.map((id) => listed.find((p) => p.id === id)).filter(Boolean);
   const rank = (p) => { const i = moreProjectIds.indexOf(p.id); return i < 0 ? moreProjectIds.length : i; };
-  const more = listed.filter((p) => !featuredProjectIds.includes(p.id)).sort((a, b) => rank(a) - rank(b));
+  const more = listed.filter((p) => !FEATURED_IDS.includes(p.id)).sort((a, b) => rank(a) - rank(b));
 
-  const renderProject = (project, index, total, compact) => {
-    const hasLinks = project.links?.live || project.links?.github;
-    const ordinal = String(index + 1).padStart(2, '0');
-    return (
-      <li key={project.id} className="work-project">
-        {!compact && PREVIEWS[project.id] && (
-          <img className="work-project-shot" src={PREVIEWS[project.id]} alt={`${project.name} screenshot`} loading="lazy" width="780" height="520" />
-        )}
-        <div className="work-project-meta mono">
-          <span className="work-project-index">{ordinal}/{String(total).padStart(2, '0')}</span>
-          <span>{project.year}</span>
-          <span>{project.kind}</span>
-        </div>
-        <h3 className="work-project-name">{project.name}</h3>
-        {compact ? (
-          <>
-            {project.tagline && <p className="work-project-tagline">{project.tagline}</p>}
-            {project.badge && <p className="mono work-project-badge">{project.badge}</p>}
-          </>
-        ) : (
-          <>
-            <p className="work-project-summary">{project.summary || project.tagline}</p>
-            {project.detail && <p className="work-project-detail">{project.detail}</p>}
-            {project.badge && <p className="mono work-project-badge">{project.badge}</p>}
-            {!project.summary && project.description && (
-              <p className="work-project-desc">{project.description}</p>
-            )}
-          </>
-        )}
-
-        {DEMOS[project.id] && (
-          <div className="work-demos" aria-label={`Try ${project.name}`}>
-            {DEMOS[project.id].map((demo, i) => (
-              <button
-                key={demo.label}
-                type="button"
-                className="work-demo-btn"
-                aria-pressed={open?.id === project.id && open.index === i}
-                onClick={(event) => { trigger.current = event.currentTarget; setOpen({ id: project.id, index: i }); }}
-              >
-                Try it · {demo.label}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {project.tech?.length > 0 && (
-          <ul className="work-tech" aria-label={`${project.name} technologies`}>
-            {project.tech.map((tech) => (<li key={tech}>{tech}</li>))}
-          </ul>
-        )}
-
-        {!compact && (project.decision || project.broke) && (
-          <details className="work-more">
-            <summary>Engineering notes</summary>
-            {project.decision && (
-              <div className="work-note">
-                <span className="mono work-note-label">Decision</span>
-                <p>{project.decision}</p>
-              </div>
-            )}
-            {project.broke && (
-              <div className="work-note">
-                <span className="mono work-note-label">What broke</span>
-                <p>{project.broke}</p>
-              </div>
-            )}
-          </details>
-        )}
-
-        {hasLinks && (
-          <div className="work-project-links">
-            {project.links.live && (
-              <a className="mono work-link" href={project.links.live}
-                {...(project.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>
-                Live
-              </a>
-            )}
-            {project.links.github && (
-              <a className="mono work-link" href={project.links.github} target="_blank" rel="noopener noreferrer">
-                Source
-              </a>
-            )}
-          </div>
-        )}
-      </li>
-    );
+  const blink = experience[0];
+  const openResume = (e) => {
+    if (!canEmbedPdf()) return;
+    e.preventDefault();
+    readerTrigger.current = e.currentTarget;
+    setReaderOpen(true);
+  };
+  const tryDemo = (project, e) => {
+    trigger.current = e.currentTarget;
+    setOpen({ id: project.id, index: 0 });
   };
 
-  const hasContact =
-    contact.email || contact.github || contact.linkedin || contact.twitter || contact.resume;
+  const renderFeatured = (project) => (
+    <article className="w-card" key={project.id}>
+      <div className="w-shot">
+        {PREVIEWS[project.id]
+          ? <img src={PREVIEWS[project.id]} alt={`${project.name} screenshot`} loading="lazy" />
+          : <span>screenshot pending</span>}
+      </div>
+      <div className="w-ci">
+        <span className="w-meta">{project.year} · {project.tech.slice(0, 3).join(', ')}</span>
+        <h3>{project.name}</h3>
+        <p>{project.summary || project.tagline}</p>
+        {project.badge && (
+          <div className="w-res"><small>{project.badge}</small></div>
+        )}
+        {DEMOS[project.id] ? (
+          <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it<span>→</span></button>
+        ) : project.links?.live && (
+          <a className="w-go" href={project.links.live}>Try it<span>→</span></a>
+        )}
+      </div>
+    </article>
+  );
+
+  const statusText = `${formatIst(now)} in Mumbai${temperature !== null ? ` · ${temperature}°C` : ''}`;
+  const footText = 'Built by hand. The desk above is a real room you can walk through on a laptop.';
 
   return (
     <>
@@ -1119,165 +360,122 @@ export default function Work() {
       >
         Skip to content
       </button>
-      <div className={`work-root${open ? ' work-root--split' : ''}`}>
-        <div className="work-inner">
-          <header className="work-bar">
-            <p>
-              <strong className="work-bar-name">{identity.name}</strong>
-              <span className="work-bar-role">{identity.role}</span>
-            </p>
-            <a className="work-back" href="/">
-              <span aria-hidden="true">&larr;</span> <span className="work-back-long">Back to the&nbsp;</span>3D room
+      <div className="w-root">
+        <div className="w-wrap">
+          <aside className="w-side">
+            <svg className="w-desk" viewBox="0 0 420 170" fill="none" stroke="#17160f" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="276" y="8" width="128" height="88" rx="3"/><path d="M340 8v88M276 52h128" strokeWidth=".9"/>
+              <path d="M282 96v-14l8-4v18M296 96v-24h8v24M312 96v-10l6-6 6 6v10M330 96v-18h7v18M348 96v-30h9v30M364 96v-12h8v12M380 96v-20l6-3 6 3v20" stroke="#86837a" strokeWidth=".8"/>
+              <circle cx="384" cy="26" r="6" stroke="#c2410c" strokeWidth=".9"/>
+              <path d="M10 126h400"/><path d="M14 126v4h392v-4" strokeWidth=".9"/><path d="M28 130v38M392 130v38"/>
+              <rect x="138" y="30" width="132" height="80" rx="5"/><rect x="146" y="38" width="116" height="64" rx="2" fill="#c2410c" fillOpacity=".09" stroke="none"/>
+              <path d="M158 54h46M158 62h70M158 70h34" stroke="#c2410c" strokeWidth="1" strokeOpacity=".55"/>
+              <path d="M196 110l-5 13h26l-5-13"/><path d="M186 123h36"/>
+              <rect x="150" y="117" width="78" height="7" rx="2"/><path d="M156 120.5h66" strokeWidth=".6" strokeDasharray="2 2"/>
+              <rect x="240" y="117" width="14" height="8" rx="4"/>
+              <path d="M58 126h34M75 126V88l26-26M101 62l14 8-6 11-14-8z"/><path d="M107 79l-7 18" stroke="#c2410c" strokeOpacity=".35" strokeDasharray="1.5 3"/>
+              <path d="M290 126v-16h20v16M310 114h4a4 4 0 0 1 0 8h-4"/><path d="M296 104c0-4 4-4 4-8M304 104c0-4 4-4 4-8" stroke="#86837a" strokeWidth=".8"/>
+              <rect x="22" y="104" width="40" height="22" rx="2"/><path d="M42 104v22" strokeWidth=".8"/>
+            </svg>
+            <p className="w-status"><span className="w-dot" /><span>{statusText}</span></p>
+            <h1>{identity.name}</h1>
+            <p className="w-lede">{identity.pitch}</p>
+            <p className="w-sub">{identity.now}</p>
+            <div className="w-cta">
+              {contact.resume && (
+                <a className="w-btn w-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>
+              )}
+              <a className="w-btn" href={`mailto:${contact.email}`}>Email me</a>
+            </div>
+            <div className="w-links">
+              <a href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+            </div>
+            <a className="w-room" href="/">
+              <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#17160f" strokeWidth="1.2" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" stroke="#e2dfd6"/><path d="M9 23h16M12 23v-8h10v8M15 15v-3h4v3"/></svg>
+              <span><b>Walk through my desk</b><small>Guided 3D tour · 60 seconds</small></span>
+              <span className="w-ar">→</span>
             </a>
-          </header>
+          </aside>
 
           <main id="work-main" ref={mainRef} tabIndex={-1}>
-            <section className="work-hero" aria-label="Introduction">
-              <div>
-                <h1 className="work-statement">{identity.name}</h1>
-                {identity.tagline && <p className="work-tagline">{identity.tagline}</p>}
+            <div className="w-label"><span>Proof</span></div>
+            <div className="w-proof">
+              {proofPoints.map((p) => (
+                <div key={p.text}><span className="w-n">{p.value}</span><p>{p.text}</p></div>
+              ))}
+            </div>
 
-                {hasContact && (
-                  <div className="work-actions" aria-label="Contact">
-                    {contact.resume && (
-                      <>
-                        <a
-                          className="work-action work-action--primary"
-                          href={contact.resume}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          ref={readerTrigger}
-                          onClick={(e) => { if (canEmbedPdf()) { e.preventDefault(); setReaderOpen(true); } }}
-                        >
-                          View résumé
-                        </a>
-                        <a className="work-action" href={contact.resume} download="Dhruv-Kothari-Resume.pdf">Download PDF</a>
-                      </>
-                    )}
-                    {contact.github && (
-                      <a className="work-action" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
-                    )}
-                    {contact.linkedin && (
-                      <a className="work-action" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
-                    )}
-                    {contact.twitter && (
-                      <a className="work-action" href={contact.twitter} target="_blank" rel="noopener noreferrer">Twitter</a>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              <ul className="work-wins" aria-label="Highlights">
-                {achievements.map((a) => (
-                  <li key={a.id}><span>{a.result}</span>{a.label.split(' — ')[0].split(' (')[0]}</li>
-                ))}
-              </ul>
-            </section>
-
-            <section className="work-section" aria-labelledby="work-experience-heading">
-              <h2 id="work-experience-heading" className="work-section-head">
-                Experience &amp; education
-              </h2>
-              <ol className="work-timeline">
-                {experience.map((job) => (
-                  <li key={job.id} className="work-job">
-                    <span className="mono work-job-when">{job.from} &ndash; {job.to}</span>
-                    <div>
-                      <h3 className="work-job-role">{job.role}</h3>
-                      <p className="work-job-org">{job.org}{job.note ? ` · ${job.note}` : ''}</p>
-                      {job.detail && <p className="work-job-detail">{job.detail}</p>}
-                      {job.metrics && (
-                        <ul className="work-metrics" aria-label={`${job.org} results`}>
-                          {job.metrics.map((m) => (
-                            <li key={m.label}><strong>{m.value}</strong><span>{m.label}</span></li>
-                          ))}
-                        </ul>
-                      )}
-                      {job.bullets && (
-                        <ul className="work-bullets">
-                          {job.bullets.map((b) => (<li key={b}>{b}</li>))}
-                        </ul>
-                      )}
-                    </div>
-                  </li>
-                ))}
-                <li className="work-job">
-                  <span className="mono work-job-when">{education.year}</span>
-                  <div>
-                    <h3 className="work-job-role">{education.degree}</h3>
-                    <p className="work-job-org">{education.school}</p>
-                  </div>
-                </li>
-              </ol>
-            </section>
-
-            <section className="work-section" aria-labelledby="work-projects-heading">
-              <h2 id="work-projects-heading" className="work-section-head">
-                Projects
-              </h2>
-              <ol className="work-projects">
-                {featured.map((project, index) => renderProject(project, index, featured.length, false))}
-              </ol>
-            </section>
-
-            {more.length > 0 && (
-              <section className="work-section" aria-labelledby="work-more-projects-heading">
-                <h2 id="work-more-projects-heading" className="work-section-head">
-                  More projects
-                </h2>
-                <ol className="work-projects work-projects--compact">
-                  {more.map((project, index) => renderProject(project, index, more.length, true))}
-                </ol>
-              </section>
-            )}
-
-            {contact.email && (
-              <section className="work-section" aria-labelledby="work-contact-heading">
-                <h2 id="work-contact-heading" className="work-section-head">Contact</h2>
-                <div className="work-contact-card">
-                  <p>
-                    Open to remote internships in AI engineering and growth engineering. Email:{' '}
-                    <a className="work-link" href={`mailto:${contact.email}`}>{contact.email}</a>
-                  </p>
-                  <a className="work-action work-action--primary" href={`mailto:${contact.email}`}>Email me</a>
+            <div className="w-label"><span>Featured</span><span className="w-hint">swipe →</span></div>
+            <div className="w-feat">
+              <article className="w-card">
+                <div className="w-shot">
+                  <svg viewBox="0 0 320 200" preserveAspectRatio="none" aria-hidden="true"><path d="M0 170 L60 150 L120 156 L180 110 L240 92 L320 40" stroke="#c2410c" strokeWidth="1.4" fill="none"/></svg>
                 </div>
-              </section>
-            )}
+                <div className="w-ci">
+                  <span className="w-meta">Blink.new · {blink.from.slice(-4)} · Python, Gmail API, LLM</span>
+                  <h3>An outreach pipeline people actually replied to</h3>
+                  <p>Sourced 650 creators from YouTube, drafted each email with an LLM, and a human approved every send.</p>
+                  <div className="w-res"><b>18%</b><small>reply rate · 14 positive</small></div>
+                  <details className="w-case">
+                    <summary className="w-go">Read the case<span>→</span></summary>
+                    <ul className="w-bul">
+                      {blink.bullets.map((b) => (<li key={b}>{b}</li>))}
+                    </ul>
+                  </details>
+                </div>
+              </article>
+              {featured.map(renderFeatured)}
+            </div>
 
-            <section className="work-section" aria-labelledby="work-skills-heading">
-              <h2 id="work-skills-heading" className="work-section-head">
-                Skills
-              </h2>
-              <ul className="work-skills">
-                {skills.map((skill) => {
-                  const proof = resolveProof(skill.proof);
-                  return (
-                    <li key={skill.id} className="work-skill">
-                      <span className="work-skill-label">{skill.label}</span>
-                      <span className="work-skill-meta">
-                        {proof.length > 0 && (
-                          <span className="mono work-skill-proof">
-                            Evidence &middot; {proof.join(', ')}
-                          </span>
-                        )}
-                        {skill.note && <span className="mono work-skill-note">{skill.note}</span>}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ul>
-            </section>
+            <div className="w-label"><span>Experience</span></div>
+            <div className="w-list">
+              {experience.map((job) => (
+                <div className="w-row w-row--xp" key={job.id}>
+                  <span className="w-y">{job.from} – {job.to}</span>
+                  <span><b>{job.role} · {job.org}</b><p>{job.detail}</p></span>
+                </div>
+              ))}
+              <div className="w-row w-row--xp">
+                <span className="w-y">{education.year}</span>
+                <span><b>{education.degree}</b><p>{education.school}</p></span>
+              </div>
+            </div>
+
+            <div className="w-label"><span>More work</span><span>{more.length}</span></div>
+            <div className="w-list">
+              {more.map((p) => (
+                <div className="w-row" key={p.id}>
+                  <span className="w-y">{p.year}</span>
+                  <span><b>{p.name}</b><p>{p.tagline || p.description}</p></span>
+                  <span className="w-acts">
+                    {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
+                    {p.links?.live && (
+                      <a className="w-act" href={p.links.live}
+                        {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>Live</a>
+                    )}
+                    {p.links?.github && (
+                      <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="w-label"><span>Contact</span></div>
+            <p className="w-contact">
+              Open to remote internships in AI and growth engineering. Email{' '}
+              <a href={`mailto:${contact.email}`}>{contact.email}</a>.
+            </p>
+            <p className="w-foot">{footText}</p>
           </main>
-
-          <footer className="work-footer">
-            {contact.email && (
-              <a className="mono" href={`mailto:${contact.email}`}>
-                {contact.email}
-              </a>
-            )}
-            <a className="mono" href="/">&larr; Back to the 3D room</a>
-          </footer>
         </div>
+        <nav className="w-bar" aria-label="Quick actions">
+          {contact.resume && (
+            <a className="w-btn w-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>
+          )}
+          <a className="w-btn" href={`mailto:${contact.email}`}>Email me</a>
+        </nav>
         {readerOpen && contact.resume && <ResumeReader src={contact.resume} onClose={closeReader} />}
         {open && (
           <DemoPanel

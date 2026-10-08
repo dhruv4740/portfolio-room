@@ -46,7 +46,7 @@ try {
   // 1. WebGL off (checked on the first /work/ load; the request window starts here).
   reqs = []; resps = [];
   await page.goto(`${BASE}/work/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.work-root', { timeout: 15_000 });
+  await page.waitForSelector('.w-root', { timeout: 15_000 });
   await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
   const workReqs = [...reqs];
   const workResps = [...resps];
@@ -58,47 +58,51 @@ try {
 
   // 2. Trailing-slash routing and identity heading.
   await page.goto(`${BASE}/work`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.work-root', { timeout: 15_000 });
+  await page.waitForSelector('.w-root', { timeout: 15_000 });
   check('/work resolves to /work/', page.url().endsWith('/work/'), page.url());
   const nameH1 = await page.locator('h1', { hasText: 'Dhruv Kothari' }).count();
   check('/work page has h1 "Dhruv Kothari"', nameH1 > 0, `${nameH1} match(es)`);
 
   // 3. Identity and the three action links.
   await page.goto(`${BASE}/work/`, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.work-root', { timeout: 15_000 });
+  await page.waitForSelector('.w-root', { timeout: 15_000 });
   const h1Visible = await page.getByRole('heading', { level: 1, name: 'Dhruv Kothari' }).isVisible().catch(() => false);
   check('h1 "Dhruv Kothari" is visible', h1Visible);
-  const actions = page.locator('.work-actions a');
+  // Résumé and Email exist twice (sidebar .w-cta on desktop, fixed .w-bar on phone); test only the visible copies.
+  const actionAll = page.locator('.w-cta a, .w-links a, .w-bar a');
+  const actions = [];
+  for (let i = 0; i < await actionAll.count(); i++) {
+    if (await actionAll.nth(i).isVisible()) actions.push(actionAll.nth(i));
+  }
   // textContent, not innerText: the site uppercases these via CSS, and innerText reports the rendered case.
-  const actionTexts = await actions.evaluateAll((els) => els.map((e) => e.textContent || ''));
-  const wanted = [/View résumé/, /Download PDF/, /GitHub/, /LinkedIn/];
+  const actionTexts = await Promise.all(actions.map((a) => a.textContent().then((t) => t || '')));
+  const wanted = [/Résumé/, /Email me/, /GitHub/, /LinkedIn/];
   const actionsOk = actionTexts.length === 4 && wanted.every((re) => actionTexts.some((t) => re.test(t)));
-  let actionsVisible = actionsOk;
-  for (let i = 0; i < actionTexts.length && actionsVisible; i++) actionsVisible = await actions.nth(i).isVisible();
-  check('action links: View résumé, Download PDF, GitHub, LinkedIn — visible', actionsOk && actionsVisible,
+  check('action links: Résumé, Email me, GitHub, LinkedIn — visible', actionsOk,
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.
-  const featured = page.locator('#work-projects-heading').locator('xpath=ancestor::section[1]').locator('.work-project');
-  const featuredNames = (await featured.locator('.work-project-name').allInnerTexts()).map((s) => s.trim());
-  const expectedNames = ['FocusLock', '3D Portfolio', 'DarkSentinel', 'Blackout'];
-  check('exactly four featured cards in order', featuredNames.length === 4
+  // Featured band: the Blink outreach card, then FocusLock and DarkSentinel (Skills section removed on purpose).
+  const featured = page.locator('.w-feat > article');
+  const featuredNames = (await featured.locator('h3').allInnerTexts()).map((s) => s.trim());
+  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'DarkSentinel'];
+  check('exactly three featured cards in order', featuredNames.length === 3
     && expectedNames.every((n, i) => featuredNames[i] === n), featuredNames.join(' | ') || 'none');
   let featuredVisible = true;
   for (let i = 0; i < await featured.count(); i++) {
     await featured.nth(i).scrollIntoViewIfNeeded();
     if (!(await featured.nth(i).isVisible())) featuredVisible = false;
   }
-  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 4);
-  const moreHeading = (await page.locator('#work-more-projects-heading').innerText().catch(() => '')).trim();
-  const moreCount = await page.locator('#work-more-projects-heading').locator('xpath=ancestor::section[1]')
-    .locator('.work-project').count();
-  check('"More projects" section has at least one project', /More projects/i.test(moreHeading) && moreCount >= 1,
-    `heading "${moreHeading}", ${moreCount} card(s)`);
+  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 3);
+  const moreLabel = page.locator('.w-label', { hasText: 'More work' });
+  const moreHeading = (await moreLabel.innerText().catch(() => '')).trim();
+  const moreCount = await moreLabel.locator('xpath=following-sibling::div[1]').locator('.w-row').count();
+  check('"More work" section has at least one project', /More work/i.test(moreHeading) && moreCount >= 1,
+    `heading "${moreHeading}", ${moreCount} row(s)`);
 
-  // 5. Blink metrics.
-  const blinkText = await page.locator('.work-job').first().innerText().catch(() => '');
-  const metrics = ['650', '489', '18%', '14', '676', '29.85%'];
+  // 5. Blink metrics. textContent, not innerText: the "Read the case" bullets sit in a closed <details>.
+  const blinkText = await page.locator('main').textContent().catch(() => '');
+  const metrics = ['650', '489', '18%', '14'];
   const missing = metrics.filter((m) => !blinkText.includes(m));
   check('Blink job shows all metrics', missing.length === 0, missing.length ? `missing ${missing.join(', ')}` : metrics.join(', '));
 

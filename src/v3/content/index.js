@@ -11,11 +11,20 @@ export const identity = {
   name: 'Dhruv Kothari',
   role: 'Full-stack developer',
   location: 'Mumbai, India',
+  pitch: 'I build AI tools that move growth numbers.',
+  now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote internships in AI and growth engineering.',
   tagline: 'Full-stack developer building Android apps, Python backends and AI integrations.',
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
     'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',
 };
+
+export const proofPoints = [
+  { value: '18%', text: 'human reply rate on 489 outreach emails, from an LLM pipeline I built at Blink' },
+  { value: '4', text: 'internal growth tools shipped at Blink: outreach, link building, SEO tracking, Reddit copilot' },
+  { value: 'Top 5', text: "at IIT Madras × BITS Goa for DarkSentinel's LLM review layer" },
+  { value: '2×', text: 'hackathon wins: Innovathon 2025 and REALMS 2025' },
+];
 
 export const contact = {
   email: 'dhruvkothari13062006@gmail.com',

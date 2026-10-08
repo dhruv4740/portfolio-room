@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dhruv Kothari</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f2ed;--paper:#fbfaf7;--ink:#17160f;--ink2:#46443d;--mute:#86837a;--line:#e2dfd6;--acc:#c2410c;--r:14px;--mono:"IBM Plex Mono",ui-monospace,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+.wrap{max-width:1180px;margin:auto;padding:24px 20px 112px}
+.side{display:flex;flex-direction:column}
+.desk{width:100%;max-width:420px;height:auto;display:block}
+.status{display:flex;align-items:center;gap:8px;font:12.5px/1.4 var(--mono);color:var(--mute);margin-top:10px}
+.dot{width:6px;height:6px;border-radius:50%;background:#d9a514;box-shadow:0 0 0 3px #d9a51422;flex:none}
+h1{font-size:34px;line-height:1.1;font-weight:600;letter-spacing:-.022em;margin-top:28px}
+.lede{font-size:20px;line-height:1.4;letter-spacing:-.01em;margin-top:10px;color:var(--ink)}
+.sub{color:var(--ink2);margin-top:14px;font-size:15.5px;max-width:34ch}
+.cta{display:flex;gap:10px;margin-top:24px}
+.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;height:50px;padding:0 20px;border-radius:12px;font-weight:500;font-size:15.5px;text-decoration:none;border:1px solid var(--line);background:var(--paper);transition:transform .15s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn.p{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.links{display:flex;gap:18px;margin-top:18px;font-size:14.5px;color:var(--ink2)}
+.links a{text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:1px}
+.room{margin-top:22px;display:none;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line);border-radius:var(--r);background:var(--paper);text-decoration:none}
+.room b{font-weight:500;display:block}.room small{color:var(--mute);font-size:13px}
+.room .ar{margin-left:auto;font-family:var(--mono);color:var(--acc)}
+.label{font:500 12px/1 var(--mono);letter-spacing:.02em;color:var(--mute);margin:48px 0 16px;display:flex;justify-content:space-between}
+.proof{display:grid;gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.proof div{background:var(--paper);padding:16px 18px;display:grid;grid-template-columns:76px 1fr;gap:14px;align-items:baseline}
+.proof .n{font:600 22px/1 "IBM Plex Sans";letter-spacing:-.02em;color:var(--acc)}
+.proof p{font-size:15px;color:var(--ink2)}
+.feat{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -20px;padding:0 20px 4px;scrollbar-width:none}
+.feat::-webkit-scrollbar{display:none}
+.card{flex:0 0 84%;scroll-snap-align:start;scroll-margin-left:20px;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:10px;display:flex;flex-direction:column}
+.shot{aspect-ratio:16/10;border-radius:10px;background:#ebe8e0;position:relative;overflow:hidden}
+.shot span{position:absolute;left:12px;bottom:10px;font:11.5px var(--mono);color:var(--mute)}
+.shot svg{position:absolute;inset:0;width:100%;height:100%}
+.ci{padding:14px 8px 8px;display:flex;flex-direction:column;gap:8px;flex:1}
+.meta{font:12px var(--mono);color:var(--mute)}
+.card h3{font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.card p{font-size:14.5px;color:var(--ink2)}
+.res{display:flex;align-items:baseline;gap:10px;margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}
+.res b{font:500 20px var(--mono);letter-spacing:-.03em}.res small{font-size:13px;color:var(--mute)}
+.go{display:flex;justify-content:space-between;align-items:center;height:44px;margin-top:10px;padding:0 14px;border-radius:10px;background:var(--bg);text-decoration:none;font-weight:500;font-size:14.5px}
+.list{border-top:1px solid var(--line)}
+.row{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:baseline;padding:16px 0;border-bottom:1px solid var(--line);text-decoration:none}
+.row .y{font:12.5px var(--mono);color:var(--mute)}
+.row b{font-weight:500}.row p{font-size:14.5px;color:var(--ink2);margin-top:2px}
+.row .ar{font-family:var(--mono);color:var(--mute)}
+.foot{margin-top:40px;font-size:13px;color:var(--mute)}
+.bar{position:fixed;left:0;right:0;bottom:0;display:flex;gap:10px;padding:10px 20px calc(10px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-top:1px solid var(--line)}
+.side .cta{display:none}
+@media (min-width:960px){
+ .wrap{display:grid;grid-template-columns:400px 1fr;gap:88px;padding:56px 48px}
+ .side{position:sticky;top:56px;align-self:start}
+ .side .cta{display:flex}.room{display:flex}.bar{display:none}
+ h1{font-size:40px}
+ .label:first-child{margin-top:4px}
+ .feat{display:grid;grid-template-columns:1fr 1fr;margin:0;padding:0;overflow:visible}
+ .feat .card:first-child{grid-column:1/-1}
+ .feat .card:first-child .shot{aspect-ratio:3/1}
+ .hint{display:none}
+ .card:hover{border-color:#cfcbc0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style></head><body>
+<div class="wrap">
+<aside class="side">
+<svg class="desk" viewBox="0 0 420 170" fill="none" stroke="#17160f" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+ <rect x="276" y="8" width="128" height="88" rx="3"/><path d="M340 8v88M276 52h128" stroke-width=".9"/>
+ <path d="M282 96v-14l8-4v18M296 96v-24h8v24M312 96v-10l6-6 6 6v10M330 96v-18h7v18M348 96v-30h9v30M364 96v-12h8v12M380 96v-20l6-3 6 3v20" stroke="#86837a" stroke-width=".8"/>
+ <circle cx="384" cy="26" r="6" stroke="#c2410c" stroke-width=".9"/>
+ <path d="M10 126h400"/><path d="M14 126v4h392v-4" stroke-width=".9"/><path d="M28 130v38M392 130v38"/>
+ <rect x="138" y="30" width="132" height="80" rx="5"/><rect x="146" y="38" width="116" height="64" rx="2" fill="#c2410c" fill-opacity=".09" stroke="none"/>
+ <path d="M158 54h46M158 62h70M158 70h34" stroke="#c2410c" stroke-width="1" stroke-opacity=".55"/>
+ <path d="M196 110l-5 13h26l-5-13"/><path d="M186 123h36"/>
+ <rect x="150" y="117" width="78" height="7" rx="2"/><path d="M156 120.5h66" stroke-width=".6" stroke-dasharray="2 2"/>
+ <rect x="240" y="117" width="14" height="8" rx="4"/>
+ <path d="M58 126h34M75 126V88l26-26M101 62l14 8-6 11-14-8z"/><path d="M107 79l-7 18" stroke="#c2410c" stroke-opacity=".35" stroke-dasharray="1.5 3"/>
+ <path d="M290 126v-16h20v16M310 114h4a4 4 0 0 1 0 8h-4"/><path d="M296 104c0-4 4-4 4-8M304 104c0-4 4-4 4-8" stroke="#86837a" stroke-width=".8"/>
+ <rect x="22" y="104" width="40" height="22" rx="2"/><path d="M42 104v22" stroke-width=".8"/>
+</svg>
+<p class="status"><span class="dot"></span><span id="st">9:42 pm in Mumbai · 29°C · lamp on</span></p>
+<h1>Dhruv Kothari</h1>
+<p class="lede">I build AI tools that move growth numbers.</p>
+<p class="sub">Growth intern at Blink.new (YC) until October 2026. Open to remote internships in AI and growth engineering.</p>
+<div class="cta"><a class="btn p" href="#">Résumé</a><a class="btn" href="#">Email me</a></div>
+<div class="links"><a href="#">GitHub</a><a href="#">LinkedIn</a></div>
+<a class="room" href="#"><svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#17160f" stroke-width="1.2"><rect x="1" y="1" width="32" height="32" rx="8" stroke="#e2dfd6"/><path d="M9 23h16M12 23v-8h10v8M15 15v-3h4v3"/></svg><span><b>Walk through my desk</b><small>Guided 3D tour · 60 seconds</small></span><span class="ar">→</span></a>
+</aside>
+
+<main>
+<div class="label"><span>Proof</span></div>
+<div class="proof">
+ <div><span class="n">18%</span><p>human reply rate on 489 outreach emails, from an LLM pipeline I built at Blink</p></div>
+ <div><span class="n">4</span><p>internal growth tools shipped at Blink: outreach, link building, SEO tracking, Reddit copilot</p></div>
+ <div><span class="n">Top 5</span><p>at IIT Madras × BITS Goa for DarkSentinel's LLM review layer</p></div>
+ <div><span class="n">2×</span><p>hackathon wins: Innovathon 2025 and REALMS 2025</p></div>
+</div>
+
+<div class="label"><span>Featured</span><span class="hint">swipe →</span></div>
+<div class="feat">
+ <article class="card"><div class="shot"><svg viewBox="0 0 320 200" preserveAspectRatio="none"><path d="M0 170 L60 150 L120 156 L180 110 L240 92 L320 40" stroke="#c2410c" stroke-width="1.4" fill="none"/></svg><span>screenshot pending</span></div>
+  <div class="ci"><span class="meta">Blink.new · 2026 · Python, Gmail API, LLM</span><h3>An outreach pipeline people actually replied to</h3><p>Sourced 650 creators from YouTube, drafted each email with an LLM, and a human approved every send.</p>
+  <div class="res"><b>18%</b><small>reply rate · 14 positive</small></div><a class="go" href="#">Read the case<span>→</span></a></div></article>
+ <article class="card"><div class="shot"><span>screenshot pending</span></div>
+  <div class="ci"><span class="meta">2026 · Kotlin, Electron, Firebase</span><h3>FocusLock</h3><p>One daily screen-time budget across your phone and PC, enforced at the OS level.</p>
+  <div class="res"><b>200+</b><small>unit tests · signed builds from CI</small></div><a class="go" href="#">Try it<span>→</span></a></div></article>
+ <article class="card"><div class="shot"><span>screenshot pending</span></div>
+  <div class="ci"><span class="meta">2026 · Python, FastAPI, Claude API</span><h3>DarkSentinel</h3><p>Only predictions the model is unsure about go to an LLM, so inference cost stays bounded.</p>
+  <div class="res"><b>Top 5</b><small>IIT Madras × BITS Goa</small></div><a class="go" href="#">Open dashboard<span>→</span></a></div></article>
+</div>
+
+<div class="label"><span>More work</span><span>7</span></div>
+<div class="list">
+ <a class="row" href="#"><span class="y">2025</span><span><b>F-Shield</b><p>Fraud detection for small businesses. Won Innovathon.</p></span><span class="ar">↗</span></a>
+ <a class="row" href="#"><span class="y">2025</span><span><b>CrisisWatch</b><p>Claim verification for a misinformation-heavy feed.</p></span><span class="ar">↗</span></a>
+ <a class="row" href="#"><span class="y">2026</span><span><b>BasketProof</b><p>Refuses to show a price it cannot prove.</p></span><span class="ar">↗</span></a>
+ <a class="row" href="#"><span class="y">2026</span><span><b>Blackout</b><p>OLED-black screen while audio keeps playing.</p></span><span class="ar">↗</span></a>
+</div>
+<p class="foot">Built by hand. The desk above is a real room you can walk through on a laptop.</p>
+</main>
+</div>
+<nav class="bar"><a class="btn p" href="#">Résumé</a><a class="btn" href="#">Email me</a></nav>
+<script>
+const t=new Intl.DateTimeFormat('en-IN',{timeZone:'Asia/Kolkata',hour:'numeric',minute:'2-digit',hour12:true}).format(new Date()).toLowerCase();
+document.getElementById('st').textContent=t+' in Mumbai · 29°C';
+</script>
+</body></html>
