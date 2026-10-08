@@ -317,6 +317,8 @@ export default function Scan() {
   useEffect(() => {
     const on = introDone && overviewOpen && screenPhase === 'room';
     document.body.toggleAttribute('data-launchpad-open', on);
+    // The choices are real DOM from here on and queue until the room is warm, so the front door has done its job.
+    if (on) dismissFrontDoor();
     return () => document.body.removeAttribute('data-launchpad-open');
   }, [introDone, overviewOpen, screenPhase]);
 
@@ -858,7 +860,7 @@ export default function Scan() {
               <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>Demos on the phone</button>
             </details>
           </div>
-          {queuedAction && <p className="launchpad-pending mono" role="status">PREPARING THE ROOM… YOUR CHOICE STARTS AUTOMATICALLY</p>}
+          {!roomRevealed && <p className="launchpad-pending mono" role="status">{queuedAction ? 'PREPARING THE ROOM… YOUR CHOICE STARTS AUTOMATICALLY' : 'THE 3D ROOM IS LOADING…'}</p>}
         </section>
       )}
 
