@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>(function(){try{var o=null;try{o=localStorage.getItem('v3:surface-override')}catch(e){}var forced=o==='scan'||o==='deck';var h=location.hash;var deep=!!h&&h!=='#';var entering=/[?&](room|tour)(=|&|$)/.test(location.search);if(!forced&&(matchMedia('(pointer:coarse)').matches||(!entering&&!deep))){location.replace('/work/');return}if(entering)document.documentElement.classList.add('fd-entering')}catch(e){}})();</script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -64,6 +65,7 @@
       #front-door .fd-track { height: 2px; background: #1d2122; margin-top: 10px; overflow: hidden; }
       #front-door .fd-fill { display: block; height: 100%; background: #FF5F1F; transform-origin: left; transform: scaleX(.03); transition: transform .3s ease; }
       #front-door .fd-choices { display: grid; gap: 12px; margin-top: 28px; }
+      .fd-entering #front-door .fd-choices { display: none; }
       #front-door .fd-choice {
         display: block; box-sizing: border-box; width: 100%; min-height: 76px; padding: 16px 20px; text-align: left; cursor: pointer;
         background: #141418; color: #ececec; border: 1px solid #6b6f74; border-radius: 2px; text-decoration: none;

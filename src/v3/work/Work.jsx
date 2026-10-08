@@ -391,7 +391,7 @@ export default function Work() {
               <a href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
               <a href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
             </div>
-            <a className="w-room" href="/">
+            <a className="w-room" href="/?tour=1">
               <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#17160f" strokeWidth="1.2" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" stroke="#e2dfd6"/><path d="M9 23h16M12 23v-8h10v8M15 15v-3h4v3"/></svg>
               <span><b>Walk through my desk</b><small>Guided 3D tour · 60 seconds</small></span>
               <span className="w-ar">→</span>

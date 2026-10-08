@@ -42,7 +42,7 @@ export function dismissFrontDoor(instant = false) {
 }
 
 const readStore = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-chosen = readStore('v3:surface-override') === 'scan' || window.location.hash.replace(/^#\/?/, '') !== '';
+chosen = readStore('v3:surface-override') === 'scan' || window.location.hash.replace(/^#\/?/, '') !== '' || /[?&](room|tour)(=|&|$)/.test(window.location.search);
 
 function maybeDismiss() {
   if (chosen && ready) dismissFrontDoor();

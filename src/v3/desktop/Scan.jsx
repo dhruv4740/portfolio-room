@@ -320,6 +320,19 @@ export default function Scan() {
     return () => document.body.removeAttribute('data-launchpad-open');
   }, [introDone, overviewOpen, screenPhase]);
 
+  // ?tour in the URL (from /work/'s "Walk through my desk") starts the guided
+  // tour once, through the same launchpad button that key 4 presses.
+  const tourLinked = useRef(false);
+  useEffect(() => {
+    if (tourLinked.current || !introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen || error) return;
+    tourLinked.current = true;
+    const url = new URL(window.location.href);
+    if (!url.searchParams.has('tour')) return;
+    url.searchParams.delete('tour');
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    document.querySelector('[data-launchpad-action="tour"]')?.click();
+  }, [introDone, overviewOpen, screenPhase, aboutOpen, error]);
+
   // Keys 1–5 mirror the launchpad buttons while it is on screen.
   useEffect(() => {
     if (!introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen) return undefined;
