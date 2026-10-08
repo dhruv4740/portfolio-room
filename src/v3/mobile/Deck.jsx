@@ -8,7 +8,7 @@
 import { useEffect, useMemo, useRef } from 'react';
 import '../tokens.css';
 import { identity, contact, projects, featuredProjectIds, moreProjectIds } from '../content/index.js';
-import { prefersReducedMotion, setOverride } from '../lib/capability.js';
+import { setOverride } from '../lib/capability.js';
 import { useGyro } from './useGyro.js';
 
 const PREVIEW = {
@@ -49,7 +49,7 @@ const css = `
   .deck-card { background: var(--void-lift); border: var(--hair) solid var(--faint); overflow: hidden; display: flex; flex-direction: column; opacity: 0; transform: translateY(14px); transition: opacity .5s var(--ease), transform .5s var(--ease); }
   .deck-card.is-in { opacity: 1; transform: none; }
   .deck-shot { aspect-ratio: 3 / 2; overflow: hidden; background: #0d0d10; }
-  .deck-shot img { width: calc(100% + ${SHIFT * 2}px); height: calc(100% + ${SHIFT * 2}px); margin: -${SHIFT}px; object-fit: cover; object-position: top; display: block; will-change: transform; }
+  .deck-shot img { width: calc(100% + ${SHIFT * 2}px); height: calc(100% + ${SHIFT * 2}px); margin: -${SHIFT}px; object-fit: cover; object-position: top; display: block; will-change: transform; transform: translate3d(calc(var(--gyro-x, 0) * ${SHIFT}px), calc(var(--gyro-y, 0) * ${SHIFT}px), 0); }
   .deck-body { padding: .9rem 1rem 1rem; display: flex; flex-direction: column; gap: .5rem; }
   .deck-kicker { color: var(--dim); font-size: .8125rem; }
   .deck-title { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
@@ -71,7 +71,7 @@ const buzz = (ms = 8) => {
   if (navigator.userActivation?.hasBeenActive) navigator.vibrate?.(ms);
 };
 
-function ProjectCard({ project, tilt, reduced }) {
+function ProjectCard({ project }) {
   const ref = useRef(null);
   useEffect(() => {
     const el = ref.current;
@@ -89,13 +89,12 @@ function ProjectCard({ project, tilt, reduced }) {
 
   const src = PREVIEW[project.id];
   const live = project.links?.live?.startsWith('http') ? project.links.live : '';
-  const shift = reduced ? undefined : { transform: `translate3d(${(tilt.x * SHIFT).toFixed(1)}px, ${(tilt.y * SHIFT).toFixed(1)}px, 0)` };
 
   return (
     <article className="deck-card" ref={ref}>
       {src && (
         <div className="deck-shot">
-          <img src={src} alt={`${project.name} screenshot`} loading="lazy" style={shift} />
+          <img src={src} alt={`${project.name} screenshot`} loading="lazy" />
         </div>
       )}
       <div className="deck-body">
@@ -132,8 +131,7 @@ function MoreRow({ p }) {
 }
 
 export default function Deck() {
-  const { tilt, permission, request } = useGyro();
-  const reduced = prefersReducedMotion();
+  const { permission, request } = useGyro();
   const featured = useMemo(() => featuredProjectIds.map((id) => projects.find((p) => p.id === id)).filter(Boolean), []);
   const more = useMemo(() => moreProjectIds.map((id) => projects.find((p) => p.id === id)).filter(Boolean), []);
 
@@ -175,7 +173,7 @@ export default function Deck() {
           )}
 
           <h2 className="mono deck-h">Selected projects</h2>
-          {featured.map((p) => <ProjectCard key={p.id} project={p} tilt={tilt} reduced={reduced} />)}
+          {featured.map((p) => <ProjectCard key={p.id} project={p} />)}
 
           <h2 className="mono deck-h">More projects</h2>
           <ul className="deck-more">

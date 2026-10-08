@@ -25,12 +25,11 @@ function needsIOSPermission() {
 }
 
 /**
- * @returns {{ tilt: {x: number, y: number}, permission: 'unsupported'|'prompt'|'granted'|'denied', request: () => void }}
+ * @returns {{ permission: 'unsupported'|'prompt'|'granted'|'denied', request: () => void }}
  */
 export function useGyro() {
   const reduced = prefersReducedMotion();
 
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
   const [permission, setPermission] = useState(() => {
     if (reduced || !hasDeviceOrientation()) return 'unsupported';
     return needsIOSPermission() ? 'prompt' : 'granted';
@@ -57,7 +56,10 @@ export function useGyro() {
       const current = currentRef.current;
       current.x += (target.x - current.x) * LERP;
       current.y += (target.y - current.y) * LERP;
-      setTilt({ x: current.x, y: current.y });
+      // Written straight to CSS variables: a React state update here would re-render the whole deck every frame.
+      const root = document.documentElement.style;
+      root.setProperty('--gyro-x', current.x.toFixed(3));
+      root.setProperty('--gyro-y', current.y.toFixed(3));
       rafRef.current = requestAnimationFrame(tick);
     };
 
@@ -86,7 +88,6 @@ export function useGyro() {
   }, [reduced]);
 
   return {
-    tilt: reduced ? { x: 0, y: 0 } : tilt,
     permission,
     request,
   };
