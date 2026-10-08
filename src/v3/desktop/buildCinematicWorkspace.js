@@ -620,9 +620,15 @@ export function buildCinematicWorkspace(scene, options = {}) {
   figure.root.scale.set(FIG_XZ, FIG_Y, FIG_XZ);
   figure.root.position.set(BODY.shoulderMidpoint[0] - FIG_XZ * 0.05, 0, BODY.shoulderMidpoint[2] - FIG_XZ * 1.23);
 
+  // Redraw only when the visible text changes: each redraw re-uploads the
+  // whole monitor canvas, and the cold-open cue calls this every frame.
+  let lastMonitorKey = null;
   function setMonitorName(fraction = 1) {
     const texture = displayMaterial.map, ctx = texture.image.getContext('2d'), name = 'DHRUV KOTHARI';
     const shown = name.slice(0, Math.round(name.length * Math.min(1, Math.max(0, fraction))));
+    const key = shown + (fraction < 1 ? '|' : '');
+    if (key === lastMonitorKey) return;
+    lastMonitorKey = key;
     ctx.fillStyle = '#25343b'; ctx.fillRect(0, 0, 560, 42);
     ctx.fillStyle = '#ece7db'; ctx.font = 'bold 24px monospace'; ctx.fillText(shown, 24, 30);
     if (fraction < 1) { ctx.fillStyle = '#ece7db'; ctx.fillRect(24 + ctx.measureText(shown).width + 3, 10, 12, 24); }
