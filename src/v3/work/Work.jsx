@@ -878,6 +878,89 @@ const css = `
   }
   .work-contact-card p { max-width: 52ch; margin: 0; }
   .work-footer a:first-child { color: var(--bone); }
+
+  /* ---- layout v3: clear section bands, one spacing rhythm, readable type ---- */
+
+  .work-inner { counter-reset: sec; }
+  .work-bar {
+    box-shadow: 0 0 0 100vmax #0A0A0B;
+    clip-path: inset(0 -100vmax -1px -100vmax);
+    border-bottom: 1px solid transparent;
+    border-image: linear-gradient(var(--faint), var(--faint)) 0 0 1 0 / 0 0 1px 0 / 0 100vmax 0 100vmax;
+  }
+
+  .work-hero { border-bottom: 0; }
+  .work-section {
+    padding: clamp(3.5rem, 8vw, 6rem) 0;
+    border-bottom: 0;
+    clip-path: inset(0 -100vmax);
+  }
+  .work-section:nth-of-type(even) {
+    background: #141418;
+    box-shadow: 0 0 0 100vmax #141418;
+  }
+  .work-section:nth-of-type(even) .work-project,
+  .work-section:nth-of-type(even) .work-metrics li,
+  .work-section:nth-of-type(even) .work-contact-card { background: #1c1c21; }
+
+  .work-section-head {
+    counter-increment: sec;
+    font-size: clamp(1.9rem, 3.6vw, 2.75rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: clamp(1.75rem, 4vw, 2.75rem);
+  }
+  .work-section-head::before {
+    content: '0' counter(sec);
+    display: block;
+    margin-bottom: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: var(--track-data);
+    color: var(--signal);
+  }
+
+  .work-timeline { gap: 0; }
+  .work-job { padding: 2rem 0; border-top: var(--hair) solid var(--faint); }
+  .work-job:first-child { border-top: 0; padding-top: 0; }
+  .work-job:last-child { padding-bottom: 0; }
+  .work-job-role { font-size: 1.3rem; }
+  .work-job-detail { margin-top: 0.75rem; }
+  .work-metrics { margin: 1.5rem 0 0; }
+  .work-bullets { margin-top: 1.5rem; }
+  .work-bullets li { margin: 0.55rem 0; }
+
+  .work-projects { gap: 1.5rem; }
+  .work-project { padding: 1.75rem; gap: 1rem; }
+  .work-project > * { margin-top: 0; margin-bottom: 0; }
+  .work-project-shot { margin-bottom: 0.5rem; }
+  .work-project-meta { font-size: 0.75rem; }
+  .work-project-name { font-size: 1.75rem; line-height: 1.15; }
+  .work-project-summary { font-size: 1.1rem; color: var(--bone); }
+  .work-project-detail { font-size: 1rem; line-height: 1.55; }
+  .work-demos { margin: 0; }
+  .work-demo-btn { font-size: 0.78rem; padding: 0.7rem 1rem; min-height: 2.75rem; }
+  .work-tech li { font-size: 0.72rem; color: #B4B4BB; padding: 0.3rem 0.6rem; }
+  .work-more { margin-top: 0; }
+  .work-project-links { margin-top: auto; padding-top: 0.5rem; }
+  .work-projects--compact .work-project { padding: 1.4rem; gap: 0.75rem; }
+  .work-projects--compact .work-project-name { font-size: 1.25rem; }
+
+  .work-skill { gap: 0; padding: 1.1rem 0; }
+  .work-skill-meta { gap: 0.2rem; margin-top: 0.35rem; }
+  .work-skill-label { font-weight: 500; }
+  .work-skill-proof, .work-skill-note {
+    display: block;
+    margin: 0;
+    font-size: 0.82rem;
+    line-height: 1.5;
+    letter-spacing: 0.02em;
+    text-transform: none;
+  }
+
+  .work-footer { padding-top: 2.5rem; }
+  @media (max-width: 560px) { .work-action--primary { flex: 1 0 100%; justify-content: center; } }
 `;
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
