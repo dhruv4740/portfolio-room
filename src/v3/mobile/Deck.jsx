@@ -22,7 +22,7 @@ const SHIFT = 10;
 
 const css = `
   .escape-link { display: none !important; }
-  .deck-root { background: var(--void); color: var(--bone); font-family: var(--font-display); min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
+  .deck-root { --dim: #9C9CA4; background: var(--void); color: var(--bone); font-family: var(--font-display); min-height: 100dvh; padding-bottom: env(safe-area-inset-bottom); }
   .deck-wrap { max-width: 560px; margin: 0 auto; padding: max(1.25rem, env(safe-area-inset-top)) 1.1rem 2rem; display: flex; flex-direction: column; gap: 1.1rem; }
   .deck-pill { align-self: flex-start; display: inline-flex; align-items: center; gap: .5rem; font-size: .8125rem; color: var(--bone); border: var(--hair) solid var(--faint); padding: .4rem .75rem; border-radius: 999px; }
   .deck-pill i { width: 7px; height: 7px; border-radius: 50%; background: #3ddc84; }
@@ -49,9 +49,10 @@ const css = `
   .deck-title { font-size: 1.45rem; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
   .deck-desc { color: var(--bone); font-size: .95rem; line-height: 1.4; }
   .deck-tech { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; margin: 0; padding: 0; }
-  .deck-tech li { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); border: var(--hair) solid var(--faint); padding: .25rem .5rem; }
+  .deck-tech li { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: #C4C4CB; border: var(--hair) solid #3a3a42; padding: .25rem .5rem; }
   .deck-more { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-  .deck-more li { display: flex; align-items: center; gap: .8rem; padding: .7rem 0; border-bottom: var(--hair) solid var(--faint); }
+  .deck-more li { border-bottom: var(--hair) solid var(--faint); }
+  .deck-more-row { display: flex; align-items: center; gap: .8rem; padding: .7rem 0; min-height: 44px; color: inherit; text-decoration: none; }
   .deck-more img { width: 64px; height: 48px; object-fit: cover; object-position: top; border: var(--hair) solid var(--faint); flex: none; }
   .deck-more .deck-ph { display: grid; place-items: center; color: var(--dim); font-size: 1.3rem; width: 64px; height: 48px; flex: none; background: var(--void-lift); border: var(--hair) solid var(--faint); }
   .deck-more b { display: block; font-weight: 500; font-size: .95rem; }
@@ -111,6 +112,19 @@ function ProjectCard({ project, tilt, reduced }) {
   );
 }
 
+function MoreRow({ p }) {
+  const href = p.links?.live?.startsWith('http') ? p.links.live : p.links?.github;
+  const body = (
+    <>
+      {PREVIEW[p.id] ? <img src={PREVIEW[p.id]} alt="" loading="lazy" /> : <span className="deck-ph" aria-hidden="true">{p.name[0]}</span>}
+      <div><b>{p.name}</b><span>{p.tagline}</span></div>
+    </>
+  );
+  return href
+    ? <a className="deck-more-row" href={href} target="_blank" rel="noopener noreferrer" onClick={() => buzz()}>{body}</a>
+    : <div className="deck-more-row">{body}</div>;
+}
+
 export default function Deck() {
   const { tilt, permission, request } = useGyro();
   const reduced = prefersReducedMotion();
@@ -162,8 +176,7 @@ export default function Deck() {
           <ul className="deck-more">
             {more.map((p) => (
               <li key={p.id}>
-                {PREVIEW[p.id] ? <img src={PREVIEW[p.id]} alt="" loading="lazy" /> : <span className="deck-ph" aria-hidden="true">{p.name[0]}</span>}
-                <div><b>{p.name}</b><span>{p.tagline}</span></div>
+                <MoreRow p={p} />
               </li>
             ))}
           </ul>

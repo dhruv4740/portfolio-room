@@ -128,7 +128,8 @@ bind pose, run `node scripts/build-hand-assets.mjs` and commit both local
 `public/models/hands-v1.bin*` files. Browser startup normally loads the binary,
 not the procedural fallback.
 
-**Keep `/work` lightweight.** It must never pull three.js or the 3D scene.
+**Keep `/work` lightweight.** No three.js or 3D scene in its initial load; the
+deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
 `verify-v3.mjs` asserts this.
 
 ## Traps

@@ -45,8 +45,8 @@ export default defineConfig({
   // path must 404, never answer with the room's index.html.
   appType: 'mpa',
   build: {
-    // Nothing on the /work path may pull in three or the scan bundle — if this
-    // warning starts naming a chunk on the fast path, that is a regression.
+    // No 3D in /work's initial load (see src/v3/work/prefetchRoom.js for the
+    // deliberate idle prefetch). A chunk named here on the fast path is a regression.
     chunkSizeWarningLimit: 2048,
     manifest: 'manifest.json',
     rollupOptions: {

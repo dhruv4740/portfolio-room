@@ -470,6 +470,7 @@ const css = `
   }
 
   .work-demo-action {
+    min-height: 44px;
     font-size: var(--t-micro);
     letter-spacing: var(--track-data);
     padding: 0.5rem 0.75rem;
@@ -548,6 +549,9 @@ const css = `
   }
 
   .work-footer a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
     transition: color var(--d-feedback) var(--ease);
     width: fit-content;
   }
@@ -742,6 +746,7 @@ const css = `
   .work-bar-name { font-weight: 600; font-size: 1rem; }
   .work-bar-role { color: var(--dim); font-size: 0.9rem; margin-left: 0.75rem; }
   .work-back {
+    min-height: 44px;
     display: inline-flex;
     align-items: center;
     gap: 0.5em;
@@ -840,7 +845,7 @@ const css = `
   .work-project:hover { border-color: #46464d; }
   .work-project-name { font-size: 1.6rem; }
   .work-project-links { margin-top: auto; padding-top: 1.25rem; gap: 0.6rem; }
-  .work-project-links .work-link { border: var(--hair) solid var(--faint); padding: 0.55rem 1rem; }
+  .work-project-links .work-link { border: var(--hair) solid var(--faint); padding: 0.55rem 1rem; min-height: 44px; display: inline-flex; align-items: center; }
   .work-project-links .work-link:first-child:not(:only-child),
   .work-project-links .work-link:only-child { border-color: var(--bone); }
   .work-project-links .work-link:hover,

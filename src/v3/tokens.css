@@ -4,8 +4,6 @@
    Rules: no gradients. One accent. Three durations. One easing curve.
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 :root {
   /* ---- colour -------------------------------------------------------- */
   --void:      #0A0A0B;   /* the space the scan floats in */

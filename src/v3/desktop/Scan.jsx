@@ -1009,7 +1009,7 @@ const css = `
 .launchpad { position:absolute; inset:0; z-index:var(--z-panel); pointer-events:none; color:var(--bone); animation:launchpad-in .6s var(--ease) both; }
 .arrival-cue { position:absolute; top:78px; right:var(--gutter); z-index:var(--z-panel); display:flex; align-items:center; gap:.75rem; padding:7px 9px; border:1px solid color-mix(in srgb, var(--dim) 70%, transparent); background:color-mix(in srgb, var(--void) 82%, transparent); color:var(--dim); pointer-events:auto; }
 .arrival-cue-label { font-size:10px; letter-spacing:.16em; }
-.arrival-skip { min-height:28px; padding:4px 7px; border:1px solid var(--faint); color:var(--bone); font-size:10px; letter-spacing:.12em; }
+.arrival-skip { min-height:44px; padding:8px 14px; border:1px solid #8a908c; color:#F2EEE6; font-size:12px; letter-spacing:.12em; }
 .arrival-skip:hover,.arrival-skip:focus-visible { border-color:var(--signal); color:var(--signal); }
 .launchpad > * { position:absolute; left:var(--gutter); }
 .launchpad-kicker { top:32px; color:#b7b9b2; font-size:11px; letter-spacing:.18em; }
@@ -1071,6 +1071,8 @@ body[data-launchpad-open] .escape-link { display:none; }
 .launchpad-actions .launchpad-primary small { color:#2b1a12; }
 .launchpad-actions .launchpad-primary:hover,.launchpad-actions .launchpad-primary:focus-visible { background:var(--bone); border-color:var(--bone); transform:translateX(4px); }
 .launchpad-actions .launchpad-secondary { padding-left:20px; }
+.launchpad-actions .launchpad-secondary span { color:#F2EEE6; }
+@media(max-height:450px) { .scan-hint { display:none; } }
 .launchpad-more { top:400px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; pointer-events:auto; font-size:13px; letter-spacing:.08em; color:#b7b9b2; }
 .launchpad-more button { color:#F2EEE6; background:rgba(10,10,11,.72); border:1px solid #8a908c; border-radius:999px; padding:9px 16px; min-height:44px; backdrop-filter:blur(6px); }
 .launchpad-more button:hover,.launchpad-more button:focus-visible { color:var(--signal); border-color:var(--signal); }
