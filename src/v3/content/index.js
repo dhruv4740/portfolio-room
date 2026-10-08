@@ -251,7 +251,7 @@ export const projects = [
     detail:
       'Fingerprint unlock, a Quick Settings tile, and it uncovers automatically for calls and alarms. No internet permission.',
     tech: ['Kotlin', 'Android'],
-    links: { live: '', github: '' },
+    links: { live: '', github: 'https://github.com/dhruv4740/blackout' },
   },
   {
     id: 'cellbook',
