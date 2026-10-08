@@ -846,7 +846,7 @@ export default function Scan() {
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
             <Link className="launchpad-primary" to="/work" onClick={cancelArrival}>
-              <span className="mono">SEE MY RÉSUMÉ &amp; PROJECTS →</span><small>For recruiters · one page · about a minute</small>
+              <span className="mono">SEE MY RÉSUMÉ &amp; PROJECTS →</span><small>Projects, experience, résumé PDF · about a minute</small>
             </Link>
             <button className="launchpad-secondary" data-launchpad-action="tour" onClick={gate(startTour)}>
               <span className="mono">TAKE THE GUIDED TOUR</span><small>A short walk through the room. No clicking needed.</small>
@@ -884,7 +884,7 @@ export default function Scan() {
           <div>
             <button className="mono" onClick={() => { stopTour(); navigate(contact.resume ? '/' : '/room/drawer'); if (contact.resume) window.open(contact.resume, '_blank', 'noopener'); }}>RÉSUMÉ</button>
             <button className="mono" onClick={() => { stopTour(); navigate('/contact'); }}>CONTACT</button>
-            <button className="mono" onClick={() => { stopTour(); navigate('/work'); }}>RECRUITER VERSION</button>
+            <button className="mono" onClick={() => { stopTour(); navigate('/work'); }}>RÉSUMÉ &amp; PROJECTS</button>
           </div>
           <button className="mono tour-close" onClick={stopTour} aria-label="Close">✕</button>
         </div>

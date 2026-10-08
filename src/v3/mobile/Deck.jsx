@@ -156,7 +156,7 @@ export default function Deck() {
           <p className="deck-lede">{identity.tagline}</p>
           <a className="deck-choice deck-choice--primary" href="/work/" onClick={() => buzz()}>
             <b className="mono">SEE MY R&Eacute;SUM&Eacute; &amp; PROJECTS &rarr;</b>
-            <span>For recruiters &middot; one page &middot; about a minute</span>
+            <span>Projects, experience, r&eacute;sum&eacute; PDF &middot; about a minute</span>
           </a>
           <button type="button" className="deck-choice" onClick={enterRoom}>
             <b className="mono">LOOK AROUND MY 3D ROOM</b>
