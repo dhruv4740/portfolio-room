@@ -883,7 +883,7 @@ export default function Scan() {
             <button className="mono" onClick={() => goTourRef.current(tour.step - 1)} disabled={tour.step === 0} aria-label="Previous step">◀ PREV</button>
             <button className="mono tour-play" data-testid="tour-pause" onClick={() => (tour.paused ? resumeTour() : pauseTour())}>{tour.paused ? '▶ RESUME' : '❚❚ PAUSE'}</button>
             <button className="mono" onClick={() => goTourRef.current(tour.step + 1)} aria-label="Next step">NEXT ▶</button>
-            <button className="mono tour-exit" onClick={stopTour} aria-label="Exit tour">✕</button>
+            <button className="mono tour-exit" onClick={() => { stopTour(); if (seated && !overviewOpen) returnToOverview(); }} aria-label="Exit tour">✕</button>
           </div>
         </div>
       )}
@@ -891,7 +891,7 @@ export default function Scan() {
         <div className="tour-ui tour-end" role="dialog" aria-label="Tour finished" data-testid="tour-end">
           <p className="mono">THAT WAS THE TOUR</p>
           <div>
-            <button className="mono" onClick={() => { stopTour(); navigate(contact.resume ? '/' : '/room/drawer'); if (contact.resume) window.open(contact.resume, '_blank', 'noopener'); }}>RÉSUMÉ</button>
+            <button className="mono" onClick={() => { stopTour(); navigate(contact.resume ? '/' : '/room/drawer'); if (contact.resume) window.open(contact.resume, '_blank', 'noopener'); }}>RÉSUMÉ (PDF)</button>
             <button className="mono" onClick={() => { stopTour(); navigate('/contact'); }}>CONTACT</button>
             <button className="mono" onClick={() => { stopTour(); navigate('/work'); }}>RÉSUMÉ &amp; PROJECTS</button>
           </div>
@@ -1165,7 +1165,7 @@ body[data-launchpad-open] .escape-link { display:none; }
   bottom: var(--gutter);
   right: var(--gutter);
   z-index: var(--z-hud);
-  color: var(--dim);
+  color: #b7b9b2;
   pointer-events: none;
   animation: hint-in var(--d-reveal) var(--ease) both;
 }
