@@ -354,8 +354,9 @@ try {
   const canvasBox = await page.locator('.workspace-stage canvas').boundingBox().catch(() => null);
   let meshEntered = false;
   if (monitorBox && canvasBox) {
-    const x = monitorBox.x - 25;
-    const y = monitorBox.y + 4;
+    // Aim at the screen's centre: the marker sits at the monitor's lower-right corner in this framing.
+    const x = monitorBox.x - 335;
+    const y = monitorBox.y - 235;
     if (x >= canvasBox.x && x <= canvasBox.x + canvasBox.width && y >= canvasBox.y && y <= canvasBox.y + canvasBox.height) {
       await page.mouse.click(x, y);
       meshEntered = await page.waitForFunction(
