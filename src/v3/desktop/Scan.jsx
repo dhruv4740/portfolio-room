@@ -37,6 +37,12 @@ function hasSeenArrival() {
   try { return sessionStorage.getItem(ARRIVAL_SEEN_KEY) === '1' || localStorage.getItem(ARRIVAL_SEEN_KEY) === '1'; } catch { return false; }
 }
 
+// Session only: a reload mid-visit does not replay the shot, but a visitor who
+// clicks past it early still gets it next time.
+function markArrivalStarted() {
+  try { sessionStorage.setItem(ARRIVAL_SEEN_KEY, '1'); } catch { /* private mode */ }
+}
+
 function markArrivalSeen() {
   try { sessionStorage.setItem(ARRIVAL_SEEN_KEY, '1'); localStorage.setItem(ARRIVAL_SEEN_KEY, '1'); } catch { /* private mode */ }
 }
@@ -162,6 +168,7 @@ export default function Scan() {
 
   const handleArrivalComplete = useCallback((token) => {
     if (token !== arrivalTokenRef.current) return;
+    markArrivalSeen();
     setActiveId(null);
     setControlsOpen(false);
     setSeated(false);
@@ -216,7 +223,7 @@ export default function Scan() {
     if (!hasSeenIntro()) markIntroSeen();
     setIntroDone(true);
     if (!reduced && !hasSeenArrival()) {
-      markArrivalSeen();
+      markArrivalStarted();
       setArrival(nextArrivalToken.current++);
     }
   }, [reduced, setArrival]);
@@ -986,7 +993,7 @@ export default function Scan() {
       {arrivalToken !== 0 && (
         <div className="arrival-cue" role="status">
           <span className="arrival-cue-label mono">ARRIVAL</span>
-          <button type="button" className="arrival-skip mono" data-testid="arrival-skip" onClick={cancelArrival}>SKIP</button>
+          <button type="button" className="arrival-skip mono" data-testid="arrival-skip" onClick={() => { markArrivalSeen(); cancelArrival(); }}>SKIP</button>
         </div>
       )}
 
@@ -1064,8 +1071,8 @@ body[data-launchpad-open] .escape-link { display:none; }
 .launchpad-actions .launchpad-primary small { color:#2b1a12; }
 .launchpad-actions .launchpad-primary:hover,.launchpad-actions .launchpad-primary:focus-visible { background:var(--bone); border-color:var(--bone); transform:translateX(4px); }
 .launchpad-actions .launchpad-secondary { padding-left:20px; }
-.launchpad-more { top:400px; display:flex; flex-wrap:wrap; gap:6px 16px; align-items:center; pointer-events:auto; font-size:12px; letter-spacing:.1em; color:#b7b9b2; text-shadow:0 1px 10px #000; }
-.launchpad-more button { color:var(--bone); border-bottom:1px solid #6b716e; min-height:32px; }
+.launchpad-more { top:400px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; pointer-events:auto; font-size:13px; letter-spacing:.08em; color:#b7b9b2; }
+.launchpad-more button { color:#F2EEE6; background:rgba(10,10,11,.72); border:1px solid #8a908c; border-radius:999px; padding:9px 16px; min-height:44px; backdrop-filter:blur(6px); }
 .launchpad-more button:hover,.launchpad-more button:focus-visible { color:var(--signal); border-color:var(--signal); }
 @media(max-height:650px) { .launchpad-more {top:284px;} }
 @media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;} .launchpad-more {top:226px;} .launchpad-actions a,.launchpad-actions button {min-height:52px;padding:8px 16px;} }
