@@ -77,7 +77,7 @@ function Home() {
   }, []);
 
   // The deck has no heavy scene to wait for; the room dismisses it itself.
-  useEffect(() => { if (surface === 'deck') dismissFrontDoor(); }, [surface]);
+  useEffect(() => { if (surface === 'deck') dismissFrontDoor(true); }, [surface]);
 
   if (surface === 'static') return <GoToWork />;
   return surface === 'deck' ? <Deck /> : <Scan />;

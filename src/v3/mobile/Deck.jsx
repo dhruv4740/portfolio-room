@@ -148,7 +148,6 @@ export default function Deck() {
       <style>{css}</style>
       <main className="deck-root">
         <div className="deck-wrap">
-          <span className="deck-pill"><i /> Open to remote internships</span>
           <div>
             <h1 className="deck-name">{identity.name}</h1>
             <p className="mono deck-role">{identity.role} &middot; {identity.location}</p>

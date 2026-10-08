@@ -30,12 +30,14 @@ function paint() {
 reportProgress('warm', 0, 1, 6);
 subscribeProgress((s) => { best = Math.max(best, s.progress); paint(); });
 
-export function dismissFrontDoor() {
+export function dismissFrontDoor(instant = false) {
   const door = document.getElementById('front-door');
   if (!door || door.dataset.leaving) return;
   door.dataset.leaving = '1';
+  if (instant) door.style.transition = 'none';
   door.style.opacity = '0';
   door.style.pointerEvents = 'none';
+  if (instant) { door.remove(); return; }
   setTimeout(() => door.remove(), 600);
 }
 
