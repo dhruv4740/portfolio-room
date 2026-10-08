@@ -212,6 +212,7 @@ try {
     .catch(() => false);
   record('scan: room overview is visible', overviewVisible,
     overviewVisible ? 'launchpad visible' : 'room overview missing');
+  await page.evaluate(() => { const d = document.querySelector('.launchpad-extra'); if (d) d.open = true; });
   const overviewActions = await overview.locator('[data-launchpad-action]').evaluateAll((els) =>
     els.filter((el) => ['desktop-projects', 'mobile-projects', 'explore-room'].includes(el.dataset.launchpadAction))
       .map((el) => ({ action: el.dataset.launchpadAction, text: el.innerText.trim(), enabled: !el.disabled }))

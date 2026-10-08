@@ -98,6 +98,7 @@ try {
   const overviewReady = await overview.waitFor({ timeout: 15_000 }).then(() => true).catch(() => false);
   record('overview: launchpad mounts', overviewReady);
 
+  await page.evaluate(() => { const d = document.querySelector('.launchpad-extra'); if (d) d.open = true; });
   const routes = await overview.locator('[data-launchpad-action]').evaluateAll((els) =>
     els.map((el) => ({ action: el.dataset.launchpadAction, text: el.innerText.trim(), disabled: el.disabled }))
   ).catch(() => []);

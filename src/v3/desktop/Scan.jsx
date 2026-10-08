@@ -841,18 +841,20 @@ export default function Scan() {
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
             <Link className="launchpad-primary" to="/work" onClick={cancelArrival}>
-              <span className="mono">RÉSUMÉ &amp; WORK →</span><small>One page: projects, experience, résumé PDF · 30 s</small>
+              <span className="mono">SEE MY RÉSUMÉ &amp; PROJECTS →</span><small>For recruiters · one page · about a minute</small>
             </Link>
-            <button className="launchpad-secondary" data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>
-              <span className="mono">TRY MY LIVE APPS</span><small>Run the real web apps on the computer · ~3 min</small>
+            <button className="launchpad-secondary" data-launchpad-action="tour" onClick={gate(startTour)}>
+              <span className="mono">TAKE THE GUIDED TOUR</span><small>A short walk through the room. No clicking needed.</small>
             </button>
+            <button className="launchpad-secondary" data-launchpad-action="explore-room" onClick={gate(handleExploreRoom)}>
+              <span className="mono">LOOK AROUND YOURSELF</span><small>Click the monitor, phone and keyboard to open things.</small>
+            </button>
+            <details className="launchpad-extra mono">
+              <summary>More: live apps, phone demos</summary>
+              <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>Live apps on the computer</button>
+              <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>Demos on the phone</button>
+            </details>
           </div>
-          <p className="launchpad-more mono">
-            <span>or</span>
-            <button data-launchpad-action="explore-room" onClick={gate(handleExploreRoom)}>explore the room</button>
-            <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>phone apps</button>
-            <button data-launchpad-action="tour" onClick={gate(startTour)}>guided tour</button>
-          </p>
           {queuedAction && <p className="launchpad-pending mono" role="status">PREPARING THE ROOM… YOUR CHOICE STARTS AUTOMATICALLY</p>}
         </section>
       )}
@@ -1072,6 +1074,9 @@ body[data-launchpad-open] .escape-link { display:none; }
 .launchpad-actions .launchpad-primary:hover,.launchpad-actions .launchpad-primary:focus-visible { background:var(--bone); border-color:var(--bone); transform:translateX(4px); }
 .launchpad-actions .launchpad-secondary { padding-left:20px; }
 .launchpad-actions .launchpad-secondary span { color:#F2EEE6; }
+.launchpad-extra { color:#b7b9b2; font-size:13px; letter-spacing:.06em; }
+.launchpad-extra summary { display:flex; align-items:center; min-height:44px; cursor:pointer; text-decoration:underline; text-underline-offset:3px; }
+.launchpad-extra button { display:block; width:100%; min-height:44px; margin-top:6px; padding:8px 16px; color:#F2EEE6; background:rgba(10,10,11,.72); border:1px solid #8a908c; text-align:left; }
 @media(max-height:450px) { .scan-hint { display:none; } }
 .launchpad-more { top:400px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; pointer-events:auto; font-size:13px; letter-spacing:.08em; color:#b7b9b2; }
 .launchpad-more button { color:#F2EEE6; background:rgba(10,10,11,.72); border:1px solid #8a908c; border-radius:999px; padding:9px 16px; min-height:44px; backdrop-filter:blur(6px); }

@@ -33,6 +33,12 @@ const css = `
   .deck-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; font-size: .9rem; color: var(--bone); border: var(--hair) solid var(--faint); text-decoration: none; background: var(--void-lift); font-family: inherit; cursor: pointer; }
   .deck-btn--primary { background: var(--signal); color: var(--void); border-color: var(--signal); font-weight: 600; }
   .deck-btn:active { opacity: .7; }
+  .deck-choice { display: block; width: 100%; box-sizing: border-box; min-height: 72px; padding: 1rem 1.1rem; text-align: left; text-decoration: none; font-family: inherit; cursor: pointer; color: var(--bone); background: var(--void-lift); border: 1px solid #8a8a92; }
+  .deck-choice b.mono { color: inherit; display: block; font-size: .95rem; font-weight: 600; letter-spacing: .06em; }
+  .deck-choice span { display: block; margin-top: .35rem; font-size: .875rem; line-height: 1.35; color: #C4C4CB; }
+  .deck-choice--primary { background: var(--signal); border-color: var(--signal); color: var(--void); }
+  .deck-choice--primary span { color: #2b1a12; }
+  .deck-choice:active { opacity: .8; }
   .deck-links { display: flex; gap: 1.4rem; }
   .deck-link { display: inline-flex; align-items: center; min-height: 44px; font-size: .875rem; color: var(--bone); border: 0; border-bottom: var(--hair) solid var(--faint); text-decoration: none; background: none; font-family: inherit; cursor: pointer; padding: 0; }
   .deck-room { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .85rem 1rem; background: var(--void-lift); border: var(--hair) solid var(--faint); text-align: left; color: var(--bone); font-family: inherit; cursor: pointer; width: 100%; }
@@ -148,23 +154,23 @@ export default function Deck() {
             <p className="mono deck-role">{identity.role} &middot; {identity.location}</p>
           </div>
           <p className="deck-lede">{identity.tagline}</p>
+          <a className="deck-choice deck-choice--primary" href="/work/" onClick={() => buzz()}>
+            <b className="mono">SEE MY R&Eacute;SUM&Eacute; &amp; PROJECTS &rarr;</b>
+            <span>For recruiters &middot; one page &middot; about a minute</span>
+          </a>
+          <button type="button" className="deck-choice" onClick={enterRoom}>
+            <b className="mono">LOOK AROUND MY 3D ROOM</b>
+            <span>Click objects on my desk to open things. Best with your phone sideways.</span>
+          </button>
           <div className="deck-cta">
-            <a className="mono deck-btn deck-btn--primary" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={() => buzz()}>RESUME</a>
+            <a className="mono deck-btn" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={() => buzz()}>R&Eacute;SUM&Eacute; PDF</a>
             <a className="mono deck-btn" href={`mailto:${contact.email}`} onClick={() => buzz()}>EMAIL</a>
           </div>
           <div className="deck-links">
             <a className="mono deck-link" href={contact.github} target="_blank" rel="noopener noreferrer">GITHUB</a>
             <a className="mono deck-link" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LINKEDIN</a>
-            <a className="mono deck-link" href="/work/">FULL DETAILS</a>
           </div>
 
-          <button type="button" className="deck-room" onClick={enterRoom}>
-            <span>
-              <b>Step into the 3D room</b>
-              <span>Optional. Best with your phone turned sideways.</span>
-            </span>
-            <span className="deck-rot" aria-hidden="true">&#x21BB;</span>
-          </button>
           {permission === 'prompt' && (
             <button type="button" className="mono deck-link" onClick={request}>TAP TO ENABLE TILT</button>
           )}
