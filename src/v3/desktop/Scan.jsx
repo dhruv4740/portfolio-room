@@ -1090,6 +1090,7 @@ body[data-launchpad-open] .escape-link { display:none; }
 .launchpad-more button:hover,.launchpad-more button:focus-visible { color:var(--signal); border-color:var(--signal); }
 @media(max-height:650px) { .launchpad-more {top:284px;} }
 @media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;} .launchpad-more {top:226px;} .launchpad-actions a,.launchpad-actions button {min-height:52px;padding:8px 16px;} }
+@media(max-height:450px) { .launchpad-actions small { display:none; } .launchpad-actions a,.launchpad-actions button,.launchpad-extra summary { min-height:44px; padding-top:6px; padding-bottom:6px; } body[data-launchpad-open] .mumbai-readout { display:none; } }
 @media(pointer:coarse) and (max-height:450px) { .escape-link { display:none !important; } }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
 
