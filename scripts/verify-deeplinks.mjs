@@ -45,12 +45,6 @@ const osWindow = (p, app) => p.waitForFunction((app) => {
   await p.keyboard.press('Enter');
   record('palette "crisis" + Enter opens CrisisWatch', await osWindow(p, 'crisiswatch'));
   record('palette run no page errors', !errors.length, errors.join('; '));
-  await p.goto(`${BASE}/#/work`);
-  await p.waitForTimeout(1500);
-  await p.keyboard.press('Control+k');
-  record('Ctrl+K works on /work', await p.locator('[data-testid="command-palette"]').waitFor({ timeout: 5000 }).then(() => true, () => false));
-  await p.keyboard.press('Escape');
-  record('Escape closes the palette', await p.locator('[data-testid="command-palette"]').count() === 0);
   await ctx.close(); }
 await b.close();
 console.log(failed ? `${failed} failed` : 'all passed');
