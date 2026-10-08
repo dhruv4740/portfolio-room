@@ -37,8 +37,11 @@ const state = (p) => p.evaluate(() => ({
   record('tour opens Fraud in the OS', at(s => s.osWindows.includes('fraud')));
   record('tour opens FocusLock on the phone', at(s => s.app === 'focuslock'));
   record('tour opens Expense on the phone', at(s => s.app === 'expense'));
-  record('tour ends on Résumé · Contact · Recruiter', seen.at(-1).end, JSON.stringify(seen.at(-1)));
+  record('tour ends on See my work · Contact · Stay in the room', seen.at(-1).end, JSON.stringify(seen.at(-1)));
   await p.screenshot({ path: 'scripts/shots/tour-end.png' });
+  await p.getByRole('button', { name: 'Stay in the room' }).click();
+  await p.waitForTimeout(300);
+  record('Stay in the room closes the end card with no errors', !(await p.locator('[data-testid="tour-end"]').count()) && !errors.length, errors.join('; '));
   record('tour no page errors', !errors.length, errors.join('; '));
   await p.close();
 }
@@ -81,6 +84,17 @@ const state = (p) => p.evaluate(() => ({
   record('Next and Previous move one step', next && prev, JSON.stringify(await state(p)));
   await p.getByRole('button', { name: 'Exit tour' }).click();
   record('Exit ends the tour', !(await state(p)).caption);
+  await p.close();
+}
+{
+  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); localStorage.setItem('v3:surface-override', 'scan'); });
+  await p.goto(`${BASE}/?tour=1#/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  const shown = await p.locator('[data-testid="tour-welcome"]').waitFor({ timeout: 60000 }).then(() => true, () => false);
+  record('?tour=1 shows the welcome card instead of starting the tour', shown);
+  await p.getByRole('button', { name: 'Look around first' }).click();
+  await p.waitForTimeout(9000);
+  record('Look around first cancels the countdown and the tour never starts', !(await p.locator('[data-testid="tour-welcome"]').count()) && !(await state(p)).caption, JSON.stringify(await state(p)));
   await p.close();
 }
 await b.close();

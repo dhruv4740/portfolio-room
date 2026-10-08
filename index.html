@@ -63,7 +63,9 @@
       #front-door .fd-tag { margin: 14px 0 0; font-size: 1.1rem; line-height: 1.4; color: #bdbdc4; }
       #front-door .fd-load { margin-top: 36px; font: 500 12px/1 "JetBrains Mono", ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: #9C9CA4; display: flex; justify-content: space-between; }
       #front-door .fd-track { height: 2px; background: #1d2122; margin-top: 10px; overflow: hidden; }
-      #front-door .fd-fill { display: block; height: 100%; background: #FF5F1F; transform-origin: left; transform: scaleX(.03); transition: transform .3s ease; }
+      #front-door .fd-fill { display: block; height: 100%; background: #FF5F1F; transform-origin: left; transform: scaleX(.03); }
+      #front-door #front-door-label { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #front-door #front-door-pct { flex: none; min-width: 4ch; text-align: right; font-variant-numeric: tabular-nums; }
       #front-door .fd-choices { display: grid; gap: 12px; margin-top: 28px; }
       .fd-entering #front-door .fd-choices { display: none; }
       #front-door .fd-choice {

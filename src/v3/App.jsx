@@ -44,6 +44,9 @@ function Booting() {
           font-size: var(--t-data);
           letter-spacing: var(--track-data);
           color: var(--dim);
+          font-variant-numeric: tabular-nums;
+          min-width: 26ch;
+          text-align: center;
         }
       `}</style>
       <p>LOADING THE ROOM · {Math.round(progress * 100)}%</p>

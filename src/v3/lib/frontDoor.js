@@ -7,28 +7,46 @@
 import { reportProgress, subscribeProgress } from './loadProgress.js';
 
 let best = 0;
-const t0 = performance.now();
 let chosen = false;
 let ready = false;
 
-// Label under the choices. Before the visitor picks the room it just says what
-// is happening; after, it gives a time estimate from the pace so far.
+// The shown value eases toward the real progress and stays below 100% until the
+// room is ready, so 100% means it can open. `best` only rises, so the eased value
+// and the stage label (derived from `best`) never go backwards.
+let shown = 0;
+let frame = 0;
+const goal = () => (ready ? 1 : Math.min(best, 0.99));
+
 function paint() {
   const bar = document.getElementById('front-door-bar');
   const pct = document.getElementById('front-door-pct');
   const label = document.getElementById('front-door-label');
-  if (bar) bar.style.transform = `scaleX(${best})`;
-  if (pct) pct.textContent = `${Math.round(best * 100)}%`;
+  if (bar) bar.style.transform = `scaleX(${shown})`;
+  if (pct) pct.textContent = `${Math.floor(shown * 100)}%`;
   if (!label) return;
-  if (!chosen) { label.textContent = best >= 0.99 ? 'The 3D room is ready' : 'Getting the 3D room ready'; return; }
-  if (best >= 0.97) { label.textContent = 'Almost there'; return; }
-  if (best < 0.08) { label.textContent = 'Loading the room'; return; }
-  const left = Math.max(1, Math.round(((performance.now() - t0) * (1 - best)) / best / 1000));
-  label.textContent = `Loading the room: about ${left} s left`;
+  if (!chosen) { label.textContent = ready ? 'The 3D room is ready' : 'Getting the 3D room ready'; return; }
+  if (ready) label.textContent = 'Opening the room';
+  else if (shown >= 0.9) label.textContent = 'Almost there';
+  else if (shown >= 0.5) label.textContent = 'Preparing the room';
+  else label.textContent = 'Loading the room';
 }
+
+function tick() {
+  frame = 0;
+  const target = goal();
+  shown += (target - shown) * 0.15;
+  if (target - shown < 0.002) shown = target;
+  paint();
+  if (shown !== target) frame = requestAnimationFrame(tick);
+}
+
+function schedule() {
+  if (!frame) frame = requestAnimationFrame(tick);
+}
+
 // Registered up front so the bar cannot read 100% before the shader warm-up has even begun.
 reportProgress('warm', 0, 1, 6);
-subscribeProgress((s) => { best = Math.max(best, s.progress); paint(); });
+subscribeProgress((s) => { best = Math.max(best, s.progress); schedule(); });
 
 export function dismissFrontDoor(instant = false) {
   const door = document.getElementById('front-door');
@@ -50,6 +68,7 @@ function maybeDismiss() {
 
 function roomReadyForDoor() {
   ready = true;
+  schedule();
   maybeDismiss();
 }
 
@@ -61,7 +80,7 @@ roomButton?.addEventListener('click', () => {
     const sub = document.getElementById('fd-room-sub');
     if (sub) sub.textContent = 'Loading the room. It opens by itself.';
   }
-  paint();
+  schedule();
   maybeDismiss();
 });
 

@@ -58,6 +58,7 @@ const TOUR = [
   { caption: 'Expense Tracker: shared costs and Uber splits.', hold: 8500, scene: 'phone', app: 'expense' },
   { caption: 'That was the one-minute version.', hold: 3000, scene: 'room' },
 ];
+const TOUR_WELCOME_S = 8;
 const tourInRoom = () => document.querySelector('.scan-root')?.dataset.entranceState === 'room';
 const tourPhoneUp = () => { const s = document.querySelector('.workspace-stage')?.dataset.phoneState; return !!s && s !== 'desk'; };
 
@@ -123,7 +124,8 @@ export default function Scan() {
   const [load, setLoad] = useState({ progress: 0, pending: 0 });
   useEffect(() => subscribeProgress(s => {
     const f = s.tasks.room;
-    setLoad({ progress: f ?? 0, pending: f !== undefined && f < 1 ? 1 : 0 });
+    // Task totals can grow mid-download, so the fraction can dip; never show it going back.
+    setLoad(prev => ({ progress: Math.max(prev.progress, f ?? 0), pending: f !== undefined && f < 1 ? 1 : 0 }));
   }), []);
   const navigate = useNavigate();
 
@@ -320,18 +322,51 @@ export default function Scan() {
     return () => document.body.removeAttribute('data-launchpad-open');
   }, [introDone, overviewOpen, screenPhase]);
 
-  // ?tour in the URL (from /work/'s "Walk through my desk") starts the guided
-  // tour once, through the same launchpad button that key 4 presses.
+  // ?tour in the URL (from /work/'s "Walk through my desk") does not start the
+  // tour at once. After the cold open a welcome card counts down; any input or
+  // "Look around first" cancels it, and Enter or its button starts the tour
+  // through the same launchpad button that key 4 presses.
   const tourLinked = useRef(false);
+  const [tourWelcome, setTourWelcome] = useState(null); // seconds left, null when hidden
+  const welcomeOn = tourWelcome !== null;
+  const startWelcomeTour = useCallback(() => {
+    setTourWelcome(null);
+    document.querySelector('[data-launchpad-action="tour"]')?.click();
+  }, []);
   useEffect(() => {
-    if (tourLinked.current || !introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen || error) return;
+    if (tourLinked.current || !introDone || !overviewOpen || screenPhase !== 'room' || aboutOpen || error || arrivalToken || !roomRevealed) return;
     tourLinked.current = true;
     const url = new URL(window.location.href);
     if (!url.searchParams.has('tour')) return;
     url.searchParams.delete('tour');
     window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
-    document.querySelector('[data-launchpad-action="tour"]')?.click();
-  }, [introDone, overviewOpen, screenPhase, aboutOpen, error]);
+    setTourWelcome(TOUR_WELCOME_S);
+  }, [introDone, overviewOpen, screenPhase, aboutOpen, error, arrivalToken, roomRevealed]);
+  useEffect(() => {
+    if (!welcomeOn) return undefined;
+    if (tourWelcome <= 0) { startWelcomeTour(); return undefined; }
+    const timer = setTimeout(() => setTourWelcome(s => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [tourWelcome, welcomeOn, startWelcomeTour]);
+  useEffect(() => {
+    if (!welcomeOn) return undefined;
+    const inCard = (e) => e.target?.closest?.('.tour-welcome');
+    const onPointer = (e) => { if (!inCard(e)) setTourWelcome(null); };
+    const onKey = (e) => {
+      if (e.key !== 'Enter' || e.target?.closest?.('input, textarea, [contenteditable="true"]')) { setTourWelcome(null); return; }
+      if (inCard(e)) return; // the card's own buttons handle Enter
+      e.preventDefault();
+      startWelcomeTour();
+    };
+    window.addEventListener('pointerdown', onPointer, true);
+    window.addEventListener('wheel', onPointer, true);
+    window.addEventListener('keydown', onKey, true);
+    return () => {
+      window.removeEventListener('pointerdown', onPointer, true);
+      window.removeEventListener('wheel', onPointer, true);
+      window.removeEventListener('keydown', onKey, true);
+    };
+  }, [welcomeOn, startWelcomeTour]);
 
   // Keys 1–5 mirror the launchpad buttons while it is on screen.
   useEffect(() => {
@@ -873,6 +908,16 @@ export default function Scan() {
         </section>
       )}
 
+      {welcomeOn && introDone && overviewOpen && screenPhase === 'room' && !error && (
+        <div className="tour-welcome" role="region" aria-label="Welcome to the room" data-testid="tour-welcome">
+          <p>My desk in Mumbai. Everything here works.</p>
+          <p>A 60-second guided tour starts in <span className="tour-welcome-count">{tourWelcome}</span> s, or look around on your own.</p>
+          <div className="tour-welcome-actions">
+            <button type="button" className="tour-welcome-primary" onClick={startWelcomeTour}>Start the tour</button>
+            <button type="button" className="tour-welcome-secondary" onClick={() => setTourWelcome(null)}>Look around first</button>
+          </div>
+        </div>
+      )}
       {tour && !tour.done && (
         <div className="tour-ui tour-caption" role="status" aria-live="polite" data-testid="tour-caption" data-paused={tour.paused ? 'true' : 'false'} data-step={tour.step}>
           {/* Paused, the caption shrinks so it doesn't cover what the visitor stopped to use. */}
@@ -891,9 +936,9 @@ export default function Scan() {
         <div className="tour-ui tour-end" role="dialog" aria-label="Tour finished" data-testid="tour-end">
           <p className="mono">THAT WAS THE TOUR</p>
           <div>
-            <button className="mono" onClick={() => { stopTour(); navigate(contact.resume ? '/' : '/room/drawer'); if (contact.resume) window.open(contact.resume, '_blank', 'noopener'); }}>RÉSUMÉ (PDF)</button>
-            <button className="mono" onClick={() => { stopTour(); navigate('/contact'); }}>CONTACT</button>
-            <button className="mono" onClick={() => { stopTour(); navigate('/work'); }}>RÉSUMÉ &amp; PROJECTS</button>
+            <button className="mono tour-end-primary" onClick={() => { stopTour(); navigate('/work'); }}>See my work</button>
+            <button className="mono" onClick={() => { stopTour(); navigate('/contact'); }}>Contact</button>
+            <button className="mono" onClick={stopTour}>Stay in the room</button>
           </div>
           <button className="mono tour-close" onClick={stopTour} aria-label="Close">✕</button>
         </div>
@@ -1042,7 +1087,7 @@ const css = `
 .launchpad-actions small { display:block; margin-top:5px; color:#b2b7b4; font-size:12.5px; }
 .room-load { position:fixed; left:0; right:0; top:0; z-index:calc(var(--z-panel) + 1); height:2px; background:#1d2122; pointer-events:none; }
 .room-load i { position:absolute; inset:0; background:var(--signal); transform-origin:left; transition:transform .25s; }
-.room-load span { position:absolute; top:8px; left:50%; transform:translateX(-50%); color:#9ea39f; font-size:10px; letter-spacing:.16em; }
+.room-load span { position:absolute; top:8px; left:50%; transform:translateX(-50%); width:34ch; text-align:center; font-variant-numeric:tabular-nums; white-space:nowrap; color:#9ea39f; font-size:10px; letter-spacing:.16em; }
 .mumbai-readout { position:fixed; right:var(--gutter); bottom:14px; z-index:var(--z-panel); margin:0; padding:5px 9px; background:rgba(10,12,13,.72); color:#b2b7b4; font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; pointer-events:none; text-shadow:0 1px 8px #000; }
 .tour-caption { position:fixed; left:50%; bottom:64px; transform:translateX(-50%); z-index:calc(var(--z-panel) + 4); width:min(640px, calc(100vw - 32px)); padding:14px 18px; border:1px solid #555b59; border-left:2px solid var(--signal); background:rgba(13,16,17,.92); color:var(--bone); display:flex; gap:16px; align-items:center; justify-content:space-between; }
 .tour-bar { height:3px; margin:-14px -18px 12px; background:#2a2f2d; overflow:hidden; }
@@ -1060,13 +1105,14 @@ const css = `
 /* The phone stage (fixed, z-index 100) covered the caption on the tour's phone steps.
    Above it, and in the free column right of the phone where there is room. */
 .scan-root:has(.phone-presentation--stage) .tour-caption { z-index:101; }
-@media (min-width:1100px) { .scan-root:has(.phone-presentation--stage) .tour-caption { left:auto; right:max(24px, calc(50% - 543px)); top:50%; bottom:auto; transform:translateY(-50%); width:300px; flex-direction:column; align-items:flex-start; } }
+@media (min-width:1100px) { .scan-root:has(.phone-presentation--stage) .tour-caption { left:auto; right:max(24px, calc(50% - 543px)); top:50%; bottom:auto; transform:translateY(-50%); width:300px; flex-direction:column; align-items:stretch; } }
 .tour-caption button { flex:none; color:#9ea39f; font-size:10.5px; letter-spacing:.12em; min-height:32px; }
 .tour-end { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%); z-index:calc(var(--z-panel) + 4); padding:26px 30px; border:1px solid #555b59; border-top:2px solid var(--signal); background:#0d1011; color:var(--bone); text-align:center; }
 .tour-end p { margin:0 0 16px; color:#b7b9b2; font-size:11px; letter-spacing:.18em; }
 .tour-end div { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
 .tour-end div button { padding:12px 16px; border:1px solid #555b59; color:var(--bone); font-size:12px; letter-spacing:.1em; }
 .tour-end div button:hover,.tour-end div button:focus-visible { border-color:var(--signal); }
+.tour-end div button.tour-end-primary { background:var(--signal); border-color:var(--signal); color:#0A0A0B; font-weight:600; }
 .tour-close { position:absolute; top:6px; right:10px; color:#9ea39f; min-height:28px; }
 .about-scrim { position:fixed; inset:0; z-index:calc(var(--z-panel) + 5); background:rgba(0,0,0,.55); display:grid; place-items:center; padding:24px; }
 .about-panel { position:relative; width:min(620px,100%); max-height:calc(100vh - 48px); overflow:auto; padding:28px 30px; border:1px solid #555b59; border-left:2px solid var(--signal); background:#0d1011; color:#d3d4cc; font-size:14px; line-height:1.6; }
@@ -1080,6 +1126,15 @@ const css = `
 .about-links { display:flex; gap:20px; margin-top:22px; font-size:12px; letter-spacing:.1em; }
 .about-links a { color:var(--bone); }
 .launchpad-pending { top:auto; bottom:28px; margin:0; color:#d3d4cc; font-size:11px; letter-spacing:.14em; text-shadow:0 1px 10px #000; }
+.tour-welcome { position:fixed; left:var(--gutter); bottom:64px; z-index:calc(var(--z-panel) + 3); width:min(420px, calc(100vw - 2*var(--gutter))); padding:18px 20px; border:1px solid #555b59; border-left:2px solid var(--signal); background:rgba(13,16,17,.94); color:var(--bone); pointer-events:auto; }
+@media (prefers-reduced-motion: no-preference) { .tour-welcome { animation:launchpad-in .4s var(--ease) both; } }
+.tour-welcome p { margin:0; font-size:14px; line-height:1.5; color:#d3d4cc; }
+.tour-welcome p + p { margin-top:8px; }
+.tour-welcome-count { font-variant-numeric:tabular-nums; color:var(--bone); }
+.tour-welcome-actions { display:flex; gap:8px; margin-top:16px; flex-wrap:wrap; }
+.tour-welcome-actions button { min-height:44px; padding:10px 16px; font-size:13px; letter-spacing:.06em; border:1px solid #8a908c; color:var(--bone); background:transparent; }
+.tour-welcome-actions .tour-welcome-primary { background:var(--signal); border-color:var(--signal); color:#0A0A0B; font-weight:600; }
+.tour-welcome-actions button:hover,.tour-welcome-actions button:focus-visible { border-color:var(--bone); }
 .launchpad-links { top:36px; left:auto; right:var(--gutter); display:flex; gap:24px; font-size:12px; letter-spacing:.1em; pointer-events:auto; }
 .launchpad-links a,.launchpad-links button { color:var(--bone); min-height:32px; }
 @keyframes launchpad-in { from { opacity:0; } }
