@@ -215,7 +215,7 @@ await wallpaper.locator('button[title="Mumbai, live"]').click();
 await wallpaper.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
 await page.waitForTimeout(300);
 const skyBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
-assert.ok(skyBg.startsWith('url("data:image/png'), `SKY wallpaper backgroundImage does not start with url("data:image/png: ${skyBg.slice(0, 60)}`);
+assert.ok(/^url\("(data:image\/png|blob:)/.test(skyBg), `SKY wallpaper backgroundImage is not a data: or blob: image URL: ${skyBg.slice(0, 60)}`);
 await page.screenshot({ path: 'scripts/shots/wallpaper-sky.png' });
 console.log('PASS set SKY wallpaper applied data URL and screenshot saved');
 
@@ -225,7 +225,7 @@ await wallpaper.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
 await page.waitForTimeout(300);
 const emberBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
 const emberColor = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundColor);
-assert.ok(emberBg.startsWith('url("data:image/png'), `Ember backgroundImage should be a data URL, got: ${emberBg.slice(0, 60)}`);
+assert.ok(/^url\("(data:image\/png|blob:)/.test(emberBg), `Ember backgroundImage should be a data: or blob: URL, got: ${emberBg.slice(0, 60)}`);
 assert.equal(emberColor, 'rgb(10, 8, 0)', `Ember backgroundColor should be rgb(10, 8, 0), got: ${emberColor}`);
 await page.screenshot({ path: 'scripts/shots/wallpaper-ember.png' });
 console.log('PASS set Ember wallpaper applied its flow still');

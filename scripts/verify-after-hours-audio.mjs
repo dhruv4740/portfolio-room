@@ -414,6 +414,7 @@ async function runHiddenTabAndLifecycle(browser) {
     // fresh gesture creates a new (not stale) context, twice.
     for (let cycle = 1; cycle <= 2; cycle += 1) {
       const before = await probeSnapshot(page);
+      await page.evaluate(() => { window.__lifecycleMark = 1; });
       // The WORK link only exists in the overview (.launchpad); while seated
       // the seat-exit panel has no route link, so stand up first.
       await page.getByRole('button', { name: 'STAND UP / ESC', exact: true }).click();
@@ -438,9 +439,12 @@ async function runHiddenTabAndLifecycle(browser) {
       await page.mouse.click(6, 6);
       await page.waitForTimeout(200);
       const afterRemount = await probeSnapshot(page);
+      // /work is its own document in the production build, so going back reloads the page and the probe's counters restart at zero.
+      const reloaded = !(await page.evaluate(() => window.__lifecycleMark));
+      const expectedContexts = reloaded ? 1 : before.contextCount + 1;
       record(`lifecycle[${cycle}]: re-entering the room and gesturing again creates a fresh context, not a stale one`,
-        afterRemount.contextCount === before.contextCount + 1 && backAtRoom,
-        `before=${before.contextCount} after=${afterRemount.contextCount}`);
+        afterRemount.contextCount === expectedContexts && backAtRoom,
+        `before=${before.contextCount} after=${afterRemount.contextCount} reloaded=${reloaded}`);
     }
 
     record('hidden-tab/lifecycle: no page/console errors across the whole run', errors.length === 0, errors.slice(0, 5).join(' | '));
