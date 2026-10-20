@@ -254,3 +254,22 @@ is **untested** here; the ~25 ms figure might still exist there.
   entry (~500 ms in older notes): from earlier docs, not re-measured.
 - Rain and weather states.
 - Steady-state per-subsystem A/B was only run seated, one run each.
+
+## Round 3 (perf/lighten-room)
+
+Shipped: adaptive 60/30 Hz pacing (0ff0340), cached typing hand plan (9ff2049),
+dust + vignette/grain overlay removed (d92b336), window interaction, city view,
+notebook, pen and drawer removed (e194178), résumé sheet on the desk (face175).
+Suites: 13/13 verify scripts pass after face175 (verify-room-interactions had one
+transient failure in a batch run and passed on rerun).
+
+Not shipped, no reliable data: AA off, pixel ratio 1.0 while moving, Physical to
+Standard material, fewer lights, skipping the night env probe, contact shadows
+off, telemetry re-render at 300 ms. The A/B rig was throttled (most runs
+discarded as "window hidden or rAF throttled"). Thin data only: AA off gpuMed
+7.19 ms vs base ~7.8-8.6 ms; Standard material 7.74 ms (no gain). Pixel ratio
+and telemetry re-render were never run.
+
+Open: the dropped frame on a single keystroke (suspects: deskContactShadows
+re-capture, instanceMatrix upload, key-cap material switch, monitor texture
+update) is unsolved; look-around choppiness at 60 Hz was not reproducible.
