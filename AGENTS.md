@@ -5,7 +5,13 @@ invariants, traps. Narrative and rationale live in `docs/`.
 
 **Start with [docs/HANDOFF.md](docs/HANDOFF.md)**: status, branches, open
 problems and owner decisions. It is the only status document; don't add
-another one. Update it at the end of a session.
+another one. Update it at the end of a session. Where every project is
+surfaced (/work, dhruvOS, phone): [docs/PROJECTS-MAP.md](docs/PROJECTS-MAP.md).
+
+**Branches.** `main` is live (https://dhruvkothari.pages.dev, Cloudflare Pages
+project `dhruvkothari`). Work happens on `perf/lighten-room` in the worktree
+`C:\Users\hp\pf-truescale`. The old stacked `feat/*` branches are gone. Nothing
+visible changes without the owner's explicit OK.
 
 **Who works here.** One agent (Claude) owns the whole repo: code, 3D, tests,
 docs. There are no file reservations and no GPU-slot protocol. Subagents are
@@ -58,7 +64,7 @@ you to `curl` a `.splat` file, they are stale — ignore them.**
 ## Commands
 
 ```bash
-npm run build     # production build
+npx vite build    # production build (npm run build rewrites vendor files)
 npm run dev       # dev server (port 4173 via .claude/launch.json)
 node node_modules/vite/bin/vite.js preview --host localhost --port 4173
 GPU=1 BASE=http://localhost:4173 node scripts/verify-v3.mjs
@@ -172,7 +178,8 @@ deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
 ## Git
 
 - Never commit to `main`/`master`, never merge to main. Current work is on
-  `feat/v3`; big bets get their own branch.
+  `perf/lighten-room`; big bets get their own branch. Deploy to the `preview`
+  branch only (`wrangler pages deploy dist --project-name dhruvkothari --branch preview`).
 - Conventional Commits, subject under 72 chars, no trailing period.
 - Commit per logical unit and push. Remote `origin` is the private
   `dhruv4740/portfolio-room` (not the unrelated `dhruv4740/portfolio`).
