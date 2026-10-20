@@ -193,6 +193,7 @@ export function createPerfGovernor(renderer) {
     /** Mark the scene active now (restores full rate on the next tick). */
     touch,
     /** Pacing readout for tests and the HUD. */
+    idleForMs() { return performance.now() - lastActivity; },
     getRenderCount() { return renderCount; },
     getPacing() { const base = Math.max(1, Math.floor(1000 / vsyncMs / TARGET_HZ)); return { refreshHz: +(1000 / vsyncMs).toFixed(1), vsyncMs: +vsyncMs.toFixed(2), idle: performance.now() - lastActivity > IDLE_MS, base, sinceMotionMs: Math.round(performance.now() - motionAt) }; },
 

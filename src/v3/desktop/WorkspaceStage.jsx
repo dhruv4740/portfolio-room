@@ -756,7 +756,33 @@ export default function WorkspaceStage({
         });
         return best;
       }
+      // A key's plan (where the hand goes, how far the finger curls) depends only on the keyboard and
+      // the hand's rest placement, and costs ~20 ms of skinning maths. Plans are solved once per key and
+      // reused, and the whole board is solved in idle time after the room is up so the first letters
+      // typed do not each cost a dropped frame. Keys without a fixed finger are always solved live.
+      const planCache = new Map();
       function planKey(index, boxes) {
+        const mapped = INDEX_FINGER[index] ?? TYPE_FINGER[KEY_CHARS[index]];
+        if (!mapped || !boxes[index]) return planKeyRaw(index, boxes);
+        const h = mapped[0] < 0 ? model.hands.left : model.hands.right, ck = `${index}|${boxes.length}|${h.restLift}|${h.restX}|${h.restZ}`;
+        const hit = planCache.get(ck);
+        if (hit) return { h, f: hit.digit >= 0 ? h.digits[hit.digit] : null, digit: hit.digit, index, from: (h.typeOffset ??= new THREE.Vector3()).clone(), to: hit.to.clone(), dip: hit.dip };
+        const plan = planKeyRaw(index, boxes);
+        if (plan) planCache.set(ck, { to: plan.to.clone(), dip: plan.dip, digit: plan.digit });
+        return plan;
+      }
+      let prewarmIndex = 0, prewarmBoxes = null;
+      const prewarmTimer = setInterval(() => {
+        if (disposed) { clearInterval(prewarmTimer); return; }
+        const s = state.current;
+        if (!s.seated || s.phase !== 'room' || s.activeAnchorId || document.hidden || host.dataset.roomRevealed !== '1'
+          || gov.idleForMs() < 800 || (host.dataset.actionState && host.dataset.actionState !== 'idle')
+          || [model.hands.left, model.hands.right].some((x) => x.typingTween?.isActive() || x.typingReturn?.isActive())) return;
+        prewarmBoxes ??= keySurfaceBoxes(model.keys);
+        if (prewarmIndex >= prewarmBoxes.length) { clearInterval(prewarmTimer); return; }
+        planKey(prewarmIndex++, prewarmBoxes);
+      }, 120);
+      function planKeyRaw(index, boxes) {
         const box = boxes[index]; if (!box) return null;
         const { h, digit } = typingFinger(index, box.getCenter(new THREE.Vector3()));
         const f = digit >= 0 ? h.digits[digit] : null, from = (h.typeOffset ??= new THREE.Vector3()).clone();
