@@ -34,6 +34,7 @@ await p.addInitScript((ab) => {
       C.prototype[fn] = function (...a) { const t = performance.now(); const r = o.apply(this, a); const d = performance.now() - t; const g = window.__gl[fn] || (window.__gl[fn] = { n: 0, ms: 0, max: 0 }); g.n++; g.ms += d; if (d > 40) (window.__blk ||= []).push([Math.round(t), fn, Math.round(d)]); if (d > g.max) g.max = d; return r; };
     }
   }
+  window.__prog = []; setInterval(() => { try { const n = window.__v3test?.programs?.().length; if (n != null && (!window.__prog.length || window.__prog.at(-1)[1] !== n)) window.__prog.push([Math.round(performance.now()), n, document.querySelector('.workspace-stage')?.dataset.roomRevealed || '']); } catch {} }, 100);
   let last = performance.now();
   setInterval(() => { const n = performance.now(); window.__lag.push([Math.round(n), Math.round(n - last - 50)]); last = n; }, 50);
   const tick = () => { const st = document.querySelector('.workspace-stage');
@@ -55,7 +56,7 @@ const r = await p.evaluate(() => {
   const lt = window.__lt; const lag = window.__lag;
   const quiet = (() => { const ts = (ev['launchpadInDom'] ?? 0); for (let s = ts; s < 1e5; s += 250) { if (!lt.some(([a, d]) => a + d > s && a < s + 1000)) return Math.round(s); } return null; })();
   const lagMax = sec => Math.max(0, ...lag.filter(([n]) => n >= sec * 1000 && n < (sec + 1) * 1000).map(x => x[1]));
-  return { ev, firstQuiet1sWindow: quiet, longTaskCount: lt.length, longTaskTotalMs: lt.reduce((s, [, d]) => s + d, 0),
+  return { ev, firstQuiet1sWindow: quiet, progSeries: window.__prog, longTaskCount: lt.length, longTaskTotalMs: lt.reduce((s, [, d]) => s + d, 0),
     longTasksBefore: ev['canvasVisible'] ? lt.filter(([a]) => a < ev['canvasVisible']).reduce((s, [, d]) => s + d, 0) : null,
     lagMaxPerSec: Array.from({ length: 25 }, (_, i) => lagMax(i)),
     blkPerSec: (() => { const o = {}; for (const [t, , d] of window.__blk || []) { const k = Math.floor(t / 1000); o[k] = (o[k] || 0) + d; } return o; })(), blkCount: (window.__blk || []).length,

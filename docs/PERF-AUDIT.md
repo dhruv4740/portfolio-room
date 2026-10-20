@@ -1,8 +1,8 @@
 # Performance audit (measurement only)
 
-Branch `perf/lighten-room` (cut from main d003949, live). 2026-10-20. No runtime
-behaviour changed; the A/B flags used below were temporary local patches and are
-not in the tree. Scripts: `scripts/perf-audit/{cold,steady,arrival}.mjs`
+Branch `perf/lighten-room` (cut from main d003949, live). 2026-10-20. Sections 1-5
+are the Round 1 measurements of main d003949; Round 2 (below) fixes and re-measures.
+The A/B flags used are temporary local patches and are not in the tree. Scripts: `scripts/perf-audit/{cold,steady,arrival}.mjs`
 (raw JSON goes to the git-ignored `scripts/shots/perf/`).
 
 **Rig:** Windows laptop, AMD "Radeon Graphics" iGPU (governor tier `mid`), headless
@@ -32,6 +32,86 @@ of it. Real battery saver also lowers GPU clocks, which this rig does not model.
 5. **Typing:** every key costs a ~50 ms synchronous hand-pose search; the first key
    freezes ~0.9 s because it boots the OS iframe (which includes PNG-encoding the
    wallpaper, `toDataURL` ~0.6 s).
+
+## Round 2: fixes and results (commit 904cd82)
+
+**Root cause of the slow load.** three r184 deprecates `PCFSoftShadowMap`: on the first
+shadow render it logs a warning and switches `shadowMap.type` to `PCFShadowMap`.
+`shadowMapType` is part of the program cache key, so every program the warm-up gate
+built with `compileAsync` (type 2) did not match what draw time asked for (type 1).
+Draw time then linked a second set synchronously, one at a time (125-290 ms each).
+Fix: set `renderer.shadowMap.type = THREE.PCFShadowMap` up front. Look is unchanged
+(three was already rendering PCF; frame diff vs main below). Found by diffing the
+program cache keys; the earlier `glassReflection` theory was wrong.
+
+Invisible fixes in the commit:
+- shadow type set up front (above): programs 72 to 38 dusk, 118 to 65 night;
+- night probe captured inside the warm-up gate (`afterHours.warmProbe`), so the env-map
+  variants link in parallel behind the loader;
+- typing: `skinKeyClearance` skins each bone once per call and skips vertices outside
+  the keys' footprint, same maths;
+- OS iframe pre-boots 3 s after reveal, in idle time;
+- wallpaper encoded once via `toBlob`, cached.
+The lamp-flip warm pass and removing the per-material loop were tried and dropped
+(no gain), the loop stays as a safety net.
+
+### Cold load, main vs this branch (1x and 4x CPU, single runs, +-0.7 s noise)
+
+| Sky | CPU | main reveal / canvas | main programs | now reveal / canvas | now programs |
+|---|---|---|---|---|---|
+| dusk | 1x | 12.0 / 12.1 s | 72 | **4.4 / 4.7 s** | 38 |
+| dusk | 4x | 21.5 / 21.8 s | 72 | **12.2 / 12.5 s** | 38 |
+| night | 1x | 12.2 / 26.7 s | 118 | **10.7 / 10.9 s** | 65 |
+| night | 4x | 22.1 / 41.3 s | 118 | **19.9 / 20.2 s** | 65 |
+
+Night 10.7 s is still ~6 s slower than dusk: the env-map variants of 27 more programs.
+Steady-state seated GPU/CPU per frame is unchanged vs main (9.0-9.7 vs 8.6-9.4 ms
+GPU on this run's machine state; within noise).
+
+### Typing (warm, 41 keys through `typeProbe`, same keys on both builds)
+
+| | main | now |
+|---|---|---|
+| keydown handler median | 50.8 ms | 29.6 ms |
+| 41-key probe total | 2552 ms | 884 ms |
+| long tasks while typing 6 s | 26 (1578 ms) | 0 |
+| first key long task | 799 ms | 182 ms |
+| poses (fingertips, wrist, finger dip) | | max delta 0 mm, 0 deg, 0 deg |
+
+A ~550 ms rAF gap on the first key remains (profile: native "(program)" time, no
+new programs). **Cause not isolated.**
+
+### Pixel check vs main (landing, sit-down, seated, looking at keys, typing; dusk + night)
+Mean abs diff 0.01-0.04 / 255 for every frame that is not mid-motion. The mid-motion
+frames (sit-down first frame, typing frames) differ only by animation timing.
+Sheets: `scripts/shots/perf/sheets/identity-{dusk,night}.png` (git-ignored).
+
+### Fewer shadows and baked lighting (NOT committed; needs the owner's look)
+Measured on the fixed build. Reveal at 1x, seated GPU at pixel ratio 1.25 (night sky
+default at run time; baseline 9.5-9.7 ms).
+
+| Option | Reveal dusk / night | Programs dusk / night | Seated GPU | Frame diff vs now |
+|---|---|---|---|---|
+| now (3 casters) | 4.6 / 10.3 s | 38 / 65 | 9.5-9.7 ms | |
+| spot shadow off | 4.1 / 10.4 s | 38 / 65 | 8.95 ms | not rendered (tiny gain) |
+| moon shadows off (keep spot) | 3.9 / 10.1 s | 37 / 64 | 7.6 ms (-2.1) | 0.01-0.02 / 255 |
+| all shadows off | 3.8 / 9.8 s | 37 / 64 | 7.3 ms (-2.3) | 0.01-0.03 / 255 |
+| baked lightmaps off | 3.8 / 9.9 s | 34 / 57 | 10.0 ms (no gain) | dusk 0.01; night landing 4.5, seated 2.1 |
+
+Findings: after the program-mismatch fix, shadows cost only ~0.6-0.8 s of load but
+the two moon shadow maps cost ~2 ms per frame. In the poses compared (landing,
+seated, looking at keys, dusk and night) turning the real-time shadows off is not
+visible; the contact shadows and lightmaps carry the look. Dropping lightmaps saves
+~0.8 s and 4-8 programs, no frame time, and is visible at night. Baking the static
+shadows was not attempted because there is nothing visible left to bake. Not tested:
+shadows from moving objects held up to the lamp, rain/weather states.
+Sheets: `scripts/shots/perf/sheets/{nomoon,noshadow,nobake}-{dusk,night}.png`.
+
+### Round 2 caveats
+- Single runs; load noise +-0.7 s or more (a prior configuration ranged 11.5-22 s).
+- cold.mjs reveal times are rAF-detected; the program series and long-task totals are
+  more reliable.
+- `scripts/perf-audit/frames.mjs` makes the sheets; `typeprobe.mjs` compares poses.
 
 ## 1. Cold first load (empty cache)
 

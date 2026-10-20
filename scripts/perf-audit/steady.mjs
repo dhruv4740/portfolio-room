@@ -62,7 +62,13 @@ await scenario('seated-idle', ms => p.waitForTimeout(ms));
 await scenario('seated-look', drag);
 await p.locator('.workspace-stage canvas').focus();
 const typeKeys = async ms => { const letters = 'asdfjkl;ghqweruiop'; const t0 = Date.now(); let i = 0; while (Date.now() - t0 < ms) { await p.keyboard.press(letters[i++ % letters.length]); await p.waitForTimeout(120); } };
+if (process.env.PROFILE1) await cdp.send('Profiler.enable'), await cdp.send('Profiler.start');
 await scenario('typing-first-key', async () => { await p.keyboard.press('a'); await p.waitForTimeout(1500); }, 1500);
+if (process.env.PROFILE1) {
+  const { profile } = await cdp.send('Profiler.stop'); const self = new Map(); const byId = new Map(profile.nodes.map(n => [n.id, n]));
+  const dt = profile.timeDeltas; profile.samples.forEach((id, i) => { const n = byId.get(id); const k = `${n.callFrame.functionName || '(anon)'} ${n.callFrame.url.split('/').pop()}:${n.callFrame.lineNumber}`; self.set(k, (self.get(k) || 0) + (dt[i] || 0)); });
+  console.log('FIRST-KEY TOP SELF (ms):', JSON.stringify([...self].sort((a, b) => b[1] - a[1]).slice(0, 10).map(([k, v]) => [k, Math.round(v / 1000)])));
+}
 if (process.env.PROFILE) await scenario('typing-warmup', typeKeys, 4000);
 if (process.env.PROFILE) await cdp.send('Profiler.enable'), await cdp.send('Profiler.start');
 await scenario('typing', typeKeys, 6000);
