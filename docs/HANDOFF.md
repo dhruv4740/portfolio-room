@@ -136,3 +136,10 @@ changed without the owner's explicit permission.** Measure, propose, wait.
 [DESIGN.md](DESIGN.md), [ASSET-REGISTER.md](ASSET-REGISTER.md),
 [PROJECT-MATERIAL.md](PROJECT-MATERIAL.md), [PROJECTS-MAP.md](PROJECTS-MAP.md),
 [PERF-AUDIT.md](PERF-AUDIT.md), `archive/` (historical only).
+
+## Round 3 status (perf/lighten-room)
+
+Done: real-time shadows off (97a4aea), GitHub API mocked in suites (366c06d), booted-OS pre-raster cuts the first-key gap ~480 to ~210 ms (32549af), FocusLock Windows demo scales to narrow /work panels (a8323b7), demo sweep harness `scripts/review-demos.mjs`.
+Corrections: `aboutOpen` is live (the `/about` deep link, not dead); the 25 ms arrival-intro interruption did not reproduce; backtick and space keys verified.
+Demo sweep (4 viewports, 3 surfaces): no overflow or errors; at 915x412 touch, `/os/*` deep links show the landing deck instead of a window, and the /work demo panel is a ~270 px strip (functional, cramped).
+Still open: landscape-phone routing of OS apps, seated touch look-around in landscape, first monitor-entry hitch measurement, Fact-or-Cap naming (owner decision), empty dk-dev Pages project (not deleted), hand/pose authoring items (need frame sheets), phone-basketproof 915x412 shot missing.
