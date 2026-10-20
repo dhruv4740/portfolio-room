@@ -15,7 +15,7 @@ const PHONE = ['focuslock', 'expense', 'basketproof'];
 async function ctxFor([w, h]) {
   const touch = w < 700 || h < 500;
   const c = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: touch ? 2 : 1, isMobile: touch, hasTouch: touch });
-  await c.addInitScript(([override]) => { localStorage.setItem('v3:seen-intro', '1'); sessionStorage.setItem('v3:arrival-seen', '1'); sessionStorage.setItem('v3:controls', 'open'); if (override) localStorage.setItem('v3:surface-override', 'scan'); }, [!touch]);
+  await c.addInitScript(([override]) => { localStorage.setItem('v3:seen-intro', '1'); sessionStorage.setItem('v3:arrival-seen', '1'); sessionStorage.setItem('v3:controls', 'open'); if (override) localStorage.setItem('v3:surface-override', 'scan'); }, [true]);
   return c;
 }
 const scan = (scope) => {

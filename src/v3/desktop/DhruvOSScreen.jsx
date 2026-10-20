@@ -484,6 +484,14 @@ const css = `
   border-bottom: 0;
 }
 
+/* Landscape phones: the monitor chrome would otherwise take half the height. */
+@media (max-height: 520px) {
+  .dhruv-os-screen { padding: 0; }
+  .os-screen-frame { grid-template-rows: auto 1fr; }
+  .os-screen-bar { min-height: 0; padding: 0.3rem 0.7rem; }
+  .os-screen-foot { display: none; }
+}
+
 @media (max-width: 640px) {
   .os-screen-foot span:first-child { display: none; }
   .os-screen-foot { justify-content: flex-end; }
