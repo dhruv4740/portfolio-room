@@ -214,6 +214,8 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     },
     contactStats:()=>contacts.stats(),
     warmContacts:()=>contacts.warm(),
+    // Capture the night probe before the warm-up gate compiles, so the env-map program variants link behind the loader.
+    warmProbe(){if(probeDirty){probeDirty=false;captureProbe();}},
     setContactsEnabled:value=>contacts.setEnabled(value),
     setSky(value){sky=value;scene.environment=value==='night'?(probes.get(lastLamp?'on':'off')?.texture||null):null;
       for(const m of Object.values(model.bakedMaterials))m.lightMapIntensity=value==='night'?.7:0;probeDirty=true;},

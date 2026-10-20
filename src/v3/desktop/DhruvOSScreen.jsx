@@ -112,6 +112,24 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
     if (phase !== 'room') setMounted(true);
   }, [phase]);
 
+  // Boot the OS once the room has settled, so the first key press (or the first
+  // trip to the monitor) doesn't pay the ~1 s startup on the spot.
+  useEffect(() => {
+    let timer = 0, idle = 0;
+    const boot = () => {
+      const ric = window.requestIdleCallback;
+      if (ric) idle = ric(() => setMounted(true), { timeout: 4000 }); else setMounted(true);
+    };
+    const onRevealed = () => { timer = window.setTimeout(boot, 3000); };
+    if (document.querySelector('.workspace-stage')?.dataset.roomRevealed === '1') onRevealed();
+    else window.addEventListener('workspace:revealed', onRevealed, { once: true });
+    return () => {
+      window.removeEventListener('workspace:revealed', onRevealed);
+      window.clearTimeout(timer);
+      if (idle && window.cancelIdleCallback) window.cancelIdleCallback(idle);
+    };
+  }, []);
+
   const postToOS = useCallback((message) => {
     const frame = frameRef.current;
     if (!frame?.contentWindow) return;

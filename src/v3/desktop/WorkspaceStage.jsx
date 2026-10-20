@@ -89,7 +89,8 @@ export default function WorkspaceStage({
       // Shader errors are caught in dev and by the suites on the dev server.
       renderer.debug.checkShaderErrors = !import.meta.env.PROD;
       renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // three r184 swaps PCFSoft for PCF on the first shadow render (same look); setting it up front lets compileAsync build the programs the draw will use.
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       // Furniture and lights are static: camera moves do not invalidate shadows.
       renderer.shadowMap.autoUpdate = false;
       renderer.shadowMap.needsUpdate = true;
@@ -1342,10 +1343,10 @@ export default function WorkspaceStage({
       renderer.domElement.style.opacity = '0';
       reportProgress('warm', 0, 1, 6);
       revealed = Promise.race([
-        afterHours.ready.then(() => Promise.all([renderer.compileAsync(scene, camera), afterHours.warmContacts()])).then(() => renderer.compileAsync(scene, camera)).then(async () => {
-          // compileAsync misses the programs three builds at draw time (different light state), and those compile
-          // synchronously (~125 ms each on ANGLE/D3D11). Draw the scene one material at a time, hidden, one task per
-          // material, so the cost lands as small hitches while the visitor reads the launchpad instead of one freeze.
+        afterHours.ready.then(() => { afterHours.warmProbe(); return Promise.all([renderer.compileAsync(scene, camera), afterHours.warmContacts()]); }).then(() => renderer.compileAsync(scene, camera)).then(async () => {
+          // Safety net: compileAsync builds nearly everything in parallel now that the shadow type matches the draw.
+          // Anything it still misses compiles synchronously (~125 ms each on ANGLE/D3D11), so draw the scene one
+          // material at a time, hidden, one task per material, keeping any such cost to small hitches behind the loader.
           const byMat = new Map();
           scene.traverse(o => { const m = o.material; if (m && !Array.isArray(m) && !byMat.has(m)) byMat.set(m, o); });
           const all = []; scene.traverse(o => all.push([o, o.visible]));
@@ -1470,7 +1471,7 @@ export default function WorkspaceStage({
               const tip=typingTip(h,f),on=tip.x>=box.min.x&&tip.x<=box.max.x&&tip.z>=box.min.z&&tip.z<=box.max.z;
               let others=Infinity;for(let d=0;d<4;d++)if(d!==digit)others=Math.min(others,skinKeyClearance(h,boxes,d).clearance);
               out.push({key,hand:h.side<0?'L':'R',digit,on,tipAboveCapMm:+((tip.y-box.max.y)*1000).toFixed(1),othersMm:+(others*1000).toFixed(1),
-                liftMm:+(to.y*1000).toFixed(1),capMm:[Math.round(box.getCenter(new THREE.Vector3()).x*1000),Math.round(box.getCenter(new THREE.Vector3()).z*1000)],tipMm:[Math.round(tip.x*1000),Math.round(tip.z*1000)],travelMm:+(Math.hypot(to.x,to.z)*1000).toFixed(0),wrist:[Math.round(model.hands.left.wristDeg),Math.round(model.hands.right.wristDeg)]});
+                liftMm:+(to.y*1000).toFixed(1),capMm:[Math.round(box.getCenter(new THREE.Vector3()).x*1000),Math.round(box.getCenter(new THREE.Vector3()).z*1000)],tipMm:[Math.round(tip.x*1000),Math.round(tip.z*1000)],travelMm:+(Math.hypot(to.x,to.z)*1000).toFixed(0),wrist:[Math.round(model.hands.left.wristDeg),Math.round(model.hands.right.wristDeg)],raw:{to:to.toArray(),dip,tip:tip.toArray(),others,wristDeg:[model.hands.left.wristDeg,model.hands.right.wristDeg]}});
               if(f)f.rotation.x=0;h.pose.tCurl=POSES.rest.tCurl;placeHand(h,h.typeOffset);model.hands.update();
             }
             invalidate();return out;

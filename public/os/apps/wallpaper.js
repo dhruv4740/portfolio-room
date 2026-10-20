@@ -32,7 +32,16 @@ function createPrng(seed = 1306) {
   };
 }
 
-export function renderSkylineDataUrl(skyState, width, height, dpr = 1) {
+// PNG-encoding a full-screen canvas costs ~0.6 s synchronously. With a callback the
+// encode runs off the main thread (toBlob) and the result is an object URL.
+function finishCanvas(c, cb) {
+  if (!cb) return c.toDataURL('image/png');
+  if (c.toBlob) c.toBlob(b => cb(b ? URL.createObjectURL(b) : c.toDataURL('image/png')), 'image/png');
+  else cb(c.toDataURL('image/png'));
+  return undefined;
+}
+
+export function renderSkylineDataUrl(skyState, width, height, dpr = 1, cb) {
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(width * dpr));
   c.height = Math.max(1, Math.round(height * dpr));
@@ -112,15 +121,15 @@ export function renderSkylineDataUrl(skyState, width, height, dpr = 1) {
   ctx.fillStyle = scrim;
   ctx.fillRect(0, 0, W * 0.22, H);
 
-  return c.toDataURL('image/png');
+  return finishCanvas(c, cb);
 }
 
 // A still of the preview's flow field, so the desktop shows the palette you
 // picked rather than an 8% glow on near-black. Same seed every time.
 const flowCache = new Map();
-export function renderFlowDataUrl(p, width, height, dpr = 1) {
+export function renderFlowDataUrl(p, width, height, dpr = 1, cb) {
   const cacheKey = `${p.key}:${width}x${height}@${dpr}`;
-  if (flowCache.has(cacheKey)) return flowCache.get(cacheKey);
+  if (flowCache.has(cacheKey)) { const hit = flowCache.get(cacheKey); if (cb) { cb(hit); return undefined; } return hit; }
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(width * dpr));
   c.height = Math.max(1, Math.round(height * dpr));
@@ -156,6 +165,7 @@ export function renderFlowDataUrl(p, width, height, dpr = 1) {
   scrim.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = scrim;
   ctx.fillRect(0, 0, width * 0.22, height);
+  if (cb) { finishCanvas(c, u => { flowCache.set(cacheKey, u); cb(u); }); return undefined; }
   const url = c.toDataURL('image/png');
   flowCache.set(cacheKey, url);
   return url;
@@ -185,6 +195,9 @@ export function startSkyObserver(onChange) {
   }
 }
 
+let skyTicket = 0;
+const skyCache = new Map();
+
 export function applyWallpaper(key) {
   const desktop = document.getElementById('desktop');
   const workspace = document.getElementById('workspace');
@@ -196,15 +209,19 @@ export function applyWallpaper(key) {
       const H = desktop?.clientHeight || window.innerHeight || 640;
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const skyState = getSkyState();
-      const url = `url("${renderSkylineDataUrl(skyState, W, H, dpr)}")`;
-      if (desktop) {
-        desktop.style.backgroundImage = url;
-        desktop.style.backgroundSize = 'cover';
-      }
-      if (workspace) {
-        workspace.style.backgroundImage = url;
-        workspace.style.backgroundSize = 'cover';
-      }
+      const ck = `${skyState}:${W}x${H}@${dpr}`, ticket = ++skyTicket;
+      const paint = u => {
+        if (ticket !== skyTicket) return;
+        skyCache.set(ck, u);
+        const url = `url("${u}")`;
+        for (const el of [desktop, workspace]) {
+          if (!el) continue;
+          el.style.backgroundImage = url;
+          el.style.backgroundSize = 'cover';
+        }
+      };
+      if (skyCache.has(ck)) paint(skyCache.get(ck));
+      else renderSkylineDataUrl(skyState, W, H, dpr, paint);
     };
     redraw();
     startSkyObserver(redraw);
@@ -213,13 +230,17 @@ export function applyWallpaper(key) {
     const p = PALETTES[key];
     const W = desktop?.clientWidth || window.innerWidth || 900;
     const H = desktop?.clientHeight || window.innerHeight || 640;
-    const url = `url("${renderFlowDataUrl(p, W, H, Math.min(window.devicePixelRatio || 1, 1.5))}")`;
-    for (const el of [desktop, workspace]) {
-      if (!el) continue;
-      el.style.backgroundColor = p.bg;
-      el.style.backgroundImage = url;
-      el.style.backgroundSize = 'cover';
-    }
+    skyTicket++;
+    for (const el of [desktop, workspace]) if (el) el.style.backgroundColor = p.bg;
+    const ticket = skyTicket;
+    renderFlowDataUrl(p, W, H, Math.min(window.devicePixelRatio || 1, 1.5), u => {
+      if (ticket !== skyTicket) return;
+      for (const el of [desktop, workspace]) {
+        if (!el) continue;
+        el.style.backgroundImage = `url("${u}")`;
+        el.style.backgroundSize = 'cover';
+      }
+    });
   }
 }
 
