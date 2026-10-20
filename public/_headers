@@ -9,3 +9,5 @@
   Cache-Control: public, max-age=604800
 /previews/*
   Cache-Control: public, max-age=604800
+/os/*
+  Cache-Control: public, max-age=3600, must-revalidate
