@@ -88,7 +88,8 @@ export default function WorkspaceStage({
       // blocks the main thread for the program's whole D3D link (about 60 ms each here).
       // Shader errors are caught in dev and by the suites on the dev server.
       renderer.debug.checkShaderErrors = !import.meta.env.PROD;
-      renderer.shadowMap.enabled = true;
+      // Real-time shadow maps are off: frames are pixel-identical without them (baked lighting and contact shadows carry the look), and they cost ~2 ms/frame and ~0.7 s of load. See docs/PERF-AUDIT.md. Set true to restore.
+      renderer.shadowMap.enabled = false;
       // three r184 swaps PCFSoft for PCF on the first shadow render (same look); setting it up front lets compileAsync build the programs the draw will use.
       renderer.shadowMap.type = THREE.PCFShadowMap;
       // Furniture and lights are static: camera moves do not invalidate shadows.

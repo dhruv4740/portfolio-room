@@ -86,7 +86,10 @@ Mean abs diff 0.01-0.04 / 255 for every frame that is not mid-motion. The mid-mo
 frames (sit-down first frame, typing frames) differ only by animation timing.
 Sheets: `scripts/shots/perf/sheets/identity-{dusk,night}.png` (git-ignored).
 
-### Fewer shadows and baked lighting (NOT committed; needs the owner's look)
+### Fewer shadows and baked lighting
+
+**Decision (owner-approved): real-time shadows are off** (`renderer.shadowMap.enabled=false`, lights keep `castShadow` so it is a one-line revert). Checked held phone, notebook, resume, lamp and typing at night, current vs off: mean diff <=0.04/255, nothing loses grounding (`scripts/perf-audit/held-frames.mjs`, sheets `shadows-held-night.png`, `shadows-typing-night.png`). **Lightmaps stay** (owner declined dropping them). Measurements below were taken before the switch.
+
 Measured on the fixed build. Reveal at 1x, seated GPU at pixel ratio 1.25 (night sky
 default at run time; baseline 9.5-9.7 ms).
 
