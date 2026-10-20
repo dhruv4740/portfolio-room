@@ -32,11 +32,12 @@ function createPrng(seed = 1306) {
   };
 }
 
-// PNG-encoding a full-screen canvas costs ~0.6 s synchronously. With a callback the
-// encode runs off the main thread (toBlob) and the result is an object URL.
+// PNG-encoding a full-screen canvas costs ~0.6 s synchronously (and a 3 MB PNG is slow to
+// decode). Wallpapers are opaque, so with a callback they are encoded as JPEG q.92 through
+// toBlob (~3x faster, ~9x smaller) and the result is an object URL.
 function finishCanvas(c, cb) {
   if (!cb) return c.toDataURL('image/png');
-  if (c.toBlob) c.toBlob(b => cb(b ? URL.createObjectURL(b) : c.toDataURL('image/png')), 'image/png');
+  if (c.toBlob) c.toBlob(b => cb(b ? URL.createObjectURL(b) : c.toDataURL('image/png')), 'image/jpeg', 0.92);
   else cb(c.toDataURL('image/png'));
   return undefined;
 }
