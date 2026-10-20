@@ -10,7 +10,7 @@ const AB = process.env.AB || '', QS = process.env.QS || '';
 const TAG = process.env.TAG || 'steady';
 const ONLY = (process.env.ONLY || '').split(',').filter(Boolean);
 const OUT = 'scripts/shots/perf'; await mkdir(OUT, { recursive: true });
-const b = await chromium.launch({ channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] });
+const b = await chromium.launch({ channel: 'chromium', headless: !process.env.HEADED, args: ['--use-angle=d3d11', '--ignore-gpu-blocklist', ...(process.env.HEADED ? ['--window-position=-2400,0','--window-size=1600,950','--disable-features=CalculateNativeWinOcclusion','--disable-renderer-backgrounding','--disable-background-timer-throttling','--disable-backgrounding-occluded-windows'] : [])] });
 const ctx = await b.newContext({ viewport: { width: 1536, height: 864 }, deviceScaleFactor: 1.25 });
 const p = await ctx.newPage();
 const cdp = await ctx.newCDPSession(p);
@@ -30,10 +30,12 @@ await p.addInitScript(ab => {
 await p.goto(BASE + '/' + QS);
 await p.waitForFunction(() => document.querySelector('.workspace-stage')?.dataset.roomRevealed === '1', null, { timeout: 90000 });
 await p.waitForTimeout(3000);
+const vis = await p.evaluate(async () => { const n0 = window.__raf.length; await new Promise(r => setTimeout(r, 1000)); return { state: document.visibilityState, rafHz: window.__raf.length - n0 }; });
+console.log('window check', JSON.stringify(vis)); if (vis.state !== 'visible' || vis.rafHz < 50) { console.log('DISCARD: window hidden or rAF throttled'); process.exit(2); }
 // wrap render() to time CPU submission per frame
 await p.evaluate(() => {
-  const r = window.__v3test.renderer, o = r.render.bind(r); window.__rc = [];
-  r.render = (s, c) => { const t = performance.now(); o(s, c); window.__rc.push(performance.now() - t); };
+  const r = window.__v3test.renderer, o = r.render.bind(r); window.__rc = []; window.__rt = [];
+  r.render = (s, c) => { const t = performance.now(); o(s, c); window.__rc.push(performance.now() - t); window.__rt.push(t); };
 });
 const pct = (a, q) => { if (!a.length) return null; const s = [...a].sort((x, y) => x - y); return +s[Math.min(s.length - 1, Math.floor(s.length * q))].toFixed(2); };
 const busy = async () => (await cdp.send('Performance.getMetrics')).metrics.find(m => m.name === 'TaskDuration').value;
@@ -41,13 +43,14 @@ const drag = async ms => { const box = await p.locator('.workspace-stage canvas'
 const results = {};
 async function scenario(name, fn, ms = 4000) {
   if (ONLY.length && !ONLY.includes(name)) return;
-  await p.evaluate(() => { window.__raf.length = 0; window.__rc.length = 0; window.__lt.length = 0; window.__keys.length = 0; window.__v3test.gpuSamples(true); });
+  await p.evaluate(() => { window.__raf.length = 0; window.__rc.length = 0; window.__rt.length = 0; window.__lt.length = 0; window.__keys.length = 0; window.__v3test.gpuSamples(true); });
   const b0 = await busy(), t0 = Date.now();
   await fn(ms);
   const wall = (Date.now() - t0) / 1000, b1 = await busy();
-  const r = await p.evaluate(() => ({ raf: window.__raf.slice(), rc: window.__rc.slice(), lt: window.__lt.slice(), keys: window.__keys.slice(), gpu: window.__v3test.gpuSamples(), perf: window.__v3test.perf() }));
+  const r = await p.evaluate(() => ({ raf: window.__raf.slice(), rc: window.__rc.slice(), rt: window.__rt.slice(), lt: window.__lt.slice(), keys: window.__keys.slice(), gpu: window.__v3test.gpuSamples(), perf: window.__v3test.perf() }));
   const gaps = r.raf.slice(1).map((t, i) => t - r.raf[i]);
-  results[name] = { frames: r.raf.length, fps: +(r.raf.length / wall).toFixed(1), gapP50: pct(gaps, .5), gapP95: pct(gaps, .95), gapMax: pct(gaps, 1),
+  const rg = r.rt.slice(1).map((t, i) => t - r.rt[i]), edges = [0, 10, 14, 18, 25, 35, 50, 1e9], hist = {}; edges.slice(0, -1).forEach((e, i) => { hist[`${e}-${edges[i + 1] > 1e8 ? 'inf' : edges[i + 1]}`] = rg.filter(g => g >= e && g < edges[i + 1]).length; });
+  results[name] = { renderFps: +(r.rt.length / wall).toFixed(1), renderGapHist: hist, frames: r.raf.length, fps: +(r.raf.length / wall).toFixed(1), gapP50: pct(gaps, .5), gapP95: pct(gaps, .95), gapMax: pct(gaps, 1),
     renders: r.rc.length, cpuMed: pct(r.rc, .5), cpuP95: pct(r.rc, .95), gpuMed: pct(r.gpu, .5), gpuP95: pct(r.gpu, .95), gpuN: r.gpu.length,
     mainBusyPct: +(100 * (b1 - b0) / wall).toFixed(0), longTasks: r.lt.length, longTaskMs: Math.round(r.lt.reduce((s, [, d]) => s + d, 0)), longestTask: Math.round(Math.max(0, ...r.lt.map(x => x[1]))),
     keyHandlerMs: r.keys.length ? { n: r.keys.length, med: pct(r.keys, .5), max: pct(r.keys, 1), first: +r.keys[0].toFixed(1) } : undefined, pr: r.perf.pixelRatio, programs: r.perf.programs, lights: r.perf.lights };
