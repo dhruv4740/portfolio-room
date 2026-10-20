@@ -1672,7 +1672,6 @@ export default function WorkspaceStage({
       <style>{css}</style>
       {/* Lens grade: vignette and film grain composited over the canvas at no
           WebGL cost. Room phase only, so the dhruvOS handoff frame stays clean. */}
-      <div className="stage-grade" aria-hidden="true" hidden={phase !== 'room'} />
       {phoneWanted && <Suspense fallback={null}>
         <PhoneScreen ref={phoneScreenRef} interactive={phoneLive} mode={phoneLive ? 'stage' : 'projected'} onExit={() => callbacks.current.onAnchorSelect?.('phone')}
           onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
@@ -1704,10 +1703,6 @@ const css = `
 .workspace-stage { position:absolute; inset:0; overflow:hidden; background:#15191b; }
 .workspace-stage[data-phone-presentation=stage] ~ .seat-exit {display:none;}
 .workspace-stage canvas { display:block; width:100%; height:100%; touch-action:none; }
-.stage-grade { position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(ellipse 75% 70% at 50% 48%, transparent 55%, rgba(4,5,6,.42) 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E"); }
-.stage-grade[hidden] { display:none; }
 .workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
 .workspace-marker-dot { width:8px; height:8px; border:1px solid var(--bone); border-radius:50%; box-shadow:0 0 0 5px rgba(20,24,25,.18); background:var(--void); }
 .workspace-marker-label { display:flex; align-items:center; gap:12px; padding:8px 11px; background:rgba(20,24,25,.92); border:1px solid rgba(232,228,220,.18); color:var(--bone); font:12px var(--font-display); white-space:nowrap; }
