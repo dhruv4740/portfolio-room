@@ -35,6 +35,7 @@ if (process.env.HIDE_RE || process.env.HIDE_CSS) await p.evaluate(([re, css]) =>
   if (re) window.__v3test.scene.traverse(o => { if (new RegExp(re, 'i').test(o.name)) o.visible = false; });
   if (css) document.head.insertAdjacentHTML('beforeend', `<style>${css}{display:none!important}</style>`);
 }, [process.env.HIDE_RE || '', process.env.HIDE_CSS || '']);
+if (process.env.EVAL) await p.evaluate(process.env.EVAL); // A/B only: runtime tweak of scene/renderer
 const vis = await p.evaluate(async () => { const n0 = window.__raf.length; await new Promise(r => setTimeout(r, 1000)); return { state: document.visibilityState, rafHz: window.__raf.length - n0 }; });
 console.log('window check', JSON.stringify(vis)); if (vis.state !== 'visible' || vis.rafHz < 50) { console.log('DISCARD: window hidden or rAF throttled'); process.exit(2); }
 // wrap render() to time CPU submission per frame

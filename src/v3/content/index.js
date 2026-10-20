@@ -285,7 +285,8 @@ export const anchors = [
     ref: 'contact',
     readout: 'READ RÉSUMÉ',
     body: 'One page: experience, highlights, education and skills.',
-    ...(contact.resume ? { href: contact.resume, hrefLabel: 'OPEN PDF' } : {}),
+    href: '/resume/',
+    hrefLabel: 'OPEN THE RÉSUMÉ PAGE',
   },
   {
     id: 'window',
