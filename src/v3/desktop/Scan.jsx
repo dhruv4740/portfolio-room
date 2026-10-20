@@ -24,6 +24,8 @@ import {
   setOverride,
 } from '../lib/capability.js';
 
+const TOUCH_LINK_CARD = true;
+
 // Must track WorkspaceStage's fly() travel durations (entering/leaving) so
 // the phase flips to inside/room exactly when the camera arrives.
 const ENTRY_MS = 1200;
@@ -388,6 +390,27 @@ export default function Scan() {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [aboutOpen, closeAbout]);
 
+  const [linkCard, setLinkCard] = useState(null);
+  const runDeepLinkRef = useRef(() => {});
+  runDeepLinkRef.current = (kind, arg) => {
+    const fake = (action) => ({ currentTarget: document.querySelector(`[data-launchpad-action="${action}"]`) });
+    if (kind === 'os') {
+      if (arg) dhruvRef.current?.openApp(arg);
+      if (overviewOpen) handleLaunchDesktop(fake('desktop-projects')); else handleEnterScreen();
+      return;
+    }
+    if (kind === 'phone') {
+      if (overviewOpen) handleOpenPhone(fake('mobile-projects')); else handleSelect('phone');
+      if (!arg) return;
+      const timer = setInterval(() => {
+        if (document.querySelector('.workspace-stage')?.dataset.phoneState !== 'zoomed' || !document.querySelector('.phone-screen')) return;
+        clearInterval(timer);
+        window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: arg } }));
+      }, 150);
+      // Not tied to the effect cleanup: resetting the URL re-runs this effect.
+      setTimeout(() => clearInterval(timer), 15000);
+    }
+  };
   // Deep links: /os/<app>, /phone[/<app>], /about, /contact, /room/<object>.
   // Each is consumed once the room is ready, then the URL returns to /.
   const location = useLocation();
@@ -406,23 +429,14 @@ export default function Scan() {
     const fake = (action) => ({ currentTarget: document.querySelector(`[data-launchpad-action="${action}"]`) });
     if (kind === 'about') { setAboutOpen(true); return undefined; }
     if (kind === 'contact') { handleOpenContact(fake('contact')); return undefined; }
-    if (kind === 'os') {
-      if (arg) dhruvRef.current?.openApp(arg);
-      if (overviewOpen) handleLaunchDesktop(fake('desktop-projects')); else handleEnterScreen();
-      return undefined;
+    if ((kind === 'os' || kind === 'phone') && arg && TOUCH_LINK_CARD && window.matchMedia('(pointer:coarse)').matches) {
+      // Touch: a shared project link does not launch an app under the visitor's thumb.
+      // Show what it opens and let them tap. Set TOUCH_LINK_CARD=false to restore auto-open.
+      const project = projects.find((p) => p.id === (arg === 'basketproof' ? 'basket' : arg));
+      if (project) { setLinkCard({ kind, arg, project }); return undefined; }
     }
-    if (kind === 'phone') {
-      if (overviewOpen) handleOpenPhone(fake('mobile-projects')); else handleSelect('phone');
-      if (!arg) return undefined;
-      const timer = setInterval(() => {
-        if (document.querySelector('.workspace-stage')?.dataset.phoneState !== 'zoomed' || !document.querySelector('.phone-screen')) return;
-        clearInterval(timer);
-        window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: arg } }));
-      }, 150);
-      // Not tied to the effect cleanup: resetting the URL re-runs this effect.
-      setTimeout(() => clearInterval(timer), 15000);
-      return undefined;
-    }
+    runDeepLinkRef.current(kind, arg);
+    return undefined;
     if (kind === 'room') {
       if (overviewOpen) handleExploreRoom(fake('explore-room'));
       // Select once the seat has reached the stage and a frame has drawn, then
@@ -895,6 +909,17 @@ export default function Scan() {
         </div>
       )}
 
+      {linkCard && (
+        <div className="link-card" role="dialog" aria-label={`Open ${linkCard.project.name}`}>
+          <b>{linkCard.project.name}</b>
+          <p>{linkCard.project.tagline || linkCard.project.description}</p>
+          <button type="button" className="link-card-go" onClick={() => { const c = linkCard; setLinkCard(null); runDeepLinkRef.current(c.kind, c.arg); }}>
+            Try the {linkCard.project.name} demo →
+          </button>
+          <small>{linkCard.kind === 'phone' ? 'Opens it on the phone on the desk.' : 'Opens it on the monitor.'}</small>
+          <button type="button" className="link-card-x" onClick={() => setLinkCard(null)} aria-label="Dismiss">✕</button>
+        </div>
+      )}
       {aboutOpen && (
         <div className="about-scrim" onClick={(e) => { if (e.target === e.currentTarget) closeAbout(); }}>
           <section className="about-panel" role="dialog" aria-modal="true" aria-labelledby="about-name" data-testid="about-panel">
@@ -1073,6 +1098,12 @@ const css = `
 .about-panel strong { color:var(--bone); font-weight:500; }
 .about-kicker,.about-role { margin:0; color:#b7b9b2; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
 .about-muted { color:#9ea39f; }
+.link-card { position:fixed; left:50%; bottom:max(24px,env(safe-area-inset-bottom)); translate:-50% 0; width:min(92vw,380px); z-index:40; padding:16px 18px; background:rgba(20,24,25,.94); color:#e8e4dc; border:1px solid #3b4442; display:grid; gap:8px; }
+.link-card b { font:600 18px var(--font-sans,system-ui); }
+.link-card p { font-size:14px; color:#b7b9b2; }
+.link-card small { font:11px var(--font-mono); color:#8f948d; }
+.link-card-go { min-height:48px; background:#e8e4dc; color:#141819; font-weight:600; font-size:15px; }
+.link-card-x { position:absolute; top:6px; right:8px; min-height:32px; min-width:32px; color:#b7b9b2; }
 .about-close { position:absolute; top:14px; right:14px; color:#b7b9b2; font-size:11px; letter-spacing:.1em; min-height:32px; }
 .about-links { display:flex; gap:20px; margin-top:22px; font-size:12px; letter-spacing:.1em; }
 .about-links a { color:var(--bone); }
