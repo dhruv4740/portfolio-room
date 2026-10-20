@@ -4,6 +4,7 @@ export default {
   id: 'notepad',
   title: 'notepad',
   icon: '✎',
+  hideIcon: true, // opened by room-keyboard typing, not a desktop icon
   width: 640,
   height: 420,
 

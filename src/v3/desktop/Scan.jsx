@@ -435,8 +435,7 @@ export default function Scan() {
       const project = projects.find((p) => p.id === (arg === 'basketproof' ? 'basket' : arg));
       if (project) { setLinkCard({ kind, arg, project }); return undefined; }
     }
-    runDeepLinkRef.current(kind, arg);
-    return undefined;
+    if (kind === 'os' || kind === 'phone') { runDeepLinkRef.current(kind, arg); return undefined; }
     if (kind === 'room') {
       if (overviewOpen) handleExploreRoom(fake('explore-room'));
       // Select once the seat has reached the stage and a frame has drawn, then
