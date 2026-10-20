@@ -97,6 +97,13 @@ const css = `
     border-color: var(--dim);
   }
 
+  /* /work's page colours are light; the demo panel is its own dark surface. */
+  .work-demo .work-demo-title { color: var(--bone); }
+  .work-demo .work-demo-title span,
+  .work-demo .work-demo-kicker { color: #9a9aa2; }
+  .work-demo a.work-demo-action,
+  .work-demo button.work-demo-action { color: var(--bone); text-decoration: none; background: transparent; }
+
   .work-demo-body {
     flex: 1;
     min-height: 0;
