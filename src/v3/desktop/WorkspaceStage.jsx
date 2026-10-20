@@ -217,7 +217,7 @@ export default function WorkspaceStage({
           projected.set(...point);
           if (id === 'monitor') projected.add(MONITOR_MARKER_OFFSET);
           projected.project(camera);
-          const visible = state.current.phase === 'room' && (!['phone','award','coffee'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const visible = state.current.phase === 'room' && (!['phone','award','coffee','resume'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
@@ -555,6 +555,7 @@ export default function WorkspaceStage({
         o.position.copy(p); o.rotation.copy(r); o.updateMatrixWorld(true);
         return awardLook;
       }
+      function resumeCenter() { return model.roomActions.objects.resume.position; }
       const awardGrip = { pick: 0, left: 0, right: 0 };
       const upright = q => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2).multiply(q);
       const AWARD_R = upright(edgeGrip(1)), AWARD_L = upright(edgeGrip(-1));
@@ -726,6 +727,15 @@ export default function WorkspaceStage({
           // beyond a seated arm, so they switch while the hands stay at rest.
           action=gsap.timeline({onUpdate:update,onComplete:end});
           action.to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'},0.45);
+          gsap.ticker.wake();return;
+        }
+        if(id==='resume') {
+          // The sheet stays where it lies; the camera leans in over it, square to the page.
+          const reading=()=>{host.dataset.actionState='resume-reading';invalidate();};
+          const c=resumeCenter();
+          rig.flyTo({position:[c.x+0.01,WORKSPACE.seat.position[1]-0.05,c.z+0.5],target:[c.x+0.05,c.y,c.z]},{reduced,duration:0.9,onUpdate(){invalidate();},onComplete:reading});
+          if(reduced){camera.fov=30;camera.updateProjectionMatrix();return;}
+          action=gsap.to(camera,{fov:30,duration:0.9,ease:'power3.inOut',onUpdate(){camera.updateProjectionMatrix();invalidate();}});
           gsap.ticker.wake();return;
         }
         if(id==='award') {
@@ -976,7 +986,7 @@ export default function WorkspaceStage({
           },
           onComplete() {
             controls.enabled = false;
-            const CLOSE_READ = ['phone','award','coffee','headphones'].includes(selected);
+            const CLOSE_READ = ['phone','award','coffee','headphones','resume'].includes(selected);
             controls.minDistance = currentPhase === 'room' && !CLOSE_READ ? 1.4 : 0.025;
             if (currentPhase === 'entering') {
               callbacks.current.onScreenRect?.(null);
@@ -1027,8 +1037,8 @@ export default function WorkspaceStage({
           // Zoomed in on a held page: the pointer moves the gaze across it.
           const rect = renderer.domElement.getBoundingClientRect(), zoom = (56 - camera.fov) / 38;
           const nx = (event.clientX - rect.left) / rect.width * 2 - 1, ny = (event.clientY - rect.top) / rect.height * 2 - 1;
-          const c = awardCenter();
-          look.set(c.x + nx * 0.09 * zoom, c.y - ny * 0.13 * zoom, c.z);
+          const c = extraHeld === 'resume' ? resumeCenter() : awardCenter();
+          if (extraHeld === 'resume') look.set(c.x + nx * 0.07 * zoom, c.y, c.z + ny * 0.1 * zoom); else look.set(c.x + nx * 0.09 * zoom, c.y - ny * 0.13 * zoom, c.z);
           camera.lookAt(look); controls.target.copy(look); invalidate(); return;
         }
         if (extraHeld) return;
@@ -1357,7 +1367,7 @@ export default function WorkspaceStage({
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker workspace-sit" data-object="chair" aria-label="Sit in the chair"
         onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT DOWN</span></button>
-      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
+      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'resume',label:'Résumé'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
@@ -1380,7 +1390,7 @@ const css = `
 .workspace-stage { position:absolute; inset:0; overflow:hidden; background:#15191b; }
 .workspace-stage[data-phone-presentation=stage] ~ .seat-exit {display:none;}
 .workspace-stage canvas { display:block; width:100%; height:100%; touch-action:none; }
-.workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
+.workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; visibility:hidden; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
 .workspace-marker-dot { width:8px; height:8px; border:1px solid var(--bone); border-radius:50%; box-shadow:0 0 0 5px rgba(20,24,25,.18); background:var(--void); }
 .workspace-marker-label { display:flex; align-items:center; gap:12px; padding:8px 11px; background:rgba(20,24,25,.92); border:1px solid rgba(232,228,220,.18); color:var(--bone); font:12px var(--font-display); white-space:nowrap; }
 .workspace-marker:not([data-object=monitor]):not([data-object=phone]):not(.workspace-sit) .workspace-marker-label { opacity:0; transition:opacity .15s; }
@@ -1389,7 +1399,7 @@ const css = `
 .workspace-marker-label > span { color:var(--signal); }
 .workspace-marker:hover .workspace-marker-label,.workspace-marker:focus-visible .workspace-marker-label,.workspace-marker.is-active .workspace-marker-label { border-color:var(--signal); }
 .workspace-marker:hover .workspace-marker-dot,.workspace-marker.is-active .workspace-marker-dot { background:var(--signal); border-color:var(--signal); }
-.workspace-stage[data-action-state$="-reading"]::after { content:'SCROLL TO ZOOM · MOVE TO READ · ESC TO PUT DOWN'; position:absolute; top:24px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
+.workspace-stage[data-action-state$="-reading"]::after { content:'SCROLL TO ZOOM · MOVE TO READ · ESC TO PUT DOWN'; position:absolute; top:64px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
 .workspace-sit { animation:sit-pulse .9s var(--ease) 1.2s 2; }
 @keyframes sit-pulse { 50% { scale:1.06; } }
 @media (prefers-reduced-motion:reduce) { .workspace-sit { animation:none; } }

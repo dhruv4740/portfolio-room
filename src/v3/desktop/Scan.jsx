@@ -933,7 +933,7 @@ export default function Scan() {
             <button type="button" aria-pressed={!roomMuted} onClick={toggleRoomMute}>ROOM SOUND {roomMuted ? 'OFF' : 'ON'}</button>
             {arrivalToken === 0 && !activeId && <button data-testid="replay-arrival" onClick={replayArrival}>REPLAY ARRIVAL</button>}
             <button onClick={() => handleSelect('phone')}>PHONE</button>
-            {['lamp','coffee','award','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
+            {['lamp','coffee','award','resume','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
             <button onClick={() => handleSelect('window')}>CONTACT</button>
             <button onClick={() => handleEnterScreen()}>MONITOR</button>
           </>}

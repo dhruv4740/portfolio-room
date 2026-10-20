@@ -10,7 +10,7 @@ import { createAuthoredMouse } from './authoredMouse.js';
 import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
 import { createAuthoredKeyboard } from './authoredKeyboard.js';
 import { phoneFocusLockTexture, phoneHomeTexture, SKY_CONFIGS } from './buildWorkspace.js';
-import { achievements } from '../content/index.js';
+import { achievements, identity, contact, education, experience, proofPoints, skills } from '../content/index.js';
 import {
   WORKSPACE, ROOM, DESK, DESK_BOUNDS, MAT, KEYBOARD, KEYBOARD_CHASSIS, CINEMATIC_KEYCAPS,
   SCREEN, MONITOR, CAMERA, BODY, WINDOW, BLINDS, EXTERIOR, ANCHORS, MOUSE_ANCHOR,
@@ -520,7 +520,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
 
   // --- interactions and authored assets --------------------------------------
   const roomActions = buildCinematicRoomInteractions({
-    root, materials: { bone, dark, wood, paper }, canvasTexture, anchors: ANCHORS, achievements,
+    root, materials: { bone, dark, wood, paper }, canvasTexture, anchors: ANCHORS, achievements, resume: { identity, contact, education, experience, proofPoints, skills },
     bulb, lampInterior, lampPool, moon, moonOpen, blindsGroup, keys, keyConfig, windowLight,
   });
   const taskLamp = createAuthoredTaskLamp({

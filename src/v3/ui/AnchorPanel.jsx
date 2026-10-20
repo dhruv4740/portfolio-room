@@ -183,6 +183,11 @@ export default function AnchorPanel({ anchor, project, open, onClose }) {
             body && (
               <div className="panel-body">
                 <p className="anchor-body">{body}</p>
+                {anchor.href && (
+                  <div className="proj-links mono">
+                    <a href={anchor.href} target="_blank" rel="noreferrer" className="proj-link">{anchor.hrefLabel || 'OPEN'}</a>
+                  </div>
+                )}
               </div>
             )
           )}

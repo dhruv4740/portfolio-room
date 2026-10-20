@@ -280,6 +280,14 @@ export const anchors = [
     body: 'Apps, sketches and projects, running live on the desk computer.',
   },
   {
+    id: 'resume',
+    label: 'Résumé',
+    ref: 'contact',
+    readout: 'READ RÉSUMÉ',
+    body: 'One page: experience, highlights, education and skills.',
+    ...(contact.resume ? { href: contact.resume, hrefLabel: 'OPEN PDF' } : {}),
+  },
+  {
     id: 'window',
     label: 'Window',
     ref: 'contact',

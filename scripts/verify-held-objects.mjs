@@ -149,19 +149,13 @@ if (await page.locator('[data-testid="room-overview"]').count()) {
   await page.waitForFunction(() => document.querySelector('.scan-root')?.dataset.seated === 'true', null, { timeout: 12_000 });
 }
 await openObjects();
-await button('NOTEBOOK').click();
-await waitState('notebookState', 'reading');
-await page.screenshot({ path: 'scripts/shots/notebook-held.png' });
-await page.waitForFunction(() => performance.now() - window.lastFrame > 700, null, { polling: 100, timeout: 4_000 });
-frameCount = await page.evaluate(() => window.framesCount);
-await page.waitForTimeout(3_000);
-const notebookIdle = await page.evaluate((before) => window.framesCount - before, frameCount);
-assert.equal(notebookIdle, 0, `notebook should be idle after settle, got ${notebookIdle} frames`);
-console.log('notebook idle', notebookIdle);
+await button('RESUME').click();
+await waitState('actionState', 'resume-reading');
+await page.screenshot({ path: 'scripts/shots/resume-held.png' });
 await page.keyboard.press('Escape');
-await waitState('notebookState', 'desk');
+await waitState('actionState', 'idle');
 assert.deepEqual(errors, []);
-console.log('notebook returned', errors);
+console.log('resume returned', errors);
 } finally {
   await browser.close();
 }

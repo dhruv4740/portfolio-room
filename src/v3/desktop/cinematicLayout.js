@@ -307,6 +307,7 @@ export const ANCHORS = {
   lamp: [-0.66, DESK.topY + 0.012, DESK.center[1] - DESK.size[1] / 2 + 0.010],
   coffee: [-0.47, DESK.topY, 0.24],
   award: [-0.56, DESK.topY, -0.14],
+  resume: [0.60, DESK.topY + 0.0008, 0.10],
   headphones: [0.38, DESK.topY, -0.12],
   phone: [-0.28, MAT.topY, 0.02],
   mouse: [0.30, MAT.topY, 0.17],

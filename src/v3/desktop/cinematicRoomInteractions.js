@@ -20,7 +20,7 @@ export const SASH_TRAVEL = (WINDOW.opening.maxX - WINDOW.opening.minX) * 0.40;
 
 export function buildCinematicRoomInteractions({
   root, materials: m, canvasTexture, anchors, achievements, bulb, lampInterior,
-  lampPool, moon, moonOpen, blindsGroup, keys, keyConfig, windowLight,
+  lampPool, moon, moonOpen, blindsGroup, keys, keyConfig, windowLight, resume,
 }) {
   const objects = {};
   function group(id, scale = PROP_SCALE) {
@@ -96,6 +96,44 @@ export function buildCinematicRoomInteractions({
     const box3 = new THREE.Box3().setFromObject(award);
     if (!box3.isEmpty()) award.position.y += Math.max(0, anchors.award[1] - box3.min.y);
   }
+
+  // A one-page résumé lying on the desk, set down a little askew. It is drawn
+  // from content/index.js so it cannot drift from the page the visitor can open.
+  const resumeSheet = group('resume', 1);
+  resumeSheet.rotation.y = 0.14;
+  const resumeTexture = canvasTexture((ctx, w, h) => {
+    const { identity, contact, education, experience, proofPoints, skills } = resume;
+    ctx.fillStyle = '#f6f3ea'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#1d2024'; ctx.textAlign = 'left';
+    const pad = 70; let y = 120;
+    const wrap = (text, x, size, maxW, lead, weight = '') => {
+      ctx.font = `${weight} ${size}px sans-serif`; let row = '';
+      for (const word of text.split(' ')) {
+        const next = row ? row + ' ' + word : word;
+        if (ctx.measureText(next).width > maxW && row) { ctx.fillText(row, x, y); y += lead; row = word; } else row = next;
+      }
+      ctx.fillText(row, x, y); y += lead;
+    };
+    const head = label => { y += 22; ctx.fillStyle = '#5a6068'; ctx.font = 'bold 26px sans-serif'; ctx.fillText(label, pad, y); y += 12; ctx.fillRect(pad, y, w - pad * 2, 2); y += 38; ctx.fillStyle = '#1d2024'; };
+    ctx.font = 'bold 78px serif'; ctx.fillText(identity.name, pad, y); y += 54;
+    ctx.fillStyle = '#5a6068'; ctx.font = '32px sans-serif'; ctx.fillText(`${identity.role} · ${identity.location}`, pad, y); y += 42;
+    ctx.fillText(`${contact.email} · ${contact.githubLabel}`, pad, y); y += 30; ctx.fillStyle = '#1d2024';
+    head('EXPERIENCE');
+    for (const e of experience) {
+      ctx.font = 'bold 28px sans-serif'; ctx.fillText(`${e.role}, ${e.org}`, pad, y);
+      ctx.textAlign = 'right'; ctx.font = '24px sans-serif'; ctx.fillText(`${e.from} – ${e.to}`, w - pad, y); ctx.textAlign = 'left'; y += 42;
+      for (const t of (e.bullets || []).slice(0, 2)) { ctx.font = '27px sans-serif'; ctx.fillText('•', pad, y); const x0 = y; wrap(t, pad + 30, 27, w - pad * 2 - 30, 36); y += 6; }
+      y += 14;
+    }
+    head('HIGHLIGHTS');
+    for (const p of proofPoints) { ctx.font = 'bold 30px sans-serif'; ctx.fillText(p.value, pad, y); const yy = y; wrap(p.text, pad + 150, 27, w - pad * 2 - 150, 36); y = Math.max(y, yy + 40) + 10; }
+    head('EDUCATION');
+    ctx.font = 'bold 30px sans-serif'; ctx.fillText(education.school, pad, y); y += 40;
+    ctx.font = '28px sans-serif'; ctx.fillText(`${education.degree} · ${education.year}`, pad, y); y += 30;
+    head('SKILLS');
+    wrap(skills.map(s => s.label).join(' · '), pad, 27, w - pad * 2, 38);
+  }, 1024, 1448);
+  const sheet = mesh(resumeSheet, new THREE.PlaneGeometry(0.21, 0.297), new THREE.MeshBasicMaterial({ map: resumeTexture, toneMapped: false }), [0, 0, 0]);
+  sheet.rotation.x = -Math.PI / 2; sheet.receiveShadow = false;
 
   // Blind cord and wand, at the new opening's right jamb.
   const blinds = group('blinds');
