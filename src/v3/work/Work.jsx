@@ -209,6 +209,8 @@ const css = `
   .w-y { font: 13px var(--mono); color: var(--mute); }
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
+  .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; }
+  .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
   .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 1px; cursor: pointer; text-decoration: none; }
   .w-contact { font-size: 15.5px; color: var(--ink2); max-width: 46ch; }
@@ -248,6 +250,18 @@ const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/preview
 
 // The cards in the "Featured" band, after Blink (built from experience[0]).
 const FEATURED_IDS = ['focuslock', 'basket'];
+
+// Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
+const WHAT_I_DID = {
+  focuslock: 'Screen-time limiter sharing one daily allowance across an Android phone and a Windows PC, enforced at the OS level. 233 automated tests; CI builds a signed APK and installer.',
+  portfolio3d: "Interactive 3D studio room whose monitor runs live demos of other projects. Detects the visitor's GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.",
+  darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
+  blackout: 'Keeps the screen on but fully black so screen-on features like OnePlus bypass charging keep working. Fingerprint unlock, Quick Settings tile, steps aside for calls and alarms. No internet permission.',
+  basket: 'Price comparator with 636 tests.',
+  expense: 'Offline UPI/SMS parser.',
+  cellbook: 'Excel clone for Windows.',
+};
+const didLine = (id) => WHAT_I_DID[id] && <p className="w-did"><b>What I did</b> {WHAT_I_DID[id]}</p>;
 
 // Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
 // Android shows nothing), so there the button opens the file in its own tab.
@@ -341,6 +355,7 @@ export default function Work() {
       <span>
         <b>{p.name}</b>
         <p>{p.tagline || p.description}</p>
+        {didLine(p.id)}
         {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
       </span>
       <span className="w-acts">
@@ -368,6 +383,7 @@ export default function Work() {
         <span className="w-meta">{project.year} · {project.tech.slice(0, 3).join(', ')}</span>
         <h3>{project.name}</h3>
         <p>{project.summary || project.tagline}</p>
+        {didLine(project.id)}
         {project.badge && (
           <div className="w-res"><small>{project.badge}</small></div>
         )}
