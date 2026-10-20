@@ -13,7 +13,6 @@ import FpsHud from '../ui/FpsHud.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
 import { istParts } from '../lib/mumbai.js';
-import { setCityRain, startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted, suspendCityAmbience } from './cityAudio.js';
 import { disposeRoomAudio, isRoomMuted, playRoomFoley, setRoomMuted, unlockRoomAudio } from './roomAudio.js';
 import { subscribeProgress } from '../lib/loadProgress.js';
 import { dismissFrontDoor } from '../lib/frontDoor.js';
@@ -116,7 +115,7 @@ export default function Scan() {
   const [weather, setWeather] = useState(null);
   const [clock, setClock] = useState(() => istParts().label);
   useEffect(() => {
-    const onWeather = (event) => { setWeather(event.detail); setCityRain(event.detail.raining); };
+    const onWeather = (event) => { setWeather(event.detail); };
     window.addEventListener('workspace:weather', onWeather);
     const timer = setInterval(() => setClock(istParts().label), 30000);
     return () => { window.removeEventListener('workspace:weather', onWeather); clearInterval(timer); };
@@ -140,7 +139,6 @@ export default function Scan() {
   // deferred focus loses that race.
   const pendingFocus = useRef(false);
   const dhruvRef = useRef(null);
-  const windowIntent = useRef(false);
 
   // arrivalTokenRef is the authoritative live token, written synchronously at
   // every mutation site. It used to be assigned during render from
@@ -192,9 +190,7 @@ export default function Scan() {
   const activeProject = activeAnchor
     ? projects.find((p) => p.id === activeAnchor.ref) || null
     : null;
-  // The notebook carries its text on the page itself, so zooming in IS the
-  // content. A side panel repeating it would be the same words twice.
-  const panelOpens = !!activeAnchor && activeAnchor.id !== 'notebook';
+  const panelOpens = !!activeAnchor;
 
   // The monitor anchor is the one that opens the embedded OS.
   const monitorIsActive = activeAnchor?.ref === 'lab';
@@ -254,14 +250,6 @@ export default function Scan() {
       pickUpAfterSit();
       return;
     }
-    if (id === 'windowOpen') {
-      const stage = document.querySelector('.workspace-stage');
-      const actionState = stage?.dataset.actionState;
-      // Ignore repeat visitor clicks until the sash has finished moving.
-      if (actionState && actionState !== 'idle') return;
-      windowIntent.current = !windowIntent.current;
-      if (windowIntent.current) startCityAmbience(); else stopCityAmbience();
-    }
     lastTrigger.current = document.activeElement;
     setActiveId((cur) => (cur === id ? null : id));
   }, [cancelArrival, screenPhase, activeId, seated, pickUpAfterSit]);
@@ -293,7 +281,6 @@ export default function Scan() {
     setSeated(true);
     returnOrigin.current = 'room';
     launchLocked.current = false;
-    if (windowIntent.current) startCityAmbience();
   }, [beginLaunch]);
 
   const handleOpenPhone = useCallback((event) => {
@@ -441,9 +428,10 @@ export default function Scan() {
       // Select once the seat has reached the stage and a frame has drawn, then
       // 400 ms more: a select that lands first is undone by the seat's own
       // camera move. A fixed timer started before the first-load stall fired
-      // right after it, so /room/drawer opened cold never opened the drawer.
-      if (arg && arg !== 'explore') {
-        const select = () => tourApi.current.handleSelect(arg === 'window' ? 'windowOpen' : arg);
+      // right after it, so /room/lamp opened cold never toggled the lamp.
+      // Retired objects (/room/drawer, /room/pen, /room/notebook) just seat the visitor.
+      if (arg && arg !== 'explore' && !['drawer', 'pen', 'notebook', 'windowOpen'].includes(arg)) {
+        const select = () => tourApi.current.handleSelect(arg);
         const whenSeated = () => document.querySelector('.scan-root')?.dataset.seated === 'true'
           ? requestAnimationFrame(() => setTimeout(select, 400)) : requestAnimationFrame(whenSeated);
         whenSeated();
@@ -457,16 +445,6 @@ export default function Scan() {
     launchLocked.current = false;
     if (returnOrigin.current === 'overview') returnToOverview();
   }, [returnToOverview]);
-
-  useEffect(() => {
-    if (!seated || screenPhase !== 'room') {
-      stopCityAmbience();
-    }
-  }, [seated, screenPhase]);
-
-  useEffect(() => {
-    return () => disposeCityAmbience();
-  }, []);
 
   // Unlock room foley from a real gesture. Arrival itself never creates or
   // starts audio, and every event is short enough to clean up without a loop.
@@ -485,38 +463,11 @@ export default function Scan() {
     };
   }, []);
 
-  // Hidden tabs stop ambience and suspend its oscillators; returning restores
-  // it only when the sash is still open and the room is still the live view.
-  // Own effect so it reads current `seated`/`screenPhase` rather than the
-  // values captured when the gesture listeners above were bound.
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.hidden) {
-        stopCityAmbience();
-        suspendCityAmbience();
-        return;
-      }
-      // startCityAmbience resumes the context itself. If the sash is shut the
-      // context stays suspended, which is the point of suspending it.
-      if (windowIntent.current && seated && screenPhase === 'room') startCityAmbience();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [seated, screenPhase]);
-
-  useEffect(() => {
-    setCityAmbienceMuted(roomMuted);
-  }, [roomMuted]);
-
   const toggleRoomMute = useCallback(() => {
     const next = setRoomMuted(!roomMuted);
     setRoomMutedState(next);
-    setCityAmbienceMuted(next);
-    if (!next) {
-      unlockRoomAudio();
-      if (windowIntent.current && seated && screenPhase === 'room') startCityAmbience();
-    }
-  }, [roomMuted, screenPhase, seated]);
+    if (!next) unlockRoomAudio();
+  }, [roomMuted]);
 
   // Wearing the headphones loops the song; taking them off stops it. The event
   // fires from a click, so playback has a user gesture.
@@ -853,8 +804,7 @@ export default function Scan() {
         seated={seated}
         liveMonitor={liveMonitor && seated && !activeId}
         onTypeKey={key=>{setLiveMonitor(true);dhruvRef.current?.typeKey(key);}}
-        onSit={() => { cancelArrival(); returnOrigin.current = 'room'; setOverviewOpen(false); setActiveId(null); setSeated(true); if (windowIntent.current) startCityAmbience(); }}
-        windowIntent={windowIntent.current}
+        onSit={() => { cancelArrival(); returnOrigin.current = 'room'; setOverviewOpen(false); setActiveId(null); setSeated(true); }}
         anchors={anchors}
         activeAnchorId={activeId}
         onAnchorSelect={handleSelect}
@@ -982,10 +932,8 @@ export default function Scan() {
           {controlsOpen && <>
             <button type="button" aria-pressed={!roomMuted} onClick={toggleRoomMute}>ROOM SOUND {roomMuted ? 'OFF' : 'ON'}</button>
             {arrivalToken === 0 && !activeId && <button data-testid="replay-arrival" onClick={replayArrival}>REPLAY ARRIVAL</button>}
-            <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
             <button onClick={() => handleSelect('phone')}>PHONE</button>
-            {['lamp','coffee','award','drawer','pen','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
-            <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
+            {['lamp','coffee','award','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
             <button onClick={() => handleSelect('window')}>CONTACT</button>
             <button onClick={() => handleEnterScreen()}>MONITOR</button>
           </>}

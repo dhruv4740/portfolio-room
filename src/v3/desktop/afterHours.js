@@ -87,7 +87,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
 
   const pmrem=new THREE.PMREMGenerator(renderer), probes=new Map();
   const contacts=createDeskContactShadows({renderer,root:model.root,staticGeometry:model.contactGeometry,
-    objects:[model.phone,model.notebook,model.hands.root,...['coffee','award','headphones','pen'].map(key=>model.roomActions.objects[key]).filter(Boolean)],
+    objects:[model.phone,model.hands.root,...['coffee','award','headphones'].map(key=>model.roomActions.objects[key]).filter(Boolean)],
     center:model.contactSurfaces.desk.center,size:model.contactSurfaces.desk.size,
     raisedReceivers:[model.contactSurfaces.mat],resolution:tier==='low'?256:512,
     updatesPerSecond:tier==='low'?10:15,invalidate});

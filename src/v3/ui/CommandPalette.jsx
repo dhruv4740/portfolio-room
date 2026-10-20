@@ -21,9 +21,8 @@ const ENTRIES = [
   { label: 'Contact', hint: 'email, GitHub, LinkedIn', to: '/contact' },
   { label: 'Explore the room', hint: 'sit at the desk', to: '/room/explore' },
   { label: 'Toggle the lamp', hint: 'room action', to: '/room/lamp' },
-  { label: 'Open the window', hint: 'room action', to: '/room/window' },
+  { label: 'Look out the window', hint: 'room view', to: '/room/window' },
   { label: 'Put on headphones', hint: 'room action', to: '/room/headphones' },
-  { label: 'Read the résumé', hint: 'room action', to: '/room/drawer' },
   { label: 'GitHub', hint: contact.githubLabel, href: contact.github },
   ...(contact.resume ? [{ label: 'Download résumé', hint: 'PDF', href: contact.resume }] : []),
 ];

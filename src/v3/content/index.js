@@ -280,13 +280,6 @@ export const anchors = [
     body: 'Apps, sketches and projects, running live on the desk computer.',
   },
   {
-    id: 'notebook',
-    label: 'Notebook',
-    ref: 'about',
-    readout: 'THE BUILDER',
-    body: identity.statement,
-  },
-  {
     id: 'window',
     label: 'Window',
     ref: 'contact',

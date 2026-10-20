@@ -282,7 +282,6 @@ try {
   if (await objectsToggle.getAttribute('aria-expanded') !== 'true') await objectsToggle.click();
   const expectedObjects = [
     ['monitor', 'Monitor'],
-    ['notebook', 'Notebook'],
     ['window', 'Window'],
   ];
   const objectReports = await page.locator('.anchor-marker').evaluateAll((els) =>
@@ -315,12 +314,12 @@ try {
   // can use. This catches markers that merely look like labels but are not
   // wired to the shared anchor-selection callback.
   for (const [id, label] of expectedObjects) {
-    // Monitor uses the projected marker; notebook and contact use the
+    // Monitor uses the projected marker; contact uses the
     // visible Objects-menu buttons so the keyboard path remains operable even
     // when their depth-cued labels are visually collapsed.
     const marker = id === 'monitor'
       ? monitorMarker
-      : page.getByRole('button', { name: id === 'notebook' ? 'NOTEBOOK' : 'CONTACT', exact: true });
+      : page.getByRole('button', { name: 'CONTACT', exact: true });
     let activated = false;
     try {
       await marker.focus();
@@ -346,7 +345,7 @@ try {
         () => document.querySelector('.scan-root')?.dataset.entranceState === 'room',
         { timeout: 5_000 },
       ).catch(() => {});
-      await page.waitForTimeout(id === 'notebook' ? 2400 : 1400);
+      await page.waitForTimeout(1400);
     }
   }
 

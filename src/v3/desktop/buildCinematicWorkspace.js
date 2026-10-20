@@ -29,13 +29,6 @@ import {
 export { WORKSPACE, SCREEN };
 export { SKY_CONFIGS };
 
-function drawBlankPage(ctx, w, h) {
-  ctx.fillStyle = '#efeade'; ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = 'rgba(110,116,104,0.20)'; ctx.lineWidth = 1.5;
-  for (let y = 160; y < h - 60; y += 74) { ctx.beginPath(); ctx.moveTo(96, y); ctx.lineTo(w - 110, y); ctx.stroke(); }
-  ctx.strokeStyle = 'rgba(198,83,43,0.5)'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(96, 60); ctx.lineTo(96, h - 60); ctx.stroke();
-}
 function canvasTexture(draw, width = 1024, height = 512) {
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
@@ -247,10 +240,8 @@ export function buildCinematicWorkspace(scene, options = {}) {
   }
 
   // --- exterior --------------------------------------------------------------
-  // Three depths, placed against the sightline cone computed in
-  // cinematicLayout.sightlineAt(): a near parapet under the cone (visible only
-  // when you look down through the glass, so it never occludes the view), one
-  // modelled middle-distance block inside the cone, and the far skyline plane.
+  // A static skyline plane behind the glass (the modelled blocks were removed
+  // for load time); it follows the live sky state.
   const city = new THREE.Group(); city.name = 'Winter city';
   const cityTextures = { night: skylineTexture('night'), dusk: skylineTexture('dusk'), day: skylineTexture('day') };
   const farPlane = new THREE.Mesh(
@@ -259,41 +250,6 @@ export function buildCinematicWorkspace(scene, options = {}) {
   farPlane.position.set(...EXTERIOR.farCity.center);
   farPlane.raycast = () => {}; tag(farPlane, 'window'); city.add(farPlane);
 
-  const facade = new THREE.MeshStandardMaterial({ color: '#232c35', roughness: 1 });
-  const litWindows = new THREE.MeshBasicMaterial({ color: '#c9ab7c', toneMapped: false });
-  // Windows are placed on a real metre pitch across the facade, so the window
-  // size is what sets the building's apparent scale — not a fraction of
-  // whatever the block happens to be. A facade whose windows are a fixed
-  // percentage of it can never read as the wrong size, which is exactly how
-  // the old 1.8 m block passed every numeric check and still looked wrong.
-  function block(center, size, win, lit = 0.45) {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(...size), facade);
-    b.position.set(...center); city.add(b);
-    let seed = 1201;
-    const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const cols = Math.max(1, Math.floor((size[0] - win.pitchX * 0.5) / win.pitchX));
-    const rows = Math.max(1, Math.floor((size[1] - win.pitchY * 0.5) / win.pitchY));
-    const spanX = cols * win.pitchX, spanY = rows * win.pitchY;
-    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-      if (random() > lit) continue;
-      const pane = new THREE.Mesh(new THREE.PlaneGeometry(win.width, win.height), litWindows);
-      pane.position.set(
-        center[0] - spanX / 2 + (col + 0.5) * win.pitchX,
-        center[1] - spanY / 2 + (row + 0.5) * win.pitchY,
-        center[2] + size[2] / 2 + 0.01);
-      city.add(pane);
-    }
-  }
-  block(EXTERIOR.midBlock.center, EXTERIOR.midBlock.size, EXTERIOR.midBlock.window);
-  // The parapet is a low roof structure, not a tower: a couple of service
-  // windows at domestic size, deliberately sparse.
-  block(EXTERIOR.nearParapet.center, EXTERIOR.nearParapet.size,
-    { width: 0.34, height: 0.42, pitchX: 0.62, pitchY: 0.60 }, 0.35);
-  for (const material of [facade, litWindows]) {
-    const parts = city.children.filter(o => o.material === material);
-    const gs = parts.map(o => { o.updateMatrix(); const g = o.geometry.clone().applyMatrix4(o.matrix); o.removeFromParent(); o.geometry.dispose(); return g; });
-    if (gs.length) { const combined = mergeGeometries(gs); gs.forEach(g => g.dispose()); city.add(new THREE.Mesh(combined, material)); }
-  }
   city.traverse(o => { if (o.isMesh) { o.castShadow = false; o.raycast = () => {}; } });
   root.add(city);
 
@@ -370,22 +326,6 @@ export function buildCinematicWorkspace(scene, options = {}) {
   earpiece.position.set(0, 0.0005, -phoneSize.height * 0.5 + 0.004); phone.add(earpiece); tag(earpiece, 'phone');
   const phoneGlow = new THREE.Object3D(); phoneGlow.color = new THREE.Color('#d4d5d8'); phoneGlow.intensity = 0.07;
   phoneGlow.position.set(ANCHORS.phone[0], ANCHORS.phone[1] + 0.05, ANCHORS.phone[2]); root.add(phoneGlow);
-
-  // --- notebook --------------------------------------------------------------
-  const nb = ANCHORS.notebook;
-  const book = box('Notebook cover', [0.29, 0.015, 0.36], [nb[0], DESK.topY + 0.0075, nb[2]], mat('cover', '#3e4942'), 0.005, 'notebook');
-  book.rotation.y = -0.04;
-  const pages = box('Notebook pages', [0.275, 0.010, 0.345], [nb[0], DESK.topY + 0.019, nb[2]], paper, 0.002, 'notebook');
-  pages.rotation.y = -0.04;
-  const notes = canvasTexture(drawBlankPage, 1400, 1800);
-  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.321), new THREE.MeshStandardMaterial(
-    { map: notes, roughness: 0.98, emissive: '#ffffff', emissiveMap: notes, emissiveIntensity: 0.34 }));
-  notePlane.rotation.set(-Math.PI / 2, 0, -0.04);
-  notePlane.position.set(nb[0], DESK.topY + 0.0245, nb[2]); root.add(notePlane); tag(notePlane, 'notebook');
-  const notebook = new THREE.Group(); notebook.position.set(...nb); root.add(notebook);
-  for (const part of [book, pages, notePlane]) {
-    part.position.sub(notebook.position); part.castShadow = false; notebook.add(part);
-  }
 
   // --- task lamp fallback, books ---------------------------------------------
   const lampAnchor = ANCHORS.lamp;
@@ -656,11 +596,8 @@ export function buildCinematicWorkspace(scene, options = {}) {
     root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry,
     taskLamp, mouse, ceilingFixture, keyboard,
     contactSurfaces: { desk: deskSurface, mat: matSurface },
-    hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
+    hands, phone, phoneGlow, phoneDisplay, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
-    notePage: notePlane, notes,
-    clearNotes() { const c = notes.image; drawBlankPage(c.getContext('2d'), c.width, c.height); notes.needsUpdate = true; },
-    resetNotebook() { notebook.position.set(...ANCHORS.notebook); notebook.rotation.set(0, 0, 0); },
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() {
       phone.position.set(...ANCHORS.phone); phone.rotation.set(0, 0, 0);

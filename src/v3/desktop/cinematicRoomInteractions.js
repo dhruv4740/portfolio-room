@@ -7,17 +7,15 @@ import { WINDOW, BLINDS, MAT, DESK } from './cinematicLayout.js';
 // builder. The returned shape is identical, so buildCinematicWorkspace and
 // WorkspaceStage's action wiring can consume either one.
 //
-// The procedural props (mug, frame, drawer, pencil, headphones, blind cord)
+// The procedural props (mug, frame, headphones, blind cord)
 // were modelled for the old ~1.6x room. Rather than rewrite 60 literals by
 // hand, each prop group carries PROP_SCALE and only the world-space travels,
 // the blinds and the window sash are re-authored against cinematicLayout.
 export const PROP_SCALE = 0.625;
 export const AWARD_REST = [-0.12, 0.62, 0];
-export const PEN_REST = [0, 0.187, 0];
 export const KEY_ROWS = ['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvbnm,./   ', '            '];
 
 // World-space travels, re-derived for this room.
-export const DRAWER_TRAVEL = 0.29;
 export const SASH_TRAVEL = (WINDOW.opening.maxX - WINDOW.opening.minX) * 0.40;
 
 export function buildCinematicRoomInteractions({
@@ -99,29 +97,6 @@ export function buildCinematicRoomInteractions({
     if (!box3.isEmpty()) award.position.y += Math.max(0, anchors.award[1] - box3.min.y);
   }
 
-  const drawer = group('drawer');
-  box(drawer, [0.61, 0.14, 0.045], [0, 0, 0], m.wood);
-  box(drawer, [0.60, 0.025, 0.48], [0, -0.065, -0.23], m.wood);
-  for (const x of [-0.285, 0.285]) box(drawer, [0.025, 0.13, 0.48], [x, 0, -0.23], m.wood);
-  box(drawer, [0.15, 0.018, 0.025], [0, 0, 0.038]);
-  const pageTexture = new THREE.TextureLoader().load('/resume-page.jpg');
-  pageTexture.colorSpace = THREE.SRGBColorSpace; pageTexture.anisotropy = 8;
-  // The page stays true letter size (world scale 1) inside the scaled drawer:
-  // the held grips and the reading pan are authored for a 21 cm sheet. Set
-  // back far enough that its near edge clears the front panel.
-  const resumePage = new THREE.Group(); resumePage.name = 'resumePage';
-  resumePage.position.set(0, -0.047, -0.245); resumePage.scale.setScalar(1 / PROP_SCALE); drawer.add(resumePage);
-  resumePage.userData.home = resumePage.position.clone();
-  const pagePlane = mesh(resumePage, new THREE.PlaneGeometry(0.21, 0.21 * 3300 / 2550),
-    new THREE.MeshBasicMaterial({ map: pageTexture, toneMapped: false, side: THREE.DoubleSide }), [0, 0, 0], 'drawer');
-  pagePlane.rotation.x = -Math.PI / 2;
-
-  const pen = group('pen'); pen.rotation.set(...PEN_REST);
-  const penBody = mesh(pen, new THREE.CylinderGeometry(0.0075, 0.0075, 0.33, 6), new THREE.MeshStandardMaterial({ color: '#d9a441', roughness: 0.6 }), [0, 0, 0.2]);
-  penBody.rotation.x = Math.PI / 2;
-  const penTip = mesh(pen, new THREE.ConeGeometry(0.0075, 0.035, 6), new THREE.MeshStandardMaterial({ color: '#e6cfa2', roughness: 0.8 }), [0, 0, 0.0175]);
-  penTip.rotation.x = -Math.PI / 2;
-
   // Blind cord and wand, at the new opening's right jamb.
   const blinds = group('blinds');
   mesh(blinds, new THREE.CylinderGeometry(0.004, 0.004, 0.85, 8), m.bone, [0, 0.2, 0]);
@@ -154,8 +129,10 @@ export function buildCinematicRoomInteractions({
   box(sash, [0.014, 0.06, 0.022], [-sw / 2 + 0.014, 0, sashZ + 0.014], m.dark);
   const glassMat = new THREE.MeshStandardMaterial({ color: '#c5d9eb', roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.18, depthWrite: false });
   mesh(sash, new THREE.PlaneGeometry(sw - 0.02, sh - 0.02), glassMat, [0, 0, sashZ]);
+  // The sash is static now; clicking it opens the window view (the contact panel).
+  sash.traverse((o) => { if (o.userData.anchorId) o.userData.anchorId = 'window'; });
 
-  const state = { lamp: 1, blinds: 0, drawer: 0, headphones: 0, coffeeLevel: 1, windowOpen: 0 };
+  const state = { lamp: 1, blinds: 0, headphones: 0, coffeeLevel: 1, windowOpen: 0 };
   const homes = Object.fromEntries(Object.entries(objects).map(([id, g]) => [id, g.position.clone()]));
 
   const labels = canvasTexture((ctx, w, h) => {
@@ -199,12 +176,11 @@ export function buildCinematicRoomInteractions({
     const closed = keyConfig?.closed ?? 1.15; const open = keyConfig?.open ?? 1.60;
     moon.intensity = closed * (1 - state.blinds);
     moonOpen.intensity = open * state.blinds;
-    drawer.position.z = homes.drawer.z + state.drawer * DRAWER_TRAVEL;
     if (objects.windowOpen) objects.windowOpen.position.x = homes.windowOpen.x - state.windowOpen * SASH_TRAVEL;
     if (windowLight) windowLight.intensity = (keyConfig?.windowLight ?? 0.55) * state.windowOpen;
   }
 
-  return { objects, homes, state, cord, apply, updateLiquid, setKey, liquid, liquidUniforms, blindsGroup, resumePage };
+  return { objects, homes, state, cord, apply, updateLiquid, setKey, liquid, liquidUniforms, blindsGroup };
 }
 
 // Re-exported so a consumer can place the desk-bound props without importing
