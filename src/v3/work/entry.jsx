@@ -4,8 +4,10 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import Work from './Work.jsx';
 import { prefetchRoom } from './prefetchRoom.js';
+import { initAnalytics } from '../lib/analytics.js';
 
 prefetchRoom();
+initAnalytics();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
