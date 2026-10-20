@@ -1,6 +1,7 @@
 // Per-second frame cost for the first seconds after the room reveals, with the arrival
 // intro enabled (SEEN=0, default) or suppressed (SEEN=1). Click "explore-room" after
 // 2 s to start the seated arrival. Reports per 1 s bucket: fps, rAF gap max, GPU median.
+//   NOCLICK=1 watches 14 s without clicking (uninterrupted intro, adds per-second GPU median).
 //   BASE=http://localhost:4176 [SEEN=1] [THROTTLE=4] [AB=pr=1.25] [TAG=x] node scripts/perf-audit/arrival.mjs
 import { mkdir, writeFile } from 'node:fs/promises';
 import { chromium } from 'playwright';
@@ -23,10 +24,16 @@ await p.waitForFunction(() => document.querySelector('.workspace-stage')?.datase
 await p.evaluate(() => { window.__t0 = performance.now(); window.__raf.length = 0; window.__v3test.gpuSamples(true); });
 const marks = {};
 const t0 = Date.now();
+const gpuSec = [], cueSec = [];
+const tick = async () => { await p.waitForTimeout(1000); const g = (await p.evaluate(() => window.__v3test.gpuSamples(true))) || []; const q = [...g].sort((x, y) => x - y); gpuSec.push(q.length ? +q[q.length >> 1].toFixed(1) : null); cueSec.push(await p.evaluate(() => !!document.querySelector('.arrival-cue'))); };
+if (process.env.NOCLICK === '1') { marks.noClick = true; for (let i = 0; i < 14; i++) await tick(); }
+else {
 await p.waitForTimeout(2000);
 await p.locator('[data-launchpad-action="explore-room"]').click().catch(() => { marks.noLaunchpad = true; });
 marks.clickAtMs = Date.now() - t0;
 await p.waitForTimeout(12000);
+}
+marks.gpuMedPerSec = gpuSec; marks.cuePerSec = cueSec;
 marks.cue = await p.evaluate(() => !!document.querySelector('.arrival-cue'));
 marks.seated = await p.evaluate(() => document.querySelector('.scan-root')?.dataset.seated);
 const r = await p.evaluate(() => ({ raf: window.__raf.slice(), t0: window.__t0, gpu: window.__v3test.gpuSamples(), pr: window.__v3test.perf().pixelRatio }));

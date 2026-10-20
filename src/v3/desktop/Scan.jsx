@@ -1047,6 +1047,7 @@ export default function Scan() {
         ref={dhruvRef}
         phase={screenPhase}
         reducedMotion={reduced}
+        prewarm={seated}
         onReady={handleOSReady}
         onLoadError={handleOSLoadError}
         onRequestLeave={handleLeaveScreen}
