@@ -702,10 +702,29 @@ export default function WorkspaceStage({
           .to(k, { press: 0, duration: 0.09, ease: 'power2.out' }, move * 0.6 + 0.07);
         gsap.ticker.wake();
       }
+      // Typing nudge: a hint chip until the first key, then a gentle ease toward the monitor that relaxes after a pause.
+      // Set TYPING_EASE=false to drop the camera move.
+      const TYPING_EASE = true; let typedOnce = false, easeBack = 0;
+      const hintTimer = setInterval(() => {
+        const s = state.current;
+        host.dataset.typeHint = (!typedOnce && s.seated && s.phase === 'room' && !s.activeAnchorId && host.dataset.roomRevealed === '1' && (!host.dataset.actionState || host.dataset.actionState === 'idle')) ? '1' : '0';
+      }, 700);
+      function easeToMonitor() {
+        if (!TYPING_EASE || extraHeld || (host.dataset.actionState && host.dataset.actionState !== 'idle')) return;
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        clearTimeout(easeBack);
+        rig.flyTo({ position: [WORKSPACE.seat.position[0] * 0.5, WORKSPACE.seat.position[1] - 0.03, WORKSPACE.seat.position[2] - 0.2], target: [0, 1.09, -0.3] }, { reduced, duration: 0.7, onUpdate() { camera.fov = 44; camera.updateProjectionMatrix(); invalidate(); } });
+        easeBack = setTimeout(() => {
+          if (disposed || extraHeld || state.current.activeAnchorId) return;
+          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.02, 0.04] }, { reduced, duration: 0.8, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); } });
+        }, 4000);
+      }
       function physicalKey(event) {
         if(event.key==='Escape'||event.key==='Tab'||event.ctrlKey||event.metaKey||event.altKey)return;
         if(event.key.length!==1&&!['Enter','Backspace','ArrowLeft','ArrowRight'].includes(event.key))return;
         if(state.current.activeAnchorId)return;event.preventDefault();
+        if(!typedOnce){typedOnce=true;host.dataset.typeHint='0';}
+        easeToMonitor();
         const index=keyIndexOf(event.key);if(index>=0)pressKey(event.key,index);
       }
       function finishExtra(id) {
@@ -1336,7 +1355,7 @@ export default function WorkspaceStage({
       return () => {
         disposed = true; director?.cancel();afterHours?.dispose();entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
-        renderer.domElement.removeEventListener('keydown', physicalKey);
+        renderer.domElement.removeEventListener('keydown', physicalKey); clearInterval(hintTimer); clearTimeout(easeBack);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
         renderer.domElement.removeEventListener('wheel', wheelZoom);
@@ -1400,6 +1419,7 @@ const css = `
 .workspace-marker:hover .workspace-marker-label,.workspace-marker:focus-visible .workspace-marker-label,.workspace-marker.is-active .workspace-marker-label { border-color:var(--signal); }
 .workspace-marker:hover .workspace-marker-dot,.workspace-marker.is-active .workspace-marker-dot { background:var(--signal); border-color:var(--signal); }
 .workspace-stage[data-action-state$="-reading"]::after { content:'SCROLL TO ZOOM · MOVE TO READ · ESC TO PUT DOWN'; position:absolute; top:64px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
+.workspace-stage[data-type-hint="1"]::before { content:'TYPE SOMETHING · THE KEYBOARD IS LIVE'; position:absolute; bottom:180px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:5; }
 .workspace-sit { animation:sit-pulse .9s var(--ease) 1.2s 2; }
 @keyframes sit-pulse { 50% { scale:1.06; } }
 @media (prefers-reduced-motion:reduce) { .workspace-sit { animation:none; } }

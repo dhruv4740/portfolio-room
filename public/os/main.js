@@ -123,6 +123,9 @@ function setEmbeddedState(state) {
   postToHost({ type: 'state', state });
 }
 
+// Room-keyboard typing opens the notepad; set false to restore the terminal.
+const USE_NOTEPAD = true;
+
 function initEmbeddedBridge() {
   window.addEventListener('message', (event) => {
     if (event.source !== window.parent || event.origin !== HOST_ORIGIN) return;
@@ -139,7 +142,7 @@ function initEmbeddedBridge() {
       if(!target?.matches('input,textarea,[contenteditable="true"]')) {
         target=findEditable(document.querySelector('.os-window.focused'));
       }
-      if(!target){ctx.openApp('terminal');target=findEditable(document.querySelector('#win-body-terminal'));}
+      if(!target){const typingApp=USE_NOTEPAD?'notepad':'terminal';ctx.openApp(typingApp);target=findEditable(document.querySelector('#win-body-'+typingApp));}
       if(!target)return;
       const event=new KeyboardEvent('keydown',{key,bubbles:true,cancelable:true});
       if(!target.dispatchEvent(event))return;

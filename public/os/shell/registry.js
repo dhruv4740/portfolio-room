@@ -17,6 +17,7 @@ async function load(path) {
 
 await load('../apps/about.js');
 await load('../apps/terminal.js');
+await load('../apps/notepad.js');
 await load('../apps/projects.js');
 await load('../apps/gallery.js');
 await load('../apps/focuslock.js');
