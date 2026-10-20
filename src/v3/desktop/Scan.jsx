@@ -9,6 +9,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
+import FpsHud from '../ui/FpsHud.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
 import { istParts } from '../lib/mumbai.js';
@@ -1022,6 +1023,7 @@ export default function Scan() {
 
       {/* ---- instrument chrome -------------------------------------------- */}
       {showDebug && <LiveTelemetry sink={statsSink} anchorId={activeId} />}
+      <FpsHud />
 
       <AnchorPanel
         anchor={activeAnchor}

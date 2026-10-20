@@ -100,6 +100,20 @@ export default function WorkspaceStage({
       renderer.toneMappingExposure = 1.5;
       host.appendChild(renderer.domElement);
       const gov = createPerfGovernor(renderer); // render-on-demand + adaptive pixel ratio; see perfGovernor.js
+      // Idle detection for the 30 Hz rate: anything that is not raw input but still moves the picture.
+      const lastCam = new Float32Array(7); let lastSig = 0;
+      gov.setMotionProbe(() => {
+        let moving = state.current.phase !== 'room' || phoneInHand || notebookInHand || !!extraHeld || gsap.globalTimeline.getChildren(false, true, true).some((t) => t.isActive());
+        const c = camera, p = c.position, q = c.quaternion;
+        if (Math.abs(p.x - lastCam[0]) + Math.abs(p.y - lastCam[1]) + Math.abs(p.z - lastCam[2]) + Math.abs(q.x - lastCam[3]) + Math.abs(q.y - lastCam[4]) + Math.abs(q.z - lastCam[5]) + Math.abs(q.w - lastCam[6]) > 1e-5) moving = true;
+        lastCam.set([p.x, p.y, p.z, q.x, q.y, q.z, q.w]);
+        // Hands ease toward their target pose outside gsap, so a settling hand has to count as motion.
+        let sig = 0;
+        for (const h of [model.hands.left, model.hands.right]) { const hp = h.hand.position; sig += hp.x + hp.y * 3 + hp.z * 7 + h.wristDeg * 0.01; for (const k in h.pose) sig += h.pose[k]; }
+        if (Math.abs(sig - lastSig) > 1e-6) moving = true;
+        lastSig = sig;
+        return moving;
+      });
       // GPU time per frame where the browser exposes the timer extension
       // (desktop Chrome does; Firefox and Safari do not). Results arrive a frame
       // or two late, so they are averaged into the next stats emit. This is the

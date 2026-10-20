@@ -27,7 +27,15 @@
 
 const OVERRIDE_KEY = 'v3:perf-tier';
 
-const FRAME_BUDGET_MS = 1000 / 60; // 60Hz cap: 30Hz read as lag on 60/120Hz phone screens
+// Frame pacing counts display vsyncs instead of comparing timestamps. A time floor ("at least
+// 15.7 ms since the last render") alternates between 1 and 2 vsyncs whenever the callback
+// timestamps jitter, or on any display that is not 60/120 Hz (144 Hz renders every 3rd vsync =
+// 48 fps). While anything moves we render every vsync up to ~58 Hz worth, i.e. every
+// floor(refresh/58) vsyncs: 60 Hz -> 1, 90 Hz -> 1, 120/144/165 Hz -> 2 (60/72/82 fps).
+// After IDLE_MS with no input and no motion the interval doubles (30 Hz on a 60 Hz display);
+// any input restores it on the next tick.
+const IDLE_MS = 500;
+const TARGET_HZ = 58;
 const PR_FLOOR = 0.8;
 const PR_CEIL_DEFAULT = 1.25;
 
@@ -126,6 +134,24 @@ export function createPerfGovernor(renderer) {
   let pinned = false;
   let dirty = true;
   let lastRenderAt = -Infinity; // never throttle the very first frame
+  let lastActivity = -Infinity;
+  let motionProbe = null;
+  let motionAt = -Infinity;
+  let renderCount = 0;
+  let lastTick = null;
+  const dts = [];
+  let vsyncMs = 1000 / 60;
+  const touch = () => { lastActivity = performance.now(); };
+  const inputEvents = ['pointerdown', 'pointermove', 'pointerup', 'keydown', 'keyup', 'wheel', 'touchstart', 'touchmove'];
+  if (typeof window !== 'undefined') for (const e of inputEvents) window.addEventListener(e, touch, { capture: true, passive: true });
+  function trackVsync(now) {
+    if (lastTick !== null) {
+      const dt = now - lastTick;
+      if (dt > 3 && dt < 40) { dts.push(dt); if (dts.length > 40) dts.shift(); }
+    }
+    lastTick = now;
+    if (dts.length >= 10) vsyncMs = [...dts].sort((a, b) => a - b)[dts.length >> 2];
+  }
   const samples = [];
   let overCount = 0;
   let underCount = 0;
@@ -150,12 +176,25 @@ export function createPerfGovernor(renderer) {
      * throttled to the 60Hz floor" — the caller should requeue, not stop.
      */
     shouldRender(now) {
-      if (!dirty) return false;
-      if (now - lastRenderAt < FRAME_BUDGET_MS - 1) return false;
+      if (!dirty) { lastTick = null; return false; }
+      trackVsync(now);
+      if (motionProbe && motionProbe()) { lastActivity = now; motionAt = now; }
+      const base = Math.max(1, Math.floor(1000 / vsyncMs / TARGET_HZ));
+      const n = now - lastActivity > IDLE_MS ? base * 2 : base;
+      if (Math.round((now - lastRenderAt) / vsyncMs) < n) return false;
       dirty = false;
       lastRenderAt = now;
+      renderCount++;
       return true;
     },
+
+    /** fn() -> true while something other than raw input is moving (tweens, camera, held objects). */
+    setMotionProbe(fn) { motionProbe = fn; },
+    /** Mark the scene active now (restores full rate on the next tick). */
+    touch,
+    /** Pacing readout for tests and the HUD. */
+    getRenderCount() { return renderCount; },
+    getPacing() { const base = Math.max(1, Math.floor(1000 / vsyncMs / TARGET_HZ)); return { refreshHz: +(1000 / vsyncMs).toFixed(1), vsyncMs: +vsyncMs.toFixed(2), idle: performance.now() - lastActivity > IDLE_MS, base, sinceMotionMs: Math.round(performance.now() - motionAt) }; },
 
     /** Feed the measured CPU cost (ms) of the frame just rendered. Adapts pixel ratio off a rolling median. */
     recordFrame(cpuMs, now) {
@@ -188,7 +227,7 @@ export function createPerfGovernor(renderer) {
     /** Snapshot for telemetry / debugging: { tier, pixelRatio, medianMs }. */
     getStats() { return lastStats; },
 
-    dispose() { samples.length = 0; },
+    dispose() { samples.length = 0; if (typeof window !== 'undefined') for (const e of inputEvents) window.removeEventListener(e, touch, { capture: true }); },
   };
 
   // Debug/introspection hook only — not read by any app logic. Lets a human
