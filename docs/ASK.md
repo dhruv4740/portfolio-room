@@ -1,7 +1,15 @@
 # Ask about Dhruv
 
-A question box on `/work` and in the room (notepad window, "Ask about Dhruv" tab). It answers from the résumé, project
-and case-study text in `src/v3/content/index.js` only.
+An always-visible "Ask about Dhruv" pill (bottom right) on every surface: /work, the room, the mobile deck. It opens a
+side sheet (wide screens) or bottom sheet (narrow) with a short chat thread and four suggested questions
+(`public/os/shell/ask-pill.js`, body in `ask.js`, mounted from `src/main.jsx` and `src/v3/work/entry.jsx`). There are no
+inline boxes any more. It answers from the résumé, project and case-study text in `src/v3/content/index.js` only.
+
+The model prompt (`systemPrompt()` in `functions/_ask/knowledge.js`) carries a knowledge brief (summary, what he is
+looking for, why hire, strongest project by area, hackathons, experience overview) plus every project, internship and
+case study. It may summarise, compare and give grounded opinions, answers 3 to 6 sentences (about 200 words for a
+summary), and declines only clearly unrelated or private questions. The canned path (no keys) handles comparisons,
+summaries, private questions and off-topic ones the same way, tested in `scripts/test-ask.mjs`.
 
 Without any setup it already works on canned answers (keyword-matched sections, labelled "answered by quick FAQ").
 Model answers switch on when the `ASK_KV` binding (already in `wrangler.toml`, namespace id

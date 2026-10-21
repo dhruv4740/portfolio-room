@@ -91,4 +91,16 @@ await t('canned FAQ: on-topic, off-topic, input limits', async () => {
   const sp = systemPrompt(); assert.match(sp, /FACTS START/); assert.ok(!/GROQ|sk-/.test(sp));
 });
 globalThis.fetch = realFetch;
+
+// Ten realistic recruiter questions against the canned path: [question, expected source title or '' for a refusal].
+{
+  const cases = [['Why should we hire Dhruv?', 'Why hire Dhruv'], ['Strongest project for backend work?', 'Strongest project by area'], ['Summarise his experience', 'Experience overview'],
+    ['Compare FocusLock and Blackout', 'Project: FocusLock, Project: Blackout'], ['Is he open to internships and when is he available?', 'What he is looking for'],
+    ['What did he do at Blink and what were the results?', 'Experience: Blink.new'], ['What are his strongest skills?', 'Skills'], ['Has he won any hackathons?', 'Hackathons'],
+    ['Where did he study?', 'Education'], ['What is his salary expectation?', ''], ['Who won the cricket world cup?', '']];
+  for (const [q, src] of cases) { const r = cannedAnswer(q); assert.equal(r.source, src, q); assert.ok(r.answer.length > 20); }
+  assert.match(cannedAnswer('What is his salary expectation?').answer, /do not have that detail/);
+  assert.match(systemPrompt(), /3 to 6 sentences/);
+  console.log('ok   ten recruiter questions (canned path)');
+}
 console.log('ask tests passed');

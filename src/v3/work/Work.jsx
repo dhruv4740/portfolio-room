@@ -170,7 +170,6 @@ const css = `
   .w-live { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--paper); }
   .w-live p { margin: 0 0 10px; font-size: 15px; }
   .w-live div { display: flex; flex-wrap: wrap; gap: 8px; }
-    .w-ask { padding: 14px 16px; border: 1px solid #d8d2c6; border-radius: 12px; background: #fbfaf6; margin-bottom: 8px; }
   .w-live a, .w-live button { border: 0; cursor: pointer; font: inherit; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 500; }
   .w-links { display: flex; gap: 10px; margin-top: 12px; font-size: 15px; }
   .w-links a { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font-weight: 500; text-decoration: none; }
@@ -271,18 +270,6 @@ const WHAT_I_DID = {
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
   basket: 'Price comparator with 636 tests.',
 };
-// Ask box: the same module the room notepad uses (public/os/shell/ask.js), loaded on demand.
-function AskBox() {
-  const ref = useRef(null);
-  useEffect(() => {
-    let live = true;
-    const url = '/os/shell/ask.js';
-    import(/* @vite-ignore */ url).then((m) => { if (live && ref.current) m.mountAsk(ref.current); }).catch(() => {});
-    return () => { live = false; };
-  }, []);
-  return <div className="w-ask" ref={ref} data-testid="work-ask" />;
-}
-
 // Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
 function TourVideo() {
   const ref = useRef(null);
@@ -556,9 +543,6 @@ export default function Work() {
                 <div key={p.text}><span className="w-n">{p.value}</span><p>{p.text}</p></div>
               ))}
             </div>
-
-            <div className="w-label"><span>Ask</span></div>
-            <AskBox />
 
             <div className="w-label"><span>Featured</span><span className="w-hint">swipe →</span></div>
             <div className="w-feat">
