@@ -79,3 +79,6 @@ Screenshots are in `C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_
 ### A. Night only (one revertible commit)
 The room is locked to the night look: `resolveSkyState()` always returns `night`, the live Mumbai weather fetch is gone from the room (fixed clear-night haze instead), and the dusk/day skyline textures and sky configs are no longer built. `/work` still shows its own Mumbai clock/weather line.
 Measured (cold.mjs, fresh profile, `/?sky=night`, 3 runs): reveal before 3188/2974/3211 ms, after 2937/3186/3805 ms; programs 33 both. Seated (steady.mjs): fps 58 before vs 55.7-57.4 after, gpuMed 7.9-9.8 vs 7.7-12.2 ms, within the run-to-run noise of this iGPU. So it is neutral for speed; it removes code and the day/dusk look. Suites: v3 45/45, after-hours 26/26, deeplinks pass. Revert: `git revert` the "night only" commit.
+
+### 1. Redesign mockups
+Eight small static frames at `/mockups/` (index grid, one-line caption each): four colour/type directions (amber serif, monitor cyan mono, paper editorial, moonlight sans), two room overlays over a real night screenshot, two /work layouts (ledger, sticky split). Real content only; no build step. Source: `public/mockups/`.
