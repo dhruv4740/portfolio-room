@@ -20,3 +20,8 @@ Preview: https://preview.dhruvkothari.pages.dev. Nothing was deployed to product
 - Before/after frame sheets and cold-load 1x/4x numbers: not produced.
 - OS-app opens inside the iframe are not in the visit log.
 - Touch card was checked on one emulated landscape phone only; it overlaps the overview menu there.
+
+## Follow-up round (after the usage reset)
+- **"What I did" lines rewritten.** FocusLock and 3D Portfolio now list the stack and the résumé's numbers instead of repeating the card; Blackout trimmed to its distinct facts; Cellbook and Expense Tracker dropped (nothing résumé/PROJECTS-MAP says beyond the card). DarkSentinel (LLM review layer, from the résumé) and BasketProof (636 tests) kept.
+- **For the owner: DarkSentinel wording mismatch.** `/work` says "Top 5 at the IIT Madras × BITS Goa hackathon" (card, proof row and `badge` text); the résumé says "Finalist, ... Hackathon 2026, 230+ teams". Neither was changed. Pick one wording.
+- **Touch card overlap fixed.** The card is now a centred dialog on a dimmed backdrop, so it no longer sits on the overview menu. Frames of the card itself: tmp-measure/card-portrait.png (375x812) and tmp-measure/card-landscape.png (812x375).

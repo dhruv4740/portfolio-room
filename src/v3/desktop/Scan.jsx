@@ -909,7 +909,7 @@ export default function Scan() {
       )}
 
       {linkCard && (
-        <div className="link-card" role="dialog" aria-label={`Open ${linkCard.project.name}`}>
+        <div className="link-card-scrim"><div className="link-card" role="dialog" aria-label={`Open ${linkCard.project.name}`}>
           <b>{linkCard.project.name}</b>
           <p>{linkCard.project.tagline || linkCard.project.description}</p>
           <button type="button" className="link-card-go" onClick={() => { const c = linkCard; setLinkCard(null); runDeepLinkRef.current(c.kind, c.arg); }}>
@@ -917,7 +917,7 @@ export default function Scan() {
           </button>
           <small>{linkCard.kind === 'phone' ? 'Opens it on the phone on the desk.' : 'Opens it on the monitor.'}</small>
           <button type="button" className="link-card-x" onClick={() => setLinkCard(null)} aria-label="Dismiss">✕</button>
-        </div>
+        </div></div>
       )}
       {aboutOpen && (
         <div className="about-scrim" onClick={(e) => { if (e.target === e.currentTarget) closeAbout(); }}>
@@ -1097,7 +1097,8 @@ const css = `
 .about-panel strong { color:var(--bone); font-weight:500; }
 .about-kicker,.about-role { margin:0; color:#b7b9b2; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
 .about-muted { color:#9ea39f; }
-.link-card { position:fixed; left:50%; bottom:max(24px,env(safe-area-inset-bottom)); translate:-50% 0; width:min(92vw,380px); z-index:40; padding:16px 18px; background:rgba(20,24,25,.94); color:#e8e4dc; border:1px solid #3b4442; display:grid; gap:8px; }
+.link-card-scrim { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:rgba(8,10,10,.72); padding:12px; }
+.link-card { position:relative; width:min(92vw,380px); max-height:92vh; overflow:auto; padding:16px 18px; background:rgba(20,24,25,.94); color:#e8e4dc; border:1px solid #3b4442; display:grid; gap:8px; }
 .link-card b { font:600 18px var(--font-sans,system-ui); }
 .link-card p { font-size:14px; color:#b7b9b2; }
 .link-card small { font:11px var(--font-mono); color:#8f948d; }
