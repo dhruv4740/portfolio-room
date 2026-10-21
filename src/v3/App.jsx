@@ -38,7 +38,7 @@ function Booting() {
           background: var(--void);
         }
         .boot-bar { width: 220px; height: 2px; background: #1d2122; overflow: hidden; }
-        .boot-bar i { display: block; height: 100%; background: var(--signal, #e4572e); transform-origin: left; transition: transform .2s; }
+        .boot-bar i { display: block; height: 100%; background: var(--signal, #d9d4c7); transform-origin: left; transition: transform .2s; }
         .boot-root p {
           font-family: var(--font-mono);
           font-size: var(--t-data);

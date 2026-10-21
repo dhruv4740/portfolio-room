@@ -3,7 +3,7 @@
 
 :root {
   --green: #5cffd0;
-  --amber: #ffb000;
+  --amber: #d9d4c7;
   --red: #ff4f4f;
   --bg: #050a08;
   --surface: #0c1610;
@@ -245,7 +245,7 @@ html, body {
 .traffic-lights { display: flex; gap: 6px; }
 .tl { width: 11px; height: 11px; border-radius: 50%; cursor: pointer; flex-shrink: 0; transition: filter 0.15s; }
 .tl.red { background: #ff5f56; }
-.tl.yellow { background: #ffbd2e; }
+.tl.yellow { background: #b8b2a3; }
 .tl.green-tl { background: #27c93f; }
 .tl:hover { filter: brightness(1.3); }
 

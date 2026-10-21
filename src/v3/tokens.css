@@ -11,8 +11,8 @@
   --bone:      #E8E4DC;   /* primary type */
   --dim:       #6B6B72;   /* secondary type, labels */
   --faint:     #2A2A2F;   /* hairlines, dividers */
-  --signal:    #FF5F1F;   /* THE accent. sodium orange. use sparingly. */
-  --signal-dim:rgba(255, 95, 31, 0.18);
+  --signal:    #d9d4c7;   /* THE accent. sodium orange. use sparingly. */
+  --signal-dim:rgba(217,212,199,0.16);
 
   /* No --gradient-* tokens exist. This is deliberate. */
 

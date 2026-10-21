@@ -79,7 +79,7 @@ function screenTexture() {
     ctx.strokeRect(72, 102, 880, 420);
     ctx.fillStyle = '#222426'; ctx.fillRect(73, 103, 878, 44);
     ctx.fillStyle = '#e8e4dc'; ctx.font = '18px monospace'; ctx.fillText('Selected work', 96, 131);
-    ctx.fillStyle = '#ff5f1f'; ctx.fillRect(95, 186, 9, 9);
+    ctx.fillStyle = '#d9d4c7'; ctx.fillRect(95, 186, 9, 9);
     ctx.fillStyle = '#ece7db'; ctx.font = '48px sans-serif'; ctx.fillText('Things I made.', 95, 256);
     ctx.fillStyle = '#969991'; ctx.font = '20px monospace'; ctx.fillText('Open the machine. Try something.', 97, 302);
     const labels = ['01   Desktop projects', '02   Built to be used', '03   Explore the computer'];
@@ -87,7 +87,7 @@ function screenTexture() {
       const y = 366 + i * 53;
       ctx.strokeStyle = '#363a38'; ctx.beginPath(); ctx.moveTo(96, y - 22); ctx.lineTo(924, y - 22); ctx.stroke();
       ctx.fillStyle = '#cccfc5'; ctx.font = '22px monospace'; ctx.fillText(label, 99, y + 8);
-      ctx.fillStyle = '#ff5f1f'; ctx.fillText('↗', 887, y + 8);
+      ctx.fillStyle = '#d9d4c7'; ctx.fillText('↗', 887, y + 8);
     });
     ctx.fillStyle = '#666e68'; ctx.font = '16px monospace'; ctx.fillText('DHRUV KOTHARI                                    ENTER ↗', 75, 591);
   }, 1024, 640);
@@ -374,7 +374,7 @@ export function buildWorkspace(scene, options = {}) {
   const monitorScreenBox = new THREE.Box3().setFromObject(display);
   const monitorBezelBox = new THREE.Box3().setFromObject(monitorEnclosure);
   box('Monitor chin', [1.29, 0.035, 0.018], [0, 1.35, -0.362], dark, 0.006, 'monitor');
-  const led = new THREE.Mesh(new THREE.SphereGeometry(0.004, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5f1f' }));
+  const led = new THREE.Mesh(new THREE.SphereGeometry(0.004, 8, 6), new THREE.MeshBasicMaterial({ color: '#d9d4c7' }));
   led.position.set(0.58, 1.35, -0.345); root.add(led);
   cable([[0, 1.55, -0.47], [0.12, 1.17, -0.5], [0.7, 1.17, -0.67], [1.3, 0.75, -0.7]]);
 
@@ -395,7 +395,7 @@ export function buildWorkspace(scene, options = {}) {
   KEYCAPS.forEach((cap, i) => {
     transform.position.set(...cap.p); transform.scale.set(cap.w, 1, 1);
     transform.updateMatrix(); keys.setMatrixAt(i, transform.matrix);
-    keys.setColorAt(i, keyColor.set(cap.esc ? '#ff5f1f' : '#ffffff'));
+    keys.setColorAt(i, keyColor.set(cap.esc ? '#d9d4c7' : '#ffffff'));
   });
   keys.castShadow = false; root.add(keys); tag(keys, 'keyboard');
   // The procedural boxes are now only the licensed mouse's load fallback.

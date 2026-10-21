@@ -45,7 +45,7 @@ const ctx = {
   audio,
   content,
   store,
-  theme: { green: '#5cffd0', amber: '#ffb000', bg: '#050a08', red: '#ff4f4f', surface: '#0c1610', muted: 'rgba(92,255,208,0.45)' },
+  theme: { green: '#5cffd0', amber: '#d9d4c7', bg: '#050a08', red: '#ff4f4f', surface: '#0c1610', muted: 'rgba(92,255,208,0.45)' },
 };
 
 // ── Boot sequence ─────────────────────────────────────────────────────────────

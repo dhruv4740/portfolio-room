@@ -60,14 +60,14 @@ function screenTexture() {
     ctx.strokeStyle = '#464845'; ctx.lineWidth = 1; ctx.strokeRect(72, 102, 880, 420);
     ctx.fillStyle = '#222426'; ctx.fillRect(73, 103, 878, 44);
     ctx.fillStyle = '#e8e4dc'; ctx.font = '18px monospace'; ctx.fillText('Selected work', 96, 131);
-    ctx.fillStyle = '#ff5f1f'; ctx.fillRect(95, 186, 9, 9);
+    ctx.fillStyle = '#d9d4c7'; ctx.fillRect(95, 186, 9, 9);
     ctx.fillStyle = '#ece7db'; ctx.font = '48px sans-serif'; ctx.fillText('Things I made.', 95, 256);
     ctx.fillStyle = '#969991'; ctx.font = '20px monospace'; ctx.fillText('Open the machine. Try something.', 97, 302);
     ['01   Desktop projects', '02   Built to be used', '03   Explore the computer'].forEach((label, i) => {
       const y = 366 + i * 53;
       ctx.strokeStyle = '#363a38'; ctx.beginPath(); ctx.moveTo(96, y - 22); ctx.lineTo(924, y - 22); ctx.stroke();
       ctx.fillStyle = '#cccfc5'; ctx.font = '22px monospace'; ctx.fillText(label, 99, y + 8);
-      ctx.fillStyle = '#ff5f1f'; ctx.fillText('↗', 887, y + 8);
+      ctx.fillStyle = '#d9d4c7'; ctx.fillText('↗', 887, y + 8);
     });
     ctx.fillStyle = '#666e68'; ctx.font = '16px monospace'; ctx.fillText('DHRUV KOTHARI                                    ENTER ↗', 75, 591);
   }, 1024, 640);
@@ -283,7 +283,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
   const monitorBezelBox = new THREE.Box3().setFromObject(monitorEnclosure);
   box('Monitor chin', [SCREEN.width, MONITOR.chin, 0.010],
     [0, SCREEN.center[1] - SCREEN.height / 2 - MONITOR.chin / 2, SCREEN.center[2] + 0.001], dark, 0.003, 'monitor');
-  const led = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5f1f' }));
+  const led = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 6), new THREE.MeshBasicMaterial({ color: '#d9d4c7' }));
   led.position.set(SCREEN.width / 2 - 0.02, SCREEN.center[1] - SCREEN.height / 2 - MONITOR.chin / 2, SCREEN.center[2] + 0.004);
   root.add(led);
   cable([[0, MONITOR.enclosureBottomY, SCREEN.center[2] - 0.06], [0.06, DESK.topY - 0.02, -0.46],
@@ -304,7 +304,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
     transform.position.set(...cap.p);
     transform.scale.set(cap.w * KEYBOARD.scale, KEYBOARD.scale, KEYBOARD.scale);
     transform.updateMatrix(); keys.setMatrixAt(i, transform.matrix);
-    keys.setColorAt(i, keyColor.set(cap.esc ? '#ff5f1f' : '#ffffff'));
+    keys.setColorAt(i, keyColor.set(cap.esc ? '#d9d4c7' : '#ffffff'));
   });
   keys.castShadow = false; root.add(keys); tag(keys, 'keyboard');
 

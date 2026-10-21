@@ -84,7 +84,7 @@ export default {
 
       const yr = document.createElement('span');
       yr.textContent = proj.year;
-      yr.style.cssText = 'font-size:12px;color:#ffb000;letter-spacing:0.1em;flex-shrink:0;font-weight:700;';
+      yr.style.cssText = 'font-size:12px;color:#d9d4c7;letter-spacing:0.1em;flex-shrink:0;font-weight:700;';
 
       row.append(numEl, title, yr);
 

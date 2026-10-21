@@ -1469,7 +1469,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
                   className="fl-circle-breathing"
                   style={{
                     '--breathing-duration': `${12 / getTimeScale()}s`,
-                    backgroundColor: breathingSec > 8 ? '#2ECC71' : breathingSec > 4 ? '#F1C40F' : '#E67E22',
+                    backgroundColor: breathingSec > 8 ? '#2ECC71' : breathingSec > 4 ? '#F1C40F' : '#b8b2a3',
                   }}
                 />
                 <span className="txt-breathing-instruction fl-breathe-text">
@@ -1951,8 +1951,8 @@ const css = `
 .phone-walkthrough ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
 .phone-walkthrough li { color: #D6D3CB; }
 @media (max-width: 1099px) { .phone-walkthrough { display: none; } }
-.phone-stage-exit { color: #FFB394 !important; border-color: rgba(255, 95, 31, .55) !important; }
-.phone-stage-exit:hover, .phone-stage-exit:focus-visible { border-color: #FF5F1F !important; }
+.phone-stage-exit { color: #d9d4c7 !important; border-color: rgba(217,212,199, .55) !important; }
+.phone-stage-exit:hover, .phone-stage-exit:focus-visible { border-color: #d9d4c7 !important; }
 
 .phone-screen {
   position: absolute;
@@ -2678,9 +2678,9 @@ const css = `
   }
   50% {
     transform: scale(1.4);
-    color: #FF5F1F;
+    color: #d9d4c7;
     opacity: 1;
-    text-shadow: 0 0 10px rgba(255, 95, 31, 0.7);
+    text-shadow: 0 0 10px rgba(217,212,199, 0.7);
   }
 }
 .fl-rocking-phone {

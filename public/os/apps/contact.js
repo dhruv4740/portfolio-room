@@ -117,12 +117,12 @@ export default {
       resLink.textContent = '↓ DOWNLOAD RESUME';
       resLink.style.cssText = [
         'display:inline-block', 'font-size:9px', 'letter-spacing:0.18em',
-        'color:#ffb000', 'text-decoration:none',
-        'border:1px solid rgba(255,176,0,0.4)', 'padding:7px 18px',
+        'color:#d9d4c7', 'text-decoration:none',
+        'border:1px solid rgba(217,212,199,0.4)', 'padding:7px 18px',
         'transition:border-color 0.15s',
       ].join(';');
-      resLink.addEventListener('mouseover', () => { resLink.style.borderColor = '#ffb000'; });
-      resLink.addEventListener('mouseout',  () => { resLink.style.borderColor = 'rgba(255,176,0,0.4)'; });
+      resLink.addEventListener('mouseover', () => { resLink.style.borderColor = '#d9d4c7'; });
+      resLink.addEventListener('mouseout',  () => { resLink.style.borderColor = 'rgba(217,212,199,0.4)'; });
       card.appendChild(resLink);
     }
 

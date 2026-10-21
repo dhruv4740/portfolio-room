@@ -3,7 +3,7 @@ import store from '../shell/store.js';
 
 export const PALETTES = {
   green:  { key: 'green',  bg: '#050a08', r: 92,  g: 255, b: 208, label: 'Aurora', hex: '#5cffd0' },
-  amber:  { key: 'amber',  bg: '#0a0800', r: 255, g: 176, b: 0,   label: 'Ember',  hex: '#ffb000' },
+  amber:  { key: 'amber',  bg: '#0a0800', r: 217, g: 212, b: 199,   label: 'Bone',  hex: '#d9d4c7' },
   violet: { key: 'violet', bg: '#080510', r: 192, g: 132, b: 252, label: 'Nebula', hex: '#c084fc' },
   blue:   { key: 'blue',   bg: '#020810', r: 96,  g: 165, b: 250, label: 'Tide',   hex: '#60a5fa' },
 };
@@ -437,12 +437,12 @@ export default {
     setBtn.textContent = 'SET AS WALLPAPER';
     setBtn.style.cssText = [
       'margin-left:auto', 'font-size:8px', 'letter-spacing:0.18em',
-      'padding:5px 14px', 'border:1px solid rgba(255,176,0,0.45)',
-      'background:rgba(255,176,0,0.06)', 'color:#ffb000', 'cursor:pointer',
+      'padding:5px 14px', 'border:1px solid rgba(217,212,199,0.45)',
+      'background:rgba(217,212,199,0.06)', 'color:#d9d4c7', 'cursor:pointer',
       "font-family:inherit", 'transition:all 0.15s', 'flex-shrink:0',
     ].join(';');
-    setBtn.addEventListener('mouseover', () => { setBtn.style.borderColor = '#ffb000'; setBtn.style.background = 'rgba(255,176,0,0.1)'; });
-    setBtn.addEventListener('mouseout',  () => { setBtn.style.borderColor = 'rgba(255,176,0,0.45)'; setBtn.style.background = 'rgba(255,176,0,0.06)'; });
+    setBtn.addEventListener('mouseover', () => { setBtn.style.borderColor = '#d9d4c7'; setBtn.style.background = 'rgba(217,212,199,0.1)'; });
+    setBtn.addEventListener('mouseout',  () => { setBtn.style.borderColor = 'rgba(217,212,199,0.45)'; setBtn.style.background = 'rgba(217,212,199,0.06)'; });
     setBtn.addEventListener('click', () => {
       applyWallpaper(currentKey);
       store.emit('wallpaper:set', { palette: currentKey });

@@ -25,7 +25,7 @@ const THEME = {
   debit: '#FF5C5C',
   credit: '#3DDC84',
   self: '#7AA2FF',
-  warning: '#FFB020',
+  warning: '#c9c4b6',
 };
 
 const INITIAL_TRANSACTIONS = [
@@ -248,7 +248,7 @@ export default function ExpenseApp({ onClose }) {
                 {[
                   { name: 'Groceries', amount: 1450, color: '#3DDC84', pct: '30%' },
                   { name: 'Utilities', amount: 2100, color: '#7AA2FF', pct: '44%' },
-                  { name: 'Transport & Uber', amount: 920, color: '#FFB020', pct: '19%' },
+                  { name: 'Transport & Uber', amount: 920, color: '#c9c4b6', pct: '19%' },
                   { name: 'Food & Dining', amount: 280, color: '#FF5C5C', pct: '7%' },
                 ].map(cat => (
                   <div key={cat.name}>

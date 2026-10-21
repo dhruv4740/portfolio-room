@@ -61,12 +61,12 @@ export function mountContactStrip(el) {
     resLink.textContent = '↓ resume';
     resLink.style.cssText = [
       'margin-left:auto', "font:9px 'JetBrains Mono',monospace",
-      'color:#ffb000', 'text-decoration:none', 'letter-spacing:0.12em',
-      'border:1px solid rgba(255,176,0,0.35)', 'padding:3px 10px',
+      'color:#d9d4c7', 'text-decoration:none', 'letter-spacing:0.12em',
+      'border:1px solid rgba(217,212,199,0.35)', 'padding:3px 10px',
       'transition:border-color 0.15s',
     ].join(';');
-    resLink.addEventListener('mouseover', () => { resLink.style.borderColor = '#ffb000'; });
-    resLink.addEventListener('mouseout',  () => { resLink.style.borderColor = 'rgba(255,176,0,0.35)'; });
+    resLink.addEventListener('mouseover', () => { resLink.style.borderColor = '#d9d4c7'; });
+    resLink.addEventListener('mouseout',  () => { resLink.style.borderColor = 'rgba(217,212,199,0.35)'; });
     strip.appendChild(resLink);
   }
 
