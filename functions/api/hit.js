@@ -1,6 +1,8 @@
 // Cloudflare Pages Function: stores one anonymous visit event in D1 (binding DB).
 // Stores path, referrer host, device class, country/city from request.cf. Never the IP.
 export async function onRequestPost({ request, env }) {
+  // Production host only: preview and per-deploy URLs never count toward the owner's numbers.
+  if (new URL(request.url).hostname !== 'dhruvkothari.pages.dev') return new Response(null, { status: 204 });
   let b;
   try { b = JSON.parse(await request.text()); } catch { return new Response(null, { status: 204 }); }
   const s = (v, n) => String(v ?? '').slice(0, n);

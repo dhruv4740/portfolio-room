@@ -2,6 +2,16 @@
 
 Preview: https://preview.dhruvkothari.pages.dev. Nothing was deployed to production or merged to main.
 
+## Morning summary
+**On preview (branch perf/lighten-room):** typing in the room is smoother (OS flicker animation and blur removed, about 37 to 51 fps while typing) and no longer scrambles fast typing; a Notepad is the typing target; "Try my live apps" is the first option on the room overview and a live-app row sits at the top of /work; phones get a link card instead of a broken deep link; the og.jpg and "What I did" lines are new; analytics (Cloudflare beacon plus a D1 visit log) only count the exact production host `dhruvkothari.pages.dev`, so preview and per-deploy URLs are ignored. All 13 suites pass on the final build; I click-tested /#/os/darksentinel, /#/phone/basketproof and the /work hero button at 375 px (touch card) on preview.
+
+**Owner decides:**
+1. DarkSentinel wording: "Top 5" or "Finalist".
+2. Whether to deploy to production (nothing is on production or main yet).
+3. Eyeball the visual changes listed in "Visual changes for the owner to eyeball" below (screenshots in `C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_f9d3536a-6c78-4903-a9f2-ede888503fe7/shots/`), including the new overview option and /work box; `LIVE_APPS_HERO` in `src/v3/lib/features.js` turns the latter off.
+
+**Known open items:** the first key typed in the room still shows one 130-180 ms gap (GPU raster of the OS iframe layer; not fixed, see PERF-AUDIT.md). `idle('blinds open')` failed once in ~46 runs and did not reproduce (check now retries). Preview was not re-tested on a real phone, only an emulated 375 px touch context.
+
 ## Done
 | Item | Commit | Notes |
 |---|---|---|
@@ -57,3 +67,9 @@ Screenshots are in `C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_
   - /work: a "Try my real apps" box under the intro with FocusLock (`/#/os/focuslock`), DarkSentinel (`/#/os/darksentinel`) and BasketProof (`/#/phone/basketproof`). On phones these open the touch link card.
   - Suites after the change: deeplinks, tour, v3 and room-interactions all exit 0.
 - Eyeball list additions (`C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_f9d3536a-6c78-4903-a9f2-ede888503fe7/shots/`): `hero-overview-desktop-before/after.png`, `hero-overview-375-before/after.png`, `hero-work-desktop-before/after.png`, `hero-work-375-before/after.png`.
+
+### Round 7
+- Analytics host check is now exact (`dhruvkothari.pages.dev`) in `index.html`, `resume/index.html`, `analytics.js` and, server-side, `functions/api/hit.js` (204 for any other host). Before, any subdomain matched, so preview visits would have counted.
+- D1: one test row (a preview check of `/#/os/focuslock`) deleted; the table is empty.
+- Preview click-test: `/#/os/darksentinel` opens DarkSentinel on the monitor, `/#/phone/basketproof` opens BasketProof on the phone, the /work DarkSentinel button at 375 px shows the touch card. Captures: `click-*.png` in the shots folder.
+- Full suite, final build, all exit 0: verify-v3 46, room-interactions 9, held-objects 2, reduced-hands 1, hand-support 1, phone-grip 0 asserts, after-hours 27, deeplinks 14, tour 18, os-apps 21, focuslock-app 29, after-hours-audio 32, touch-look 4.

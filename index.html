@@ -108,7 +108,7 @@
     <script type="module" src="/src/main.jsx"></script>
     <script>
       // Cloudflare Web Analytics: production hosts only, so local suites and test runs never send beacons.
-      if (/(^|\.)dhruvkothari\.pages\.dev$/.test(location.hostname) && !localStorage.getItem('v3:no-track') && !localStorage.getItem('v3:test')) {
+      if (location.hostname==='dhruvkothari.pages.dev' && !localStorage.getItem('v3:no-track') && !localStorage.getItem('v3:test')) {
         var b = document.createElement('script'); b.defer = true; b.src = 'https://static.cloudflareinsights.com/beacon.min.js';
         b.setAttribute('data-cf-beacon', '{"token": "f6eb8d5429cb489eb39d6ede70c5cff4", "spa": true}'); document.body.appendChild(b);
       }
