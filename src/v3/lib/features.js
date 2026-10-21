@@ -2,9 +2,9 @@
 // row of one-tap live-demo links at the top of /work. Set false to restore the previous overview and /work.
 export const LIVE_APPS_HERO = true;
 
-// Night only: skip the prefiltered room environment probe (a cubemap render + PMREM at load). Default OFF = probe runs as before.
+// Night only: skip the prefiltered room environment probe (a cubemap render + PMREM at load). Default ON (cold night load -3.5 s, 58 -> 33 programs; frames visually identical). Set false to restore the probe.
 // Measurement override: add ?skipprobe=1 to the URL (or ?skipprobe=0), or set localStorage v3:skip-probe to 1.
-export const NIGHT_SKIP_PROBE = false;
+export const NIGHT_SKIP_PROBE = true;
 export function skipNightProbe() {
   try {
     const q = new URLSearchParams(location.search).get('skipprobe');
