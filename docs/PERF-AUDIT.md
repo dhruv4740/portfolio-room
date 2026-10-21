@@ -292,3 +292,17 @@ taken just before it, never with a different round.
 Skipped without a run: night env-probe skip (a load-time change, not a steady-state one), telemetry 300 ms re-render
 (cpuMed is already 1.3-1.9 ms). At 60 fps with ~5 ms GPU there is little left for these to win on this machine; they
 could matter on weaker GPUs, which this rig cannot show.
+
+### Per-key dropped frame (investigated 2026-10-21)
+Method: on-screen headed run, 25 keys at 230 ms spacing (`tmp-measure/keygap.mjs`: rAF gap log next to key times), plus the
+`typing` scenario of steady.mjs with runtime toggles.
+- After the first key there is no hitch above 33 ms per key. The 33 ms gaps are the governor's 30 Hz pacing while typing,
+  not drops. A 50 ms gap shows when the post-typing camera ease relaxes.
+- The only large gaps are one-off, within ~200 ms of the first key: 134 ms and 83 ms. That is the notepad (previously the
+  terminal) window being created in the OS iframe plus the start of the camera ease. It does not repeat per key.
+- Toggling shadow-map updates, contact shadows or hand shadow casting (2 reps each) did not change the count of gaps over
+  35 ms (6-11 per run in every variant) or the max gap (83-117 ms). So those are not the cause.
+- Typing frames cost more than idle look-around (gpuP95 ~12 vs ~7 ms) because the hands skin and the monitor texture
+  refreshes, but gpuMed stays ~5 ms, so no individual key frame blows the budget.
+- Not tried: pre-creating the notepad window hidden before the first key, which should remove the one-off 134 ms gap.
+  Not done because it changes OS-window lifecycle; suggest it if the first-key pause is noticeable.
