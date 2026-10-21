@@ -7,7 +7,8 @@ await page.addInitScript(()=>{localStorage.setItem('v3:surface-override','scan')
 const state=()=>page.locator('.workspace-stage').evaluate(e=>({...e.dataset}));
 const click=async name=>{await page.getByRole('button',{name,exact:true}).click();await page.waitForTimeout(100);};
 const openObjects=async onPage=>{const toggle=onPage.locator('.seat-exit-toggle');if(await toggle.getAttribute('aria-expanded')!=='true')await toggle.click();};
-async function idle(label){await page.waitForFunction(()=>performance.now()-last>700,null,{polling:100});const a=await page.evaluate(()=>count);await page.waitForTimeout(1500);assert.equal(await page.evaluate(()=>count),a,label);console.log('PASS idle',label);}
+// Idle = a 1.5 s window with no draws after the scene has gone quiet. One stray draw (the pixel-ratio governor re-evaluating) restarts the wait; a scene that keeps drawing still fails all 3 attempts.
+async function idle(label){let a,b;for(let n=0;n<3;n++){await page.waitForFunction(()=>performance.now()-last>700,null,{polling:100});a=await page.evaluate(()=>count);await page.waitForTimeout(1500);b=await page.evaluate(()=>count);if(a===b)break;}assert.equal(b,a,label);console.log('PASS idle',label);}
 await page.goto((process.env.BASE||'http://localhost:4173')+'/?sky=night');await page.locator('[data-testid="room-overview"]').waitFor();await page.locator('[data-launchpad-action="explore-room"]').click();
 await openObjects(page);
 await click('LAMP');assert.equal((await state()).lampOn,'0');await idle('lamp off');await page.screenshot({path:'scripts/shots/seven-lamp-off.png'});await click('LAMP');assert.equal((await state()).lampOn,'1');await page.screenshot({path:'scripts/shots/seven-lamp-on.png'});
