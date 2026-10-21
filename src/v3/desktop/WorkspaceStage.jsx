@@ -339,7 +339,7 @@ export default function WorkspaceStage({
         return out;
       }
       // `via` routes the hand around an edge instead of through the object.
-      function hold(h, a, b = a, w = 0, via = null, arc = true) {
+      function hold(h, a, b = a, w = 0, via = null, arc = true, detour = true) {
         if (via) { if (w < 0.5) { b = via; w *= 2; } else { a = via; w = (w - 0.5) * 2; } }
         gripPose(a, poseA); gripPose(b, poseB);
         h.hand.position.lerpVectors(poseA.p, poseB.p, w);
@@ -347,7 +347,7 @@ export default function WorkspaceStage({
         if(arc)h.hand.position.y += Math.min(0.06, poseA.p.distanceTo(poseB.p) * 0.3) * Math.sin(Math.PI * w);
         h.hand.quaternion.slerpQuaternions(poseA.q, poseB.q, w);
         // From an open hand the fingers spread on the way to a grip, then close on it.
-        const closing = curlSum(poseB.pose) > curlSum(poseA.pose) + 0.2 && curlSum(poseA.pose) < 1.7;
+        const closing = detour && curlSum(poseB.pose) > curlSum(poseA.pose) + 0.2 && curlSum(poseA.pose) < 1.7;
         if (!closing) lerpPose(h.pose, poseA.pose, poseB.pose, w);
         else if (w < 0.55) lerpPose(h.pose, poseA.pose, POSES.open, w / 0.55);
         else lerpPose(h.pose, POSES.open, poseB.pose, (w - 0.55) / 0.45);
@@ -390,6 +390,16 @@ export default function WorkspaceStage({
       const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.035], r: [0, 0, 0], pose: PHONE_FINGERS };
       // Side is the top grip turned 90 degrees about the near long edge.
       const PHONE_SIDE = { obj: model.phone, p: [-0.0735, 0.0245, -0.005], r: [0, 0, Math.PI / 2], pose: PHONE_FINGERS };
+      // Reach grip: the top grip rolled about 40 degrees toward the side one (not the full 90, which stood the hand on
+      // its edge), fingers loosely curled, thumb along the near long edge. Position is the polar arc about that edge.
+      const MID_T = 0.44;
+      const PHONE_MID = (() => {
+        const px = -WORKSPACE.phoneSize.width / 2, py = -WORKSPACE.phoneSize.depth / 2;
+        const pol = q => [Math.atan2(q[1] - py, q[0] - px), Math.hypot(q[0] - px, q[1] - py)], A = pol(PHONE_TOP.p), B = pol(PHONE_SIDE.p);
+        const ang = A[0] + (B[0] - A[0]) * MID_T, r = A[1] + (B[1] - A[1]) * MID_T;
+        return { obj: model.phone, p: [px + r * Math.cos(ang), py + r * Math.sin(ang), PHONE_TOP.p[2] + (PHONE_SIDE.p[2] - PHONE_TOP.p[2]) * MID_T - 0.015],
+          r: [0, 0, MID_T * Math.PI / 2], pose: { c0: 0.12, c1: 0.12, c2: 0.14, c3: 0.17, spread: 0.22, tOpp: 0.15, tCurl: 0.1 } };
+      })();
       const PHONE_BACK = (() => {
         const y = new THREE.Vector3(0, -1, 0), z = new THREE.Vector3(-Math.cos(0.35), 0, Math.sin(0.35));
         return { obj: model.phone, p: [-0.045, -0.03, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
@@ -407,15 +417,13 @@ export default function WorkspaceStage({
       // Push (m) along the palm normal at grip 0, 0.025 … 1: the hand is not a
       // flat plate, so a rigid roll alone opens a gap or presses skin into the
       // case. Solved for smoothness and a ~1 mm gap with scripts/probe-phone-tune.mjs
-      // (DP=1), then eased 1 mm off the case where the blend between knots clipped.
-      let PHONE_ROLL_IN = [0.002, 0.0055, 0.0085, 0.0105, 0.0125, 0.014, 0.015, 0.016, 0.0165, 0.017, 0.0175, 0.018, 0.018, 0.0185,
-        0.019, 0.019, 0.0195, 0.0195, 0.0195, 0.0195, 0.019, 0.0175, 0.0155, 0.013, 0.0105, 0.0075, 0.003, 0, -0.0015, -0.006,
-        -0.006, -0.003, -0.002, -0.0015, -0.001, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005];
+      // (DP=1), then eased 1 mm off the case where the blend between knots clipped. Knots 8 to 25 were pulled back 6 to 11 mm when the approach grip became the ~40 degree one.
+      let PHONE_ROLL_IN = [0.002, 0.0055, 0.0085, 0.0105, 0.0125, 0.014, 0.015, 0.016, 0.01, 0.0105, 0.011, 0.0115, 0.0115, 0.012, 0.0125, 0.012, 0.0125, 0.0125, 0.0085, 0.0085, 0.008, 0.0065, 0.0045, 0.0085, 0.0085, 0.0065, 0.003, 0, -0.0015, -0.006, -0.006, -0.003, -0.002, -0.0015, -0.001, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005];
       const FOLLOW = 1;
       function followPhone() {
         const L = model.hands.left, g = phoneGrip, size = WORKSPACE.phoneSize;
-        const [a, b, w] = [PHONE_SIDE, PHONE_BACK, g];
-        hold(L, a, b, w, null, false);
+        const [a, b, w] = [PHONE_MID, PHONE_BACK, g];
+        hold(L, a, b, w, null, false, false);
         L.elbowFollow = FOLLOW * g;
         const px = -size.width / 2, py = -size.depth / 2, polar = q => [Math.atan2(q[1] - py, q[0] - px), Math.hypot(q[0] - px, q[1] - py)];
         let [angA, rA] = polar(a.p), [angB, rB] = polar(b.p);
@@ -423,7 +431,7 @@ export default function WorkspaceStage({
         const ang = angA + (angB - angA) * w, r = rA + (rB - rA) * w;
         model.phone.updateMatrix();
         L.hand.position.copy(rollPos.set(px + r * Math.cos(ang), py + r * Math.sin(ang), a.p[2] + (b.p[2] - a.p[2]) * w).applyMatrix4(model.phone.matrix));
-        const gk = 0.5 + g / 2, n = PHONE_ROLL_IN.length - 1, i = Math.min(n - 1, Math.floor(gk * n)), f = gk * n - i;
+        const gk = MID_T / 2 + (1 - MID_T / 2) * g, n = PHONE_ROLL_IN.length - 1, i = Math.min(n - 1, Math.floor(gk * n)), f = gk * n - i;
         L.hand.position.addScaledVector(palmIn.set(0, -1, 0).applyQuaternion(L.hand.quaternion), PHONE_ROLL_IN[i] + (PHONE_ROLL_IN[i + 1] - PHONE_ROLL_IN[i]) * f);
       }
       // PhoneScreen drives these. The texture under the DOM screen follows it,
@@ -468,7 +476,7 @@ export default function WorkspaceStage({
         const [px, py, pz] = WORKSPACE.anchors.phone, from = snapshot(left), k = { reach: 0, grip: 0 };
         phoneGrip = 0;
         action = gsap.timeline({
-          onUpdate() { if (k.reach < 1) hold(left, from, PHONE_SIDE, k.reach); else { phoneGrip = k.grip; followPhone(); } model.hands.update(); leanCamera(); invalidate(); },
+          onUpdate() { if (k.reach < 1) hold(left, from, PHONE_MID, k.reach); else { phoneGrip = k.grip; followPhone(); } model.hands.update(); leanCamera(); invalidate(); },
           onComplete() { zoomPhone(false); },
         });
         markPhone('reaching');

@@ -111,3 +111,9 @@ Audited with `scripts/shots-hand-items.mjs` (frame sheets plus wristDeg and desk
 
 ### Unit 8: case-file PDFs
 - `scripts/build-casefiles.mjs` (run by `npm run build`) prints one A4 page per case study (problem, decisions, result, what broke where the content has it, screenshot, stack, links) with Playwright Chromium to `public/casefiles/<id>.pdf` (blink, focuslock, darksentinel, blackout, portfolio3d; 33-152 KB each). The PDFs are committed; if Chromium is missing at build time the script keeps them and exits 0. Each case study on /work links its PDF. Checked: 1 page each, FocusLock page rendered and read.
+
+## Round 8+: phone grip v2, MP4 tour, proof cache
+
+- **Phone grip v2** (`WorkspaceStage.jsx`): the reach now targets `PHONE_MID`, the top grip rolled ~40 degrees (not 90) about the phone's near long edge, fingers loosely curled (0.12 to 0.17), so the hand lies over the glass with the thumb on the near edge and the fingertips over the far one, instead of standing edge-on. `followPhone` blends MID to BACK without the open-hand finger detour (`hold(..., detour=false)`), and `PHONE_ROLL_IN` knots 8 to 25 were pulled back 6 to 11 mm to suit the new arc. Measured with `verify-phone-grip`: 0 skin vertices inside the case at all 28 samples (v1 had ~9 mm overlap at t=1.0); left wrist 6 to 27 degrees; sleeve 0 mm. held-objects, hand-support, reduced-hands, room-interactions pass.
+- **Tour MP4**: `public/media/room-tour.mp4` (H.264, crf 26, yuv420p, +faststart, 59.2 s, 2.1 MB) made from the WebM with `ffmpeg-static` (devDependency). `TourVideo` adds MP4 then WebM `<source>`s when scrolled near.
+- **/api/proof**: a result is cached or served only when all 4 repos came back with commits (`complete()`); otherwise stale copy or empty. Star counts were already hidden at 0.
