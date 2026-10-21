@@ -84,8 +84,9 @@ export function mountAsk(el) {
     if (busy || q.length < 3) return;
     busy = true; go.disabled = true; input.value = ''; chips.style.display = 'none';
     bubble(q, true);
-    const a = bubble('Thinking', false); a.style.color = MUTE;
-    let dots = 0; const tick = setInterval(() => { if (a.dataset.done) return clearInterval(tick); a.textContent = 'Thinking' + '.'.repeat(dots = (dots + 1) % 4); }, 280);
+    const state = (d) => el.dispatchEvent(new CustomEvent('ask-state', { detail: d, bubbles: true }));
+    const a = bubble('', false); a.innerHTML = '<span class="ask-shim">Thinking</span>'; state('thinking');
+    const tick = 0;
     let meta = '';
     try {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q, token: await token() }) });
@@ -94,6 +95,7 @@ export function mountAsk(el) {
       a.style.color = INK;
       if (d.error) a.textContent = d.error;
       else {
+        state('typing');
         await typeInto(a, d.answer);
         meta = [d.source && `Source: ${d.source}`, `answered by ${LABEL[d.provider] || d.provider}`, d.note].filter(Boolean).join(' · ');
       }
@@ -105,6 +107,7 @@ export function mountAsk(el) {
     }
     thread.scrollTop = thread.scrollHeight;
     if (widget != null) window.turnstile.reset(widget);
+    state('idle');
     busy = false; go.disabled = false; chips.style.display = 'flex';
   }
   go.onclick = () => ask();
