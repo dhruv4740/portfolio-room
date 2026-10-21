@@ -243,7 +243,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
   // A static skyline plane behind the glass (the modelled blocks were removed
   // for load time); it follows the live sky state.
   const city = new THREE.Group(); city.name = 'Winter city';
-  const cityTextures = { night: skylineTexture('night'), dusk: skylineTexture('dusk'), day: skylineTexture('day') };
+  const cityTextures = { night: skylineTexture('night') };
   const farPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(...EXTERIOR.farCity.size),
     new THREE.MeshBasicMaterial({ map: cityTextures.night, toneMapped: false, fog: false }));

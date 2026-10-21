@@ -10,7 +10,6 @@ import { ROOM } from './cinematicLayout.js';
 import { PHONE_SCREEN } from './phoneScreenSize.js';
 import { reportProgress } from '../lib/loadProgress.js';
 import { fetchGithubActivity, formatActivity } from '../lib/githubActivity.js';
-import { fetchMumbaiWeather, mumbaiSky } from '../lib/mumbai.js';
 
 // The phone UI and its apps load after the room is up (idle prefetch below),
 // not with the first paint.
@@ -23,25 +22,9 @@ import { createAfterHours } from './afterHours.js';
 import { createSceneDirector, COLD_OPEN } from './sceneDirector.js';
 import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
+// The room is locked to the night look (dusk/day and the live Mumbai sky were removed).
 export function resolveSkyState() {
-  const parseSky = (str) => {
-    if (!str) return null;
-    const val = new URLSearchParams(str).get('sky');
-    if (val && ['night', 'dusk', 'day'].includes(val.toLowerCase())) {
-      return val.toLowerCase();
-    }
-    return null;
-  };
-  const fromSearch = parseSky(typeof window !== 'undefined' ? window.location.search : '');
-  if (fromSearch) return fromSearch;
-  const hash = (typeof window !== 'undefined' ? window.location.hash : '') || '';
-  const qIdx = hash.indexOf('?');
-  if (qIdx !== -1) {
-    const fromHash = parseSky(hash.slice(qIdx));
-    if (fromHash) return fromHash;
-  }
-  // No override: follow Mumbai local time.
-  return mumbaiSky();
+  return 'night';
 }
 
 // Just outside the bezel's bottom-right corner, clear of the screen text.
@@ -1100,19 +1083,10 @@ export default function WorkspaceStage({
       afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });
       callbacks.current.onReady?.({ splatCount: null });
-      // Live Mumbai weather: rain on the glass and wet streets, otherwise a
-      // humid night haze tinted by sodium streetlights. Silent on failure.
-      fetchMumbaiWeather().then(weather => {
-        if (disposed || !weather) return;
-        afterHours?.setWeather(weather.raining);
-        if (!weather.raining && host.dataset.skyState === 'night' && scene.fog?.isFog) {
-          scene.fog.color.set('#2b2218'); scene.fog.near = 6; scene.fog.far = 55;
-        }
-        host.dataset.weather = weather.raining ? 'rain' : 'clear';
-        window.__v3Weather = weather;
-        window.dispatchEvent(new CustomEvent('workspace:weather', { detail: weather }));
-        invalidate();
-      });
+      // Humid night haze tinted by sodium streetlights.
+      if (scene.fog?.isFog) { scene.fog.color.set('#2b2218'); scene.fog.near = 6; scene.fog.far = 55; }
+      host.dataset.weather = 'clear';
+      invalidate();
       fetchGithubActivity().then(items => {
         if (disposed || !items?.length || !model.setGithubActivity) return;
         model.setGithubActivity(formatActivity(items[0]));

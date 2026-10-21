@@ -73,3 +73,9 @@ Screenshots are in `C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_
 - D1: one test row (a preview check of `/#/os/focuslock`) deleted; the table is empty.
 - Preview click-test: `/#/os/darksentinel` opens DarkSentinel on the monitor, `/#/phone/basketproof` opens BasketProof on the phone, the /work DarkSentinel button at 375 px shows the touch card. Captures: `click-*.png` in the shots folder.
 - Full suite, final build, all exit 0: verify-v3 46, room-interactions 9, held-objects 2, reduced-hands 1, hand-support 1, phone-grip 0 asserts, after-hours 27, deeplinks 14, tour 18, os-apps 21, focuslock-app 29, after-hours-audio 32, touch-look 4.
+
+## Round 8+
+
+### A. Night only (one revertible commit)
+The room is locked to the night look: `resolveSkyState()` always returns `night`, the live Mumbai weather fetch is gone from the room (fixed clear-night haze instead), and the dusk/day skyline textures and sky configs are no longer built. `/work` still shows its own Mumbai clock/weather line.
+Measured (cold.mjs, fresh profile, `/?sky=night`, 3 runs): reveal before 3188/2974/3211 ms, after 2937/3186/3805 ms; programs 33 both. Seated (steady.mjs): fps 58 before vs 55.7-57.4 after, gpuMed 7.9-9.8 vs 7.7-12.2 ms, within the run-to-run noise of this iGPU. So it is neutral for speed; it removes code and the day/dusk look. Suites: v3 45/45, after-hours 26/26, deeplinks pass. Revert: `git revert` the "night only" commit.

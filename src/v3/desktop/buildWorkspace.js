@@ -170,16 +170,6 @@ export const SKY_CONFIGS = {
     key: { color: '#8eadd8', closed: 1.15, open: 1.60, position: [1.65, 2.85, -3.0] },
     windowLight: 0.55,
   },
-  dusk: {
-    hemi: { sky: '#8d7a8d', ground: '#3a271c', intensity: 2.2 },
-    key: { color: '#e48652', closed: 1.75, open: 2.2, position: [2.1, 3.3, -2.7] },
-    windowLight: 0.7,
-  },
-  day: {
-    hemi: { sky: '#c6c0b4', ground: '#4a453a', intensity: 3.6 },
-    key: { color: '#fff4e0', closed: 2.3, open: 2.9, position: [2.3, 4.1, -2.6] },
-    windowLight: 0.9,
-  },
 };
 
 // An authored impression, not a claimed photographic view or named landmark.
@@ -319,8 +309,6 @@ export function buildWorkspace(scene, options = {}) {
   const city = new THREE.Group(); city.name = 'Mumbai view';
   const cityTextures = {
     night: [skylineTexture(false, 'night'), skylineTexture(true, 'night')],
-    dusk: [skylineTexture(false, 'dusk'), skylineTexture(true, 'dusk')],
-    day: [skylineTexture(false, 'day'), skylineTexture(true, 'day')],
   };
   Object.values(cityTextures).forEach(pair => {
     pair[0].repeat.set(0.78, 0.88); pair[0].offset.set(0.11, 0.06);
