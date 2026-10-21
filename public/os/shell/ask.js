@@ -69,14 +69,16 @@ export function mountAsk(el) {
     return b;
   };
   // Typewriter: reveals the answer in word-sized steps (~60 words a second), instant under reduced motion.
+  // Words fade up out of a soft blur, a few per frame (Apple Intelligence-style), instant under reduced motion.
   const typeInto = (node, text) => new Promise((resolve) => {
     if (reduced()) { node.textContent = text; return resolve(); }
     const parts = text.match(/\S+\s*/g) || [text]; let i = 0, last = 0;
+    node.textContent = '';
     const step = (t) => {
-      if (t - last >= 16) { last = t; node.textContent += parts[i++] || ''; thread.scrollTop = thread.scrollHeight; }
-      if (i < parts.length) requestAnimationFrame(step); else resolve();
+      if (t - last >= 28) { last = t; const w = document.createElement('span'); w.className = 'ask-w'; w.textContent = parts[i++]; node.appendChild(w); thread.scrollTop = thread.scrollHeight; }
+      if (i < parts.length) requestAnimationFrame(step); else setTimeout(resolve, 300);
     };
-    node.textContent = ''; requestAnimationFrame(step);
+    requestAnimationFrame(step);
   });
 
   async function ask(q) {
