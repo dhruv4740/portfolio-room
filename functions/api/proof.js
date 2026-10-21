@@ -31,7 +31,8 @@ export async function onRequestGet({ env }) {
     const fresh = await build();
     if (kv) await kv.put(KEY, JSON.stringify(fresh), { expirationTtl: 7 * 86400 }).catch(() => {});
     return reply(fresh, 'public, max-age=900');
-  } catch {
-    return cached ? reply(cached, 'public, max-age=300') : reply({ updated: null, repos: [] }, 'no-store');
+  } catch (e) {
+    console.log(JSON.stringify({ proof: 'github fetch failed', err: String(e) }));
+    return cached ? reply(cached, 'public, max-age=300') : reply({ updated: null, repos: [], error: String(e).slice(0, 80) }, 'no-store');
   }
 }
