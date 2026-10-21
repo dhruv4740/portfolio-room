@@ -15,4 +15,7 @@ await get({ ASK_KV: KV }); assert.equal(calls, 8, 'second call served from KV');
 store.set('proof:v1', JSON.stringify({ ...JSON.parse(store.get('proof:v1')), updated: '2020-01-01T00:00:00Z' })); fail = true;
 r = await get({ ASK_KV: KV }); assert.equal(r.repos.length, 4, 'stale copy served when GitHub fails');
 store.clear(); r = await get({ ASK_KV: KV }); assert.deepEqual(r.repos, [], 'empty when nothing cached');
+fail = false; store.clear(); const real = globalThis.fetch;
+globalThis.fetch = async (u) => (String(u).includes('/commits') ? new Response('[]') : real(u));
+r = await get({ ASK_KV: KV }); assert.deepEqual(r.repos, [], 'repos without commits are not served'); assert.equal(store.size, 0, 'incomplete result never cached');
 console.log('proof tests passed');

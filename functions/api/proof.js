@@ -11,6 +11,9 @@ async function gh(path) {
   return r.json();
 }
 
+// Only a complete result (every repo, each with commits) may reach the cache.
+export const complete = (d) => Array.isArray(d?.repos) && d.repos.length === REPOS.length && d.repos.every((r) => r.name && r.url && r.commits?.length);
+
 export async function build() {
   const repos = await Promise.all(REPOS.map(async (name) => {
     const [info, commits] = await Promise.all([gh(`repos/${OWNER}/${name}`), gh(`repos/${OWNER}/${name}/commits?per_page=3`)]);
@@ -26,13 +29,14 @@ export async function onRequestGet({ env }) {
   const kv = env.ASK_KV;
   let cached = null;
   try { cached = kv ? JSON.parse(await kv.get(KEY)) : null; } catch { cached = null; }
-  if (cached && Date.now() - Date.parse(cached.updated) < FRESH_MS) return reply(cached, 'public, max-age=900');
+  if (complete(cached) && Date.now() - Date.parse(cached.updated) < FRESH_MS) return reply(cached, 'public, max-age=900');
   try {
     const fresh = await build();
+    if (!complete(fresh)) throw new Error('incomplete result');
     if (kv) await kv.put(KEY, JSON.stringify(fresh), { expirationTtl: 7 * 86400 }).catch(() => {});
     return reply(fresh, 'public, max-age=900');
   } catch (e) {
     console.log(JSON.stringify({ proof: 'github fetch failed', err: String(e) }));
-    return cached ? reply(cached, 'public, max-age=300') : reply({ updated: null, repos: [], error: String(e).slice(0, 80) }, 'no-store');
+    return complete(cached) ? reply(cached, 'public, max-age=300') : reply({ updated: null, repos: [], error: String(e).slice(0, 80) }, 'no-store');
   }
 }
