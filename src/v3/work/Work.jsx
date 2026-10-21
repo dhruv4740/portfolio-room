@@ -305,6 +305,40 @@ function TourVideo() {
   );
 }
 
+// Live from GitHub: /api/proof (Pages Function, KV-cached, public REST API, no token). Renders nothing if it fails.
+const ago = (iso) => {
+  const d = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 86400e3));
+  return d === 0 ? 'today' : d === 1 ? 'yesterday' : d < 60 ? `${d} days ago` : `${Math.round(d / 30)} months ago`;
+};
+function GithubProof() {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    let live = true;
+    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.repos?.length) setData(d); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+  if (!data) return null;
+  return (
+    <>
+      <div className="w-label"><span>Live from GitHub</span><span>updated {ago(data.updated)}</span></div>
+      <div className="w-list" data-testid="gh-proof">
+        {data.repos.map((r) => (
+          <div className="w-row" key={r.name}>
+            <span className="w-y">{r.pushed ? ago(r.pushed) : ''}</span>
+            <span>
+              <b><a href={r.url} target="_blank" rel="noopener noreferrer">{r.name}</a></b>
+              <p>{[r.language, r.stars ? `${r.stars} ${r.stars === 1 ? 'star' : 'stars'}` : ''].filter(Boolean).join(' · ')}</p>
+              <ul className="w-bul">
+                {r.commits.map((c) => (<li key={c.sha}><a href={c.url} target="_blank" rel="noopener noreferrer">{c.sha}</a> {c.msg}</li>))}
+              </ul>
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 const CASE_IDS = ['blink', 'focuslock', 'darksentinel', 'blackout', 'portfolio3d'];
 const caseText = (c) => c && (
   <dl className="w-cs">
@@ -545,6 +579,8 @@ export default function Work() {
 
             <div className="w-label"><span>Room tour</span><span>1 min, no sound</span></div>
             <TourVideo />
+
+            <GithubProof />
 
             <div className="w-label"><span>Case studies</span><span>{CASE_IDS.length}</span></div>
             <div className="w-list" data-testid="case-studies">

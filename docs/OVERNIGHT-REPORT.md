@@ -102,3 +102,6 @@ Audited with `scripts/shots-hand-items.mjs` (frame sheets plus wristDeg and desk
 
 ### Unit 5: room-tour video
 - `scripts/record-tour.mjs` records the app's own guided tour (launchpad "Take the guided tour", 59 s, 960x540, muted) from a CDP screencast piped to Playwright's bundled ffmpeg, which can only encode VP9 (no H.264, no VP8 decode), so the output is `public/media/room-tour.webm` (1.6 MB) with `room-tour.jpg` poster and no MP4. /work shows it under "Room tour" (`TourVideo` in `Work.jsx`): `preload=none`, source set only when scrolled near, muted loop, no autoplay under reduced motion. Length is 59 s rather than 45 s because that is the existing tour's length. Sampled frames at 3/10/20/30/40/50 s show the room, monitor demos and phone.
+
+### Unit 6: live GitHub proof
+- `functions/api/proof.js` reads the public GitHub REST API unauthenticated (repo stats and 3 latest commits for focuslock, blackout, expense-tracker, portfolio-room), caches 6 h in `ASK_KV` (`proof:v1`), serves the last good copy if GitHub fails or rate-limits, returns an empty list otherwise. No secrets. /work shows "Live from GitHub" (`GithubProof`, renders nothing on failure). `node scripts/test-proof.mjs` covers cache hit, stale fallback and empty fallback.
