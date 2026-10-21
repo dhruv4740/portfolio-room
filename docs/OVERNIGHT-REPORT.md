@@ -105,3 +105,6 @@ Audited with `scripts/shots-hand-items.mjs` (frame sheets plus wristDeg and desk
 
 ### Unit 6: live GitHub proof
 - `functions/api/proof.js` reads the public GitHub REST API unauthenticated (repo stats and 3 latest commits for focuslock, blackout, expense-tracker, portfolio-room), caches 6 h in `ASK_KV` (`proof:v1`), serves the last good copy if GitHub fails or rate-limits, returns an empty list otherwise. No secrets. /work shows "Live from GitHub" (`GithubProof`, renders nothing on failure). `node scripts/test-proof.mjs` covers cache hit, stale fallback and empty fallback.
+
+### Unit 7: phone contact
+- New "Message" app on the room phone (`phone-apps/ContactApp.jsx`, wired in `PhoneScreen.jsx`): rings, Answer, short form, sent screen, mailto fallback. `functions/api/contact.js` validates, caps, honeypots, saves to `ASK_KV` and emails via Resend only if `RESEND_API_KEY` is set. Checked end to end locally with `wrangler pages dev` (call, form, sent screens in a screenshot). `scripts/test-contact.mjs` passes; held-objects suite passes. Owner step: add `RESEND_API_KEY` (see `docs/CONTACT.md`). Cloudflare Email Routing was not used (no custom domain).

@@ -23,6 +23,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import ExpenseApp from './phone-apps/ExpenseApp.jsx';
 import BasketProofApp from './phone-apps/BasketProofApp.jsx';
+import ContactApp from './phone-apps/ContactApp.jsx';
 
 import { PHONE_SCREEN, PHONE_STAGE, INSTAGRAM_ICON_UV_RECT } from './phoneScreenSize.js';
 export { PHONE_SCREEN, PHONE_STAGE };
@@ -536,13 +537,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({
   // The full-screen apps are DOM panels outside the phone's projected quad;
   // putting the phone down must close them or they stay over the room.
   useEffect(() => {
-    if (!interactive) setApp(current => (current === 'expense' || current === 'basketproof' ? 'home' : current));
+    if (!interactive) setApp(current => (current === 'expense' || current === 'basketproof' || current === 'contact' ? 'home' : current));
   }, [interactive]);
 
   // Deep links (/#/phone/<app>) arrive once the phone is in hand.
   useEffect(() => {
     const onOpen = (event) => {
-      const open = { focuslock: handleOpenFocusLock, expense: handleOpenExpense, basketproof: handleOpenBasket }[event.detail?.app];
+      const open = { focuslock: handleOpenFocusLock, expense: handleOpenExpense, basketproof: handleOpenBasket, contact: handleOpenContact }[event.detail?.app];
       open?.();
     };
     window.addEventListener('phone:open-app', onOpen);
@@ -556,6 +557,11 @@ const PhoneScreen = forwardRef(function PhoneScreen({
 
   function handleOpenExpense() {
     setApp('expense');
+    onOpenApp?.();
+  }
+
+  function handleOpenContact() {
+    setApp('contact');
     onOpenApp?.();
   }
 
@@ -711,6 +717,11 @@ const PhoneScreen = forwardRef(function PhoneScreen({
     top: 650,
     size: 130,
   };
+  const contactIcon = {
+    left: 80,
+    top: 830,
+    size: 130,
+  };
 
   return (
     <div
@@ -820,6 +831,23 @@ const PhoneScreen = forwardRef(function PhoneScreen({
                 </svg>
               </span>
               <span className="ps-label">BasketProof</span>
+            </button>
+
+            {/* Message Dhruv: the phone rings, then a short contact form (ContactApp) */}
+            <button
+              type="button"
+              className="ps-app-basket"
+              aria-label="Message Dhruv"
+              onClick={handleOpenContact}
+              style={{ left: contactIcon.left, top: contactIcon.top, width: contactIcon.size }}
+            >
+              <span className="ps-tile-basket" style={{ width: contactIcon.size, height: contactIcon.size }}>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="basket-icon">
+                  <rect x="18" y="18" width="64" height="64" rx="18" fill="#0F2A22" stroke="#34D399" strokeWidth="5" />
+                  <path d="M30 34 H70 V60 H46 L36 70 V60 H30 Z" fill="none" stroke="#34D399" strokeWidth="5" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span className="ps-label">Message</span>
             </button>
           </div>
         </div>
@@ -1728,6 +1756,18 @@ const PhoneScreen = forwardRef(function PhoneScreen({
         inert={app !== 'basketproof'}
       >
           <BasketProofApp onClose={() => goHome()} />
+          <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
+            <span className="ps-home-bar" />
+          </button>
+      </div>
+
+      {/* 7. MESSAGE DHRUV (contact) */}
+      <div
+        className={`ps-full-app${app === 'contact' ? ' is-active' : ''}`}
+        aria-hidden={app !== 'contact'}
+        inert={app !== 'contact'}
+      >
+          {app === 'contact' && <ContactApp onClose={() => goHome()} />}
           <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
             <span className="ps-home-bar" />
           </button>
