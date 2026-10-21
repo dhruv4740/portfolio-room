@@ -3,6 +3,7 @@ import '../tokens.css';
 import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds } from '../content/index.js';
 import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
+import { LIVE_APPS_HERO } from '../lib/features.js';
 
 const css = `
   /* ---- skip link --------------------------------------------------------- */
@@ -166,6 +167,10 @@ const css = `
   }
   .w-btn:active { transform: scale(0.98); }
   .w-root .w-btn--p { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .w-live { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--paper); }
+  .w-live p { margin: 0 0 10px; font-size: 15px; }
+  .w-live div { display: flex; flex-wrap: wrap; gap: 8px; }
+  .w-live a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 500; }
   .w-links { display: flex; gap: 10px; margin-top: 12px; font-size: 15px; }
   .w-links a { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font-weight: 500; text-decoration: none; }
   .w-links a span { color: var(--mute); }
@@ -428,6 +433,16 @@ export default function Work() {
             <h1>{identity.name}</h1>
             <p className="w-lede">{identity.pitch}</p>
             <p className="w-sub">{identity.now}</p>
+            {LIVE_APPS_HERO && (
+              <div className="w-live" data-testid="work-live-apps">
+                <p><b>Try my real apps.</b> Running builds, one tap.</p>
+                <div>
+                  <a href="/#/os/focuslock">FocusLock</a>
+                  <a href="/#/os/darksentinel">DarkSentinel</a>
+                  <a href="/#/phone/basketproof">BasketProof</a>
+                </div>
+              </div>
+            )}
             <div className="w-cta">
               {contact.resume && (
                 <a className="w-btn w-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>

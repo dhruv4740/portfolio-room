@@ -24,6 +24,8 @@ import {
   setOverride,
 } from '../lib/capability.js';
 
+import { LIVE_APPS_HERO } from '../lib/features.js';
+
 const TOUCH_LINK_CARD = true;
 
 // Must track WorkspaceStage's fly() travel durations (entering/leaving) so
@@ -855,6 +857,11 @@ export default function Scan() {
           <p className="launchpad-role mono">{identity.role} · {identity.location}</p>
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
+            {LIVE_APPS_HERO && (
+              <button className="launchpad-primary launchpad-live" data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>
+                <span className="mono">TRY MY LIVE APPS</span><small>Real, running builds, not mockups. Opens the project list on the monitor.</small>
+              </button>
+            )}
             <button className="launchpad-primary" data-launchpad-action="tour" onClick={gate(startTour)}>
               <span className="mono">TAKE THE GUIDED TOUR</span><small>A short walk through the room. No clicking needed.</small>
             </button>
@@ -863,8 +870,8 @@ export default function Scan() {
             </button>
             <Link className="launchpad-quick mono" to="/work" onClick={cancelArrival}>Skip the 3D: résumé &amp; projects →</Link>
             <details className="launchpad-extra mono">
-              <summary>More: live apps, phone demos</summary>
-              <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>Live apps on the computer</button>
+              <summary>{LIVE_APPS_HERO ? 'More: phone demos' : 'More: live apps, phone demos'}</summary>
+              {!LIVE_APPS_HERO && <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>Live apps on the computer</button>}
               <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>Demos on the phone</button>
             </details>
           </div>
@@ -1056,6 +1063,8 @@ const css = `
 .launchpad-actions { top:222px; width:372px; max-width:calc(100vw - 2*var(--gutter)); display:flex; flex-direction:column; gap:8px; pointer-events:auto; }
 .launchpad-actions button { position:relative; min-height:64px; padding:13px 18px 13px 58px; border:1px solid #555b59; color:var(--bone); background:rgba(16,20,21,.92); text-align:left; transition:transform .18s,border-color .18s; }
 .launchpad-actions button:first-child { border-left:2px solid var(--signal); }
+.launchpad-actions button.launchpad-live { background:var(--bone); color:#101213; border-color:var(--bone); }
+.launchpad-actions button.launchpad-live small { color:#3a403d; }
 .launchpad-actions button:hover,.launchpad-actions button:focus-visible { border-color:var(--bone); transform:translateX(4px); }
 .launchpad-actions kbd { position:absolute; left:16px; top:50%; transform:translateY(-50%); width:26px; height:26px; display:grid; place-items:center; border:1px solid #6b716e; color:#d3d4cc; font-size:12px; }
 .launchpad-actions span { display:block; font-size:14px; letter-spacing:.10em; }

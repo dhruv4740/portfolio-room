@@ -49,3 +49,11 @@ Screenshots are in `C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_
 - og.jpg (link preview image): `og-before.jpg` vs `og-after.jpg`.
 - Debug HUD moved top-right (only with `?debug=1`).
 - "What I did" lines on the work cards, hint chip and camera ease when typing, résumé sheet: no before/after captures taken.
+
+### Round 6
+- `idle('blinds open')`: not reproducible. 12 further runs plus a 75 s render-count watch of the idle seated room (0 draws) found no periodic render; the one failure in about 46 runs looks like a single stray draw (probably the pixel-ratio governor re-evaluating) landing in the 1.5 s window. The check now restarts its wait up to 3 times, so a scene that keeps drawing still fails.
+- "Use my real apps" push, behind `LIVE_APPS_HERO` in `src/v3/lib/features.js` (set false to restore the old overview and /work):
+  - Room overview: new top option "Try my live apps" (light button, same action as the old "Live apps on the computer", which is hidden from the "More" list while the flag is on; that list is now "More: phone demos"). Guided tour and Look around unchanged.
+  - /work: a "Try my real apps" box under the intro with FocusLock (`/#/os/focuslock`), DarkSentinel (`/#/os/darksentinel`) and BasketProof (`/#/phone/basketproof`). On phones these open the touch link card.
+  - Suites after the change: deeplinks, tour, v3 and room-interactions all exit 0.
+- Eyeball list additions (`C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_f9d3536a-6c78-4903-a9f2-ede888503fe7/shots/`): `hero-overview-desktop-before/after.png`, `hero-overview-375-before/after.png`, `hero-work-desktop-before/after.png`, `hero-work-375-before/after.png`.
