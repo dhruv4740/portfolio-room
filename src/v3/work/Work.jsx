@@ -216,6 +216,7 @@ const css = `
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
   .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; }
+  .w-tour { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #1a1713; display: block; }
   .w-cs-row { display: block; }
   .w-cs-row summary { cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
   .w-cs-row summary img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; }
@@ -280,6 +281,28 @@ function AskBox() {
     return () => { live = false; };
   }, []);
   return <div className="w-ask" ref={ref} data-testid="work-ask" />;
+}
+
+// Room tour: loads only when scrolled near, plays muted, and does not autoplay under reduced motion.
+function TourVideo() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || typeof IntersectionObserver === 'undefined') return undefined;
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        if (!v.getAttribute('src')) v.src = '/media/room-tour.webm';
+        if (!calm) v.play().catch(() => {});
+      } else v.pause();
+    }, { rootMargin: '200px' });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <video className="w-tour" ref={ref} muted loop playsInline controls preload="none" poster="/media/room-tour.jpg"
+      aria-label="A one-minute guided tour of the 3D room and the demos on its monitor and phone" data-testid="room-tour" />
+  );
 }
 
 const CASE_IDS = ['blink', 'focuslock', 'darksentinel', 'blackout', 'portfolio3d'];
@@ -519,6 +542,9 @@ export default function Work() {
               </article>
               {featured.map(renderFeatured)}
             </div>
+
+            <div className="w-label"><span>Room tour</span><span>1 min, no sound</span></div>
+            <TourVideo />
 
             <div className="w-label"><span>Case studies</span><span>{CASE_IDS.length}</span></div>
             <div className="w-list" data-testid="case-studies">

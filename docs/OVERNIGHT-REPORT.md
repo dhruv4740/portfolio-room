@@ -99,3 +99,6 @@ Audited with `scripts/shots-hand-items.mjs` (frame sheets plus wristDeg and desk
 
 ### Phone grip approach
 - The left hand now reaches to the phone edge-on (side grip) instead of palm-down on top, then rolls under to the back grip (`WorkspaceStage.jsx`: reach target and `followPhone` blend SIDE to BACK; roll-in table indexed on its second half). wristDeg at 1.0-2.4 s: 5/19/23/23/22/20 (was 12/24/28/27/21/22), sleeve 0 mm, 0 verts in phone. Before/after frames: `phone-grip-before-after.png` in shared notes (top row before). Suites phone-grip, held-objects, hand-support, reduced-hands pass.
+
+### Unit 5: room-tour video
+- `scripts/record-tour.mjs` records the app's own guided tour (launchpad "Take the guided tour", 59 s, 960x540, muted) from a CDP screencast piped to Playwright's bundled ffmpeg, which can only encode VP9 (no H.264, no VP8 decode), so the output is `public/media/room-tour.webm` (1.6 MB) with `room-tour.jpg` poster and no MP4. /work shows it under "Room tour" (`TourVideo` in `Work.jsx`): `preload=none`, source set only when scrolled near, muted loop, no autoplay under reduced motion. Length is 59 s rather than 45 s because that is the existing tour's length. Sampled frames at 3/10/20/30/40/50 s show the room, monitor demos and phone.
