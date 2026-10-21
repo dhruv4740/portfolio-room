@@ -1083,6 +1083,15 @@ export default function WorkspaceStage({
       }
       renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','Room keyboard — type while focused');
       renderer.domElement.addEventListener('keydown', physicalKey);
+      // Seated typing must work without a click first: the canvas only has focus after a click, so also take keys that
+      // reach the window from the page body. Controls, fields and dialogs keep their own keys.
+      function windowKey(event) {
+        if (event.defaultPrevented || event.target === renderer.domElement) return;
+        if (!state.current.seated || state.current.phase !== 'room') return;
+        if (event.target instanceof Element && event.target.closest('input,textarea,select,button,a,summary,[contenteditable],[role=dialog],[role=button]')) return;
+        physicalKey(event);
+      }
+      window.addEventListener('keydown', windowKey);
       renderer.domElement.addEventListener('pointerdown', pointerDown);
       renderer.domElement.addEventListener('pointermove', pointerMove);
       renderer.domElement.addEventListener('wheel', wheelZoom, { passive: false });
@@ -1344,7 +1353,7 @@ export default function WorkspaceStage({
       return () => {
         disposed = true; director?.cancel();afterHours?.dispose();entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
-        renderer.domElement.removeEventListener('keydown', physicalKey); clearInterval(hintTimer); clearTimeout(easeBack);
+        renderer.domElement.removeEventListener('keydown', physicalKey); window.removeEventListener('keydown', windowKey); clearInterval(hintTimer); clearTimeout(easeBack);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
         renderer.domElement.removeEventListener('wheel', wheelZoom);
