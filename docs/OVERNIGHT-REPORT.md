@@ -108,3 +108,6 @@ Audited with `scripts/shots-hand-items.mjs` (frame sheets plus wristDeg and desk
 
 ### Unit 7: phone contact
 - New "Message" app on the room phone (`phone-apps/ContactApp.jsx`, wired in `PhoneScreen.jsx`): rings, Answer, short form, sent screen, mailto fallback. `functions/api/contact.js` validates, caps, honeypots, saves to `ASK_KV` and emails via Resend only if `RESEND_API_KEY` is set. Checked end to end locally with `wrangler pages dev` (call, form, sent screens in a screenshot). `scripts/test-contact.mjs` passes; held-objects suite passes. Owner step: add `RESEND_API_KEY` (see `docs/CONTACT.md`). Cloudflare Email Routing was not used (no custom domain).
+
+### Unit 8: case-file PDFs
+- `scripts/build-casefiles.mjs` (run by `npm run build`) prints one A4 page per case study (problem, decisions, result, what broke where the content has it, screenshot, stack, links) with Playwright Chromium to `public/casefiles/<id>.pdf` (blink, focuslock, darksentinel, blackout, portfolio3d; 33-152 KB each). The PDFs are committed; if Chromium is missing at build time the script keeps them and exits 0. Each case study on /work links its PDF. Checked: 1 page each, FocusLock page rendered and read.

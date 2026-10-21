@@ -591,6 +591,7 @@ export default function Work() {
                   <details className="w-row w-cs-row" key={id}>
                     <summary><b>{p.name}</b>{PREVIEWS[id] && <img src={PREVIEWS[id]} alt={`${p.name} screenshot`} loading="lazy" />}</summary>
                     {caseText(p.caseStudy)}
+                    <a className="w-act" href={`/casefiles/${id}.pdf`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>
                   </details>
                 );
               })}
