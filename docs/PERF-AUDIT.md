@@ -273,3 +273,22 @@ and telemetry re-render were never run.
 Open: the dropped frame on a single keystroke (suspects: deskContactShadows
 re-capture, instanceMatrix upload, key-cap material switch, monitor texture
 update) is unsolved; look-around choppiness at 60 Hz was not reproducible.
+
+### Round 3 candidates, rerun on-screen (2026-10-21)
+Rig: headed Chromium with the window on screen (`HEADED=1 WINPOS=0,0`), seated look-around, 1536x864 at DPR 1.25,
+AMD iGPU. All runs held 60 fps with the window visible, so none were throttled. The GPU clock drifts upward over a
+session (base gpuMed 4.75, 5.01, then 7.98 ms across three rounds), so each candidate is compared with the base run
+taken just before it, never with a different round.
+
+| Candidate | gpuMed vs its base (ms) | Verdict |
+|---|---|---|
+| Antialias off (separate build, 4 interleaved pairs) | 5.04/5.17, 4.98/4.85, 6.67/5.23, 4.96/4.95 | no gain, not shipped |
+| Physical to Standard material | 4.61/4.75, 5.13/5.01, 9.40/7.98 | no gain or worse, not shipped |
+| Fewer lights (hide point/weak directional) | 6.39/5.01 (programs 33 to 54); two runs discarded | worse (extra shader programs), not shipped |
+| Drop the environment map | 4.66/4.75, 8.03/5.01, 11.35/7.98 | worse, not shipped |
+| Contact shadows off | 5.22/4.75, 5.12/5.01, 8.51/7.98 | no gain, not shipped |
+| Pixel ratio 1.0 while moving | 3.62/4.75, 4.87/5.01; third run discarded | one clear drop, one within noise; not shipped (the adaptive pixel-ratio ladder already lowers it under load, and it softens the image) |
+
+Skipped without a run: night env-probe skip (a load-time change, not a steady-state one), telemetry 300 ms re-render
+(cpuMed is already 1.3-1.9 ms). At 60 fps with ~5 ms GPU there is little left for these to win on this machine; they
+could matter on weaker GPUs, which this rig cannot show.

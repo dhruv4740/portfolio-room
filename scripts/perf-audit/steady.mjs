@@ -10,7 +10,7 @@ const AB = process.env.AB || '', QS = process.env.QS || '';
 const TAG = process.env.TAG || 'steady';
 const ONLY = (process.env.ONLY || '').split(',').filter(Boolean);
 const OUT = 'scripts/shots/perf'; await mkdir(OUT, { recursive: true });
-const b = await chromium.launch({ channel: 'chromium', headless: !process.env.HEADED, args: ['--use-angle=d3d11', '--ignore-gpu-blocklist', ...(process.env.HEADED ? ['--window-position=-2400,0','--window-size=1600,950','--disable-features=CalculateNativeWinOcclusion','--disable-renderer-backgrounding','--disable-background-timer-throttling','--disable-backgrounding-occluded-windows'] : [])] });
+const b = await chromium.launch({ channel: 'chromium', headless: !process.env.HEADED, args: ['--use-angle=d3d11', '--ignore-gpu-blocklist', ...(process.env.HEADED ? [`--window-position=${process.env.WINPOS||'-2400,0'}`,'--window-size=1600,950','--disable-features=CalculateNativeWinOcclusion','--disable-renderer-backgrounding','--disable-background-timer-throttling','--disable-backgrounding-occluded-windows'] : [])] });
 const ctx = await b.newContext({ viewport: { width: 1536, height: 864 }, deviceScaleFactor: 1.25 });
 const p = await ctx.newPage();
 const cdp = await ctx.newCDPSession(p);
