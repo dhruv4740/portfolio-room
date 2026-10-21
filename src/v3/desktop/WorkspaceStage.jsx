@@ -414,7 +414,7 @@ export default function WorkspaceStage({
       const FOLLOW = 1;
       function followPhone() {
         const L = model.hands.left, g = phoneGrip, size = WORKSPACE.phoneSize;
-        const [a, b, w] = g < 0.5 ? [PHONE_TOP, PHONE_SIDE, g * 2] : [PHONE_SIDE, PHONE_BACK, (g - 0.5) * 2];
+        const [a, b, w] = [PHONE_SIDE, PHONE_BACK, g];
         hold(L, a, b, w, null, false);
         L.elbowFollow = FOLLOW * g;
         const px = -size.width / 2, py = -size.depth / 2, polar = q => [Math.atan2(q[1] - py, q[0] - px), Math.hypot(q[0] - px, q[1] - py)];
@@ -423,7 +423,7 @@ export default function WorkspaceStage({
         const ang = angA + (angB - angA) * w, r = rA + (rB - rA) * w;
         model.phone.updateMatrix();
         L.hand.position.copy(rollPos.set(px + r * Math.cos(ang), py + r * Math.sin(ang), a.p[2] + (b.p[2] - a.p[2]) * w).applyMatrix4(model.phone.matrix));
-        const n = PHONE_ROLL_IN.length - 1, i = Math.min(n - 1, Math.floor(g * n)), f = g * n - i;
+        const gk = 0.5 + g / 2, n = PHONE_ROLL_IN.length - 1, i = Math.min(n - 1, Math.floor(gk * n)), f = gk * n - i;
         L.hand.position.addScaledVector(palmIn.set(0, -1, 0).applyQuaternion(L.hand.quaternion), PHONE_ROLL_IN[i] + (PHONE_ROLL_IN[i + 1] - PHONE_ROLL_IN[i]) * f);
       }
       // PhoneScreen drives these. The texture under the DOM screen follows it,
@@ -468,7 +468,7 @@ export default function WorkspaceStage({
         const [px, py, pz] = WORKSPACE.anchors.phone, from = snapshot(left), k = { reach: 0, grip: 0 };
         phoneGrip = 0;
         action = gsap.timeline({
-          onUpdate() { if (k.reach < 1) hold(left, from, PHONE_TOP, k.reach); else { phoneGrip = k.grip; followPhone(); } model.hands.update(); leanCamera(); invalidate(); },
+          onUpdate() { if (k.reach < 1) hold(left, from, PHONE_SIDE, k.reach); else { phoneGrip = k.grip; followPhone(); } model.hands.update(); leanCamera(); invalidate(); },
           onComplete() { zoomPhone(false); },
         });
         markPhone('reaching');

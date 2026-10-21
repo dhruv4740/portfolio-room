@@ -96,3 +96,6 @@ Audited with `scripts/shots-hand-items.mjs` (frame sheets plus wristDeg and desk
 ### Unit 4: case studies
 - Five case studies (Blink growth tools, FocusLock, DarkSentinel, Blackout, 3D Portfolio) as `caseStudy {problem, decisions, result}` in `src/v3/content/index.js` (Blink on `experience[0]`), 108-130 words each, facts only from the content file, résumé and `docs/PROJECT-MATERIAL.md`. Shown as a "Case studies" accordion on /work; Ask reads them (`knowledge.js` now includes experience case studies).
 - Screenshots: FocusLock, DarkSentinel and 3D Portfolio use existing images. Blink and Blackout have no real screenshot in the repo, so none is shown rather than a fake.
+
+### Phone grip approach
+- The left hand now reaches to the phone edge-on (side grip) instead of palm-down on top, then rolls under to the back grip (`WorkspaceStage.jsx`: reach target and `followPhone` blend SIDE to BACK; roll-in table indexed on its second half). wristDeg at 1.0-2.4 s: 5/19/23/23/22/20 (was 12/24/28/27/21/22), sleeve 0 mm, 0 verts in phone. Before/after frames: `phone-grip-before-after.png` in shared notes (top row before). Suites phone-grip, held-objects, hand-support, reduced-hands pass.
