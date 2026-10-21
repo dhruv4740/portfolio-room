@@ -63,8 +63,10 @@ export function mountAsk(el) {
     const b = Object.assign(document.createElement('div'), { textContent: text });
     b.style.cssText = mine
       ? `align-self:flex-end;max-width:88%;padding:9px 14px;border-radius:18px 18px 4px 18px;background:rgba(246,244,238,.92);color:#26251f;`
-      : `align-self:flex-start;max-width:96%;padding:10px 14px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.14);white-space:pre-wrap;`;
-    thread.appendChild(b); thread.scrollTop = thread.scrollHeight; return b;
+      : `align-self:flex-start;max-width:96%;padding:10px 14px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);white-space:pre-wrap;`;
+    thread.appendChild(b); thread.scrollTop = thread.scrollHeight;
+    if (!reduced()) b.animate([{ opacity: 0, transform: 'translateY(10px) scale(.98)' }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.2,.9,.25,1.1)' });
+    return b;
   };
   // Typewriter: reveals the answer in word-sized steps (~60 words a second), instant under reduced motion.
   const typeInto = (node, text) => new Promise((resolve) => {
@@ -82,18 +84,20 @@ export function mountAsk(el) {
     if (busy || q.length < 3) return;
     busy = true; go.disabled = true; input.value = ''; chips.style.display = 'none';
     bubble(q, true);
-    const a = bubble('Thinking…', false); a.style.color = MUTE;
+    const a = bubble('Thinking', false); a.style.color = MUTE;
+    let dots = 0; const tick = setInterval(() => { if (a.dataset.done) return clearInterval(tick); a.textContent = 'Thinking' + '.'.repeat(dots = (dots + 1) % 4); }, 280);
     let meta = '';
     try {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q, token: await token() }) });
       const d = await r.json();
+      a.dataset.done = '1'; clearInterval(tick);
       a.style.color = INK;
       if (d.error) a.textContent = d.error;
       else {
         await typeInto(a, d.answer);
         meta = [d.source && `Source: ${d.source}`, `answered by ${LABEL[d.provider] || d.provider}`, d.note].filter(Boolean).join(' · ');
       }
-    } catch { a.style.color = INK; a.textContent = 'Could not reach the server. Email dhruvkothari13062006@gmail.com instead.'; }
+    } catch { a.dataset.done = '1'; clearInterval(tick); a.style.color = INK; a.textContent = 'Could not reach the server. Email dhruvkothari13062006@gmail.com instead.'; }
     if (meta) {
       const m = document.createElement('small');
       m.style.cssText = `color:${MUTE};font-size:12px;display:block;margin-top:6px;`;

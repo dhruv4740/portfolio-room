@@ -20,7 +20,8 @@ export function mountAskPill() {
   root.id = 'ask-pill-root';
   root.innerHTML = `<style>
 #ask-pill-root{position:fixed;z-index:2147483000;left:0;top:0;width:0;height:0;font:400 14px/1.4 system-ui,-apple-system,sans-serif}
-#ask-pill{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;width:min(360px,calc(100vw - 32px));height:46px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:4px 4px 4px 16px;border:1px solid rgba(255,255,255,.2);border-radius:99px;background:rgba(48,47,44,.94);box-shadow:0 6px 22px rgba(0,0,0,.3),inset 0 1px 0 rgba(255,255,255,.12);margin:0}
+#ask-pill{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;width:min(280px,calc(100vw - 32px));height:46px;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:4px 4px 4px 16px;border:1px solid rgba(255,255,255,.2);border-radius:99px;background:rgba(30,30,34,.72);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);box-shadow:0 10px 30px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.05);margin:0;transition:transform .35s cubic-bezier(.2,.9,.25,1.2),box-shadow .35s}
+#ask-pill:hover,#ask-pill:focus-within{box-shadow:0 14px 38px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.3)}
 #ask-pill input{flex:1;min-width:0;border:0;background:transparent;color:#f6f4ee;font:15px system-ui,-apple-system,sans-serif;outline:none;padding:0}
 #ask-pill input::placeholder{color:rgba(246,244,238,.62)}
 #ask-pill button{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:rgba(246,244,238,.92);color:#26251f;cursor:pointer;font:600 17px/1 system-ui,sans-serif;padding:0}
@@ -28,12 +29,15 @@ export function mountAskPill() {
 #ask-pill button:focus-visible{outline:2px solid #f6f4ee;outline-offset:2px}
 #ask-pill-root[data-ctx=room] #ask-pill{left:auto;right:16px;bottom:68px;transform:none;width:min(250px,calc(100vw - 32px))}
 @media (max-width:699px){#ask-pill-root[data-ctx=work] #ask-pill{bottom:calc(84px + env(safe-area-inset-bottom))}}
-#ask-sheet{position:fixed;inset:0;display:none;color:#f6f4ee;background:rgba(92,92,98,.52);-webkit-backdrop-filter:blur(30px) saturate(180%);backdrop-filter:blur(30px) saturate(180%);box-shadow:inset 0 1px 0 rgba(255,255,255,.28)}
+#ask-sheet{position:fixed;inset:0;display:none;color:#f6f4ee;background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 28%),rgba(24,24,28,.68);-webkit-backdrop-filter:blur(28px) saturate(170%);backdrop-filter:blur(28px) saturate(170%);box-shadow:inset 0 1px 0 rgba(255,255,255,.22)}
+@media (prefers-reduced-transparency:reduce){#ask-pill,#ask-sheet{-webkit-backdrop-filter:none;backdrop-filter:none;background:#26262a}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#ask-pill,#ask-sheet{background:#26262a}}
 #ask-sheet.open{display:block}
 #ask-sheet .col{box-sizing:border-box;max-width:720px;height:calc(100% - 40px);margin:40px auto 0;padding:18px 20px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
 #ask-sheet header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font:600 17px system-ui,-apple-system,sans-serif}
 #ask-sheet header button{width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.16);color:#f6f4ee;font:20px/1 system-ui,sans-serif;cursor:pointer}
 #ask-sheet .body{flex:1;min-height:0}
+#ask-sheet input::placeholder{color:rgba(246,244,238,.55)}
 #ask-sheet input:focus-visible,#ask-sheet button:focus-visible{outline:2px solid #f6f4ee;outline-offset:2px}
 </style>
 <form id="ask-pill" role="search" autocomplete="off"><input type="text" maxlength="300" placeholder="Ask about Dhruv" aria-label="Ask about Dhruv" spellcheck="false"><button type="submit" aria-label="Ask">↑</button></form>
@@ -75,6 +79,10 @@ export function mountAskPill() {
   // While open, the sheet owns the keyboard: nothing reaches the room's shortcuts, Escape closes the sheet (not the room).
   function onKey(e) {
     if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
+    if (e.key === 'Tab') {
+      const f = [...sheet.querySelectorAll('button,input,[tabindex]:not([tabindex="-1"])')].filter((n) => !n.disabled && n.offsetParent);
+      if (f.length) { const i = f.indexOf(document.activeElement), n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i + 1) % f.length; e.preventDefault(); f[n].focus(); }
+    }
     if (!sheet.contains(e.target)) { e.stopImmediatePropagation(); }
   }
   pill.addEventListener('submit', (e) => { e.preventDefault(); const q = pillInput.value.trim(); pillInput.value = ''; open(q.length >= 3 ? q : ''); });
