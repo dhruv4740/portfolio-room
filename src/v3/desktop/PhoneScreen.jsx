@@ -770,11 +770,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
               style={{ left: igIcon.left, top: igIcon.top, width: igIcon.size }}
             >
               <span className="ps-tile" style={{ width: igIcon.size, height: igIcon.size }}>
-                <svg viewBox="0 0 100 100" aria-hidden="true">
-                  <rect x="21" y="21" width="58" height="58" rx="20" />
-                  <circle cx="50" cy="50" r="17" />
-                  <circle className="ps-dot" cx="72" cy="28" r="4.65" />
-                </svg>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph"><rect x="22" y="22" width="56" height="56" rx="16" /><circle cx="50" cy="50" r="13" /><circle className="ps-dot" cx="67" cy="33" r="3" /></svg>
               </span>
               <span className="ps-label">Instagram</span>
             </button>
@@ -788,11 +784,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
               style={{ left: flIcon.left, top: flIcon.top, width: flIcon.size }}
             >
               <span className="ps-tile-fl" style={{ width: flIcon.size, height: flIcon.size }}>
-                <svg viewBox="0 0 100 100" aria-hidden="true" className="fl-shield-icon">
-                  <path d="M50 14 L80 26 C80 62 50 84 50 86 C50 84 20 62 20 26 Z" fill="#1E293B" stroke="#6366F1" strokeWidth="6" strokeLinejoin="round" />
-                  <circle cx="50" cy="46" r="8" fill="none" stroke="#A78BFA" strokeWidth="5" />
-                  <rect x="44" y="52" width="12" height="15" rx="3" fill="#6366F1" />
-                </svg>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph"><path d="M50 20 L77 30 V50 C77 66 63 77 50 82 C37 77 23 66 23 50 V30 Z" /><circle cx="50" cy="46" r="6" /><path d="M50 52 V60" /></svg>
               </span>
               <span className="ps-label">FocusLock</span>
             </button>
@@ -806,11 +798,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
               style={{ left: expenseIcon.left, top: expenseIcon.top, width: expenseIcon.size }}
             >
               <span className="ps-tile-expense" style={{ width: expenseIcon.size, height: expenseIcon.size }}>
-                <svg viewBox="0 0 100 100" aria-hidden="true" className="expense-icon">
-                  <rect x="18" y="18" width="64" height="64" rx="18" fill="#0E0E0E" stroke="#3DDC84" strokeWidth="5" />
-                  <path d="M28 62 L42 46 L58 54 L72 36" fill="none" stroke="#3DDC84" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-                  <circle cx="72" cy="36" r="4.5" fill="#3DDC84" />
-                </svg>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph"><path d="M22 78 H78" /><path d="M26 64 L42 46 L56 56 L76 30" /><path d="M64 30 H76 V42" /></svg>
               </span>
               <span className="ps-label">Expense</span>
             </button>
@@ -824,11 +812,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
               style={{ left: basketIcon.left, top: basketIcon.top, width: basketIcon.size }}
             >
               <span className="ps-tile-basket" style={{ width: basketIcon.size, height: basketIcon.size }}>
-                <svg viewBox="0 0 100 100" aria-hidden="true" className="basket-icon">
-                  <rect x="18" y="18" width="64" height="64" rx="18" fill="#1C1D22" stroke="#7C4DFF" strokeWidth="5" />
-                  <path d="M26 46 L74 46 L67 76 L33 76 Z" fill="none" stroke="#A78BFA" strokeWidth="5" strokeLinejoin="round" />
-                  <path d="M36 46 C36 32 64 32 64 46" fill="none" stroke="#7C4DFF" strokeWidth="5" />
-                </svg>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph"><path d="M22 44 H78 L70 78 H30 Z" /><path d="M36 44 C36 28 64 28 64 44" /></svg>
               </span>
               <span className="ps-label">BasketProof</span>
             </button>
@@ -842,10 +826,7 @@ const PhoneScreen = forwardRef(function PhoneScreen({
               style={{ left: contactIcon.left, top: contactIcon.top, width: contactIcon.size }}
             >
               <span className="ps-tile-basket" style={{ width: contactIcon.size, height: contactIcon.size }}>
-                <svg viewBox="0 0 100 100" aria-hidden="true" className="basket-icon">
-                  <rect x="18" y="18" width="64" height="64" rx="18" fill="#0F2A22" stroke="#34D399" strokeWidth="5" />
-                  <path d="M30 34 H70 V60 H46 L36 70 V60 H30 Z" fill="none" stroke="#34D399" strokeWidth="5" strokeLinejoin="round" />
-                </svg>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph"><path d="M24 28 H76 V62 H46 L32 74 V62 H24 Z" /></svg>
               </span>
               <span className="ps-label">Message</span>
             </button>
@@ -2033,51 +2014,24 @@ const css = `
 }
 .ps-app:focus-visible, .ps-app-focuslock:focus-visible, .ps-app-expense:focus-visible, .ps-app-basket:focus-visible { outline: none; }
 
-.ps-tile {
-  display: block;
-  border-radius: 24%;
-  background: linear-gradient(45deg, #FFD521 0%, #F50000 35%, #B900B4 70%, #4C68D7 100%);
-  transition: box-shadow .15s ease;
-}
-.ps-tile-fl {
+.ps-tile, .ps-tile-fl, .ps-tile-expense, .ps-tile-basket {
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 24%;
-  background: #1E293B;
-  border: 2px solid #6366F1;
-  box-shadow: 0 4px 18px rgba(99, 102, 241, 0.25);
-  transition: box-shadow .15s ease, transform .15s ease;
-}
-.ps-tile-expense {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 24%;
-  background: #0E0E0E;
-  border: 2px solid #3DDC84;
-  box-shadow: 0 4px 18px rgba(61, 220, 132, 0.25);
-  transition: box-shadow .15s ease, transform .15s ease;
-}
-.ps-tile-basket {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 24%;
-  background: #1C1D22;
-  border: 2px solid #7C4DFF;
-  box-shadow: 0 4px 18px rgba(124, 77, 255, 0.25);
+  background: linear-gradient(160deg, #2c2b28 0%, #1b1a18 100%);
+  border: 1px solid #4a4842;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   transition: box-shadow .15s ease, transform .15s ease;
 }
 .ps-app:hover .ps-tile, .ps-app:focus-visible .ps-tile,
 .ps-app-focuslock:hover .ps-tile-fl, .ps-app-focuslock:focus-visible .ps-tile-fl,
 .ps-app-expense:hover .ps-tile-expense, .ps-app-expense:focus-visible .ps-tile-expense,
 .ps-app-basket:hover .ps-tile-basket, .ps-app-basket:focus-visible .ps-tile-basket {
-  box-shadow: 0 0 34px rgba(255, 255, 255, .55);
+  box-shadow: 0 0 28px rgba(217, 212, 199, .4);
 }
-.ps-tile svg { display: block; width: 100%; height: 100%; fill: none; stroke: #fff; stroke-width: 7.5; }
-.ps-tile .ps-dot { fill: #fff; stroke: none; }
-.fl-shield-icon, .expense-icon, .basket-icon { width: 75%; height: 75%; }
+.ps-glyph { display: block; width: 62%; height: 62%; fill: none; stroke: #e8e4d8; stroke-width: 5.5; stroke-linecap: round; stroke-linejoin: round; }
+.ps-glyph .ps-dot { fill: #e8e4d8; stroke: none; }
 .ps-label { margin-top: 18px; font-size: 24px; color: #F8FAFC; white-space: nowrap; font-weight: 500; }
 
 .ps-full-app {
