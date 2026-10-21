@@ -283,7 +283,7 @@ function AskBox() {
   return <div className="w-ask" ref={ref} data-testid="work-ask" />;
 }
 
-// Room tour: loads only when scrolled near, plays muted, and does not autoplay under reduced motion.
+// Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
 function TourVideo() {
   const ref = useRef(null);
   useEffect(() => {
@@ -292,7 +292,12 @@ function TourVideo() {
     const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const io = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        if (!v.getAttribute('src')) v.src = '/media/room-tour.webm';
+        if (!v.querySelector('source')) {
+          [['/media/room-tour.mp4', 'video/mp4'], ['/media/room-tour.webm', 'video/webm']].forEach(([src, type]) => {
+            const el = document.createElement('source'); el.src = src; el.type = type; v.appendChild(el);
+          });
+          v.load();
+        }
         if (!calm) v.play().catch(() => {});
       } else v.pause();
     }, { rootMargin: '200px' });
