@@ -20,6 +20,8 @@ export default {
       'color:#1c2622', 'background:transparent', 'caret-color:#0f6b52',
     ].join(';');
     body.appendChild(ta);
-    queueMicrotask(() => ta.focus());
+    // While the room owns the keyboard (state 'room') keys arrive as messages; taking focus here would send the
+    // visitor's next real keystrokes straight into this textarea ahead of the queued messages (scrambled text).
+    queueMicrotask(() => { if (document.documentElement.dataset.v3State !== 'room') ta.focus(); });
   },
 };
