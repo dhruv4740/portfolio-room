@@ -153,6 +153,7 @@ export default function WorkspaceStage({
       });
       const originalSetSky = model.setSky;
       model.hands.setKeyboard(model.keys);
+      model.hands.left.deskBox = model.hands.right.deskBox = model.staticBoxes.desk;
       model.setSky = (skyState) => {
         originalSetSky(skyState);
         afterHours?.setSky(skyState);
@@ -394,6 +395,8 @@ export default function WorkspaceStage({
         return { obj: model.phone, p: [-0.045, -0.03, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
           pose: {...POSES.cup,c0:.2,c1:.2,c2:.2,c3:.24,spread:.1} };
       })();
+      // Pitch the back grip toward the forearm and yaw it a little: the plain basis left the left wrist bent 64 degrees at the held pose.
+      PHONE_BACK.r.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(35), THREE.MathUtils.degToRad(-30), 0)));
       const PHONE_LEAN = { x: -0.14, y: 0, z: -0.21 }, PHONE_HELD = new THREE.Vector3(0.08, 1.04, 0.05);
       let phoneGrip = 1, phoneVisited = false;
       // The underhand roll pivots on the phone's near long edge: a straight
@@ -408,10 +411,12 @@ export default function WorkspaceStage({
       let PHONE_ROLL_IN = [0.002, 0.0055, 0.0085, 0.0105, 0.0125, 0.014, 0.015, 0.016, 0.0165, 0.017, 0.0175, 0.018, 0.018, 0.0185,
         0.019, 0.019, 0.0195, 0.0195, 0.0195, 0.0195, 0.019, 0.0175, 0.0155, 0.013, 0.0105, 0.0075, 0.003, 0, -0.0015, -0.006,
         -0.006, -0.003, -0.002, -0.0015, -0.001, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005];
+      const FOLLOW = 1;
       function followPhone() {
         const L = model.hands.left, g = phoneGrip, size = WORKSPACE.phoneSize;
         const [a, b, w] = g < 0.5 ? [PHONE_TOP, PHONE_SIDE, g * 2] : [PHONE_SIDE, PHONE_BACK, (g - 0.5) * 2];
         hold(L, a, b, w, null, false);
+        L.elbowFollow = FOLLOW * g;
         const px = -size.width / 2, py = -size.depth / 2, polar = q => [Math.atan2(q[1] - py, q[0] - px), Math.hypot(q[0] - px, q[1] - py)];
         let [angA, rA] = polar(a.p), [angB, rB] = polar(b.p);
         while (angB < angA) angB += Math.PI * 2;

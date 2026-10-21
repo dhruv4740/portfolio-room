@@ -9,7 +9,7 @@ await mkdir(OUT, { recursive: true });
 const b = await chromium.launch({ channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] });
 const p = await b.newPage({ viewport: { width: 1280, height: 800 } });
 await p.addInitScript(() => { localStorage.setItem('v3:test', '1'); localStorage.setItem('v3:surface-override', 'scan'); localStorage.setItem('v3:seen-intro', '1'); sessionStorage.setItem('v3:arrival-seen', '1'); });
-await p.goto(BASE + '/#/room/explore');
+await p.goto(BASE + '/' + (process.env.QS||'') + '#/room/explore');
 await p.waitForFunction(() => document.querySelector('.scan-root')?.dataset.seated === 'true', null, { timeout: 60000 });
 await p.waitForFunction(() => !document.querySelector('.room-load'), null, { timeout: 90000 }).catch(() => {}); await p.waitForTimeout(6000);
 const log = [];
@@ -35,7 +35,7 @@ async function frames(name, label, times, ready) {
   if (ready) await ready();
 }
 await snap('rest', 0);
-for (const [name, id, ts] of [['phone', 'phone', [0.3, 0.6, 0.9, 1.2, 1.6, 2.0, 2.6]]]) {
+for (const [name, id, ts] of [['phone', 'phone', (process.env.TS||'0.5,0.9,1.2,1.6,2.0,2.6,3.0').split(',').map(Number)]]) {
   await frames(name, id, ts);
   await p.keyboard.press('Escape'); await p.waitForTimeout(3500);
 }
