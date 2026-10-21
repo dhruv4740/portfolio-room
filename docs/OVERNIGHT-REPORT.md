@@ -82,3 +82,6 @@ Measured (cold.mjs, fresh profile, `/?sky=night`, 3 runs): reveal before 3188/29
 
 ### 1. Redesign mockups
 Eight small static frames at `/mockups/` (index grid, one-line caption each): four colour/type directions (amber serif, monitor cyan mono, paper editorial, moonlight sans), two room overlays over a real night screenshot, two /work layouts (ledger, sticky split). Real content only; no build step. Source: `public/mockups/`.
+
+### 2b. Baked lighting (not started as a new prototype)
+The static room is already baked: walls and floor use per-surface lightmaps with lamp on/off variants (`public/materials/after-hours/baked-true-scale/*`, `afterHours.js` bake promise). What is not baked is the desk and props, which need a new Blender bake pass (Blender 5.2 is installed here). Deferred behind motion quality, which is the owner's top complaint; the flag-and-A/B step is still open.
