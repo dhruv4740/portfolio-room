@@ -394,7 +394,7 @@ export default function WorkspaceStage({
         return { obj: model.phone, p: [-0.045, -0.03, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
           pose: {...POSES.cup,c0:.2,c1:.2,c2:.2,c3:.24,spread:.1} };
       })();
-      const PHONE_LEAN = { x: -0.14, y: -0.08, z: -0.21 }, PHONE_HELD = new THREE.Vector3(0.08, 1.04, 0.05);
+      const PHONE_LEAN = { x: -0.14, y: 0, z: -0.21 }, PHONE_HELD = new THREE.Vector3(0.08, 1.04, 0.05);
       let phoneGrip = 1, phoneVisited = false;
       // The underhand roll pivots on the phone's near long edge: a straight
       // blend between the grips either cuts through the case or leaves the

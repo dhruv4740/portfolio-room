@@ -7,7 +7,7 @@ import gsap from 'gsap';
 const SHOT = [
   { at: 0, x: 1.55, y: 1.60, z: 0.95, tx: 0.30, ty: 1.10, tz: -0.50 },
   { at: 2.4, x: 0.55, y: 1.36, z: 0.62, tx: 0.02, ty: 1.08, tz: -0.30, ease: 'sine.inOut' },
-  { at: 4.6, x: 0.40, y: 1.33, z: 0.50, tx: 0.00, ty: 1.08, tz: -0.30, ease: 'none' },
+  { at: 4.6, x: 0.40, y: 1.33, z: 0.50, tx: 0.00, ty: 1.08, tz: -0.30, ease: 'sine.inOut' },
 ];
 export const COLD_OPEN = { lampAt: 1.7, typeFrom: 2.9, typeTo: 4.3, settle: 2.6 };
 

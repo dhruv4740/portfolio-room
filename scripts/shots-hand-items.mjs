@@ -24,7 +24,7 @@ async function snap(name, t) {
 const button = name => p.getByRole('button', { name: new RegExp(name, 'i') }).first();
 async function frames(name, label, times, ready) {
   await p.evaluate(() => { window.__oldTl = window.__v3test.timeline(); });
-  await p.evaluate(l => document.querySelector(`.anchor-marker[aria-label^="${l}"]`).click(), label);
+  await p.evaluate(l => document.querySelector(`.anchor-marker[data-object="${l}"]`)?.click(), label);
   await p.waitForFunction(() => { const tl = window.__v3test.timeline(); return tl && tl !== window.__oldTl; }, null, { polling: 20, timeout: 8000 }).catch(() => {});
   for (const t of times) {
     await p.evaluate(t => { const tl = window.__v3test.timeline(); if (!tl) return; tl.timeScale(0.02); tl.seek(t); tl.play(); }, t);
@@ -35,13 +35,9 @@ async function frames(name, label, times, ready) {
   if (ready) await ready();
 }
 await snap('rest', 0);
-await frames('notebook', 'Notebook', [0.4, 0.8, 1.2, 1.6]);
-await p.keyboard.press('Escape'); await p.waitForTimeout(3500);
-await snap('notebook-put-down', 0);
-await frames('phone', 'Phone', [0.5, 0.9, 1.4]);
-await p.keyboard.press('Escape'); await p.waitForTimeout(3500);
-await frames('award', 'Awards', [0.5, 1.0, 1.5]);
-await p.keyboard.press('Escape'); await p.waitForTimeout(3500);
-await frames('pen', 'Pen', [0.5, 1.0, 1.5]);
+for (const [name, id, ts] of [['phone', 'phone', [0.3, 0.6, 0.9, 1.2, 1.6, 2.0, 2.6]]]) {
+  await frames(name, id, ts);
+  await p.keyboard.press('Escape'); await p.waitForTimeout(3500);
+}
 await writeFile(`${OUT}/hands.json`, JSON.stringify(log, null, 1));
 await b.close();

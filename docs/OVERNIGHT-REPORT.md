@@ -85,3 +85,10 @@ Eight small static frames at `/mockups/` (index grid, one-line caption each): fo
 
 ### 2b. Baked lighting (not started as a new prototype)
 The static room is already baked: walls and floor use per-surface lightmaps with lamp on/off variants (`public/materials/after-hours/baked-true-scale/*`, `afterHours.js` bake promise). What is not baked is the desk and props, which need a new Blender bake pass (Blender 5.2 is installed here). Deferred behind motion quality, which is the owner's top complaint; the flag-and-A/B step is still open.
+
+### 3. Motion quality (first pass)
+Audited with `scripts/shots-hand-items.mjs` (frame sheets plus wristDeg and desk-penetration probe; it now targets the markers by `data-object`, since the old Notebook/Pen markers are gone). Sheets: shared notes `shots/hands-phone.png` (before) and `hands-phone-after.png`.
+- **Phone reach bent the wrists and bunched the sleeve.** `PHONE_LEAN` sank the torso 8 cm (`y: -0.08`), which the hand solver compensated for with a 37-42 degree right wrist and a large sleeve fold. Set `y` to 0 (a seated torso does not sink). Wrist during the reach: right 37-42 to 19-22 degrees, left 26-47 to 14-33. Frames show a straight forearm reaching, not a folded one.
+- **Cold-open camera had a pop.** The last segment of the arrival was linear (`ease: 'none'`) right after a sine ease that ends at zero speed, so the camera jumped to full speed, then stopped into the settle tween. Now `sine.inOut`.
+- **Audit result for the rest:** every hand and object reach tween in `WorkspaceStage.jsx` already uses a power2 or power3 in/out ease; the only linear ones left are clocks, not motion.
+- **Still open, not fixed:** (1) left sleeve still penetrates the desk about 13-15 mm while holding the phone reach (0.9-1.6 s) and about 16 mm before the change; (2) the left wrist reaches 64 degrees at the final phone grip (2.6 s); (3) award and coffee reaches report skin-vertex penetration (865-1291 and 769 verts) at 0.6-1.4 s that I have not eyeballed. Suites: held-objects, reduced-hands, hand-support, phone-grip and room-interactions pass.
