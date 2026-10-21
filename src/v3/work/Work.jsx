@@ -239,7 +239,10 @@ const css = `
 
   @media (min-width: 960px) {
     .w-wrap { display: grid; grid-template-columns: 400px 1fr; gap: 88px; padding: 56px 48px; }
-    .w-side { position: sticky; top: 56px; align-self: start; }
+    .w-side { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
+    .w-side::-webkit-scrollbar { width: 6px; }
+    .w-side::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+    @media (max-height: 900px) { .w-wrap { padding-top: 32px; } .w-desk { max-width: 260px; } .w-root h1 { margin-top: 16px; } .w-sub { margin-top: 8px; } .w-live { margin-top: 12px; padding: 10px 14px; } .w-cta { margin-top: 14px; } .w-room { margin-top: 12px; padding: 10px 14px; } }
     .w-cta { display: flex; }
     .w-room { display: flex; }
     .w-bar { display: none; }
