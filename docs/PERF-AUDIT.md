@@ -325,3 +325,10 @@ Fix: flicker animation removed, blur removed from `.topbar`/taskbar (`public/os/
 First-key hitch: pre-creating the notepad window (opened after the bridge starts, minimised) did not remove it: still one 130-180 ms gap ~70 ms after the first key, with or without `TYPING_EASE`. So it is not window creation or the camera ease; likely the first hand-press / first monitor update. Warm-up reverted, not shipped. Cause not isolated.
 
 Motion probe now also counts keys and pointer drags for 500 ms (no measured effect, kept since it matches the intent of the probe).
+
+### First-key hitch, traced (2026-10-21, round 5)
+
+CDP trace (`browser.startTracing`, categories devtools.timeline, v8.execute, cc, gpu) around the first key of a fresh seated session, 1536x864 DPR 1.25.
+- Page with no prior click: the first `keydown` task is a 60 ms main-thread task. 56 ms of it is the document keydown listener that calls `unlockRoomAudio()` (`new AudioContext()` plus the gain graph, `roomAudio.js`). A visitor normally has already clicked to sit down, and `pointerdown` runs the same unlock, so this part is paid earlier in real use.
+- With a click first, the main thread has no long task at the first key. The remaining ~100-170 ms gap is GPU-process raster: three `RendererRasterWorker` tasks of 19, 44 and 29 ms starting 60-130 ms after the key. That is Chrome rasterising the OS iframe layer at full size when it goes from the `.is-prewarm` state (rastered at `scale(.359)`, opacity .004) to the monitor-aligned matrix3d quad, plus the new notepad window.
+- Not fixed: prewarming at a scale closer to the on-screen size would trade a smaller hitch for a larger layer cost on every seated visitor, and I could not make it safe in the time available. Pre-creating the notepad window did not change the gap (measured), so it is raster of the layer, not window creation.

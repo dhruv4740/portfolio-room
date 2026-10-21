@@ -33,3 +33,19 @@ Preview: https://preview.dhruvkothari.pages.dev. Nothing was deployed to product
 - Typing at 30 fps traced to the OS stylesheet (flicker animation + backdrop blur), not the governor; removed, about 37 to 51 fps while typing. Key/drag motion probe added. Details in PERF-AUDIT.md.
 - Not done: first-key hitch (130-180 ms once). Notepad pre-warm did not help, reverted.
 - Found, not fixed: `verify-room-interactions` flakes about 1 run in 4-8 with typed text reordered ('hlloe', 'hoell'). Also happens on the build before this round, so it is an existing race in the room-key path (zero-delay typing); real typing speeds are unlikely to hit it.
+
+### Round 5
+- Scrambled typing ('hlloe') fixed. Cause: the notepad called `textarea.focus()` when opened by the first room key, which moved real browser focus into the OS iframe. The next real keystrokes then typed natively into the textarea while the earlier keys were still queued as postMessages, so the late messages landed after them. Notepad now skips the focus while the OS is in the `room` state (`public/os/apps/notepad.js`). `verify-room-interactions`: 22 runs, no reordering. One unrelated failure in 12 runs: `idle('blinds open')` (the render-count-stays-flat check after the blinds tween), not seen before this round and not investigated.
+- First-key gap traced, not fixed: see PERF-AUDIT.md ("First-key hitch, traced"). It is GPU raster of the OS iframe layer (plus a one-off AudioContext creation if the first gesture is a key).
+- Touch card re-captured with the debug HUD off. It showed a second overlap: the "MUMBAI 07:05 CLEAR" chip sat on "More: live apps, phone demos". Hidden under 640 px wide (`Scan.jsx`).
+- Full suite on the final build (before deploy): verify-v3 46 pass, room-interactions 9, held-objects 2, reduced-hands 1, hand-support 1, phone-grip 0 asserts (exit 0), after-hours 27, deeplinks 14, tour 18, os-apps 21, focuslock-app 29, after-hours-audio 32, touch-look 4. All 13 exit 0.
+
+### Visual changes for the owner to eyeball
+Screenshots are in `C:/Users/hp/AppData/Roaming/Claude/side-session-notes/local_f9d3536a-6c78-4903-a9f2-ede888503fe7/shots/` (outside the repo).
+- Notepad as the room-keyboard typing target (before: a terminal): `typing-before.png` (live site) vs `typing-after.png` (this build). Same screenshots show the OS top bar and taskbar.
+- crt-flicker animation and top bar/taskbar backdrop blur removed (barely visible; was an 0.012-opacity teal flash every 8 s): visible only as the typing pair above; the gain is frame rate, 37 to 51 fps while typing.
+- Touch link card for `/os/<app>` and `/phone/<app>` on phones: before `card-before.png`, after `card-after.png`; current clean captures `card-portrait-hudoff.png`, `card-landscape-hudoff.png`.
+- Mumbai readout hidden on narrow phones: compare `card-portrait-hudoff.png` with the earlier portrait capture (readout over the "More" line).
+- og.jpg (link preview image): `og-before.jpg` vs `og-after.jpg`.
+- Debug HUD moved top-right (only with `?debug=1`).
+- "What I did" lines on the work cards, hint chip and camera ease when typing, résumé sheet: no before/after captures taken.
