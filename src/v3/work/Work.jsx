@@ -216,6 +216,11 @@ const css = `
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
   .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; }
+  .w-cs-row { display: block; }
+  .w-cs-row summary { cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
+  .w-cs-row summary img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; }
+  .w-cs dt { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink2); margin-top: 10px; }
+  .w-cs dd { margin: 2px 0 0; font-size: 15px; color: var(--ink2); }
   .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
   .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 1px; cursor: pointer; text-decoration: none; }
@@ -276,6 +281,15 @@ function AskBox() {
   }, []);
   return <div className="w-ask" ref={ref} data-testid="work-ask" />;
 }
+
+const CASE_IDS = ['blink', 'focuslock', 'darksentinel', 'blackout', 'portfolio3d'];
+const caseText = (c) => c && (
+  <dl className="w-cs">
+    <dt>Problem</dt><dd>{c.problem}</dd>
+    <dt>Decisions</dt><dd>{c.decisions}</dd>
+    <dt>Result</dt><dd>{c.result}</dd>
+  </dl>
+);
 
 const didLine = (id) => WHAT_I_DID[id] && <p className="w-did"><b>What I did</b> {WHAT_I_DID[id]}</p>;
 
@@ -504,6 +518,20 @@ export default function Work() {
                 </div>
               </article>
               {featured.map(renderFeatured)}
+            </div>
+
+            <div className="w-label"><span>Case studies</span><span>{CASE_IDS.length}</span></div>
+            <div className="w-list" data-testid="case-studies">
+              {CASE_IDS.map((id) => {
+                const p = id === 'blink' ? { ...blink, name: 'Blink.new growth tools', tech: [] } : projects.find((x) => x.id === id);
+                if (!p?.caseStudy) return null;
+                return (
+                  <details className="w-row w-cs-row" key={id}>
+                    <summary><b>{p.name}</b>{PREVIEWS[id] && <img src={PREVIEWS[id]} alt={`${p.name} screenshot`} loading="lazy" />}</summary>
+                    {caseText(p.caseStudy)}
+                  </details>
+                );
+              })}
             </div>
 
             <div className="w-label"><span>At Blink.new (internship)</span></div>

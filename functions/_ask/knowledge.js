@@ -16,7 +16,7 @@ export function buildSections() {
   add('education', 'Education', `${education.degree} at ${education.school}, ${education.year.toLowerCase()}.`, 'education school college degree study university btech somaiya');
   for (const e of experience) {
     add(`exp-${e.id}`, `Experience: ${e.org}`,
-      `${e.role} at ${e.org}${e.note ? ` (${e.note})` : ''}, ${e.from} to ${e.to}. ${e.detail || ''} ${(e.bullets || []).join(' ')} ${(e.metrics || []).map((m) => `${m.value} ${m.label}.`).join(' ')}`,
+      `${e.role} at ${e.org}${e.note ? ` (${e.note})` : ''}, ${e.from} to ${e.to}. ${e.detail || ''} ${(e.bullets || []).join(' ')} ${(e.metrics || []).map((m) => `${m.value} ${m.label}.`).join(' ')}${e.caseStudy ? ` Case study: ${[e.caseStudy.problem, e.caseStudy.decisions, e.caseStudy.result].join(' ')}` : ''}`,
       `experience work job intern internship ${e.org} ${e.role}`);
   }
   add('achievements', 'Achievements', achievements.map((a) => `${a.label}: ${a.result} (${a.year}).`).join(' '), 'achievements hackathon won winner award awards top');
