@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { createDeskContactShadows } from './deskContactShadows.js';
+import { skipNightProbe } from '../lib/features.js';
 
 const ROOT = `${import.meta.env.BASE_URL}materials/after-hours/`;
 
@@ -92,7 +93,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     raisedReceivers:[model.contactSurfaces.mat],resolution:tier==='low'?256:512,
     updatesPerSecond:tier==='low'?10:15,invalidate});
   function captureProbe(){
-    if(disposed||sky!=='night')return;
+    if(disposed||sky!=='night'||skipNightProbe())return;
     const key=model.roomActions.state.lamp>.5?'on':'off';
     if(probes.has(key)){scene.environment=probes.get(key).texture;return;}
     const target=new THREE.WebGLCubeRenderTarget(tier==='high'?128:64,{type:THREE.HalfFloatType});

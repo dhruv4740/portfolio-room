@@ -332,3 +332,14 @@ CDP trace (`browser.startTracing`, categories devtools.timeline, v8.execute, cc,
 - Page with no prior click: the first `keydown` task is a 60 ms main-thread task. 56 ms of it is the document keydown listener that calls `unlockRoomAudio()` (`new AudioContext()` plus the gain graph, `roomAudio.js`). A visitor normally has already clicked to sit down, and `pointerdown` runs the same unlock, so this part is paid earlier in real use.
 - With a click first, the main thread has no long task at the first key. The remaining ~100-170 ms gap is GPU-process raster: three `RendererRasterWorker` tasks of 19, 44 and 29 ms starting 60-130 ms after the key. That is Chrome rasterising the OS iframe layer at full size when it goes from the `.is-prewarm` state (rastered at `scale(.359)`, opacity .004) to the monitor-aligned matrix3d quad, plus the new notepad window.
 - Not fixed: prewarming at a scale closer to the on-screen size would trade a smaller hitch for a larger layer cost on every seated visitor, and I could not make it safe in the time available. Pre-creating the notepad window did not change the gap (measured), so it is raster of the layer, not window creation.
+
+## Night env-probe skip (flag, default OFF)
+
+`NIGHT_SKIP_PROBE` in `src/v3/lib/features.js` (default `false`). `?skipprobe=1` / `?skipprobe=0` or localStorage `v3:skip-probe=1` override it for measurement. When on, `captureProbe()` in `afterHours.js` returns early, so no cubemap render/PMREM and `scene.environment` stays null at night (the lamp/city lights still light the room; only the faint 0.35 environment fill is lost).
+
+Night cold load (`/?sky=night`, nav start to room revealed, headed, 1536x864, local preview, 3 runs each, ms):
+- 1x: before 6357 (cold cache), 2359, 2330; after 2462 (cold cache), 1881, 1854. Warm median about 2.3 s to 1.9 s (about -0.45 s).
+- 4x CPU throttle: before 6081, 6127, 5953; after 5459, 5435, 5371. Median about 6.1 s to 5.4 s (about -0.65 s).
+
+Frames (before vs after vs diff x4): `scripts/shots` is local-only; sheet at the shared notes `shots/night-probe-sheet.png`. Mean absolute pixel diff out of 255: landing 4.02, seated 3.86, bezel 1.56, mug 1.52, keyboard 0.94. Share of pixels differing by more than 16: 0.8%, 4.0%, 0.0%, 0.2%, 0.1%. In the diff panels the largest differences are the animated window blinds and HUD text, which move between any two captures; the lamp, monitor, mug and keyboard show only a faint, uniform change in reflected fill. Caveat: the "bezel" close-up framing landed on the wall and floor rather than the bezel, so it says little; the seated and landing frames cover the monitor.
+Verdict for the owner: saves about 0.5 s of night load; the look change is subtle but real on the 3D room's ambient reflections, hence off by default.
