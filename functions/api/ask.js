@@ -28,10 +28,11 @@ async function turnstileOk(env, token, ip) {
   catch { return false; }
 }
 
-const llmReady = (env) => !!(env.ASK_KV && env.TURNSTILE_SECRET && PROVIDERS.some((p) => p.enabled(env)));
+// Turnstile is optional: with no TURNSTILE_SECRET the KV caps are the only abuse control.
+const llmReady = (env) => !!(env.ASK_KV && PROVIDERS.some((p) => p.enabled(env)));
 
 export async function onRequestGet({ env }) {
-  return reply({ turnstileSiteKey: llmReady(env) ? env.TURNSTILE_SITE_KEY || null : null, llm: llmReady(env) });
+  return reply({ turnstileSiteKey: llmReady(env) && env.TURNSTILE_SECRET ? env.TURNSTILE_SITE_KEY || null : null, llm: llmReady(env) });
 }
 
 export async function onRequestPost({ request, env }) {
@@ -51,7 +52,7 @@ export async function onRequestPost({ request, env }) {
 
   if (!llmReady(env)) return canned('');
   const ip = request.headers.get('CF-Connecting-IP') || '';
-  if (!(await turnstileOk(env, b.token, ip))) return canned('verification failed, showing a quick answer');
+  if (env.TURNSTILE_SECRET && !(await turnstileOk(env, b.token, ip))) return canned('verification failed, showing a quick answer');
 
   const kv = env.ASK_KV, vKey = await visitorKey(request, env), gKey = `g:${day()}`;
   const vCap = num(env.ASK_VISITOR_CAP, 10), gCap = num(env.ASK_GLOBAL_CAP, 300);

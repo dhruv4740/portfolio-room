@@ -4,37 +4,36 @@ A question box on `/work` and in the room (notepad window, "Ask about Dhruv" tab
 and case-study text in `src/v3/content/index.js` only.
 
 Without any setup it already works on canned answers (keyword-matched sections, labelled "answered by quick FAQ").
-Model answers switch on only when **all three** of these exist: a Turnstile secret, the `ASK_KV` binding, and at least
-one provider key. Missing any one of them falls back to canned, never an error.
+Model answers switch on when the `ASK_KV` binding (already in `wrangler.toml`, namespace id
+`882512127d404b9f93285e3248c067f1`) and at least one provider key exist. Turnstile is optional. Missing keys fall back
+to canned, never an error.
 
-## Owner steps (all free, all in the Cloudflare dashboard)
+## Owner step (one, free)
 
-Everything below is under **Workers & Pages → dhruvkothari → Settings**. Add each secret to **both** Production and
-Preview, then redeploy (secrets apply on the next deployment).
+Workers & Pages → dhruvkothari → Settings → Variables and Secrets → Add, type **Secret**, in both Production and
+Preview, then redeploy:
 
-1. **Provider keys** → Variables and Secrets → Add → type **Secret** (encrypted):
-   - `GROQ_API_KEY`: console.groq.com → API Keys → Create. Free, no card.
-   - `GEMINI_API_KEY`: aistudio.google.com/apikey → Create API key. Free tier, no card.
-   - `OPENROUTER_API_KEY`: openrouter.ai/keys → Create key. Only `:free` models are ever called (about 50 requests a
-     day on the free tier).
-   Any subset works; the order is Groq → Gemini → OpenRouter → canned. Keys never reach the browser or the repo.
-2. **KV for the limits**: Storage & Databases → KV → Create namespace (e.g. `dhruvkothari-ask`). Then Settings →
-   Bindings → Add → KV namespace → variable name **`ASK_KV`** → pick it.
-3. **Turnstile**: Turnstile → Add widget → hostnames `dhruvkothari.pages.dev` and `preview.dhruvkothari.pages.dev` →
-   mode Managed. Add the **secret key** as secret `TURNSTILE_SECRET` and the **site key** as plain variable
-   `TURNSTILE_SITE_KEY` (the site key is public).
-4. Optional variables: `ASK_VISITOR_CAP` (default 10 questions per visitor per UTC day), `ASK_GLOBAL_CAP` (default 300
-   model answers per day for the whole site), `ASK_SALT` (any string; salts the visitor hash), `GROQ_MODEL`,
-   `GEMINI_MODEL`, `OPENROUTER_MODELS` (comma list, entries not ending in `:free` are ignored). Model names change
-   often; if a provider starts failing, set these to a current free model.
+- `GROQ_API_KEY`: console.groq.com → API Keys → Create. Free, no card.
+- `GEMINI_API_KEY`: aistudio.google.com/apikey → Create API key. Free tier, no card.
+- `OPENROUTER_API_KEY`: openrouter.ai/keys → Create key. Only `:free` models are ever called (about 50 requests a day
+  on the free tier).
 
-Check it: open `https://dhruvkothari.pages.dev/api/ask` — `"llm":true` means model answers are on.
+Any subset works; the order is Groq → Gemini → OpenRouter → canned. Keys never reach the browser or the repo.
+
+Optional: Turnstile. Add a widget for `dhruvkothari.pages.dev`, then secret `TURNSTILE_SECRET` and plain variable
+`TURNSTILE_SITE_KEY`. When `TURNSTILE_SECRET` is set the token is required; when unset the check is skipped and the KV
+caps are the only abuse control. Other optional variables: `ASK_VISITOR_CAP` (default 10 questions per visitor per UTC
+day), `ASK_GLOBAL_CAP` (default 300 model answers a day, site-wide), `ASK_SALT`, `GROQ_MODEL`, `GEMINI_MODEL`,
+`OPENROUTER_MODELS` (comma list; entries not ending in `:free` are ignored). Model names change often; if a provider
+starts failing, set these to a current free model.
+
+Check it: open `https://dhruvkothari.pages.dev/api/ask`. `"llm":true` means model answers are on.
 
 ## How it works
 
 - `functions/api/ask.js`: `POST {q, token}` → `{answer, source, provider, ms, left}`; `GET` → client config.
   Question 3 to 300 characters, same-origin only.
-- Order of checks: Turnstile token verified server-side → per-visitor KV counter (hash of IP + day + salt, raw IP is
+- Order of checks: Turnstile token verified server-side (only if `TURNSTILE_SECRET` is set) → per-visitor KV counter (hash of IP + day + salt, raw IP is
   never stored) → global KV counter → provider chain. Over a cap or failed Turnstile returns a canned answer with a
   short note.
 - `functions/_ask/chain.js` + `providers.js`: one adapter per provider; each is skipped unless its secret exists; a

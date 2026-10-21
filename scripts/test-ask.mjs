@@ -47,10 +47,17 @@ await t('all providers fail -> canned, never an error', async () => {
   const r = await ask(env());
   assert.equal(r.provider, 'canned'); assert.ok(r.answer.length > 20); assert.match(r.answer, /Blink|growth/i);
 });
-await t('no keys / no KV / no turnstile secret -> canned, providers never called', async () => {
-  for (const e of [{ ASK_KV: KV, TURNSTILE_SECRET: 's' }, env({ ASK_KV: undefined }), env({ TURNSTILE_SECRET: undefined })]) { const r = await ask(e); assert.equal(r.provider, 'canned'); }
+await t('no provider keys / no KV -> canned, providers never called', async () => {
+  for (const e of [{ ASK_KV: KV, TURNSTILE_SECRET: 's' }, env({ ASK_KV: undefined })]) { const r = await ask(e); assert.equal(r.provider, 'canned'); }
   assert.deepEqual(calls, []);
   assert.equal((await onRequestGet({ env: {} }).then((r) => r.json())).llm, false);
+});
+await t('no Turnstile secret -> check skipped, KV caps still apply', async () => {
+  handlers.groq = async () => ok('a (Source: About Dhruv)');
+  const e = env({ TURNSTILE_SECRET: undefined, ASK_VISITOR_CAP: '1' });
+  assert.equal((await ask(e, 'What did he build at Blink?', '')).provider, 'groq');
+  assert.equal((await ask(e, 'What did he build at Blink?', '')).provider, 'canned');
+  assert.equal((await onRequestGet({ env: e }).then((r) => r.json())).llm, true);
 });
 await t('only providers with secrets are tried', async () => {
   handlers.gemini = async () => ok('hi (Source: About Dhruv)');
