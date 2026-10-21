@@ -170,7 +170,7 @@ const css = `
   .w-live { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--paper); }
   .w-live p { margin: 0 0 10px; font-size: 15px; }
   .w-live div { display: flex; flex-wrap: wrap; gap: 8px; }
-  .w-live a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 500; }
+  .w-live a, .w-live button { border: 0; cursor: pointer; font: inherit; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 500; }
   .w-links { display: flex; gap: 10px; margin-top: 12px; font-size: 15px; }
   .w-links a { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font-weight: 500; text-decoration: none; }
   .w-links a span { color: var(--mute); }
@@ -437,9 +437,9 @@ export default function Work() {
               <div className="w-live" data-testid="work-live-apps">
                 <p><b>Try my real apps.</b> Running builds, one tap.</p>
                 <div>
-                  <a href="/#/os/focuslock">FocusLock</a>
-                  <a href="/#/os/darksentinel">DarkSentinel</a>
-                  <a href="/#/phone/basketproof">BasketProof</a>
+                  <button type="button" onClick={(e) => tryDemo({ id: 'focuslock' }, e)}>FocusLock</button>
+                  <button type="button" onClick={(e) => tryDemo({ id: 'darksentinel' }, e)}>DarkSentinel</button>
+                  <button type="button" onClick={(e) => tryDemo({ id: 'basket' }, e)}>BasketProof</button>
                 </div>
               </div>
             )}
