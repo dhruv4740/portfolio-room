@@ -253,13 +253,11 @@ const FEATURED_IDS = ['focuslock', 'basket'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 const WHAT_I_DID = {
-  focuslock: 'Screen-time limiter sharing one daily allowance across an Android phone and a Windows PC, enforced at the OS level. 233 automated tests; CI builds a signed APK and installer.',
-  portfolio3d: "Interactive 3D studio room whose monitor runs live demos of other projects. Detects the visitor's GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.",
+  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK and the Windows installer.',
+  portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
   darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
-  blackout: 'Keeps the screen on but fully black so screen-on features like OnePlus bypass charging keep working. Fingerprint unlock, Quick Settings tile, steps aside for calls and alarms. No internet permission.',
+  blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
   basket: 'Price comparator with 636 tests.',
-  expense: 'Offline UPI/SMS parser.',
-  cellbook: 'Excel clone for Windows.',
 };
 const didLine = (id) => WHAT_I_DID[id] && <p className="w-did"><b>What I did</b> {WHAT_I_DID[id]}</p>;
 
