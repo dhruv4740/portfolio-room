@@ -306,3 +306,22 @@ Method: on-screen headed run, 25 keys at 230 ms spacing (`tmp-measure/keygap.mjs
   refreshes, but gpuMed stays ~5 ms, so no individual key frame blows the budget.
 - Not tried: pre-creating the notepad window hidden before the first key, which should remove the one-off 134 ms gap.
   Not done because it changes OS-window lifecycle; suggest it if the first-key pause is noticeable.
+
+### Typing held the embedded OS at 30 fps (fixed 2026-10-21)
+
+The 33 ms gaps while typing were not the governor's 30 Hz pacing (my earlier reading was wrong). `getPacing()` reported `idle:false, base:1` during typing, and registering keys/drags with `setMotionProbe` (500 ms window) changed nothing: 177-183 page frames in 5 s of typing, same as without it.
+
+What did it: the embedded OS stylesheet. A full-screen `crt-flicker` CSS animation (infinite, 8 s, opacity 0.012 teal, visually nil) plus `backdrop-filter` blur on the top bar and taskbar made the iframe layer re-composite on the iGPU every frame once it had content. A/B with injected CSS (`keygap.mjs`, 25 keys at 230 ms, 1536x864 DPR 1.25, window on screen):
+
+| variant | page frames in 5 s of typing | gaps > 28 ms |
+|---|---|---|
+| shipped before | ~180-190 | ~105 |
+| `animation:none` | ~225 | ~66 |
+| `backdrop-filter:none` only | 153-195 | 95-112 |
+| both off | ~265 | ~30 |
+
+Fix: flicker animation removed, blur removed from `.topbar`/taskbar (`public/os/styles.css`). Result on the built site: 241-267 frames per 5 s (about 51 fps vs 37), gaps > 28 ms down from ~105 to ~28-48.
+
+First-key hitch: pre-creating the notepad window (opened after the bridge starts, minimised) did not remove it: still one 130-180 ms gap ~70 ms after the first key, with or without `TYPING_EASE`. So it is not window creation or the camera ease; likely the first hand-press / first monitor update. Warm-up reverted, not shipped. Cause not isolated.
+
+Motion probe now also counts keys and pointer drags for 500 ms (no measured effect, kept since it matches the intent of the probe).

@@ -27,3 +27,9 @@ Preview: https://preview.dhruvkothari.pages.dev. Nothing was deployed to product
 - **Touch card overlap fixed.** The card is now a centred dialog on a dimmed backdrop, so it no longer sits on the overview menu. Frames of the card itself: tmp-measure/card-portrait.png (375x812) and tmp-measure/card-landscape.png (812x375).
 - **Perf candidates re-measured on-screen (d).** The earlier discards came from the off-screen headed window; with `WINPOS=0,0` every run held 60 fps. No candidate beat its base run (AA off, Standard material, fewer lights, no env map, no contact shadows; pixel ratio 1.0 was one drop and one tie). Nothing shipped. Numbers: docs/PERF-AUDIT.md.
 - **Per-key dropped frame (e).** No per-key hitch found: after the first key, gaps are the 33 ms of 30 Hz pacing. The only big gaps (134 ms and 83 ms) happen once, right after the first key (notepad window creation plus the camera ease start). Shadows, contact shadows and hand shadow casting were ruled out. Possible fix not built: pre-create the notepad window hidden. Details in docs/PERF-AUDIT.md.
+
+### Round 4 (HUD, typing fps)
+- Debug HUD (FR/GPU ms) is off for real visitors: it renders only with `?debug=1` or `localStorage v3:test=1`; the card capture had the test flag set. Moved top-right anyway (`Telemetry.jsx`) so it cannot cover the overview text.
+- Typing at 30 fps traced to the OS stylesheet (flicker animation + backdrop blur), not the governor; removed, about 37 to 51 fps while typing. Key/drag motion probe added. Details in PERF-AUDIT.md.
+- Not done: first-key hitch (130-180 ms once). Notepad pre-warm did not help, reverted.
+- Found, not fixed: `verify-room-interactions` flakes about 1 run in 4-8 with typed text reordered ('hlloe', 'hoell'). Also happens on the build before this round, so it is an existing race in the room-key path (zero-delay typing); real typing speeds are unlikely to hit it.

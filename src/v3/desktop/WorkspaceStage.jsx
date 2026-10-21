@@ -101,9 +101,9 @@ export default function WorkspaceStage({
       host.appendChild(renderer.domElement);
       const gov = createPerfGovernor(renderer); // render-on-demand + adaptive pixel ratio; see perfGovernor.js
       // Idle detection for the 30 Hz rate: anything that is not raw input but still moves the picture.
-      const lastCam = new Float32Array(7); let lastSig = 0;
+      const lastCam = new Float32Array(7); let lastSig = 0; let lastInputAt = -Infinity; // keys and drags count as motion for 500 ms
       gov.setMotionProbe(() => {
-        let moving = state.current.phase !== 'room' || phoneInHand || !!extraHeld || gsap.globalTimeline.getChildren(false, true, true).some((t) => t.isActive());
+        let moving = performance.now() - lastInputAt < 500 || state.current.phase !== 'room' || phoneInHand || !!extraHeld || gsap.globalTimeline.getChildren(false, true, true).some((t) => t.isActive());
         const c = camera, p = c.position, q = c.quaternion;
         if (Math.abs(p.x - lastCam[0]) + Math.abs(p.y - lastCam[1]) + Math.abs(p.z - lastCam[2]) + Math.abs(q.x - lastCam[3]) + Math.abs(q.y - lastCam[4]) + Math.abs(q.z - lastCam[5]) + Math.abs(q.w - lastCam[6]) > 1e-5) moving = true;
         lastCam.set([p.x, p.y, p.z, q.x, q.y, q.z, q.w]);
@@ -720,6 +720,7 @@ export default function WorkspaceStage({
         }, 4000);
       }
       function physicalKey(event) {
+        lastInputAt=performance.now();
         if(event.key==='Escape'||event.key==='Tab'||event.ctrlKey||event.metaKey||event.altKey)return;
         if(event.key.length!==1&&!['Enter','Backspace','ArrowLeft','ArrowRight'].includes(event.key))return;
         if(state.current.activeAnchorId)return;event.preventDefault();
@@ -1050,6 +1051,7 @@ export default function WorkspaceStage({
       }
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
+        if (down) lastInputAt = performance.now();
         if (down) down.moved ||= Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6;
         if (phoneInHand) { renderer.domElement.style.cursor = 'default'; return; }
         if (reading()) {

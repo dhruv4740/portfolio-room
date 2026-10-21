@@ -149,7 +149,6 @@ html, body {
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center;
   padding: 0 12px;
-  backdrop-filter: blur(8px);
   flex-shrink: 0;
 }
 #menubar-left { font-size: 12px; font-weight: 600; color: var(--green); letter-spacing: 0.05em; }
@@ -193,7 +192,6 @@ html, body {
   border-top: 1px solid var(--border);
   display: flex; align-items: center;
   padding: 0 8px; gap: 6px;
-  backdrop-filter: blur(8px);
 }
 .taskbar-btn {
   height: 22px; padding: 0 10px;
@@ -279,8 +277,7 @@ html, body {
 #crt-flicker {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 9001;
-  animation: crt-flicker 8s infinite;
-  opacity: 0;
+  opacity: 0; /* was an 8 s flicker animation; a running full-screen animation held the embedded OS at 30 fps while typing */
   background: rgba(92,255,208,0.012);
 }
 @keyframes crt-flicker {
