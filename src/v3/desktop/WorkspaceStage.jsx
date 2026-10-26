@@ -194,6 +194,11 @@ export default function WorkspaceStage({
       function place(view) { camera.position.copy(view.position); controls.target.copy(view.target); controls.update(); }
       function updateMarkers() {
         const rect = host.getBoundingClientRect();
+        // The overview's cards and links sit over the desk's left side, where the
+        // phone projects. Measured before any marker write, so no forced layout.
+        const overview = document.querySelector('[data-testid="room-overview"]');
+        const blockers = overview ? [...overview.querySelectorAll(':scope > :not(.launchpad-actions), .launchpad-actions > *')].map(c => c.getBoundingClientRect()).filter(r => r.width && r.height) : [];
+        const sizes = new Map([...markerRefs.current].map(([id, el]) => [id, el ? [el.offsetWidth, el.offsetHeight] : [0, 0]]));
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           // The monitor's marker sits on the bezel's bottom-right corner, not the
@@ -201,11 +206,17 @@ export default function WorkspaceStage({
           projected.set(...point);
           if (id === 'monitor') projected.add(MONITOR_MARKER_OFFSET);
           projected.project(camera);
-          const visible = state.current.phase === 'room' && (!['phone','award','coffee','resume'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          let visible = state.current.phase === 'room' && (!['phone','award','coffee','resume'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const x = (projected.x * 0.5 + 0.5) * rect.width;
+          const y = (-projected.y * 0.5 + 0.5) * rect.height;
+          // A marker under the overview's copy is unreadable and steals its clicks.
+          const [w, h] = sizes.get(id), mx = x + rect.left, my = y + rect.top;
+          // 8 px grace so a marker merely touching a card's edge stays.
+          if (blockers.some(b => mx < b.right - 8 && mx + w > b.left + 8 && my < b.bottom - 8 && my + h > b.top + 8)) visible = false;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
-          el.style.transform = `translate3d(${(projected.x * 0.5 + 0.5) * rect.width}px,${(-projected.y * 0.5 + 0.5) * rect.height}px,0)`;
+          el.style.transform = `translate3d(${x}px,${y}px,0)`;
         }
       }
       // Project the monitor screen's top-left/top-right/bottom-left corners and
