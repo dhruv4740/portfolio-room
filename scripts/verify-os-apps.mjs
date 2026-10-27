@@ -220,7 +220,7 @@ await page.screenshot({ path: 'scripts/shots/wallpaper-sky.png' });
 console.log('PASS set SKY wallpaper applied data URL and screenshot saved');
 
 // 2. Set a palette: the desktop shows a still of its flow field.
-await wallpaper.locator('button[title="Ember"]').click();
+await wallpaper.locator('button[title="Bone"]').click(); // the amber palette, renamed from Ember in 359a90e
 await wallpaper.getByRole('button', { name: 'SET AS WALLPAPER' }).click();
 await page.waitForTimeout(300);
 const emberBg = await page.locator('#desktop').evaluate((el) => getComputedStyle(el).backgroundImage);
