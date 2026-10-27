@@ -144,9 +144,9 @@ export function cannedAnswer(question) {
   return { answer: short, source: section.title };
 }
 
-// Pull "(Source: X)" off a model answer; fall back to the best keyword section.
-export function splitSource(text, question) {
+// Pull "(Source: X)" off a model answer. No source line means the model declined, so none is guessed.
+export function splitSource(text) {
   const m = clean(text).match(/\(?\s*Source:\s*([^)]+?)\s*\)?\s*$/i);
-  if (m) return { answer: clean(text).slice(0, m.index).trim(), source: m[1].trim() };
-  return { answer: clean(text), source: bestSection(question).section?.title || '' };
+  if (m) return { answer: clean(text).slice(0, m.index).trim(), source: m[1].replace(/^\[|\]$/g, '').trim() };
+  return { answer: clean(text), source: '' };
 }

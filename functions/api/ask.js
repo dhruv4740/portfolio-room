@@ -72,7 +72,7 @@ export async function onRequestPost({ request, env }) {
   // Only questions a model actually answered count toward the caps.
   const used = await bump(kv, vKey); await bump(kv, gKey);
   if (LEAK.test(r.text)) return canned('showing a quick answer', [...r.tried, { provider: r.provider, reason: 'output check' }]);
-  const { answer: raw, source } = splitSource(r.text, q);
+  const { answer: raw, source } = splitSource(r.text);
   const answer = clip(raw);
   const ms = Date.now() - t0;
   console.log(JSON.stringify({ ask: 1, provider: r.provider, ms, tried: r.tried }));
