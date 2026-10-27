@@ -4,6 +4,7 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { Reflector } from 'three/addons/objects/Reflector.js';
 import { createDeskContactShadows } from './deskContactShadows.js';
+import { skipNightProbe } from '../lib/features.js';
 
 const ROOT = `${import.meta.env.BASE_URL}materials/after-hours/`;
 
@@ -64,26 +65,6 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     fragmentShader:`varying float fade;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;gl_FragColor=vec4(.76,.79,.79,fade*smoothstep(.5,0.,d));}`});
   const steam=new THREE.Points(steamGeometry,steamMaterial);steam.name='Coffee steam';steam.frustumCulled=false;steam.raycast=()=>{};scene.add(steam);
 
-  // Dust drifting in the task lamp's cone, lit only while the lamp is on.
-  // Positions are cone-local (y down from the bulb); the origin follows the lamp.
-  const dustGeometry=new THREE.BufferGeometry(), dustPositions=[], dustSeeds=[];
-  for(let i=0;i<(tier==='low'?50:tier==='high'?160:100);i++){
-    const depth=.05+random()*.42, r=Math.sqrt(random())*(.03+depth*.26), a=random()*Math.PI*2;
-    dustPositions.push(Math.cos(a)*r,-depth,Math.sin(a)*r);dustSeeds.push(random());
-  }
-  dustGeometry.setAttribute('position',new THREE.Float32BufferAttribute(dustPositions,3));
-  dustGeometry.setAttribute('seed',new THREE.Float32BufferAttribute(dustSeeds,1));
-  const dustOrigin=new THREE.Vector3(), dustLevel={value:0};
-  const dustMaterial=new THREE.ShaderMaterial({transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,uniforms:{time:uniforms.time,origin:{value:dustOrigin},level:dustLevel},
-    vertexShader:`attribute float seed;uniform float time;uniform vec3 origin;varying float fade;
-      void main(){float t=time*(.05+seed*.05)+seed*40.;
-      vec3 p=origin+position+vec3(sin(t*1.3)*.02,sin(t*.7+seed*9.)*.025,cos(t*1.1)*.02);
-      vec4 mv=viewMatrix*vec4(p,1.);gl_Position=projectionMatrix*mv;
-      fade=(.35+.65*abs(sin(t*2.+seed*17.)))*smoothstep(-.5,-.3,position.y)*.5+.2;
-      gl_PointSize=clamp((1.6+seed*1.4)/-mv.z,1.,5.);}`,
-    fragmentShader:`uniform float level;varying float fade;void main(){float d=length(gl_PointCoord-.5);if(d>.5)discard;
-      gl_FragColor=vec4(vec3(1.,.86,.62)*fade*level*smoothstep(.5,.1,d),1.);}`});
-  const dust=new THREE.Points(dustGeometry,dustMaterial);dust.name='Lamp dust';dust.frustumCulled=false;dust.raycast=()=>{};scene.add(dust);
 
   // Small physical-scale architecture details, batched by material.
   const detail=new THREE.Group();detail.name='Winter room details';model.root.add(detail);
@@ -107,12 +88,12 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
 
   const pmrem=new THREE.PMREMGenerator(renderer), probes=new Map();
   const contacts=createDeskContactShadows({renderer,root:model.root,staticGeometry:model.contactGeometry,
-    objects:[model.phone,model.notebook,model.hands.root,...['coffee','award','headphones','pen'].map(key=>model.roomActions.objects[key]).filter(Boolean)],
+    objects:[model.phone,model.hands.root,...['coffee','award','headphones'].map(key=>model.roomActions.objects[key]).filter(Boolean)],
     center:model.contactSurfaces.desk.center,size:model.contactSurfaces.desk.size,
     raisedReceivers:[model.contactSurfaces.mat],resolution:tier==='low'?256:512,
     updatesPerSecond:tier==='low'?10:15,invalidate});
   function captureProbe(){
-    if(disposed||sky!=='night')return;
+    if(disposed||sky!=='night'||skipNightProbe())return;
     const key=model.roomActions.state.lamp>.5?'on':'off';
     if(probes.has(key)){scene.environment=probes.get(key).texture;return;}
     const target=new THREE.WebGLCubeRenderTarget(tier==='high'?128:64,{type:THREE.HalfFloatType});
@@ -120,14 +101,14 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     const visible=[model.hands.root.visible,model.figure.root.visible,snow.visible];
     model.hands.root.visible=false;model.figure.root.visible=false;snow.visible=false;
     const reflectVisible=glassReflection?.visible;if(glassReflection)glassReflection.visible=false;
-    const steamVisible=steam.visible,dustVisible=dust.visible;steam.visible=false;dust.visible=false;
+    const steamVisible=steam.visible;steam.visible=false;
     scene.environment=null;
     const oldShadow=renderer.shadowMap.enabled;renderer.shadowMap.enabled=false;
     try{contacts.withoutReceivers(()=>cube.update(renderer,scene));}
     finally{
       renderer.shadowMap.enabled=oldShadow;
       model.hands.root.visible=visible[0];model.figure.root.visible=visible[1];snow.visible=visible[2];
-      steam.visible=steamVisible;dust.visible=dustVisible;if(glassReflection)glassReflection.visible=reflectVisible;
+      steam.visible=steamVisible;if(glassReflection)glassReflection.visible=reflectVisible;
     }
     const filtered=pmrem.fromCubemap(target.texture);target.dispose();targets.push(filtered);probes.set(key,filtered);
     scene.environment=filtered.texture;scene.environmentIntensity=.35;
@@ -201,7 +182,6 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
       model.roomActions.objects.coffee.updateWorldMatrix(true,false);
       steamOrigin.set(0,.079,0).applyMatrix4(model.roomActions.objects.coffee.matrixWorld);
       steam.visible=model.roomActions.state.coffeeLevel>.01 && time!==0;
-      model.bulb.getWorldPosition(dustOrigin);dustLevel.value=uniforms.lamp.value*(sky==='night'?.55:.25);dust.visible=dustLevel.value>.01&&time!==0;
       // Shed the extra scene pass before sustained overload lowers resolution.
       costlyFrames=cost>27?costlyFrames+1:0;
       if(glassReflection&&costlyFrames>=10)glassReflection.visible=false;
@@ -214,12 +194,14 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
     },
     contactStats:()=>contacts.stats(),
     warmContacts:()=>contacts.warm(),
+    // Capture the night probe before the warm-up gate compiles, so the env-map program variants link behind the loader.
+    warmProbe(){if(probeDirty){probeDirty=false;captureProbe();}},
     setContactsEnabled:value=>contacts.setEnabled(value),
     setSky(value){sky=value;scene.environment=value==='night'?(probes.get(lastLamp?'on':'off')?.texture||null):null;
       for(const m of Object.values(model.bakedMaterials))m.lightMapIntensity=value==='night'?.7:0;probeDirty=true;},
     // Rain shows in any light; wet streets read as glossier city surfaces.
     setWeather(raining){snow.visible=!!raining;wet=!!raining;applyWet();invalidate();},
-    dispose(){disposed=true;contacts.dispose();scene.environment=null;scene.remove(snow,steam,dust);snowGeometry.dispose();snowMaterial.dispose();dustGeometry.dispose();dustMaterial.dispose();steamGeometry.dispose();steamMaterial.dispose();
+    dispose(){disposed=true;contacts.dispose();scene.environment=null;scene.remove(snow,steam);snowGeometry.dispose();snowMaterial.dispose();steamGeometry.dispose();steamMaterial.dispose();
       if(glassReflection){glassReflection.removeFromParent();glassReflection.geometry.dispose();glassReflection.dispose();}
       city?.traverse(o=>{o.geometry?.dispose();if(o.material){o.material.map?.dispose();o.material.normalMap?.dispose();o.material.roughnessMap?.dispose();o.material.dispose();}});if(city)scene.remove(city);
       resources.forEach(t=>t.dispose());targets.forEach(t=>t.dispose());pmrem.dispose();},

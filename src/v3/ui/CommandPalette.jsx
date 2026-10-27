@@ -21,9 +21,8 @@ const ENTRIES = [
   { label: 'Contact', hint: 'email, GitHub, LinkedIn', to: '/contact' },
   { label: 'Explore the room', hint: 'sit at the desk', to: '/room/explore' },
   { label: 'Toggle the lamp', hint: 'room action', to: '/room/lamp' },
-  { label: 'Open the window', hint: 'room action', to: '/room/window' },
+  { label: 'Look out the window', hint: 'room view', to: '/room/window' },
   { label: 'Put on headphones', hint: 'room action', to: '/room/headphones' },
-  { label: 'Read the résumé', hint: 'room action', to: '/room/drawer' },
   { label: 'GitHub', hint: contact.githubLabel, href: contact.github },
   ...(contact.resume ? [{ label: 'Download résumé', hint: 'PDF', href: contact.resume }] : []),
 ];
@@ -104,7 +103,7 @@ export default function CommandPalette() {
 
 const css = `
 .cmdk-scrim { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.5); display:flex; align-items:flex-start; justify-content:center; padding-top:14vh; }
-.cmdk { width:min(560px, calc(100vw - 32px)); max-height:64vh; display:flex; flex-direction:column; border:1px solid #555b59; border-top:2px solid var(--signal, #e4572e); background:#0d1011; color:#d3d4cc; font-family:var(--font-mono, monospace); }
+.cmdk { width:min(560px, calc(100vw - 32px)); max-height:64vh; display:flex; flex-direction:column; border:1px solid #555b59; border-top:2px solid var(--signal, #d9d4c7); background:#0d1011; color:#d3d4cc; font-family:var(--font-mono, monospace); }
 .cmdk input { padding:16px 18px; border:0; border-bottom:1px solid #2a2f30; background:transparent; color:var(--bone, #eee); font:inherit; font-size:15px; outline:none; }
 .cmdk ul { margin:0; padding:6px 0; list-style:none; overflow:auto; }
 .cmdk li { display:flex; justify-content:space-between; gap:16px; padding:9px 18px; cursor:pointer; font-size:13px; }

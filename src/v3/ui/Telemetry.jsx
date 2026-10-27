@@ -99,8 +99,8 @@ export default function Telemetry({ frameMs, gpuMs, anchorId, compact = false })
 const CSS = `
 .telemetry-root {
   position: fixed;
-  bottom: var(--gutter);
-  left: var(--gutter);
+  top: var(--gutter);
+  right: var(--gutter);
   z-index: var(--z-hud);
   display: flex;
   flex-direction: column;

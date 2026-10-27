@@ -45,7 +45,7 @@ const CSS = `
   .term-output::-webkit-scrollbar-track { background: transparent; }
   .term-output::-webkit-scrollbar-thumb { background: rgba(92,255,208,0.2); border-radius: 2px; }
   .line { white-space: pre-wrap; }
-  .line.prompt-echo .prompt-user { color: #ffb000; }
+  .line.prompt-echo .prompt-user { color: #d9d4c7; }
   .line.prompt-echo .prompt-sep  { color: rgba(92,255,208,0.35); }
   .line.output-line { color: rgba(92,255,208,0.72); }
   .line.info-line   { color: rgba(92,255,208,0.55); }
@@ -61,7 +61,7 @@ const CSS = `
     flex-shrink: 0;
   }
   .term-prompt-label { white-space: nowrap; user-select: none; font-size: 13px; }
-  .term-prompt-label .p-user { color: #ffb000; }
+  .term-prompt-label .p-user { color: #d9d4c7; }
   .term-prompt-label .p-sep  { color: rgba(92,255,208,0.35); }
   .term-input {
     flex: 1; background: transparent; border: none; outline: none;

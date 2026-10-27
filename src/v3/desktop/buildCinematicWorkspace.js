@@ -10,7 +10,7 @@ import { createAuthoredMouse } from './authoredMouse.js';
 import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
 import { createAuthoredKeyboard } from './authoredKeyboard.js';
 import { phoneFocusLockTexture, phoneHomeTexture, SKY_CONFIGS } from './buildWorkspace.js';
-import { achievements } from '../content/index.js';
+import { achievements, identity, contact, education, experience, proofPoints, skills } from '../content/index.js';
 import {
   WORKSPACE, ROOM, DESK, DESK_BOUNDS, MAT, KEYBOARD, KEYBOARD_CHASSIS, CINEMATIC_KEYCAPS,
   SCREEN, MONITOR, CAMERA, BODY, WINDOW, BLINDS, EXTERIOR, ANCHORS, MOUSE_ANCHOR,
@@ -29,13 +29,6 @@ import {
 export { WORKSPACE, SCREEN };
 export { SKY_CONFIGS };
 
-function drawBlankPage(ctx, w, h) {
-  ctx.fillStyle = '#efeade'; ctx.fillRect(0, 0, w, h);
-  ctx.strokeStyle = 'rgba(110,116,104,0.20)'; ctx.lineWidth = 1.5;
-  for (let y = 160; y < h - 60; y += 74) { ctx.beginPath(); ctx.moveTo(96, y); ctx.lineTo(w - 110, y); ctx.stroke(); }
-  ctx.strokeStyle = 'rgba(198,83,43,0.5)'; ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(96, 60); ctx.lineTo(96, h - 60); ctx.stroke();
-}
 function canvasTexture(draw, width = 1024, height = 512) {
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = height;
@@ -67,14 +60,14 @@ function screenTexture() {
     ctx.strokeStyle = '#464845'; ctx.lineWidth = 1; ctx.strokeRect(72, 102, 880, 420);
     ctx.fillStyle = '#222426'; ctx.fillRect(73, 103, 878, 44);
     ctx.fillStyle = '#e8e4dc'; ctx.font = '18px monospace'; ctx.fillText('Selected work', 96, 131);
-    ctx.fillStyle = '#ff5f1f'; ctx.fillRect(95, 186, 9, 9);
+    ctx.fillStyle = '#d9d4c7'; ctx.fillRect(95, 186, 9, 9);
     ctx.fillStyle = '#ece7db'; ctx.font = '48px sans-serif'; ctx.fillText('Things I made.', 95, 256);
     ctx.fillStyle = '#969991'; ctx.font = '20px monospace'; ctx.fillText('Open the machine. Try something.', 97, 302);
     ['01   Desktop projects', '02   Built to be used', '03   Explore the computer'].forEach((label, i) => {
       const y = 366 + i * 53;
       ctx.strokeStyle = '#363a38'; ctx.beginPath(); ctx.moveTo(96, y - 22); ctx.lineTo(924, y - 22); ctx.stroke();
       ctx.fillStyle = '#cccfc5'; ctx.font = '22px monospace'; ctx.fillText(label, 99, y + 8);
-      ctx.fillStyle = '#ff5f1f'; ctx.fillText('↗', 887, y + 8);
+      ctx.fillStyle = '#d9d4c7'; ctx.fillText('↗', 887, y + 8);
     });
     ctx.fillStyle = '#666e68'; ctx.font = '16px monospace'; ctx.fillText('DHRUV KOTHARI                                    ENTER ↗', 75, 591);
   }, 1024, 640);
@@ -247,53 +240,16 @@ export function buildCinematicWorkspace(scene, options = {}) {
   }
 
   // --- exterior --------------------------------------------------------------
-  // Three depths, placed against the sightline cone computed in
-  // cinematicLayout.sightlineAt(): a near parapet under the cone (visible only
-  // when you look down through the glass, so it never occludes the view), one
-  // modelled middle-distance block inside the cone, and the far skyline plane.
+  // A static skyline plane behind the glass (the modelled blocks were removed
+  // for load time); it follows the live sky state.
   const city = new THREE.Group(); city.name = 'Winter city';
-  const cityTextures = { night: skylineTexture('night'), dusk: skylineTexture('dusk'), day: skylineTexture('day') };
+  const cityTextures = { night: skylineTexture('night') };
   const farPlane = new THREE.Mesh(
     new THREE.PlaneGeometry(...EXTERIOR.farCity.size),
     new THREE.MeshBasicMaterial({ map: cityTextures.night, toneMapped: false, fog: false }));
   farPlane.position.set(...EXTERIOR.farCity.center);
   farPlane.raycast = () => {}; tag(farPlane, 'window'); city.add(farPlane);
 
-  const facade = new THREE.MeshStandardMaterial({ color: '#232c35', roughness: 1 });
-  const litWindows = new THREE.MeshBasicMaterial({ color: '#c9ab7c', toneMapped: false });
-  // Windows are placed on a real metre pitch across the facade, so the window
-  // size is what sets the building's apparent scale — not a fraction of
-  // whatever the block happens to be. A facade whose windows are a fixed
-  // percentage of it can never read as the wrong size, which is exactly how
-  // the old 1.8 m block passed every numeric check and still looked wrong.
-  function block(center, size, win, lit = 0.45) {
-    const b = new THREE.Mesh(new THREE.BoxGeometry(...size), facade);
-    b.position.set(...center); city.add(b);
-    let seed = 1201;
-    const random = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
-    const cols = Math.max(1, Math.floor((size[0] - win.pitchX * 0.5) / win.pitchX));
-    const rows = Math.max(1, Math.floor((size[1] - win.pitchY * 0.5) / win.pitchY));
-    const spanX = cols * win.pitchX, spanY = rows * win.pitchY;
-    for (let row = 0; row < rows; row++) for (let col = 0; col < cols; col++) {
-      if (random() > lit) continue;
-      const pane = new THREE.Mesh(new THREE.PlaneGeometry(win.width, win.height), litWindows);
-      pane.position.set(
-        center[0] - spanX / 2 + (col + 0.5) * win.pitchX,
-        center[1] - spanY / 2 + (row + 0.5) * win.pitchY,
-        center[2] + size[2] / 2 + 0.01);
-      city.add(pane);
-    }
-  }
-  block(EXTERIOR.midBlock.center, EXTERIOR.midBlock.size, EXTERIOR.midBlock.window);
-  // The parapet is a low roof structure, not a tower: a couple of service
-  // windows at domestic size, deliberately sparse.
-  block(EXTERIOR.nearParapet.center, EXTERIOR.nearParapet.size,
-    { width: 0.34, height: 0.42, pitchX: 0.62, pitchY: 0.60 }, 0.35);
-  for (const material of [facade, litWindows]) {
-    const parts = city.children.filter(o => o.material === material);
-    const gs = parts.map(o => { o.updateMatrix(); const g = o.geometry.clone().applyMatrix4(o.matrix); o.removeFromParent(); o.geometry.dispose(); return g; });
-    if (gs.length) { const combined = mergeGeometries(gs); gs.forEach(g => g.dispose()); city.add(new THREE.Mesh(combined, material)); }
-  }
   city.traverse(o => { if (o.isMesh) { o.castShadow = false; o.raycast = () => {}; } });
   root.add(city);
 
@@ -327,7 +283,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
   const monitorBezelBox = new THREE.Box3().setFromObject(monitorEnclosure);
   box('Monitor chin', [SCREEN.width, MONITOR.chin, 0.010],
     [0, SCREEN.center[1] - SCREEN.height / 2 - MONITOR.chin / 2, SCREEN.center[2] + 0.001], dark, 0.003, 'monitor');
-  const led = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 6), new THREE.MeshBasicMaterial({ color: '#ff5f1f' }));
+  const led = new THREE.Mesh(new THREE.SphereGeometry(0.0028, 8, 6), new THREE.MeshBasicMaterial({ color: '#d9d4c7' }));
   led.position.set(SCREEN.width / 2 - 0.02, SCREEN.center[1] - SCREEN.height / 2 - MONITOR.chin / 2, SCREEN.center[2] + 0.004);
   root.add(led);
   cable([[0, MONITOR.enclosureBottomY, SCREEN.center[2] - 0.06], [0.06, DESK.topY - 0.02, -0.46],
@@ -348,7 +304,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
     transform.position.set(...cap.p);
     transform.scale.set(cap.w * KEYBOARD.scale, KEYBOARD.scale, KEYBOARD.scale);
     transform.updateMatrix(); keys.setMatrixAt(i, transform.matrix);
-    keys.setColorAt(i, keyColor.set(cap.esc ? '#ff5f1f' : '#ffffff'));
+    keys.setColorAt(i, keyColor.set(cap.esc ? '#d9d4c7' : '#ffffff'));
   });
   keys.castShadow = false; root.add(keys); tag(keys, 'keyboard');
 
@@ -370,22 +326,6 @@ export function buildCinematicWorkspace(scene, options = {}) {
   earpiece.position.set(0, 0.0005, -phoneSize.height * 0.5 + 0.004); phone.add(earpiece); tag(earpiece, 'phone');
   const phoneGlow = new THREE.Object3D(); phoneGlow.color = new THREE.Color('#d4d5d8'); phoneGlow.intensity = 0.07;
   phoneGlow.position.set(ANCHORS.phone[0], ANCHORS.phone[1] + 0.05, ANCHORS.phone[2]); root.add(phoneGlow);
-
-  // --- notebook --------------------------------------------------------------
-  const nb = ANCHORS.notebook;
-  const book = box('Notebook cover', [0.29, 0.015, 0.36], [nb[0], DESK.topY + 0.0075, nb[2]], mat('cover', '#3e4942'), 0.005, 'notebook');
-  book.rotation.y = -0.04;
-  const pages = box('Notebook pages', [0.275, 0.010, 0.345], [nb[0], DESK.topY + 0.019, nb[2]], paper, 0.002, 'notebook');
-  pages.rotation.y = -0.04;
-  const notes = canvasTexture(drawBlankPage, 1400, 1800);
-  const notePlane = new THREE.Mesh(new THREE.PlaneGeometry(0.25, 0.321), new THREE.MeshStandardMaterial(
-    { map: notes, roughness: 0.98, emissive: '#ffffff', emissiveMap: notes, emissiveIntensity: 0.34 }));
-  notePlane.rotation.set(-Math.PI / 2, 0, -0.04);
-  notePlane.position.set(nb[0], DESK.topY + 0.0245, nb[2]); root.add(notePlane); tag(notePlane, 'notebook');
-  const notebook = new THREE.Group(); notebook.position.set(...nb); root.add(notebook);
-  for (const part of [book, pages, notePlane]) {
-    part.position.sub(notebook.position); part.castShadow = false; notebook.add(part);
-  }
 
   // --- task lamp fallback, books ---------------------------------------------
   const lampAnchor = ANCHORS.lamp;
@@ -580,7 +520,7 @@ export function buildCinematicWorkspace(scene, options = {}) {
 
   // --- interactions and authored assets --------------------------------------
   const roomActions = buildCinematicRoomInteractions({
-    root, materials: { bone, dark, wood, paper }, canvasTexture, anchors: ANCHORS, achievements,
+    root, materials: { bone, dark, wood, paper }, canvasTexture, anchors: ANCHORS, achievements, resume: { identity, contact, education, experience, proofPoints, skills },
     bulb, lampInterior, lampPool, moon, moonOpen, blindsGroup, keys, keyConfig, windowLight,
   });
   const taskLamp = createAuthoredTaskLamp({
@@ -656,11 +596,8 @@ export function buildCinematicWorkspace(scene, options = {}) {
     root, interactive, materials, bakedMaterials, city, bulb, hemiLight, contactGeometry,
     taskLamp, mouse, ceilingFixture, keyboard,
     contactSurfaces: { desk: deskSurface, mat: matSurface },
-    hands, phone, phoneGlow, phoneDisplay, notebook, figure, roomActions, keys,
+    hands, phone, phoneGlow, phoneDisplay, figure, roomActions, keys,
     staticBoxes: { monitorScreen: monitorScreenBox, monitorBezel: monitorBezelBox, desk: deskBox },
-    notePage: notePlane, notes,
-    clearNotes() { const c = notes.image; drawBlankPage(c.getContext('2d'), c.width, c.height); notes.needsUpdate = true; },
-    resetNotebook() { notebook.position.set(...ANCHORS.notebook); notebook.rotation.set(0, 0, 0); },
     setPhoneScreen(name) { phoneMaterial.map = phoneTextures[name]; },
     resetPhone() {
       phone.position.set(...ANCHORS.phone); phone.rotation.set(0, 0, 0);

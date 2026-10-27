@@ -1,6 +1,8 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <!-- ?notrack=1 / ?notrack=0 sets or clears v3:no-track (see docs/ANALYTICS.md); must run before any beacon check -->
+    <script>(function(){try{var q=new URLSearchParams(location.search+'&'+(location.hash.split('?')[1]||'')),v=q.get('notrack');if(v==='1'||v==='0'){if(v==='1')localStorage.setItem('v3:no-track','1');else localStorage.removeItem('v3:no-track');sessionStorage.setItem('v3:notrack-toast',v)}addEventListener('DOMContentLoaded',function(){var m=sessionStorage.getItem('v3:notrack-toast');if(!m)return;sessionStorage.removeItem('v3:notrack-toast');var t=document.createElement('div');t.setAttribute('role','status');t.textContent=m==='1'?"This browser won't be counted":'This browser will be counted again';t.style.cssText='position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;padding:10px 16px;border-radius:8px;background:#17160f;color:#f4f1ea;font:13px/1.3 system-ui,sans-serif;pointer-events:none;transition:opacity .4s';document.body.appendChild(t);setTimeout(function(){t.style.opacity='0'},3500);setTimeout(function(){t.remove()},4200)})}catch(e){}})()</script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -50,5 +52,6 @@
         <p>Your browser can't preview the PDF here. Use the download button above.</p>
       </object>
     </main>
-  </body>
+  <script>(function(){try{if(location.hostname!=='dhruvkothari.pages.dev'||localStorage.getItem('v3:no-track')||localStorage.getItem('v3:test'))return;var t=Date.now(),s=function(o){navigator.sendBeacon('/api/hit',new Blob([JSON.stringify(o)],{type:'text/plain'}))},r='';try{r=document.referrer?new URL(document.referrer).hostname:''}catch(e){}s({t:'view',path:'/resume/',ref:r===location.hostname?'':r,dev:matchMedia('(pointer:coarse)').matches?'phone':'desktop'});document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[href$=".pdf"]');if(a)s({t:'view',path:'/resume/pdf-click'})});addEventListener('pagehide',function(){s({t:'end',path:'/resume/',secs:Math.round((Date.now()-t)/1000)})})}catch(e){}})()</script>
+</body>
 </html>

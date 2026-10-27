@@ -26,6 +26,7 @@ const PHASE_LABELS = {
 const DhruvOSScreen = forwardRef(function DhruvOSScreen({
   phase = 'room',
   reducedMotion = false,
+  prewarm = false,
   onReady,
   onLoadError,
   onRequestLeave,
@@ -111,6 +112,24 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
   useEffect(() => {
     if (phase !== 'room') setMounted(true);
   }, [phase]);
+
+  // Boot the OS once the room has settled, so the first key press (or the first
+  // trip to the monitor) doesn't pay the ~1 s startup on the spot.
+  useEffect(() => {
+    let timer = 0, idle = 0;
+    const boot = () => {
+      const ric = window.requestIdleCallback;
+      if (ric) idle = ric(() => setMounted(true), { timeout: 4000 }); else setMounted(true);
+    };
+    const onRevealed = () => { timer = window.setTimeout(boot, 3000); };
+    if (document.querySelector('.workspace-stage')?.dataset.roomRevealed === '1') onRevealed();
+    else window.addEventListener('workspace:revealed', onRevealed, { once: true });
+    return () => {
+      window.removeEventListener('workspace:revealed', onRevealed);
+      window.clearTimeout(timer);
+      if (idle && window.cancelIdleCallback) window.cancelIdleCallback(idle);
+    };
+  }, []);
 
   const postToOS = useCallback((message) => {
     const frame = frameRef.current;
@@ -205,13 +224,17 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
   if (!mounted) return null;
 
   const visible = phase !== 'room';
+  // While seated the booted OS is kept rastered at ~0.4% opacity (invisible, inert), so the first key that
+  // brings it onto the monitor does not pay Chrome's first raster of the 1536x864 layer (about 0.4 s here).
+  const warm = prewarm && phase === 'room' && frameState === 'ready';
   const label = PHASE_LABELS[phase] || PHASE_LABELS.preparing;
   const error = frameState === 'error';
 
   return (
     <div
       ref={rootRef}
-      className={`dhruv-os-screen is-${phase}${reducedMotion ? ' is-reduced' : ''}`}
+      className={`dhruv-os-screen is-${phase}${reducedMotion ? ' is-reduced' : ''}${warm ? ' is-prewarm' : ''}`}
+      inert={warm || undefined}
       data-screen-state={phase}
       aria-hidden={!visible}
       aria-busy={!error && frameState !== 'ready'}
@@ -271,6 +294,25 @@ const DhruvOSScreen = forwardRef(function DhruvOSScreen({
 export default DhruvOSScreen;
 
 const css = `
+/* Seated, OS booted, not yet on the monitor: keep the iframe's layer rastered (see warm above). */
+.dhruv-os-screen.is-prewarm:not([data-aligning="true"]) {
+  visibility: visible;
+  opacity: 1;
+  padding: 0;
+  background: transparent;
+  pointer-events: none;
+}
+.dhruv-os-screen.is-prewarm:not([data-aligning="true"]) .os-screen-bar,
+.dhruv-os-screen.is-prewarm:not([data-aligning="true"]) .os-screen-foot { display: none; }
+.dhruv-os-screen.is-prewarm:not([data-aligning="true"]) .os-screen-frame {
+  position: fixed; top: 0; left: 0; margin: 0; max-width: none; border: 0;
+  width: 1536px; height: 864px;
+  opacity: .004;
+  transform: scale(.359);
+  transform-origin: 0 0;
+}
+.dhruv-os-screen.is-prewarm:not([data-aligning="true"]) .os-screen-viewport { height: 100%; }
+
 /* Aligned to the monitor's projected screen quad during travel — see
    setScreenRect() above. The bar/foot chrome would not exist on the real
    monitor, so it is hidden for the duration of the alignment. */
@@ -440,6 +482,14 @@ const css = `
   color: var(--dim);
   border-top: var(--hair) solid var(--faint);
   border-bottom: 0;
+}
+
+/* Landscape phones: the monitor chrome would otherwise take half the height. */
+@media (max-height: 520px) {
+  .dhruv-os-screen { padding: 0; }
+  .os-screen-frame { grid-template-rows: auto 1fr; }
+  .os-screen-bar { min-height: 0; padding: 0.3rem 0.7rem; }
+  .os-screen-foot { display: none; }
 }
 
 @media (max-width: 640px) {

@@ -3,7 +3,7 @@
 
 :root {
   --green: #5cffd0;
-  --amber: #ffb000;
+  --amber: #d9d4c7;
   --red: #ff4f4f;
   --bg: #050a08;
   --surface: #0c1610;
@@ -149,7 +149,6 @@ html, body {
   border-bottom: 1px solid var(--border);
   display: flex; align-items: center;
   padding: 0 12px;
-  backdrop-filter: blur(8px);
   flex-shrink: 0;
 }
 #menubar-left { font-size: 12px; font-weight: 600; color: var(--green); letter-spacing: 0.05em; }
@@ -193,7 +192,6 @@ html, body {
   border-top: 1px solid var(--border);
   display: flex; align-items: center;
   padding: 0 8px; gap: 6px;
-  backdrop-filter: blur(8px);
 }
 .taskbar-btn {
   height: 22px; padding: 0 10px;
@@ -227,6 +225,8 @@ html, body {
 .os-window.maximized { border-radius: 0; }
 .iframe-banner { display:flex; align-items:center; gap:14px; padding:8px 14px; background:#16211d; border-bottom:1px solid rgba(92,255,208,0.22); color:#d8e4d8; font:13px/1.4 Inter,system-ui,sans-serif; flex-shrink:0; }
 .iframe-banner span { flex:1; }
+@media (max-height:520px) { #menubar { height:20px; } #taskbar { height:26px; } .win-titlebar { height:24px; min-height:24px; }
+  .os-window { left:0 !important; top:0 !important; width:100% !important; height:100% !important; border-radius:0; } }
 @media (max-height:520px) { .iframe-banner { padding:4px 10px; justify-content:flex-end; } .iframe-banner span { display:none; } }
 .iframe-banner button { font:12px system-ui,sans-serif; padding:6px 12px; border:1px solid #5cffd0; border-radius:4px; background:transparent; color:#5cffd0; cursor:pointer; white-space:nowrap; }
 .iframe-banner button:hover { background:rgba(92,255,208,0.1); }
@@ -245,7 +245,7 @@ html, body {
 .traffic-lights { display: flex; gap: 6px; }
 .tl { width: 11px; height: 11px; border-radius: 50%; cursor: pointer; flex-shrink: 0; transition: filter 0.15s; }
 .tl.red { background: #ff5f56; }
-.tl.yellow { background: #ffbd2e; }
+.tl.yellow { background: #b8b2a3; }
 .tl.green-tl { background: #27c93f; }
 .tl:hover { filter: brightness(1.3); }
 
@@ -277,8 +277,7 @@ html, body {
 #crt-flicker {
   position: fixed; inset: 0;
   pointer-events: none; z-index: 9001;
-  animation: crt-flicker 8s infinite;
-  opacity: 0;
+  opacity: 0; /* was an 8 s flicker animation; a running full-screen animation held the embedded OS at 30 fps while typing */
   background: rgba(92,255,208,0.012);
 }
 @keyframes crt-flicker {

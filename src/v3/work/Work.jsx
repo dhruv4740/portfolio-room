@@ -3,6 +3,7 @@ import '../tokens.css';
 import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds } from '../content/index.js';
 import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
+import { LIVE_APPS_HERO } from '../lib/features.js';
 
 const css = `
   /* ---- skip link --------------------------------------------------------- */
@@ -97,6 +98,13 @@ const css = `
     border-color: var(--dim);
   }
 
+  /* /work's page colours are light; the demo panel is its own dark surface. */
+  .work-demo .work-demo-title { color: var(--bone); }
+  .work-demo .work-demo-title span,
+  .work-demo .work-demo-kicker { color: #9a9aa2; }
+  .work-demo a.work-demo-action,
+  .work-demo button.work-demo-action { color: var(--bone); text-decoration: none; background: transparent; }
+
   .work-demo-body {
     flex: 1;
     min-height: 0;
@@ -159,6 +167,10 @@ const css = `
   }
   .w-btn:active { transform: scale(0.98); }
   .w-root .w-btn--p { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .w-live { margin-top: 18px; padding: 14px 16px; border: 1px solid var(--ink); border-radius: var(--r); background: var(--paper); }
+  .w-live p { margin: 0 0 10px; font-size: 15px; }
+  .w-live div { display: flex; flex-wrap: wrap; gap: 8px; }
+  .w-live a, .w-live button { border: 0; cursor: pointer; font: inherit; display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 12px; background: var(--ink); color: var(--paper); text-decoration: none; font-weight: 500; }
   .w-links { display: flex; gap: 10px; margin-top: 12px; font-size: 15px; }
   .w-links a { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font-weight: 500; text-decoration: none; }
   .w-links a span { color: var(--mute); }
@@ -202,6 +214,14 @@ const css = `
   .w-y { font: 13px var(--mono); color: var(--mute); }
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
+  .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; }
+  .w-tour { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #1a1713; display: block; }
+  .w-cs-row { display: block; }
+  .w-cs-row summary { cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
+  .w-cs-row summary img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; }
+  .w-cs dt { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink2); margin-top: 10px; }
+  .w-cs dd { margin: 2px 0 0; font-size: 15px; color: var(--ink2); }
+  .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
   .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 1px; cursor: pointer; text-decoration: none; }
   .w-contact { font-size: 15.5px; color: var(--ink2); max-width: 46ch; }
@@ -219,7 +239,10 @@ const css = `
 
   @media (min-width: 960px) {
     .w-wrap { display: grid; grid-template-columns: 400px 1fr; gap: 88px; padding: 56px 48px; }
-    .w-side { position: sticky; top: 56px; align-self: start; }
+    .w-side { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
+    .w-side::-webkit-scrollbar { width: 6px; }
+    .w-side::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
+    @media (max-height: 900px) { .w-wrap { padding-top: 32px; } .w-desk { max-width: 260px; } .w-root h1 { margin-top: 16px; } .w-sub { margin-top: 8px; } .w-live { margin-top: 12px; padding: 10px 14px; } .w-cta { margin-top: 14px; } .w-room { margin-top: 12px; padding: 10px 14px; } }
     .w-cta { display: flex; }
     .w-room { display: flex; }
     .w-bar { display: none; }
@@ -241,6 +264,86 @@ const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/preview
 
 // The cards in the "Featured" band, after Blink (built from experience[0]).
 const FEATURED_IDS = ['focuslock', 'basket'];
+
+// Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
+const WHAT_I_DID = {
+  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK and the Windows installer.',
+  portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
+  darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
+  blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
+  basket: 'Price comparator with 636 tests.',
+};
+// Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
+function TourVideo() {
+  const ref = useRef(null);
+  useEffect(() => {
+    const v = ref.current;
+    if (!v || typeof IntersectionObserver === 'undefined') return undefined;
+    const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) {
+        if (!v.querySelector('source')) {
+          [['/media/room-tour.mp4', 'video/mp4'], ['/media/room-tour.webm', 'video/webm']].forEach(([src, type]) => {
+            const el = document.createElement('source'); el.src = src; el.type = type; v.appendChild(el);
+          });
+          v.load();
+        }
+        if (!calm) v.play().catch(() => {});
+      } else v.pause();
+    }, { rootMargin: '200px' });
+    io.observe(v);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <video className="w-tour" ref={ref} muted loop playsInline controls preload="none" poster="/media/room-tour.jpg"
+      aria-label="A one-minute guided tour of the 3D room and the demos on its monitor and phone" data-testid="room-tour" />
+  );
+}
+
+// Live from GitHub: /api/proof (Pages Function, KV-cached, public REST API, no token). Renders nothing if it fails.
+const ago = (iso) => {
+  const d = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 86400e3));
+  return d === 0 ? 'today' : d === 1 ? 'yesterday' : d < 60 ? `${d} days ago` : `${Math.round(d / 30)} months ago`;
+};
+function GithubProof() {
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    let live = true;
+    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.repos?.length) setData(d); }).catch(() => {});
+    return () => { live = false; };
+  }, []);
+  if (!data) return null;
+  return (
+    <>
+      <div className="w-label"><span>Live from GitHub</span><span>updated {ago(data.updated)}</span></div>
+      <div className="w-list" data-testid="gh-proof">
+        {data.repos.map((r) => (
+          <div className="w-row" key={r.name}>
+            <span className="w-y">{r.pushed ? ago(r.pushed) : ''}</span>
+            <span>
+              <b><a href={r.url} target="_blank" rel="noopener noreferrer">{r.name}</a></b>
+              <p>{[r.language, r.stars ? `${r.stars} ${r.stars === 1 ? 'star' : 'stars'}` : ''].filter(Boolean).join(' · ')}</p>
+              <ul className="w-bul">
+                {r.commits.map((c) => (<li key={c.sha}><a href={c.url} target="_blank" rel="noopener noreferrer">{c.sha}</a> {c.msg}</li>))}
+              </ul>
+            </span>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+const CASE_IDS = ['blink', 'focuslock', 'darksentinel', 'blackout', 'portfolio3d'];
+const caseText = (c) => c && (
+  <dl className="w-cs">
+    <dt>Problem</dt><dd>{c.problem}</dd>
+    <dt>Decisions</dt><dd>{c.decisions}</dd>
+    <dt>Result</dt><dd>{c.result}</dd>
+  </dl>
+);
+
+const didLine = (id) => WHAT_I_DID[id] && <p className="w-did"><b>What I did</b> {WHAT_I_DID[id]}</p>;
 
 // Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
 // Android shows nothing), so there the button opens the file in its own tab.
@@ -334,6 +437,7 @@ export default function Work() {
       <span>
         <b>{p.name}</b>
         <p>{p.tagline || p.description}</p>
+        {didLine(p.id)}
         {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
       </span>
       <span className="w-acts">
@@ -361,6 +465,7 @@ export default function Work() {
         <span className="w-meta">{project.year} · {project.tech.slice(0, 3).join(', ')}</span>
         <h3>{project.name}</h3>
         <p>{project.summary || project.tagline}</p>
+        {didLine(project.id)}
         {project.badge && (
           <div className="w-res"><small>{project.badge}</small></div>
         )}
@@ -407,6 +512,16 @@ export default function Work() {
             <h1>{identity.name}</h1>
             <p className="w-lede">{identity.pitch}</p>
             <p className="w-sub">{identity.now}</p>
+            {LIVE_APPS_HERO && (
+              <div className="w-live" data-testid="work-live-apps">
+                <p><b>Try my real apps.</b> Running builds, one tap.</p>
+                <div>
+                  <button type="button" onClick={(e) => tryDemo({ id: 'focuslock' }, e)}>FocusLock</button>
+                  <button type="button" onClick={(e) => tryDemo({ id: 'darksentinel' }, e)}>DarkSentinel</button>
+                  <button type="button" onClick={(e) => tryDemo({ id: 'basket' }, e)}>BasketProof</button>
+                </div>
+              </div>
+            )}
             <div className="w-cta">
               {contact.resume && (
                 <a className="w-btn w-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>
@@ -452,6 +567,26 @@ export default function Work() {
                 </div>
               </article>
               {featured.map(renderFeatured)}
+            </div>
+
+            <div className="w-label"><span>Room tour</span><span>1 min, no sound</span></div>
+            <TourVideo />
+
+            <GithubProof />
+
+            <div className="w-label"><span>Case studies</span><span>{CASE_IDS.length}</span></div>
+            <div className="w-list" data-testid="case-studies">
+              {CASE_IDS.map((id) => {
+                const p = id === 'blink' ? { ...blink, name: 'Blink.new growth tools', tech: [] } : projects.find((x) => x.id === id);
+                if (!p?.caseStudy) return null;
+                return (
+                  <details className="w-row w-cs-row" key={id}>
+                    <summary><b>{p.name}</b>{PREVIEWS[id] && <img src={PREVIEWS[id]} alt={`${p.name} screenshot`} loading="lazy" />}</summary>
+                    {caseText(p.caseStudy)}
+                    <a className="w-act" href={`/casefiles/${id}.pdf`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>
+                  </details>
+                );
+              })}
             </div>
 
             <div className="w-label"><span>At Blink.new (internship)</span></div>

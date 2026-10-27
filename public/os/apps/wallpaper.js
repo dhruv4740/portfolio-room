@@ -3,7 +3,7 @@ import store from '../shell/store.js';
 
 export const PALETTES = {
   green:  { key: 'green',  bg: '#050a08', r: 92,  g: 255, b: 208, label: 'Aurora', hex: '#5cffd0' },
-  amber:  { key: 'amber',  bg: '#0a0800', r: 255, g: 176, b: 0,   label: 'Ember',  hex: '#ffb000' },
+  amber:  { key: 'amber',  bg: '#0a0800', r: 217, g: 212, b: 199,   label: 'Bone',  hex: '#d9d4c7' },
   violet: { key: 'violet', bg: '#080510', r: 192, g: 132, b: 252, label: 'Nebula', hex: '#c084fc' },
   blue:   { key: 'blue',   bg: '#020810', r: 96,  g: 165, b: 250, label: 'Tide',   hex: '#60a5fa' },
 };
@@ -32,7 +32,17 @@ function createPrng(seed = 1306) {
   };
 }
 
-export function renderSkylineDataUrl(skyState, width, height, dpr = 1) {
+// PNG-encoding a full-screen canvas costs ~0.6 s synchronously (and a 3 MB PNG is slow to
+// decode). Wallpapers are opaque, so with a callback they are encoded as JPEG q.92 through
+// toBlob (~3x faster, ~9x smaller) and the result is an object URL.
+function finishCanvas(c, cb) {
+  if (!cb) return c.toDataURL('image/png');
+  if (c.toBlob) c.toBlob(b => cb(b ? URL.createObjectURL(b) : c.toDataURL('image/png')), 'image/jpeg', 0.92);
+  else cb(c.toDataURL('image/png'));
+  return undefined;
+}
+
+export function renderSkylineDataUrl(skyState, width, height, dpr = 1, cb) {
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(width * dpr));
   c.height = Math.max(1, Math.round(height * dpr));
@@ -112,15 +122,15 @@ export function renderSkylineDataUrl(skyState, width, height, dpr = 1) {
   ctx.fillStyle = scrim;
   ctx.fillRect(0, 0, W * 0.22, H);
 
-  return c.toDataURL('image/png');
+  return finishCanvas(c, cb);
 }
 
 // A still of the preview's flow field, so the desktop shows the palette you
 // picked rather than an 8% glow on near-black. Same seed every time.
 const flowCache = new Map();
-export function renderFlowDataUrl(p, width, height, dpr = 1) {
+export function renderFlowDataUrl(p, width, height, dpr = 1, cb) {
   const cacheKey = `${p.key}:${width}x${height}@${dpr}`;
-  if (flowCache.has(cacheKey)) return flowCache.get(cacheKey);
+  if (flowCache.has(cacheKey)) { const hit = flowCache.get(cacheKey); if (cb) { cb(hit); return undefined; } return hit; }
   const c = document.createElement('canvas');
   c.width = Math.max(1, Math.round(width * dpr));
   c.height = Math.max(1, Math.round(height * dpr));
@@ -156,6 +166,7 @@ export function renderFlowDataUrl(p, width, height, dpr = 1) {
   scrim.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = scrim;
   ctx.fillRect(0, 0, width * 0.22, height);
+  if (cb) { finishCanvas(c, u => { flowCache.set(cacheKey, u); cb(u); }); return undefined; }
   const url = c.toDataURL('image/png');
   flowCache.set(cacheKey, url);
   return url;
@@ -185,6 +196,9 @@ export function startSkyObserver(onChange) {
   }
 }
 
+let skyTicket = 0;
+const skyCache = new Map();
+
 export function applyWallpaper(key) {
   const desktop = document.getElementById('desktop');
   const workspace = document.getElementById('workspace');
@@ -196,15 +210,19 @@ export function applyWallpaper(key) {
       const H = desktop?.clientHeight || window.innerHeight || 640;
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
       const skyState = getSkyState();
-      const url = `url("${renderSkylineDataUrl(skyState, W, H, dpr)}")`;
-      if (desktop) {
-        desktop.style.backgroundImage = url;
-        desktop.style.backgroundSize = 'cover';
-      }
-      if (workspace) {
-        workspace.style.backgroundImage = url;
-        workspace.style.backgroundSize = 'cover';
-      }
+      const ck = `${skyState}:${W}x${H}@${dpr}`, ticket = ++skyTicket;
+      const paint = u => {
+        if (ticket !== skyTicket) return;
+        skyCache.set(ck, u);
+        const url = `url("${u}")`;
+        for (const el of [desktop, workspace]) {
+          if (!el) continue;
+          el.style.backgroundImage = url;
+          el.style.backgroundSize = 'cover';
+        }
+      };
+      if (skyCache.has(ck)) paint(skyCache.get(ck));
+      else renderSkylineDataUrl(skyState, W, H, dpr, paint);
     };
     redraw();
     startSkyObserver(redraw);
@@ -213,13 +231,17 @@ export function applyWallpaper(key) {
     const p = PALETTES[key];
     const W = desktop?.clientWidth || window.innerWidth || 900;
     const H = desktop?.clientHeight || window.innerHeight || 640;
-    const url = `url("${renderFlowDataUrl(p, W, H, Math.min(window.devicePixelRatio || 1, 1.5))}")`;
-    for (const el of [desktop, workspace]) {
-      if (!el) continue;
-      el.style.backgroundColor = p.bg;
-      el.style.backgroundImage = url;
-      el.style.backgroundSize = 'cover';
-    }
+    skyTicket++;
+    for (const el of [desktop, workspace]) if (el) el.style.backgroundColor = p.bg;
+    const ticket = skyTicket;
+    renderFlowDataUrl(p, W, H, Math.min(window.devicePixelRatio || 1, 1.5), u => {
+      if (ticket !== skyTicket) return;
+      for (const el of [desktop, workspace]) {
+        if (!el) continue;
+        el.style.backgroundImage = `url("${u}")`;
+        el.style.backgroundSize = 'cover';
+      }
+    });
   }
 }
 
@@ -415,12 +437,12 @@ export default {
     setBtn.textContent = 'SET AS WALLPAPER';
     setBtn.style.cssText = [
       'margin-left:auto', 'font-size:8px', 'letter-spacing:0.18em',
-      'padding:5px 14px', 'border:1px solid rgba(255,176,0,0.45)',
-      'background:rgba(255,176,0,0.06)', 'color:#ffb000', 'cursor:pointer',
+      'padding:5px 14px', 'border:1px solid rgba(217,212,199,0.45)',
+      'background:rgba(217,212,199,0.06)', 'color:#d9d4c7', 'cursor:pointer',
       "font-family:inherit", 'transition:all 0.15s', 'flex-shrink:0',
     ].join(';');
-    setBtn.addEventListener('mouseover', () => { setBtn.style.borderColor = '#ffb000'; setBtn.style.background = 'rgba(255,176,0,0.1)'; });
-    setBtn.addEventListener('mouseout',  () => { setBtn.style.borderColor = 'rgba(255,176,0,0.45)'; setBtn.style.background = 'rgba(255,176,0,0.06)'; });
+    setBtn.addEventListener('mouseover', () => { setBtn.style.borderColor = '#d9d4c7'; setBtn.style.background = 'rgba(217,212,199,0.1)'; });
+    setBtn.addEventListener('mouseout',  () => { setBtn.style.borderColor = 'rgba(217,212,199,0.45)'; setBtn.style.background = 'rgba(217,212,199,0.06)'; });
     setBtn.addEventListener('click', () => {
       applyWallpaper(currentKey);
       store.emit('wallpaper:set', { palette: currentKey });

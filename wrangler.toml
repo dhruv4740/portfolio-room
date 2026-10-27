@@ -1,0 +1,12 @@
+name = "dhruvkothari"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-09-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "dhruvkothari-analytics"
+database_id = "121b3442-5336-443b-bd0d-9f3b5addcfc8"
+
+[[kv_namespaces]]
+binding = "ASK_KV"
+id = "882512127d404b9f93285e3248c067f1"

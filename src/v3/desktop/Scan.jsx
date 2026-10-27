@@ -9,10 +9,10 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import WorkspaceStage from './WorkspaceStage.jsx';
 import Telemetry from '../ui/Telemetry.jsx';
+import FpsHud from '../ui/FpsHud.jsx';
 import AnchorPanel from '../ui/AnchorPanel.jsx';
 import DhruvOSScreen from './DhruvOSScreen.jsx';
 import { istParts } from '../lib/mumbai.js';
-import { setCityRain, startCityAmbience, stopCityAmbience, disposeCityAmbience, setCityAmbienceMuted, suspendCityAmbience } from './cityAudio.js';
 import { disposeRoomAudio, isRoomMuted, playRoomFoley, setRoomMuted, unlockRoomAudio } from './roomAudio.js';
 import { subscribeProgress } from '../lib/loadProgress.js';
 import { dismissFrontDoor } from '../lib/frontDoor.js';
@@ -23,6 +23,10 @@ import {
   markIntroSeen,
   setOverride,
 } from '../lib/capability.js';
+
+import { LIVE_APPS_HERO } from '../lib/features.js';
+
+const TOUCH_LINK_CARD = true;
 
 // Must track WorkspaceStage's fly() travel durations (entering/leaving) so
 // the phase flips to inside/room exactly when the camera arrives.
@@ -115,7 +119,7 @@ export default function Scan() {
   const [weather, setWeather] = useState(null);
   const [clock, setClock] = useState(() => istParts().label);
   useEffect(() => {
-    const onWeather = (event) => { setWeather(event.detail); setCityRain(event.detail.raining); };
+    const onWeather = (event) => { setWeather(event.detail); };
     window.addEventListener('workspace:weather', onWeather);
     const timer = setInterval(() => setClock(istParts().label), 30000);
     return () => { window.removeEventListener('workspace:weather', onWeather); clearInterval(timer); };
@@ -139,7 +143,6 @@ export default function Scan() {
   // deferred focus loses that race.
   const pendingFocus = useRef(false);
   const dhruvRef = useRef(null);
-  const windowIntent = useRef(false);
 
   // arrivalTokenRef is the authoritative live token, written synchronously at
   // every mutation site. It used to be assigned during render from
@@ -191,9 +194,7 @@ export default function Scan() {
   const activeProject = activeAnchor
     ? projects.find((p) => p.id === activeAnchor.ref) || null
     : null;
-  // The notebook carries its text on the page itself, so zooming in IS the
-  // content. A side panel repeating it would be the same words twice.
-  const panelOpens = !!activeAnchor && activeAnchor.id !== 'notebook';
+  const panelOpens = !!activeAnchor;
 
   // The monitor anchor is the one that opens the embedded OS.
   const monitorIsActive = activeAnchor?.ref === 'lab';
@@ -253,14 +254,6 @@ export default function Scan() {
       pickUpAfterSit();
       return;
     }
-    if (id === 'windowOpen') {
-      const stage = document.querySelector('.workspace-stage');
-      const actionState = stage?.dataset.actionState;
-      // Ignore repeat visitor clicks until the sash has finished moving.
-      if (actionState && actionState !== 'idle') return;
-      windowIntent.current = !windowIntent.current;
-      if (windowIntent.current) startCityAmbience(); else stopCityAmbience();
-    }
     lastTrigger.current = document.activeElement;
     setActiveId((cur) => (cur === id ? null : id));
   }, [cancelArrival, screenPhase, activeId, seated, pickUpAfterSit]);
@@ -292,7 +285,6 @@ export default function Scan() {
     setSeated(true);
     returnOrigin.current = 'room';
     launchLocked.current = false;
-    if (windowIntent.current) startCityAmbience();
   }, [beginLaunch]);
 
   const handleOpenPhone = useCallback((event) => {
@@ -400,6 +392,27 @@ export default function Scan() {
     return () => window.removeEventListener('keydown', onKey, true);
   }, [aboutOpen, closeAbout]);
 
+  const [linkCard, setLinkCard] = useState(null);
+  const runDeepLinkRef = useRef(() => {});
+  runDeepLinkRef.current = (kind, arg) => {
+    const fake = (action) => ({ currentTarget: document.querySelector(`[data-launchpad-action="${action}"]`) });
+    if (kind === 'os') {
+      if (arg) dhruvRef.current?.openApp(arg);
+      if (overviewOpen) handleLaunchDesktop(fake('desktop-projects')); else handleEnterScreen();
+      return;
+    }
+    if (kind === 'phone') {
+      if (overviewOpen) handleOpenPhone(fake('mobile-projects')); else handleSelect('phone');
+      if (!arg) return;
+      const timer = setInterval(() => {
+        if (document.querySelector('.workspace-stage')?.dataset.phoneState !== 'zoomed' || !document.querySelector('.phone-screen')) return;
+        clearInterval(timer);
+        window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: arg } }));
+      }, 150);
+      // Not tied to the effect cleanup: resetting the URL re-runs this effect.
+      setTimeout(() => clearInterval(timer), 15000);
+    }
+  };
   // Deep links: /os/<app>, /phone[/<app>], /about, /contact, /room/<object>.
   // Each is consumed once the room is ready, then the URL returns to /.
   const location = useLocation();
@@ -418,31 +431,22 @@ export default function Scan() {
     const fake = (action) => ({ currentTarget: document.querySelector(`[data-launchpad-action="${action}"]`) });
     if (kind === 'about') { setAboutOpen(true); return undefined; }
     if (kind === 'contact') { handleOpenContact(fake('contact')); return undefined; }
-    if (kind === 'os') {
-      if (arg) dhruvRef.current?.openApp(arg);
-      if (overviewOpen) handleLaunchDesktop(fake('desktop-projects')); else handleEnterScreen();
-      return undefined;
+    if ((kind === 'os' || kind === 'phone') && arg && TOUCH_LINK_CARD && window.matchMedia('(pointer:coarse)').matches) {
+      // Touch: a shared project link does not launch an app under the visitor's thumb.
+      // Show what it opens and let them tap. Set TOUCH_LINK_CARD=false to restore auto-open.
+      const project = projects.find((p) => p.id === (arg === 'basketproof' ? 'basket' : arg));
+      if (project) { setLinkCard({ kind, arg, project }); return undefined; }
     }
-    if (kind === 'phone') {
-      if (overviewOpen) handleOpenPhone(fake('mobile-projects')); else handleSelect('phone');
-      if (!arg) return undefined;
-      const timer = setInterval(() => {
-        if (document.querySelector('.workspace-stage')?.dataset.phoneState !== 'zoomed' || !document.querySelector('.phone-screen')) return;
-        clearInterval(timer);
-        window.dispatchEvent(new CustomEvent('phone:open-app', { detail: { app: arg } }));
-      }, 150);
-      // Not tied to the effect cleanup: resetting the URL re-runs this effect.
-      setTimeout(() => clearInterval(timer), 15000);
-      return undefined;
-    }
+    if (kind === 'os' || kind === 'phone') { runDeepLinkRef.current(kind, arg); return undefined; }
     if (kind === 'room') {
       if (overviewOpen) handleExploreRoom(fake('explore-room'));
       // Select once the seat has reached the stage and a frame has drawn, then
       // 400 ms more: a select that lands first is undone by the seat's own
       // camera move. A fixed timer started before the first-load stall fired
-      // right after it, so /room/drawer opened cold never opened the drawer.
-      if (arg && arg !== 'explore') {
-        const select = () => tourApi.current.handleSelect(arg === 'window' ? 'windowOpen' : arg);
+      // right after it, so /room/lamp opened cold never toggled the lamp.
+      // Retired objects (/room/drawer, /room/pen, /room/notebook) just seat the visitor.
+      if (arg && arg !== 'explore' && !['drawer', 'pen', 'notebook', 'windowOpen'].includes(arg)) {
+        const select = () => tourApi.current.handleSelect(arg);
         const whenSeated = () => document.querySelector('.scan-root')?.dataset.seated === 'true'
           ? requestAnimationFrame(() => setTimeout(select, 400)) : requestAnimationFrame(whenSeated);
         whenSeated();
@@ -456,16 +460,6 @@ export default function Scan() {
     launchLocked.current = false;
     if (returnOrigin.current === 'overview') returnToOverview();
   }, [returnToOverview]);
-
-  useEffect(() => {
-    if (!seated || screenPhase !== 'room') {
-      stopCityAmbience();
-    }
-  }, [seated, screenPhase]);
-
-  useEffect(() => {
-    return () => disposeCityAmbience();
-  }, []);
 
   // Unlock room foley from a real gesture. Arrival itself never creates or
   // starts audio, and every event is short enough to clean up without a loop.
@@ -484,38 +478,11 @@ export default function Scan() {
     };
   }, []);
 
-  // Hidden tabs stop ambience and suspend its oscillators; returning restores
-  // it only when the sash is still open and the room is still the live view.
-  // Own effect so it reads current `seated`/`screenPhase` rather than the
-  // values captured when the gesture listeners above were bound.
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.hidden) {
-        stopCityAmbience();
-        suspendCityAmbience();
-        return;
-      }
-      // startCityAmbience resumes the context itself. If the sash is shut the
-      // context stays suspended, which is the point of suspending it.
-      if (windowIntent.current && seated && screenPhase === 'room') startCityAmbience();
-    };
-    document.addEventListener('visibilitychange', onVisibility);
-    return () => document.removeEventListener('visibilitychange', onVisibility);
-  }, [seated, screenPhase]);
-
-  useEffect(() => {
-    setCityAmbienceMuted(roomMuted);
-  }, [roomMuted]);
-
   const toggleRoomMute = useCallback(() => {
     const next = setRoomMuted(!roomMuted);
     setRoomMutedState(next);
-    setCityAmbienceMuted(next);
-    if (!next) {
-      unlockRoomAudio();
-      if (windowIntent.current && seated && screenPhase === 'room') startCityAmbience();
-    }
-  }, [roomMuted, screenPhase, seated]);
+    if (!next) unlockRoomAudio();
+  }, [roomMuted]);
 
   // Wearing the headphones loops the song; taking them off stops it. The event
   // fires from a click, so playback has a user gesture.
@@ -852,8 +819,7 @@ export default function Scan() {
         seated={seated}
         liveMonitor={liveMonitor && seated && !activeId}
         onTypeKey={key=>{setLiveMonitor(true);dhruvRef.current?.typeKey(key);}}
-        onSit={() => { cancelArrival(); returnOrigin.current = 'room'; setOverviewOpen(false); setActiveId(null); setSeated(true); if (windowIntent.current) startCityAmbience(); }}
-        windowIntent={windowIntent.current}
+        onSit={() => { cancelArrival(); returnOrigin.current = 'room'; setOverviewOpen(false); setActiveId(null); setSeated(true); }}
         anchors={anchors}
         activeAnchorId={activeId}
         onAnchorSelect={handleSelect}
@@ -891,6 +857,11 @@ export default function Scan() {
           <p className="launchpad-role mono">{identity.role} · {identity.location}</p>
           <p className="launchpad-statement">{identity.statement}</p>
           <div className="launchpad-actions">
+            {LIVE_APPS_HERO && (
+              <button className="launchpad-primary launchpad-live" data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>
+                <span className="mono">TRY MY LIVE APPS</span><small>Real, running builds, not mockups. Opens the project list on the monitor.</small>
+              </button>
+            )}
             <button className="launchpad-primary" data-launchpad-action="tour" onClick={gate(startTour)}>
               <span className="mono">TAKE THE GUIDED TOUR</span><small>A short walk through the room. No clicking needed.</small>
             </button>
@@ -899,8 +870,8 @@ export default function Scan() {
             </button>
             <Link className="launchpad-quick mono" to="/work" onClick={cancelArrival}>Skip the 3D: résumé &amp; projects →</Link>
             <details className="launchpad-extra mono">
-              <summary>More: live apps, phone demos</summary>
-              <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>Live apps on the computer</button>
+              <summary>{LIVE_APPS_HERO ? 'More: phone demos' : 'More: live apps, phone demos'}</summary>
+              {!LIVE_APPS_HERO && <button data-launchpad-action="desktop-projects" onClick={gate(handleLaunchDesktop)}>Live apps on the computer</button>}
               <button data-launchpad-action="mobile-projects" onClick={gate(handleOpenPhone)}>Demos on the phone</button>
             </details>
           </div>
@@ -944,6 +915,17 @@ export default function Scan() {
         </div>
       )}
 
+      {linkCard && (
+        <div className="link-card-scrim"><div className="link-card" role="dialog" aria-label={`Open ${linkCard.project.name}`}>
+          <b>{linkCard.project.name}</b>
+          <p>{linkCard.project.tagline || linkCard.project.description}</p>
+          <button type="button" className="link-card-go" onClick={() => { const c = linkCard; setLinkCard(null); runDeepLinkRef.current(c.kind, c.arg); }}>
+            Try the {linkCard.project.name} demo →
+          </button>
+          <small>{linkCard.kind === 'phone' ? 'Opens it on the phone on the desk.' : 'Opens it on the monitor.'}</small>
+          <button type="button" className="link-card-x" onClick={() => setLinkCard(null)} aria-label="Dismiss">✕</button>
+        </div></div>
+      )}
       {aboutOpen && (
         <div className="about-scrim" onClick={(e) => { if (e.target === e.currentTarget) closeAbout(); }}>
           <section className="about-panel" role="dialog" aria-modal="true" aria-labelledby="about-name" data-testid="about-panel">
@@ -981,10 +963,8 @@ export default function Scan() {
           {controlsOpen && <>
             <button type="button" aria-pressed={!roomMuted} onClick={toggleRoomMute}>ROOM SOUND {roomMuted ? 'OFF' : 'ON'}</button>
             {arrivalToken === 0 && !activeId && <button data-testid="replay-arrival" onClick={replayArrival}>REPLAY ARRIVAL</button>}
-            <button onClick={() => handleSelect('notebook')}>NOTEBOOK</button>
             <button onClick={() => handleSelect('phone')}>PHONE</button>
-            {['lamp','coffee','award','drawer','pen','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='drawer'?'RESUME':id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
-            <button onClick={() => handleSelect('windowOpen')}>WINDOW</button>
+            {['lamp','coffee','award','resume','blinds','headphones','keyboard'].map(id=><button key={id} onClick={()=>handleSelect(id)}>{id==='coffee'&&coffeeEmpty?'REFILL COFFEE':id.toUpperCase()}</button>)}
             <button onClick={() => handleSelect('window')}>CONTACT</button>
             <button onClick={() => handleEnterScreen()}>MONITOR</button>
           </>}
@@ -1022,6 +1002,7 @@ export default function Scan() {
 
       {/* ---- instrument chrome -------------------------------------------- */}
       {showDebug && <LiveTelemetry sink={statsSink} anchorId={activeId} />}
+      <FpsHud />
 
       <AnchorPanel
         anchor={activeAnchor}
@@ -1047,6 +1028,7 @@ export default function Scan() {
         ref={dhruvRef}
         phase={screenPhase}
         reducedMotion={reduced}
+        prewarm={seated}
         onReady={handleOSReady}
         onLoadError={handleOSLoadError}
         onRequestLeave={handleLeaveScreen}
@@ -1081,6 +1063,8 @@ const css = `
 .launchpad-actions { top:222px; width:372px; max-width:calc(100vw - 2*var(--gutter)); display:flex; flex-direction:column; gap:8px; pointer-events:auto; }
 .launchpad-actions button { position:relative; min-height:64px; padding:13px 18px 13px 58px; border:1px solid #555b59; color:var(--bone); background:rgba(16,20,21,.92); text-align:left; transition:transform .18s,border-color .18s; }
 .launchpad-actions button:first-child { border-left:2px solid var(--signal); }
+.launchpad-actions button.launchpad-live { background:var(--bone); color:#101213; border-color:var(--bone); }
+.launchpad-actions button.launchpad-live small { color:#3a403d; }
 .launchpad-actions button:hover,.launchpad-actions button:focus-visible { border-color:var(--bone); transform:translateX(4px); }
 .launchpad-actions kbd { position:absolute; left:16px; top:50%; transform:translateY(-50%); width:26px; height:26px; display:grid; place-items:center; border:1px solid #6b716e; color:#d3d4cc; font-size:12px; }
 .launchpad-actions span { display:block; font-size:14px; letter-spacing:.10em; }
@@ -1122,6 +1106,13 @@ const css = `
 .about-panel strong { color:var(--bone); font-weight:500; }
 .about-kicker,.about-role { margin:0; color:#b7b9b2; font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
 .about-muted { color:#9ea39f; }
+.link-card-scrim { position:fixed; inset:0; z-index:40; display:grid; place-items:center; background:rgba(8,10,10,.72); padding:12px; }
+.link-card { position:relative; width:min(92vw,380px); max-height:92vh; overflow:auto; padding:16px 18px; background:rgba(20,24,25,.94); color:#e8e4dc; border:1px solid #3b4442; display:grid; gap:8px; }
+.link-card b { font:600 18px var(--font-sans,system-ui); }
+.link-card p { font-size:14px; color:#b7b9b2; }
+.link-card small { font:11px var(--font-mono); color:#8f948d; }
+.link-card-go { min-height:48px; background:#e8e4dc; color:#141819; font-weight:600; font-size:15px; }
+.link-card-x { position:absolute; top:6px; right:8px; min-height:32px; min-width:32px; color:#b7b9b2; }
 .about-close { position:absolute; top:14px; right:14px; color:#b7b9b2; font-size:11px; letter-spacing:.1em; min-height:32px; }
 .about-links { display:flex; gap:20px; margin-top:22px; font-size:12px; letter-spacing:.1em; }
 .about-links a { color:var(--bone); }
@@ -1161,6 +1152,7 @@ body[data-launchpad-open] .escape-link { display:none; }
 @media(max-height:450px) { .launchpad-actions small { display:none; } .launchpad-actions a,.launchpad-actions button,.launchpad-extra summary { min-height:44px; padding-top:6px; padding-bottom:6px; } body[data-launchpad-open] .mumbai-readout { display:none; } }
 @media(pointer:coarse) and (max-height:450px) { .escape-link { display:none !important; } }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
+@media(max-width:640px) { .mumbai-readout { display:none; } } /* sat on top of the overview's 'More: live apps' line on phones */
 
 .seat-exit { display:flex; align-items:center; gap:10px; flex-wrap:wrap; max-width:calc(100% - 280px); position:absolute; bottom:calc(var(--gutter) + 48px); left:var(--gutter); z-index:var(--z-panel); padding:9px 12px; color:var(--bone); background:color-mix(in srgb, var(--void) 92%, transparent); border:1px solid var(--dim); }
 .workspace-stage[data-phone-state="zoomed"] ~ .seat-exit,

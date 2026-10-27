@@ -128,7 +128,7 @@ export function initDesktop(apps, ctx) {
   workspace.appendChild(launchers);
   for (const [title, entries] of [
     ['PROJECTS', projectIds.map(id => apps.find(app => app.id === id)).filter(Boolean)],
-    ['ABOUT & TOOLS', apps.filter(app => !projectIds.includes(app.id))],
+    ['ABOUT & TOOLS', apps.filter(app => !projectIds.includes(app.id) && !app.hideIcon)],
   ]) {
     const section = document.createElement('section');
     section.className = 'desktop-app-group';

@@ -140,7 +140,7 @@ export function seatedHands() {
   }
 
   const wristW = new THREE.Vector3(), s = new THREE.Vector3(), s0 = new THREE.Vector3(), dir = new THREE.Vector3(), pole = new THREE.Vector3();
-  const ideal = new THREE.Vector3(), elbowW = new THREE.Vector3(), elbowL = new THREE.Vector3(), ax = new THREE.Vector3(), ay = new THREE.Vector3(), az = new THREE.Vector3();
+  const elbowT = new THREE.Vector3(), rootInv = new THREE.Matrix4(), ideal = new THREE.Vector3(), elbowW = new THREE.Vector3(), elbowL = new THREE.Vector3(), ax = new THREE.Vector3(), ay = new THREE.Vector3(), az = new THREE.Vector3();
   function updateHand(h) {
     applyPose(h);
     h.hand.updateMatrixWorld(true);
@@ -160,6 +160,14 @@ export function seatedHands() {
     // Two unequal bones: the elbow sits `along` the shoulder-wrist line and `drop` toward the pole.
     const along = (distance * distance + UPPER_ARM * UPPER_ARM - FOREARM * FOREARM) / (2 * distance);
     elbowW.copy(s).addScaledVector(dir, along).addScaledVector(pole, Math.sqrt(Math.max(0, UPPER_ARM * UPPER_ARM - along * along)));
+    // Keep the elbow cover above the desk top where it hangs over or just off the desk edge (the sleeve used to sink ~15 mm during the phone reach).
+    const dk = h.deskBox;
+    if (dk) {
+      root.updateWorldMatrix(true, false); elbowT.copy(elbowW).applyMatrix4(root.matrixWorld);
+      if (elbowT.x > dk.min.x && elbowT.x < dk.max.x && elbowT.z > dk.min.z && elbowT.z < dk.max.z + 0.1 && elbowT.y < dk.max.y + 0.052) {
+        elbowT.y = dk.max.y + 0.052; elbowW.copy(elbowT).applyMatrix4(rootInv.copy(root.matrixWorld).invert());
+      }
+    }
     // The forearm hangs off the hand, so its elliptical wrist rolls with the palm.
     elbowL.copy(elbowW); h.hand.worldToLocal(elbowL);
     ay.subVectors(elbowL, WRIST); const length = ay.length(); ay.normalize();

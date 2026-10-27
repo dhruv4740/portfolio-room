@@ -1,7 +1,7 @@
 // The live demo beside /work's reading column: a project's real web UI (its
 // static build under /apps/<name>/) or its Android app on a phone. Nothing here
 // touches three.js; the phone UI is loaded only when a phone demo opens.
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const PhoneScreen = lazy(() => import('../desktop/PhoneScreen.jsx'));
 
@@ -9,7 +9,7 @@ const PhoneScreen = lazy(() => import('../desktop/PhoneScreen.jsx'));
 // Android half.
 export const DEMOS = {
   focuslock: [
-    { kind: 'web', label: 'Windows app', src: '/apps/focuslock/' },
+    { kind: 'web', label: 'Windows app', src: '/apps/focuslock/', minWidth: 900 },
     { kind: 'phone', label: 'Android app', app: 'focuslock' },
   ],
   expense: [{ kind: 'phone', label: 'Android app', app: 'expense' }],
@@ -18,6 +18,33 @@ export const DEMOS = {
   crisiswatch: [{ kind: 'web', label: 'Web app', src: '/apps/crisiswatch/' }],
   fraud: [{ kind: 'web', label: 'Dashboard', src: '/apps/fraud/' }],
 };
+
+// A desktop-only build (fixed sidebar, no media queries) is laid out at its
+// minWidth and scaled down to fit a narrower panel instead of being clipped.
+function WebDemo({ demo, title }) {
+  const body = useRef(null);
+  const [fit, setFit] = useState(null);
+  useLayoutEffect(() => {
+    const el = body.current?.parentElement;
+    if (!demo.minWidth || !el) return undefined;
+    const measure = () => {
+      const w = el.clientWidth, h = el.clientHeight;
+      setFit(w && w < demo.minWidth ? { scale: w / demo.minWidth, w, h } : null);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [demo.minWidth]);
+  const style = fit
+    ? { width: demo.minWidth, height: fit.h / fit.scale, flex: 'none', transform: `scale(${fit.scale})`, transformOrigin: '0 0' }
+    : undefined;
+  return (
+    <div ref={body} style={fit ? { width: fit.w, height: fit.h, overflow: 'hidden' } : { width: '100%', height: '100%' }}>
+      <iframe key={demo.src} className="work-demo-frame" src={demo.src} title={title} style={style} />
+    </div>
+  );
+}
 
 function PhoneDemo({ app, onClose }) {
   // PhoneScreen listens for this on mount; a child's effects run first, so
@@ -56,7 +83,7 @@ export default function DemoPanel({ project, demo, onClose }) {
       </header>
       <div className="work-demo-body">
         {demo.kind === 'web' ? (
-          <iframe key={demo.src} className="work-demo-frame" src={demo.src} title={`${project.name} ${demo.label}`} />
+          <WebDemo demo={demo} title={`${project.name} ${demo.label}`} />
         ) : (
           <Suspense fallback={<p className="mono work-demo-loading">LOADING THE PHONE…</p>}>
             <PhoneDemo app={demo.app} onClose={onClose} />

@@ -10,38 +10,21 @@ import { ROOM } from './cinematicLayout.js';
 import { PHONE_SCREEN } from './phoneScreenSize.js';
 import { reportProgress } from '../lib/loadProgress.js';
 import { fetchGithubActivity, formatActivity } from '../lib/githubActivity.js';
-import { fetchMumbaiWeather, mumbaiSky } from '../lib/mumbai.js';
 
 // The phone UI and its apps load after the room is up (idle prefetch below),
 // not with the first paint.
 const loadPhoneScreen = () => import('./PhoneScreen.jsx');
 const PhoneScreen = lazy(loadPhoneScreen);
-import { KEY_ROWS, AWARD_REST, PEN_REST, DRAWER_TRAVEL } from './cinematicRoomInteractions.js';
+import { KEY_ROWS, AWARD_REST } from './cinematicRoomInteractions.js';
 import { POSES, lerpPose, curlSum, HAND_REST } from './seatedHands.js';
 import { createPerfGovernor } from './perfGovernor.js';
 import { createAfterHours } from './afterHours.js';
 import { createSceneDirector, COLD_OPEN } from './sceneDirector.js';
 import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
+// The room is locked to the night look (dusk/day and the live Mumbai sky were removed).
 export function resolveSkyState() {
-  const parseSky = (str) => {
-    if (!str) return null;
-    const val = new URLSearchParams(str).get('sky');
-    if (val && ['night', 'dusk', 'day'].includes(val.toLowerCase())) {
-      return val.toLowerCase();
-    }
-    return null;
-  };
-  const fromSearch = parseSky(typeof window !== 'undefined' ? window.location.search : '');
-  if (fromSearch) return fromSearch;
-  const hash = (typeof window !== 'undefined' ? window.location.hash : '') || '';
-  const qIdx = hash.indexOf('?');
-  if (qIdx !== -1) {
-    const fromHash = parseSky(hash.slice(qIdx));
-    if (fromHash) return fromHash;
-  }
-  // No override: follow Mumbai local time.
-  return mumbaiSky();
+  return 'night';
 }
 
 // Just outside the bezel's bottom-right corner, clear of the screen text.
@@ -56,7 +39,7 @@ export default function WorkspaceStage({
   anchors = [], activeAnchorId = null, onAnchorSelect, onEnterScreen,
   onProgress, onReady, onStats, onError, onScreenRect, onTravel, reducedMotion = false,
   paused = false, phase = 'room', seated = false, onSit, onPhoneExit, entryVisible = true, onTypeKey, liveMonitor = false,
-  windowIntent = false, arrivalToken = 0, onArrivalComplete,
+  arrivalToken = 0, onArrivalComplete,
 }) {
   const hostRef = useRef(null);
   const markerRefs = useRef(new Map());
@@ -66,8 +49,8 @@ export default function WorkspaceStage({
   const [phoneWanted, setPhoneWanted] = useState(false);
   const callbacks = useRef({});
   callbacks.current = { onAnchorSelect, onEnterScreen, onProgress, onReady, onStats, onError, onScreenRect, onTravel, onSit, onPhoneExit, onTypeKey, onArrivalComplete };
-  const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent });
-  state.current = { paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor, windowIntent };
+  const state = useRef({ paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor });
+  state.current = { paused, phase, reducedMotion, activeAnchorId, seated, liveMonitor };
 
   useEffect(() => {
     const host = hostRef.current;
@@ -75,7 +58,7 @@ export default function WorkspaceStage({
     // Nothing is drawn until every program the room needs is compiled (see below), so a first draw never blocks the page on shader compile.
     let gateOpen = false, revealed = Promise.resolve();
     let extraHeld = null;
-    let phoneInHand = false, returningPhone = false, notebookInHand = false, returningNotebook = false;
+    let phoneInHand = false, returningPhone = false;
     // null | 'in' | 'held' | 'out'. While set, PhoneScreen tracks the display.
     let phoneZoom = null;
     const entryTimers = [];
@@ -88,8 +71,10 @@ export default function WorkspaceStage({
       // blocks the main thread for the program's whole D3D link (about 60 ms each here).
       // Shader errors are caught in dev and by the suites on the dev server.
       renderer.debug.checkShaderErrors = !import.meta.env.PROD;
-      renderer.shadowMap.enabled = true;
-      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      // Real-time shadow maps are off: frames are pixel-identical without them (baked lighting and contact shadows carry the look), and they cost ~2 ms/frame and ~0.7 s of load. See docs/PERF-AUDIT.md. Set true to restore.
+      renderer.shadowMap.enabled = false;
+      // three r184 swaps PCFSoft for PCF on the first shadow render (same look); setting it up front lets compileAsync build the programs the draw will use.
+      renderer.shadowMap.type = THREE.PCFShadowMap;
       // Furniture and lights are static: camera moves do not invalidate shadows.
       renderer.shadowMap.autoUpdate = false;
       renderer.shadowMap.needsUpdate = true;
@@ -98,6 +83,20 @@ export default function WorkspaceStage({
       renderer.toneMappingExposure = 1.5;
       host.appendChild(renderer.domElement);
       const gov = createPerfGovernor(renderer); // render-on-demand + adaptive pixel ratio; see perfGovernor.js
+      // Idle detection for the 30 Hz rate: anything that is not raw input but still moves the picture.
+      const lastCam = new Float32Array(7); let lastSig = 0; let lastInputAt = -Infinity; // keys and drags count as motion for 500 ms
+      gov.setMotionProbe(() => {
+        let moving = performance.now() - lastInputAt < 500 || state.current.phase !== 'room' || phoneInHand || !!extraHeld || gsap.globalTimeline.getChildren(false, true, true).some((t) => t.isActive());
+        const c = camera, p = c.position, q = c.quaternion;
+        if (Math.abs(p.x - lastCam[0]) + Math.abs(p.y - lastCam[1]) + Math.abs(p.z - lastCam[2]) + Math.abs(q.x - lastCam[3]) + Math.abs(q.y - lastCam[4]) + Math.abs(q.z - lastCam[5]) + Math.abs(q.w - lastCam[6]) > 1e-5) moving = true;
+        lastCam.set([p.x, p.y, p.z, q.x, q.y, q.z, q.w]);
+        // Hands ease toward their target pose outside gsap, so a settling hand has to count as motion.
+        let sig = 0;
+        for (const h of [model.hands.left, model.hands.right]) { const hp = h.hand.position; sig += hp.x + hp.y * 3 + hp.z * 7 + h.wristDeg * 0.01; for (const k in h.pose) sig += h.pose[k]; }
+        if (Math.abs(sig - lastSig) > 1e-6) moving = true;
+        lastSig = sig;
+        return moving;
+      });
       // GPU time per frame where the browser exposes the timer extension
       // (desktop Chrome does; Firefox and Safari do not). Results arrive a frame
       // or two late, so they are averaged into the next stats emit. This is the
@@ -154,6 +153,7 @@ export default function WorkspaceStage({
       });
       const originalSetSky = model.setSky;
       model.hands.setKeyboard(model.keys);
+      model.hands.left.deskBox = model.hands.right.deskBox = model.staticBoxes.desk;
       model.setSky = (skyState) => {
         originalSetSky(skyState);
         afterHours?.setSky(skyState);
@@ -162,7 +162,6 @@ export default function WorkspaceStage({
       const initialSky = resolveSkyState();
       model.setSky(initialSky);
       host.dataset.skyState = initialSky;
-      host.dataset.windowOpen = String(model.roomActions.state.windowOpen);
       const camera = new THREE.PerspectiveCamera(56, 1, 0.025, 140);
       controls = new OrbitControls(camera, renderer.domElement);
       controls.enableDamping = true; controls.dampingFactor = 0.075;
@@ -195,6 +194,11 @@ export default function WorkspaceStage({
       function place(view) { camera.position.copy(view.position); controls.target.copy(view.target); controls.update(); }
       function updateMarkers() {
         const rect = host.getBoundingClientRect();
+        // The overview's cards and links sit over the desk's left side, where the
+        // phone projects. Measured before any marker write, so no forced layout.
+        const overview = document.querySelector('[data-testid="room-overview"]');
+        const blockers = overview ? [...overview.querySelectorAll(':scope > :not(.launchpad-actions), .launchpad-actions > *')].map(c => c.getBoundingClientRect()).filter(r => r.width && r.height) : [];
+        const sizes = new Map([...markerRefs.current].map(([id, el]) => [id, el ? [el.offsetWidth, el.offsetHeight] : [0, 0]]));
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           // The monitor's marker sits on the bezel's bottom-right corner, not the
@@ -202,11 +206,17 @@ export default function WorkspaceStage({
           projected.set(...point);
           if (id === 'monitor') projected.add(MONITOR_MARKER_OFFSET);
           projected.project(camera);
-          const visible = state.current.phase === 'room' && (!['phone','notebook','award','coffee','drawer','pen'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          let visible = state.current.phase === 'room' && (!['phone','award','coffee','resume'].includes(state.current.activeAnchorId)) && (state.current.seated ? id !== 'chair' && id !== state.current.activeAnchorId : ['monitor','phone','chair'].includes(id)) && projected.z < 1 && Math.abs(projected.x) < 0.94 && Math.abs(projected.y) < 0.88;
+          const x = (projected.x * 0.5 + 0.5) * rect.width;
+          const y = (-projected.y * 0.5 + 0.5) * rect.height;
+          // A marker under the overview's copy is unreadable and steals its clicks.
+          const [w, h] = sizes.get(id), mx = x + rect.left, my = y + rect.top;
+          // 8 px grace so a marker merely touching a card's edge stays.
+          if (blockers.some(b => mx < b.right - 8 && mx + w > b.left + 8 && my < b.bottom - 8 && my + h > b.top + 8)) visible = false;
           el.style.opacity = visible ? '1' : '0';
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
-          el.style.transform = `translate3d(${(projected.x * 0.5 + 0.5) * rect.width}px,${(-projected.y * 0.5 + 0.5) * rect.height}px,0)`;
+          el.style.transform = `translate3d(${x}px,${y}px,0)`;
         }
       }
       // Project the monitor screen's top-left/top-right/bottom-left corners and
@@ -276,7 +286,7 @@ export default function WorkspaceStage({
         model.hands.root.visible = inTheSeat && model.hands.root.userData.wanted !== false;
         // The body only renders in first person, where your own head is never
         // in view. A distance gate showed it whenever a reach leaned the
-        // camera away from the seat (the pen view filled with hair).
+        // camera away from the seat (a close view filled with hair).
         model.figure.head.visible = false;
         if (!gateOpen) return;
         afterHours?.update(state.current.reducedMotion ? 0 : performance.now()/1000,gov.getStats().medianMs||0);
@@ -305,7 +315,7 @@ export default function WorkspaceStage({
           callbacks.current.onStats?.({ frameMs: count ? cadenceSum / count : null, cpuMs: count ? cpuSum / count : null, gpuMs: gpuCount ? gpuSum / gpuCount : null, cameraPos: camera.position.toArray(), perfTier: stats.tier, pixelRatio: stats.pixelRatio });
           cadenceSum = 0; cpuSum = 0; count = 0; gpuSum = 0; gpuCount = 0; emitted = now;
         }
-        if(!state.current.reducedMotion && state.current.phase==='room' && !phoneInHand && !notebookInHand && !extraHeld)gov.markDirty();
+        if(!state.current.reducedMotion && state.current.phase==='room' && !phoneInHand && !extraHeld)gov.markDirty();
         raf = requestAnimationFrame(tick);
       }
       function refresh() {
@@ -322,7 +332,7 @@ export default function WorkspaceStage({
       // length from an upright seat, so reaching leans the body in (camera and
       // shoulders together) instead of stretching the arm.
       const SEAT = new THREE.Vector3(...WORKSPACE.seat.position), look = new THREE.Vector3();
-      // Head offset on top of the shared body lean (the drawer bends the neck, not the shoulders).
+      // Head offset on top of the shared body lean (reading poses bend the neck, not the shoulders).
       const head = new THREE.Vector3();
       const REST_AXIS = new THREE.Vector3(0, 1, 0);
       const REST = [-1, 1].map(s => ({ p: new THREE.Vector3(s * HAND_REST.x, HAND_REST.y, HAND_REST.z), q: new THREE.Quaternion(), pose: POSES.rest }));
@@ -340,7 +350,7 @@ export default function WorkspaceStage({
         return out;
       }
       // `via` routes the hand around an edge instead of through the object.
-      function hold(h, a, b = a, w = 0, via = null, arc = true) {
+      function hold(h, a, b = a, w = 0, via = null, arc = true, detour = true) {
         if (via) { if (w < 0.5) { b = via; w *= 2; } else { a = via; w = (w - 0.5) * 2; } }
         gripPose(a, poseA); gripPose(b, poseB);
         h.hand.position.lerpVectors(poseA.p, poseB.p, w);
@@ -348,7 +358,7 @@ export default function WorkspaceStage({
         if(arc)h.hand.position.y += Math.min(0.06, poseA.p.distanceTo(poseB.p) * 0.3) * Math.sin(Math.PI * w);
         h.hand.quaternion.slerpQuaternions(poseA.q, poseB.q, w);
         // From an open hand the fingers spread on the way to a grip, then close on it.
-        const closing = curlSum(poseB.pose) > curlSum(poseA.pose) + 0.2 && curlSum(poseA.pose) < 1.7;
+        const closing = detour && curlSum(poseB.pose) > curlSum(poseA.pose) + 0.2 && curlSum(poseA.pose) < 1.7;
         if (!closing) lerpPose(h.pose, poseA.pose, poseB.pose, w);
         else if (w < 0.55) lerpPose(h.pose, poseA.pose, POSES.open, w / 0.55);
         else lerpPose(h.pose, POSES.open, poseB.pose, (w - 0.55) / 0.45);
@@ -391,12 +401,24 @@ export default function WorkspaceStage({
       const PHONE_TOP = { obj: model.phone, p: [-0.01, 0.03, 0.035], r: [0, 0, 0], pose: PHONE_FINGERS };
       // Side is the top grip turned 90 degrees about the near long edge.
       const PHONE_SIDE = { obj: model.phone, p: [-0.0735, 0.0245, -0.005], r: [0, 0, Math.PI / 2], pose: PHONE_FINGERS };
+      // Reach grip: the top grip rolled about 40 degrees toward the side one (not the full 90, which stood the hand on
+      // its edge), fingers loosely curled, thumb along the near long edge. Position is the polar arc about that edge.
+      const MID_T = 0.44;
+      const PHONE_MID = (() => {
+        const px = -WORKSPACE.phoneSize.width / 2, py = -WORKSPACE.phoneSize.depth / 2;
+        const pol = q => [Math.atan2(q[1] - py, q[0] - px), Math.hypot(q[0] - px, q[1] - py)], A = pol(PHONE_TOP.p), B = pol(PHONE_SIDE.p);
+        const ang = A[0] + (B[0] - A[0]) * MID_T, r = A[1] + (B[1] - A[1]) * MID_T;
+        return { obj: model.phone, p: [px + r * Math.cos(ang), py + r * Math.sin(ang), PHONE_TOP.p[2] + (PHONE_SIDE.p[2] - PHONE_TOP.p[2]) * MID_T - 0.015],
+          r: [0, 0, MID_T * Math.PI / 2], pose: { c0: 0.12, c1: 0.12, c2: 0.14, c3: 0.17, spread: 0.22, tOpp: 0.15, tCurl: 0.1 } };
+      })();
       const PHONE_BACK = (() => {
         const y = new THREE.Vector3(0, -1, 0), z = new THREE.Vector3(-Math.cos(0.35), 0, Math.sin(0.35));
         return { obj: model.phone, p: [-0.045, -0.03, 0.035], r: basisGrip(new THREE.Vector3().crossVectors(y, z), y, z),
           pose: {...POSES.cup,c0:.2,c1:.2,c2:.2,c3:.24,spread:.1} };
       })();
-      const PHONE_LEAN = { x: -0.14, y: -0.08, z: -0.21 }, PHONE_HELD = new THREE.Vector3(0.08, 1.04, 0.05);
+      // Pitch the back grip toward the forearm and yaw it a little: the plain basis left the left wrist bent 64 degrees at the held pose.
+      PHONE_BACK.r.multiply(new THREE.Quaternion().setFromEuler(new THREE.Euler(THREE.MathUtils.degToRad(35), THREE.MathUtils.degToRad(-30), 0)));
+      const PHONE_LEAN = { x: -0.14, y: 0, z: -0.21 }, PHONE_HELD = new THREE.Vector3(0.08, 1.04, 0.05);
       let phoneGrip = 1, phoneVisited = false;
       // The underhand roll pivots on the phone's near long edge: a straight
       // blend between the grips either cuts through the case or leaves the
@@ -406,21 +428,21 @@ export default function WorkspaceStage({
       // Push (m) along the palm normal at grip 0, 0.025 … 1: the hand is not a
       // flat plate, so a rigid roll alone opens a gap or presses skin into the
       // case. Solved for smoothness and a ~1 mm gap with scripts/probe-phone-tune.mjs
-      // (DP=1), then eased 1 mm off the case where the blend between knots clipped.
-      let PHONE_ROLL_IN = [0.002, 0.0055, 0.0085, 0.0105, 0.0125, 0.014, 0.015, 0.016, 0.0165, 0.017, 0.0175, 0.018, 0.018, 0.0185,
-        0.019, 0.019, 0.0195, 0.0195, 0.0195, 0.0195, 0.019, 0.0175, 0.0155, 0.013, 0.0105, 0.0075, 0.003, 0, -0.0015, -0.006,
-        -0.006, -0.003, -0.002, -0.0015, -0.001, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005];
+      // (DP=1), then eased 1 mm off the case where the blend between knots clipped. Knots 8 to 25 were pulled back 6 to 11 mm when the approach grip became the ~40 degree one.
+      let PHONE_ROLL_IN = [0.002, 0.0055, 0.0085, 0.0105, 0.0125, 0.014, 0.015, 0.016, 0.01, 0.0105, 0.011, 0.0115, 0.0115, 0.012, 0.0125, 0.012, 0.0125, 0.0125, 0.0085, 0.0085, 0.008, 0.0065, 0.0045, 0.0085, 0.0085, 0.0065, 0.003, 0, -0.0015, -0.006, -0.006, -0.003, -0.002, -0.0015, -0.001, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005, -0.0005];
+      const FOLLOW = 1;
       function followPhone() {
         const L = model.hands.left, g = phoneGrip, size = WORKSPACE.phoneSize;
-        const [a, b, w] = g < 0.5 ? [PHONE_TOP, PHONE_SIDE, g * 2] : [PHONE_SIDE, PHONE_BACK, (g - 0.5) * 2];
-        hold(L, a, b, w, null, false);
+        const [a, b, w] = [PHONE_MID, PHONE_BACK, g];
+        hold(L, a, b, w, null, false, false);
+        L.elbowFollow = FOLLOW * g;
         const px = -size.width / 2, py = -size.depth / 2, polar = q => [Math.atan2(q[1] - py, q[0] - px), Math.hypot(q[0] - px, q[1] - py)];
         let [angA, rA] = polar(a.p), [angB, rB] = polar(b.p);
         while (angB < angA) angB += Math.PI * 2;
         const ang = angA + (angB - angA) * w, r = rA + (rB - rA) * w;
         model.phone.updateMatrix();
         L.hand.position.copy(rollPos.set(px + r * Math.cos(ang), py + r * Math.sin(ang), a.p[2] + (b.p[2] - a.p[2]) * w).applyMatrix4(model.phone.matrix));
-        const n = PHONE_ROLL_IN.length - 1, i = Math.min(n - 1, Math.floor(g * n)), f = g * n - i;
+        const gk = MID_T / 2 + (1 - MID_T / 2) * g, n = PHONE_ROLL_IN.length - 1, i = Math.min(n - 1, Math.floor(gk * n)), f = gk * n - i;
         L.hand.position.addScaledVector(palmIn.set(0, -1, 0).applyQuaternion(L.hand.quaternion), PHONE_ROLL_IN[i] + (PHONE_ROLL_IN[i + 1] - PHONE_ROLL_IN[i]) * f);
       }
       // PhoneScreen drives these. The texture under the DOM screen follows it,
@@ -465,7 +487,7 @@ export default function WorkspaceStage({
         const [px, py, pz] = WORKSPACE.anchors.phone, from = snapshot(left), k = { reach: 0, grip: 0 };
         phoneGrip = 0;
         action = gsap.timeline({
-          onUpdate() { if (k.reach < 1) hold(left, from, PHONE_TOP, k.reach); else { phoneGrip = k.grip; followPhone(); } model.hands.update(); leanCamera(); invalidate(); },
+          onUpdate() { if (k.reach < 1) hold(left, from, PHONE_MID, k.reach); else { phoneGrip = k.grip; followPhone(); } model.hands.update(); leanCamera(); invalidate(); },
           onComplete() { zoomPhone(false); },
         });
         markPhone('reaching');
@@ -524,116 +546,6 @@ export default function WorkspaceStage({
           .to(look, { ...SEAT_LOOK, duration: 0.5, ease: 'power2.inOut' }, t);
         gsap.ticker.wake();
       }
-      // Notebook: the right hand takes the near corner from above; once lifted
-      // both hands hold the side edges, fingers behind the cover.
-      const NB_PICK = { obj: model.notebook, p: [0.17, 0.035, 0.2], r: [0, 0, 0], pose: 'flat' };
-      // Held side grips sit 19 cm out from the centre: the 25 cm-wide notebook's
-      // edges, measured with __v3test.tuneNotebook (1-4 mm to the cover, no
-      // overlap). The old 25 cm offsets held the hands 2 cm off its sides.
-      const NB_SIDE = { obj: model.notebook, p: [0.23, -0.01, 0.12], r: [0, 0, -Math.PI / 2], pose: 'cup' };
-      const NB_RIGHT = { obj: model.notebook, p: [0.19, -0.02, 0.1], r: edgeGrip(1), pose: 'hold' };
-      const NB_LEFT = { obj: model.notebook, p: [-0.19, -0.02, 0.1], r: edgeGrip(-1), pose: 'hold' };
-      const NB_LEAN = { x: 0.225, y: -0.06, z: -0.1 };
-      const nb = { right: 1, left: 1 };
-      function followNotebook() {
-        hold(model.hands.right, NB_PICK, NB_RIGHT, nb.right, NB_SIDE);
-        hold(model.hands.left, restOf(model.hands.left), NB_LEFT, nb.left);
-        model.hands.update();
-      }
-      function animateNotebook(reduced) {
-        action?.kill(); notebookInHand = true; model.resetNotebook(); model.hands.reset(); model.setHandsVisible(true);
-        const held = { x:0.05,y:1.11,z:0.07 };
-        const finish=()=>{host.dataset.notebookState='reading';nb.right=nb.left=1;followNotebook();invalidate();};
-        if(reduced){
-          rig.flyTo({position:WORKSPACE.seat.position,target:[0.05,1.11,0.07]},{reduced,duration:0.8,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
-          model.notebook.position.set(held.x,held.y,held.z);model.notebook.rotation.x=1.39;finish();return;
-        }
-        startLean(); host.dataset.notebookState='lifting';
-        const right=model.hands.right,from=snapshot(right),k={reach:0},[nx,ny,nz]=WORKSPACE.anchors.notebook;
-        nb.right=0; nb.left=0;
-        action=gsap.timeline({onUpdate(){
-          if(k.reach<1){hold(right,from,NB_PICK,k.reach);model.hands.update();}else followNotebook();
-          leanCamera();invalidate();
-        },onComplete:finish});
-        action.to(model.hands.lean,{...NB_LEAN,duration:0.65,ease:'power2.inOut'},0)
-          .to(look,{x:nx+0.1,y:ny,z:nz+0.1,duration:0.65,ease:'power2.inOut'},0)
-          .to(k,{reach:1,duration:0.65,ease:'power2.inOut'},0)
-          .to(model.notebook.position,{y:ny+0.14,duration:0.35,ease:'power2.out'},0.65)
-          .to(model.hands.lean,{...ZERO,duration:0.85,ease:'power2.inOut'},1.0)
-          .to(look,{...held,duration:0.85,ease:'power2.inOut'},1.0)
-          .to(model.notebook.position,{...held,duration:0.85,ease:'power2.inOut'},1.0)
-          .to(model.notebook.rotation,{x:1.39,duration:0.85,ease:'power2.inOut'},1.0)
-          .to(nb,{right:1,duration:0.85,ease:'power2.inOut'},1.0)
-          .to(nb,{left:1,duration:0.6,ease:'power2.inOut'},1.25);
-        gsap.ticker.wake();
-      }
-      function returnNotebook(reduced) {
-        action?.kill();rig.dispose();returningNotebook=true;host.dataset.notebookState='returning';
-        const finish=()=>{notebookInHand=false;returningNotebook=false;model.resetNotebook();model.hands.reset();host.dataset.notebookState='desk';fly();invalidate();};
-        if(reduced){finish();return;}
-        const [x,y,z]=WORKSPACE.anchors.notebook,right=model.hands.right,k={release:0};
-        let from=snapshot(right);
-        startLean();
-        action=gsap.timeline({onUpdate(){
-          if(k.release>0){hold(right,from,restOf(right),k.release);hold(model.hands.left,restOf(model.hands.left));model.hands.update();}else followNotebook();
-          leanCamera();invalidate();
-        },onComplete:finish});
-        action.to(nb,{left:0,duration:0.45,ease:'power2.inOut'},0)
-          .to(model.notebook.position,{x,y:y+0.14,z,duration:0.8,ease:'power2.inOut'},0)
-          .to(model.notebook.rotation,{x:0,y:0,z:0,duration:0.8,ease:'power2.inOut'},0)
-          .to(nb,{right:0,duration:0.8,ease:'power2.inOut'},0)
-          .to(model.hands.lean,{...NB_LEAN,duration:0.8,ease:'power2.inOut'},0)
-          .to(look,{x:x+0.1,y,z:z+0.1,duration:0.8,ease:'power2.inOut'},0)
-          .to(model.notebook.position,{y,duration:0.3,ease:'power2.inOut'},0.8)
-          .call(()=>{from=snapshot(right);},[],1.1)
-          .to(k,{release:1,duration:0.5,ease:'power2.inOut'},1.1)
-          .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},1.1)
-          .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},1.1);
-        gsap.ticker.wake();
-      }
-      // Résumé: the right hand pulls the drawer by its handle and takes the page
-      // from above; then both hands hold its side edges at reading distance.
-      // 29 cm from the eye: the full 21 x 27.9 cm sheet fills most of the view, readable without zooming.
-      const PAGE_HELD = { x: 0.05, y: 1.107, z: 0.358 };
-      const DRAWER_LEAN = { x: 0.15, y: -0.12, z: -0.025 };
-      // The head bends out over the open drawer, ahead of the right shoulder, so
-      // the reaching arm stays at the frame's edge instead of across it.
-      const DRAWER_HEAD = { x: 0.14, y: -0.02, z: -0.1 };
-      const drawerGrip = { handle: 0, pick: 0, right: 0, left: 0 };
-      // Drawer grips live in the drawer's scaled frame, but the hand is not
-      // scaled: offsets are world metres divided by the drawer's scale.
-      // Handle: palm toward the front panel, fingers down and hooked under the
-      // pull, wrist tipped back toward the body. Pick: fingertips down on the
-      // page, wrist high enough to clear the front panel. Via: over the front
-      // panel between the two.
-      let drawerGrips = null;
-      function drawerGripsFor(drawer, page, { y = 0.09, z = 0.09, tilt = 0, via = [0.08, 0.2, 0.06], viaDown = false, pickY = 0.13, pickYaw = -0.3, pickPitch = -0.75, pickRoll = 0, heldTilt = 0.6, heldX = 0.14, heldZ = 0.07, restVia = [-0.22, 0.28, 0.22] } = {}) {
-        const s = drawer.scale.x;
-        const wrist = new THREE.Vector3(0, Math.cos(tilt), Math.sin(tilt)), back = new THREE.Vector3(0, -Math.sin(tilt), Math.cos(tilt));
-        return {
-          HANDLE: { obj: drawer, p: [0, y / s, z / s], r: basisGrip(new THREE.Vector3().crossVectors(back, wrist), back, wrist), pose: 'hook' },
-          // Keyboard to handle and back: out past the desk's front edge, not through it.
-          REST_VIA: { obj: drawer, p: restVia.map(v => v / s), r: [-0.7, 0, 0], pose: 'open' },
-          VIA: { obj: drawer, p: via.map(v => v / s), r: viaDown ? basisGrip(new THREE.Vector3().crossVectors(back, wrist), back, wrist) : [-0.4, 0, 0], pose: 'open' },
-          PICK: { obj: page, p: [0.1, pickY, 0.1], r: new THREE.Quaternion().setFromEuler(new THREE.Euler(pickPitch, pickYaw, pickRoll, 'YXZ')), pose: 'flat' },
-          // Side edges, below the middle, thumbs on the margin rather than the text.
-          RIGHT: { obj: page, p: [heldX, -0.015, heldZ], r: edgeGrip(1, heldTilt), pose: 'hold' },
-          LEFT: { obj: page, p: [-heldX, -0.015, heldZ], r: edgeGrip(-1, heldTilt), pose: 'hold' },
-        };
-      }
-      function poseDrawer() {
-        const page = model.roomActions.resumePage, drawer = model.roomActions.objects.drawer, R = model.hands.right, k = drawerGrip;
-        drawerGrips ||= drawerGripsFor(drawer, page);
-        const { HANDLE, VIA, REST_VIA, PICK, RIGHT, LEFT } = drawerGrips;
-        // Low reaches follow the hand's wrist axis; holding the page up at
-        // reading distance keeps the default dropped elbow (forearms from below).
-        R.elbowFollow = 1 - k.right; model.hands.left.elbowFollow = 1 - k.left;
-        if (k.right > 0) hold(R, PICK, RIGHT, k.right);
-        else if (k.pick > 0) hold(R, HANDLE, PICK, k.pick, VIA);
-        else hold(R, restOf(R), HANDLE, k.handle, REST_VIA);
-        hold(model.hands.left, restOf(model.hands.left), LEFT, k.left);
-        model.hands.update();
-      }
       // Awards frame: grips authored like the résumé page's, rotated into the upright frame (face +z, top +y).
       const AWARD_LEAN = { x: -0.1, y: -0.08, z: -0.25 };
       const AWARD_HELD = { x: 0.05, y: 1.07, z: 0.28 };
@@ -650,6 +562,7 @@ export default function WorkspaceStage({
         o.position.copy(p); o.rotation.copy(r); o.updateMatrixWorld(true);
         return awardLook;
       }
+      function resumeCenter() { return model.roomActions.objects.resume.position; }
       const awardGrip = { pick: 0, left: 0, right: 0 };
       const upright = q => new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(1, 0, 0), Math.PI / 2).multiply(q);
       const AWARD_R = upright(edgeGrip(1)), AWARD_L = upright(edgeGrip(-1));
@@ -661,51 +574,6 @@ export default function WorkspaceStage({
         if (k.left > 0) hold(L, PICK, LEFT, k.left); else hold(L, restOf(L), PICK, k.pick);
         hold(R, restOf(R), RIGHT, k.right);
         model.hands.update();
-      }
-      // Pen: the right hand holds the pencil near its tip while the tip follows the pointer on the notebook page.
-      const PEN_LEAN = { x: 0.21, y: -0.12, z: -0.11 };
-      // The grip is derived from the pinch pose: the pencil passes through the
-      // index and thumb pads and rests in the web of the thumb. The pencil's
-      // held rotation follows from the writing hand's orientation (pronated,
-      // fingers toward the page's far left corner, ulnar side down).
-      const PEN = (() => {
-        const R = model.hands.right, pen = model.roomActions.objects.pen, { contact, axis } = model.hands.pinchFrame(R, POSES.pen);
-        const up = new THREE.Vector3(0, 1, 0).addScaledVector(axis, -axis.y).normalize();
-        const penInHand = basisGrip(new THREE.Vector3().crossVectors(up, axis), up, axis), handToPen = penInHand.clone().invert();
-        const tipInHand = contact.clone().addScaledVector(axis, -0.024);
-        const GRIP = { obj: pen, p: tipInHand.applyQuaternion(handToPen).negate().toArray(), r: handToPen, pose: 'pen' };
-        // The flat pencil is pinched from above, 4 cm up the body from the tip.
-        const PICK = { obj: pen, p: new THREE.Vector3(0, 0, 0.04).sub(contact).toArray(), r: [0, 0, 0], pose: 'pen' };
-        // Writing hand in world space: pronated, fingers forward-right and down, ulnar side down.
-        const f = new THREE.Vector3(0.45, -0.35, -0.82).normalize(), n = new THREE.Vector3(-0.6, -0.8, 0.1);
-        n.addScaledVector(f, -n.dot(f)).normalize();
-        const y = n.clone().negate(), z = f.clone().negate();
-        const e = new THREE.Euler().setFromQuaternion(basisGrip(new THREE.Vector3().crossVectors(y, z), y, z).multiply(penInHand));
-        return { GRIP, PICK, HELD: { x: e.x, y: e.y, z: e.z } };
-      })();
-      const PEN_HELD = PEN.HELD;
-      const penGrip = { reach: 0, k: 0 };
-      let lastInk = null;
-      const penDrawing = () => extraHeld === 'pen' && host.dataset.actionState === 'drawing';
-      function posePen() {
-        const R = model.hands.right;
-        if (penGrip.k > 0) hold(R, PEN.PICK, PEN.GRIP, penGrip.k); else hold(R, restOf(R), PEN.PICK, penGrip.reach);
-        model.hands.update();
-      }
-      function drawAt(event) {
-        const rect = renderer.domElement.getBoundingClientRect();
-        pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
-        raycaster.setFromCamera(pointer, camera);
-        const onPage = raycaster.intersectObject(model.notePage, false)[0];
-        if (!onPage) { lastInk = null; return; }
-        const pen = model.roomActions.objects.pen; pen.position.copy(onPage.point); pen.position.y += 0.002; posePen();
-        if (down) {
-          const c = model.notes.image, ctx = c.getContext('2d'), x = onPage.uv.x * c.width, y = (1 - onPage.uv.y) * c.height;
-          ctx.strokeStyle = '#1d2733'; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          ctx.beginPath(); ctx.moveTo(...(lastInk || [x + 0.1, y])); ctx.lineTo(x, y); ctx.stroke();
-          model.notes.needsUpdate = true; lastInk = [x, y];
-        } else lastInk = null;
-        invalidate();
       }
       // Touch typing: each key has its finger (index 0 … pinky 3; the right
       // thumb for space). The hand slides so that fingertip lands on the cap,
@@ -740,7 +608,33 @@ export default function WorkspaceStage({
         });
         return best;
       }
+      // A key's plan (where the hand goes, how far the finger curls) depends only on the keyboard and
+      // the hand's rest placement, and costs ~20 ms of skinning maths. Plans are solved once per key and
+      // reused, and the whole board is solved in idle time after the room is up so the first letters
+      // typed do not each cost a dropped frame. Keys without a fixed finger are always solved live.
+      const planCache = new Map();
       function planKey(index, boxes) {
+        const mapped = INDEX_FINGER[index] ?? TYPE_FINGER[KEY_CHARS[index]];
+        if (!mapped || !boxes[index]) return planKeyRaw(index, boxes);
+        const h = mapped[0] < 0 ? model.hands.left : model.hands.right, ck = `${index}|${boxes.length}|${h.restLift}|${h.restX}|${h.restZ}`;
+        const hit = planCache.get(ck);
+        if (hit) return { h, f: hit.digit >= 0 ? h.digits[hit.digit] : null, digit: hit.digit, index, from: (h.typeOffset ??= new THREE.Vector3()).clone(), to: hit.to.clone(), dip: hit.dip };
+        const plan = planKeyRaw(index, boxes);
+        if (plan) planCache.set(ck, { to: plan.to.clone(), dip: plan.dip, digit: plan.digit });
+        return plan;
+      }
+      let prewarmIndex = 0, prewarmBoxes = null;
+      const prewarmTimer = setInterval(() => {
+        if (disposed) { clearInterval(prewarmTimer); return; }
+        const s = state.current;
+        if (!s.seated || s.phase !== 'room' || s.activeAnchorId || document.hidden || host.dataset.roomRevealed !== '1'
+          || gov.idleForMs() < 800 || (host.dataset.actionState && host.dataset.actionState !== 'idle')
+          || [model.hands.left, model.hands.right].some((x) => x.typingTween?.isActive() || x.typingReturn?.isActive())) return;
+        prewarmBoxes ??= keySurfaceBoxes(model.keys);
+        if (prewarmIndex >= prewarmBoxes.length) { clearInterval(prewarmTimer); return; }
+        planKey(prewarmIndex++, prewarmBoxes);
+      }, 120);
+      function planKeyRaw(index, boxes) {
         const box = boxes[index]; if (!box) return null;
         const { h, digit } = typingFinger(index, box.getCenter(new THREE.Vector3()));
         const f = digit >= 0 ? h.digits[digit] : null, from = (h.typeOffset ??= new THREE.Vector3()).clone();
@@ -815,10 +709,30 @@ export default function WorkspaceStage({
           .to(k, { press: 0, duration: 0.09, ease: 'power2.out' }, move * 0.6 + 0.07);
         gsap.ticker.wake();
       }
+      // Typing nudge: a hint chip until the first key, then a gentle ease toward the monitor that relaxes after a pause.
+      // Set TYPING_EASE=false to drop the camera move.
+      const TYPING_EASE = true; let typedOnce = false, easeBack = 0;
+      const hintTimer = setInterval(() => {
+        const s = state.current;
+        host.dataset.typeHint = (!typedOnce && s.seated && s.phase === 'room' && !s.activeAnchorId && host.dataset.roomRevealed === '1' && (!host.dataset.actionState || host.dataset.actionState === 'idle')) ? '1' : '0';
+      }, 700);
+      function easeToMonitor() {
+        if (!TYPING_EASE || extraHeld || (host.dataset.actionState && host.dataset.actionState !== 'idle')) return;
+        const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        clearTimeout(easeBack);
+        rig.flyTo({ position: [WORKSPACE.seat.position[0] * 0.5, WORKSPACE.seat.position[1] - 0.03, WORKSPACE.seat.position[2] - 0.2], target: [0, 1.09, -0.3] }, { reduced, duration: 0.7, onUpdate() { camera.fov = 44; camera.updateProjectionMatrix(); invalidate(); } });
+        easeBack = setTimeout(() => {
+          if (disposed || extraHeld || state.current.activeAnchorId) return;
+          rig.flyTo({ position: WORKSPACE.seat.position, target: [0.08, 1.02, 0.04] }, { reduced, duration: 0.8, onUpdate() { camera.fov = 56; camera.updateProjectionMatrix(); invalidate(); } });
+        }, 4000);
+      }
       function physicalKey(event) {
+        lastInputAt=performance.now();
         if(event.key==='Escape'||event.key==='Tab'||event.ctrlKey||event.metaKey||event.altKey)return;
         if(event.key.length!==1&&!['Enter','Backspace','ArrowLeft','ArrowRight'].includes(event.key))return;
         if(state.current.activeAnchorId)return;event.preventDefault();
+        if(!typedOnce){typedOnce=true;host.dataset.typeHint='0';}
+        easeToMonitor();
         const index=keyIndexOf(event.key);if(index>=0)pressKey(event.key,index);
       }
       function finishExtra(id) {
@@ -829,86 +743,26 @@ export default function WorkspaceStage({
         const r=model.roomActions,o=r.objects[id],h=model.hands[id==='coffee'||id==='lamp'?'left':'right'];
         action?.kill();model.hands.reset();model.setHandsVisible(true);extraHeld=id;host.dataset.actionState=id;
         controls.enabled=false;
-        const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);host.dataset.drawerOpen=String(r.state.drawer);host.dataset.windowOpen=String(r.state.windowOpen);model.hands.update();invalidate();};
+        const update=()=>{r.apply();host.dataset.lampOn=String(r.state.lamp);host.dataset.blindsOpen=String(r.state.blinds);model.hands.update();invalidate();};
         const follow=()=>{h.hand.position.copy(o.position).add(new THREE.Vector3(id==='coffee'?-0.085:0.12,-0.075,id==='award'?-0.075:id==='coffee'?-0.09:0.055));h.hand.rotation.copy(o.rotation);if(id==='coffee')h.hand.rotation.x+=1.15;update();};
-        // The drawer stays "held" (extraHeld) while open so leaving it — via
-        // Escape, BACK TO SEAT, or selecting another object — runs the normal
-        // returnExtra() retraction instead of abandoning it open forever.
-        const end=()=>{if(id==='drawer'&&r.state.drawer>0.5){model.hands.reset();host.dataset.actionState='drawer-open';invalidate();}else finishExtra(id);};
-        if(id==='windowOpen') {
-          const target=state.current.windowIntent?1:0;
-          if(target===r.state.windowOpen){end();return;}
-          const opening=target>r.state.windowOpen;
-          const raiseBlindsFirst=opening&&r.state.blinds<0.5;
-          rig.flyTo({position:WORKSPACE.seat.position,target:opening?WORKSPACE.anchors.window:o.position.toArray()},{reduced,duration:1.05,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
-          if(reduced){
-            if(raiseBlindsFirst)r.state.blinds=1;
-            r.state.windowOpen=target;update();if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();return;
-          }
-          action=gsap.timeline({onUpdate:update,onComplete(){if(!opening){finishExtra(id);return;}host.dataset.actionState='idle';model.setHandsVisible(false);invalidate();}});
-          // The sash sits behind the closed blinds — from the seat, sliding it
-          // is invisible until the blinds are out of the way. Opening always
-          // raises them first (same tween shape/duration as the BLINDS
-          // action); closing never lowers them back.
-          if(raiseBlindsFirst)action.to(r.state,{blinds:1,duration:0.65,ease:'power2.inOut'});
-          action.to(r.state,{windowOpen:target,duration:0.65,ease:'power2.inOut'});
-          gsap.ticker.wake();return;
-        }
-        if(id==='drawer') {
-          if(r.state.drawer>0.5){returnExtra(reduced);return;}
-          const page=r.resumePage,room=o.parent,k=drawerGrip;Object.assign(k,{handle:0,pick:0,right:0,left:0});
-          const reading=()=>{host.dataset.actionState='resume-reading';invalidate();};
-          if(reduced){
-            r.state.drawer=1;room.attach(page);page.position.set(PAGE_HELD.x,PAGE_HELD.y,PAGE_HELD.z);page.rotation.set(1.13,0,0);
-            Object.assign(k,{handle:1,pick:1,right:1,left:1});update();poseDrawer();
-            rig.flyTo({position:WORKSPACE.seat.position,target:[PAGE_HELD.x,PAGE_HELD.y,PAGE_HELD.z]},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
-            reading();return;
-          }
-          const home=page.userData.home,s=o.scale.x,px=o.position.x+home.x*s,py=o.position.y+home.y*s,pz=r.homes.drawer.z+DRAWER_TRAVEL+home.z*s;
-          startLean();
-          action=gsap.timeline({onUpdate(){if(k.pick>0&&page.parent!==room)room.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:reading});
-          action.to(model.hands.lean,{...DRAWER_LEAN,duration:0.6,ease:'power2.inOut'},0)
-            .to(head,{...DRAWER_HEAD,duration:0.6,ease:'power2.inOut'},0)
-            .to(head,{...ZERO,duration:0.9,ease:'power2.inOut'},2.1)
-            .to(look,{x:o.position.x,y:o.position.y,z:o.position.z+0.05,duration:0.6,ease:'power2.inOut'},0)
-            .to(k,{handle:1,duration:0.6,ease:'power2.inOut'},0)
-            .to(r.state,{drawer:1,duration:0.65,ease:'power2.inOut'},0.6)
-            .to(look,{x:px,y:py,z:pz,duration:0.65,ease:'power2.inOut'},0.6)
-            .to(k,{pick:1,duration:0.55,ease:'power2.inOut'},1.25)
-            .to(page.position,{y:py+0.1,duration:0.3,ease:'power2.out'},1.8)
-            .to(model.hands.lean,{...ZERO,duration:0.9,ease:'power2.inOut'},2.1)
-            .to(look,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},2.1)
-            .to(page.position,{...PAGE_HELD,duration:0.9,ease:'power2.inOut'},2.1)
-            .to(page.rotation,{x:1.13,duration:0.9,ease:'power2.inOut'},2.1)
-            .to(k,{right:1,duration:0.8,ease:'power2.inOut'},2.2)
-            .to(k,{left:1,duration:0.65,ease:'power2.inOut'},2.35);
-          gsap.ticker.wake();return;
-        }
+        const end=()=>finishExtra(id);
         if(['lamp','blinds'].includes(id)) {
           rig.flyTo({position:WORKSPACE.seat.position,target:o.position.toArray()},{reduced,duration:0.45,onUpdate(){camera.fov=56;camera.updateProjectionMatrix();invalidate();}});
           const target=1-r.state[id];
           if(reduced){r.state[id]=target;update();end();return;}
           // The lamp switch (rear desk corner) is 57 cm and the blind cord 1.4 m
-          // beyond a seated arm. Reaching them shifted the whole torso away from
-          // the camera (a detached arm, the other wrist bent ~150 degrees), so,
-          // like the window sash, they switch while the hands stay at rest.
+          // beyond a seated arm, so they switch while the hands stay at rest.
           action=gsap.timeline({onUpdate:update,onComplete:end});
           action.to(r.state,{[id]:target,duration:id==='lamp'?0.12:0.65,ease:'power2.inOut'},0.45);
           gsap.ticker.wake();return;
         }
-        if(id==='pen') {
-          const home=r.homes.pen,[nx,ny,nz]=WORKSPACE.anchors.notebook;penGrip.k=0;penGrip.reach=0;
-          const drawing=()=>{host.dataset.actionState='drawing';renderer.domElement.style.cursor='crosshair';invalidate();};
-          if(reduced){o.position.set(nx,ny+0.006,nz);o.rotation.set(PEN_HELD.x,PEN_HELD.y,PEN_HELD.z);penGrip.k=1;penGrip.reach=1;model.hands.lean.set(PEN_LEAN.x,PEN_LEAN.y,PEN_LEAN.z);look.set(nx,ny,nz);posePen();leanCamera();drawing();return;}
-          startLean();
-          action=gsap.timeline({onUpdate(){posePen();leanCamera();invalidate();},onComplete:drawing});
-          action.to(model.hands.lean,{...PEN_LEAN,duration:0.7,ease:'power2.inOut'},0)
-            .to(look,{x:nx,y:ny,z:nz,duration:0.7,ease:'power2.inOut'},0)
-            .to(penGrip,{reach:1,duration:0.6,ease:'power2.inOut'},0)
-            .to(o.position,{y:home.y+0.06,duration:0.25,ease:'power2.out'},0.6)
-            .to(o.rotation,{x:PEN_HELD.x,y:PEN_HELD.y,z:PEN_HELD.z,duration:0.5,ease:'power2.inOut'},0.6)
-            .to(penGrip,{k:1,duration:0.5,ease:'power2.inOut'},0.6)
-            .to(o.position,{x:nx,y:ny+0.006,z:nz,duration:0.5,ease:'power2.inOut'},0.85);
+        if(id==='resume') {
+          // The sheet stays where it lies; the camera leans in over it, square to the page.
+          const reading=()=>{host.dataset.actionState='resume-reading';invalidate();};
+          const c=resumeCenter();
+          rig.flyTo({position:[c.x+0.01,WORKSPACE.seat.position[1]-0.05,c.z+0.5],target:[c.x+0.05,c.y,c.z]},{reduced,duration:0.9,onUpdate(){invalidate();},onComplete:reading});
+          if(reduced){camera.fov=30;camera.updateProjectionMatrix();return;}
+          action=gsap.to(camera,{fov:30,duration:0.9,ease:'power3.inOut',onUpdate(){camera.updateProjectionMatrix();invalidate();}});
           gsap.ticker.wake();return;
         }
         if(id==='award') {
@@ -1030,58 +884,6 @@ export default function WorkspaceStage({
       }
       function returnExtra(reduced) {
         const id=extraHeld,r=model.roomActions,o=r.objects[id];action?.kill();rig.dispose();
-        if(id==='windowOpen'){
-          // Back can arrive while the blinds/sash are moving. Finish the
-          // requested open state so geometry and city audio cannot diverge.
-          if(state.current.windowIntent && r.state.windowOpen<1){
-            r.state.windowOpen=1;r.state.blinds=1;r.apply();host.dataset.windowOpen='1';host.dataset.blindsOpen='1';
-          }
-          if(!state.current.windowIntent && r.state.windowOpen>0){
-            if(reduced){r.state.windowOpen=0;r.apply();host.dataset.windowOpen='0';finishExtra(id);return;}
-            action=gsap.to(r.state,{windowOpen:0,duration:.6,ease:'power2.inOut',onUpdate(){r.apply();host.dataset.windowOpen=String(r.state.windowOpen);invalidate();},onComplete(){finishExtra(id);}});gsap.ticker.wake();return;
-          }
-          finishExtra(id);return;
-        }
-        if(id==='drawer'){
-          const page=r.resumePage,room=o.parent,k=drawerGrip;
-          const update=()=>{r.apply();host.dataset.drawerOpen=String(r.state.drawer);};
-          const home=page.userData.home,s=o.scale.x;
-          const finish=()=>{o.attach(page);page.position.copy(home);page.rotation.set(0,0,0);page.scale.setScalar(1/s);r.state.drawer=0;update();Object.assign(k,{handle:0,pick:0,right:0,left:0});finishExtra(id);};
-          if(reduced||page.parent!==room){finish();return;}
-          const floor={x:o.position.x+home.x*s,y:o.position.y+home.y*s,z:o.position.z+home.z*s};
-          startLean();
-          action=gsap.timeline({onUpdate(){if(k.pick===0&&page.parent!==o)o.attach(page);update();poseDrawer();leanCamera();invalidate();},onComplete:finish});
-          action.to(page.position,{...floor,duration:0.8,ease:'power2.inOut'},0)
-            .to(page.rotation,{x:0,duration:0.6,ease:'power2.inOut'},0)
-            .to(k,{left:0,duration:0.45,ease:'power2.inOut'},0)
-            .to(k,{right:0,duration:0.6,ease:'power2.inOut'},0)
-            .to(model.hands.lean,{...DRAWER_LEAN,duration:0.8,ease:'power2.inOut'},0)
-            .to(head,{...DRAWER_HEAD,duration:0.8,ease:'power2.inOut'},0)
-            .to(head,{...ZERO,duration:0.5,ease:'power2.inOut'},1.85)
-            .to(look,{...floor,duration:0.8,ease:'power2.inOut'},0)
-            .to(k,{pick:0,duration:0.45,ease:'power2.inOut'},0.8)
-            .to(r.state,{drawer:0,duration:0.6,ease:'power2.inOut'},1.25)
-            .to(look,{x:o.position.x,y:o.position.y,z:r.homes.drawer.z+0.05,duration:0.6,ease:'power2.inOut'},1.25)
-            .to(k,{handle:0,duration:0.5,ease:'power2.inOut'},1.85)
-            .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},1.85)
-            .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},1.85);
-          gsap.ticker.wake();return;
-        }
-        if(id==='pen'){
-          const home=r.homes.pen;
-          const finish=()=>{o.position.copy(home);o.rotation.set(...PEN_REST);penGrip.k=0;penGrip.reach=0;lastInk=null;renderer.domElement.style.cursor='';finishExtra(id);};
-          if(reduced){finish();return;}
-          startLean();
-          action=gsap.timeline({onUpdate(){posePen();leanCamera();invalidate();},onComplete:finish});
-          action.to(o.position,{x:home.x,y:home.y+0.06,z:home.z,duration:0.55,ease:'power2.inOut'},0)
-            .to(o.rotation,{x:PEN_REST[0],y:PEN_REST[1],z:PEN_REST[2],duration:0.55,ease:'power2.inOut'},0)
-            .to(penGrip,{k:0,duration:0.55,ease:'power2.inOut'},0)
-            .to(o.position,{y:home.y,duration:0.2,ease:'power2.inOut'},0.55)
-            .to(penGrip,{reach:0,duration:0.5,ease:'power2.inOut'},0.75)
-            .to(model.hands.lean,{...ZERO,duration:0.5,ease:'power2.inOut'},0.75)
-            .to(look,{...SEAT_LOOK,duration:0.5,ease:'power2.inOut'},0.75);
-          gsap.ticker.wake();return;
-        }
         if(id!=='award'){o.position.copy(r.homes[id]);o.rotation.set(0,0,0);r.updateLiquid(0,0);finishExtra(id);return;}
         const k=awardGrip,home=r.homes.award;
         const finish=()=>{o.position.copy(home);o.rotation.set(...AWARD_REST);Object.assign(k,{pick:0,left:0,right:0});finishExtra(id);};
@@ -1103,10 +905,9 @@ export default function WorkspaceStage({
       const BASE_FOV = 40, PUNCH_FOV = 15; // widen near the screen — acceleration, not a dolly
       function fly() {
         if(director?.active)return;
-        if (returningPhone || returningNotebook) return;
+        if (returningPhone) return;
         tween?.kill(); rig.dispose(); stopTyping();
         if(extraHeld){returnExtra(state.current.reducedMotion);return;}
-        if (notebookInHand) { returnNotebook(state.current.reducedMotion); return; }
         if (phoneInHand) { returnPhone(state.current.reducedMotion); return; }
         action?.kill();
         model.setHandsVisible(true);
@@ -1123,15 +924,12 @@ export default function WorkspaceStage({
           if(model.roomActions.objects[selected]){roomAction(selected,reduced);return;}
           if(selected==='keyboard'){renderer.domElement.focus();callbacks.current.onAnchorSelect?.('keyboard');return;}
           if (selected === 'phone') { animatePhone(reduced); return; }
-          if (selected === 'notebook') { animateNotebook(reduced); return; }
           const view = selected === 'window'
             ? { position: WORKSPACE.seat.position, target: WORKSPACE.anchors.window }
             : selected === 'desk'
             ? { position: WORKSPACE.seat.position, target: WORKSPACE.anchors.desk }
             : selected === 'phone'
             ? { position: [-0.28, 1.23, 0.15], target: WORKSPACE.anchors.phone }
-            : selected === 'notebook'
-            ? { position: [0.60, 1.52, 0.28], target: WORKSPACE.anchors.notebook }
             : { position: [WORKSPACE.seat.position[0], WORKSPACE.seat.position[1] + (reduced ? 0 : 0.025), WORKSPACE.seat.position[2]], target: WORKSPACE.seat.target };
           const startFov = camera.fov;
           const started = performance.now();
@@ -1168,7 +966,7 @@ export default function WorkspaceStage({
         let view = currentPhase === 'leaving' && state.current.seated
           ? { position: new THREE.Vector3(...WORKSPACE.seat.position), target: new THREE.Vector3(...WORKSPACE.seat.target) } : home;
         controls.minDistance = 0.025;
-        controls.minPolarAngle = currentPhase === 'room' && selected !== 'phone' && selected !== 'notebook' ? Math.PI * 0.2 : 0.01;
+        controls.minPolarAngle = currentPhase === 'room' && selected !== 'phone' ? Math.PI * 0.2 : 0.01;
         controls.maxPolarAngle = currentPhase === 'room' ? Math.PI * 0.47 : Math.PI - 0.01;
         if (currentPhase === 'entering' || currentPhase === 'inside') {
           // Move perpendicular to the screen; its known physical size defines
@@ -1179,7 +977,6 @@ export default function WorkspaceStage({
         } else if (currentPhase !== 'leaving' && selected && WORKSPACE.anchors[selected]) {
           const target = new THREE.Vector3(...WORKSPACE.anchors[selected]);
           const offset = selected === 'phone' ? new THREE.Vector3(0, 0.524, 0.13)
-            : selected === 'notebook' ? new THREE.Vector3(0.0, 0.78, 0.10)
             : selected === 'monitor' ? new THREE.Vector3(0.12, 0.10, 1.2)
             : new THREE.Vector3(0.65, 0.55, 1.3);
           view = { position: target.clone().add(offset), target };
@@ -1216,7 +1013,7 @@ export default function WorkspaceStage({
           },
           onComplete() {
             controls.enabled = false;
-            const CLOSE_READ = ['phone','notebook','award','coffee','drawer','headphones'].includes(selected);
+            const CLOSE_READ = ['phone','award','coffee','headphones','resume'].includes(selected);
             controls.minDistance = currentPhase === 'room' && !CLOSE_READ ? 1.4 : 0.025;
             if (currentPhase === 'entering') {
               callbacks.current.onScreenRect?.(null);
@@ -1252,7 +1049,7 @@ export default function WorkspaceStage({
         host.dataset.hitKey = result?.object === model.keys ? String(result.instanceId) : '';
         return result?.object.userData.anchorId || null;
       }
-      function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); if (penDrawing()) drawAt(event); }
+      function pointerDown(event) { down = { x: event.clientX, y: event.clientY, lx: event.clientX, ly: event.clientY, moved: false }; if (state.current.seated) renderer.domElement.setPointerCapture(event.pointerId); }
       const reading = () => !!extraHeld && /-reading$/.test(host.dataset.actionState || '');
       function wheelZoom(event) {
         if (!reading()) return;
@@ -1261,18 +1058,18 @@ export default function WorkspaceStage({
       }
       function pointerMove(event) {
         if (state.current.phase !== 'room') return;
+        if (down) lastInputAt = performance.now();
         if (down) down.moved ||= Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6;
         if (phoneInHand) { renderer.domElement.style.cursor = 'default'; return; }
-        if (penDrawing()) { drawAt(event); return; }
         if (reading()) {
           // Zoomed in on a held page: the pointer moves the gaze across it.
           const rect = renderer.domElement.getBoundingClientRect(), zoom = (56 - camera.fov) / 38;
           const nx = (event.clientX - rect.left) / rect.width * 2 - 1, ny = (event.clientY - rect.top) / rect.height * 2 - 1;
-          const c = extraHeld === 'award' ? awardCenter() : PAGE_HELD;
-          look.set(c.x + nx * 0.09 * zoom, c.y - ny * 0.13 * zoom, c.z);
+          const c = extraHeld === 'resume' ? resumeCenter() : awardCenter();
+          if (extraHeld === 'resume') look.set(c.x + nx * 0.07 * zoom, c.y, c.z + ny * 0.1 * zoom); else look.set(c.x + nx * 0.09 * zoom, c.y - ny * 0.13 * zoom, c.z);
           camera.lookAt(look); controls.target.copy(look); invalidate(); return;
         }
-        if (notebookInHand || extraHeld) return;
+        if (extraHeld) return;
         if (down && !phoneInHand && state.current.seated && !state.current.activeAnchorId && !rig.flying && !tween?.isActive()) {
           headYaw = THREE.MathUtils.clamp(headYaw - (event.clientX - down.lx) * 0.005, -1.2, 1.2);
           headPitch = THREE.MathUtils.clamp(headPitch - (event.clientY - down.ly) * 0.005, -.8, .65);
@@ -1284,7 +1081,6 @@ export default function WorkspaceStage({
         renderer.domElement.style.cursor = hit(event) ? 'pointer' : 'grab';
       }
       function pointerUp(event) {
-        if (penDrawing()) { down = null; lastInk = null; return; }
         if (!down || down.moved || Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6 || state.current.phase !== 'room') { down = null; return; }
         down = null;
         if (phoneInHand) return;
@@ -1294,10 +1090,19 @@ export default function WorkspaceStage({
         if (id === 'chair') { callbacks.current.onSit?.(); return; }
         const marker = markerRefs.current.get(id); marker?.focus();
         if (id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
-        else callbacks.current.onAnchorSelect?.(id === 'window' ? 'windowOpen' : id);
+        else callbacks.current.onAnchorSelect?.(id);
       }
       renderer.domElement.tabIndex=0;renderer.domElement.setAttribute('aria-label','Room keyboard — type while focused');
       renderer.domElement.addEventListener('keydown', physicalKey);
+      // Seated typing must work without a click first: the canvas only has focus after a click, so also take keys that
+      // reach the window from the page body. Controls, fields and dialogs keep their own keys.
+      function windowKey(event) {
+        if (event.defaultPrevented || event.target === renderer.domElement) return;
+        if (!state.current.seated || state.current.phase !== 'room') return;
+        if (event.target instanceof Element && event.target.closest('input,textarea,select,button,a,summary,[contenteditable],[role=dialog],[role=button]')) return;
+        physicalKey(event);
+      }
+      window.addEventListener('keydown', windowKey);
       renderer.domElement.addEventListener('pointerdown', pointerDown);
       renderer.domElement.addEventListener('pointermove', pointerMove);
       renderer.domElement.addEventListener('wheel', wheelZoom, { passive: false });
@@ -1311,19 +1116,10 @@ export default function WorkspaceStage({
       afterHours.setSky(initialSky);
       callbacks.current.onProgress?.({ progress: 1 });
       callbacks.current.onReady?.({ splatCount: null });
-      // Live Mumbai weather: rain on the glass and wet streets, otherwise a
-      // humid night haze tinted by sodium streetlights. Silent on failure.
-      fetchMumbaiWeather().then(weather => {
-        if (disposed || !weather) return;
-        afterHours?.setWeather(weather.raining);
-        if (!weather.raining && host.dataset.skyState === 'night' && scene.fog?.isFog) {
-          scene.fog.color.set('#2b2218'); scene.fog.near = 6; scene.fog.far = 55;
-        }
-        host.dataset.weather = weather.raining ? 'rain' : 'clear';
-        window.__v3Weather = weather;
-        window.dispatchEvent(new CustomEvent('workspace:weather', { detail: weather }));
-        invalidate();
-      });
+      // Humid night haze tinted by sodium streetlights.
+      if (scene.fog?.isFog) { scene.fog.color.set('#2b2218'); scene.fog.near = 6; scene.fog.far = 55; }
+      host.dataset.weather = 'clear';
+      invalidate();
       fetchGithubActivity().then(items => {
         if (disposed || !items?.length || !model.setGithubActivity) return;
         model.setGithubActivity(formatActivity(items[0]));
@@ -1342,10 +1138,10 @@ export default function WorkspaceStage({
       renderer.domElement.style.opacity = '0';
       reportProgress('warm', 0, 1, 6);
       revealed = Promise.race([
-        afterHours.ready.then(() => Promise.all([renderer.compileAsync(scene, camera), afterHours.warmContacts()])).then(() => renderer.compileAsync(scene, camera)).then(async () => {
-          // compileAsync misses the programs three builds at draw time (different light state), and those compile
-          // synchronously (~125 ms each on ANGLE/D3D11). Draw the scene one material at a time, hidden, one task per
-          // material, so the cost lands as small hitches while the visitor reads the launchpad instead of one freeze.
+        afterHours.ready.then(() => { afterHours.warmProbe(); return Promise.all([renderer.compileAsync(scene, camera), afterHours.warmContacts()]); }).then(() => renderer.compileAsync(scene, camera)).then(async () => {
+          // Safety net: compileAsync builds nearly everything in parallel now that the shadow type matches the draw.
+          // Anything it still misses compiles synchronously (~125 ms each on ANGLE/D3D11), so draw the scene one
+          // material at a time, hidden, one task per material, keeping any such cost to small hitches behind the loader.
           const byMat = new Map();
           scene.traverse(o => { const m = o.material; if (m && !Array.isArray(m) && !byMat.has(m)) byMat.set(m, o); });
           const all = []; scene.traverse(o => all.push([o, o.visible]));
@@ -1409,7 +1205,7 @@ export default function WorkspaceStage({
           if(token){tween?.kill();rig?.dispose();director.start(token,home,state.current.reducedMotion,coldOpenCue(),revealed);}
           else if(director.active){director.cancel();if(state.current.phase==='room'&&!state.current.seated&&!state.current.activeAnchorId)place(home);invalidate();}
         },
-        setSky: (s) => model.setSky(s), clearNotes: () => { model.clearNotes(); invalidate(); } };
+        setSky: (s) => model.setSky(s) };
       if (typeof localStorage !== 'undefined' && localStorage.getItem('v3:test') === '1') {
         const box3 = new THREE.Box3();
         const boxToPlain = (b) => ({ min: b.min.toArray(), max: b.max.toArray() });
@@ -1449,7 +1245,6 @@ export default function WorkspaceStage({
             }
             if (name === 'held') {
               const held = extraHeld ? model.roomActions.objects[extraHeld]
-                : notebookInHand ? model.notebook
                 : phoneInHand ? model.phone : null;
               return held ? boxToPlain(box3.setFromObject(held)) : null;
             }
@@ -1470,7 +1265,7 @@ export default function WorkspaceStage({
               const tip=typingTip(h,f),on=tip.x>=box.min.x&&tip.x<=box.max.x&&tip.z>=box.min.z&&tip.z<=box.max.z;
               let others=Infinity;for(let d=0;d<4;d++)if(d!==digit)others=Math.min(others,skinKeyClearance(h,boxes,d).clearance);
               out.push({key,hand:h.side<0?'L':'R',digit,on,tipAboveCapMm:+((tip.y-box.max.y)*1000).toFixed(1),othersMm:+(others*1000).toFixed(1),
-                liftMm:+(to.y*1000).toFixed(1),capMm:[Math.round(box.getCenter(new THREE.Vector3()).x*1000),Math.round(box.getCenter(new THREE.Vector3()).z*1000)],tipMm:[Math.round(tip.x*1000),Math.round(tip.z*1000)],travelMm:+(Math.hypot(to.x,to.z)*1000).toFixed(0),wrist:[Math.round(model.hands.left.wristDeg),Math.round(model.hands.right.wristDeg)]});
+                liftMm:+(to.y*1000).toFixed(1),capMm:[Math.round(box.getCenter(new THREE.Vector3()).x*1000),Math.round(box.getCenter(new THREE.Vector3()).z*1000)],tipMm:[Math.round(tip.x*1000),Math.round(tip.z*1000)],travelMm:+(Math.hypot(to.x,to.z)*1000).toFixed(0),wrist:[Math.round(model.hands.left.wristDeg),Math.round(model.hands.right.wristDeg)],raw:{to:to.toArray(),dip,tip:tip.toArray(),others,wristDeg:[model.hands.left.wristDeg,model.hands.right.wristDeg]}});
               if(f)f.rotation.x=0;h.pose.tCurl=POSES.rest.tCurl;placeHand(h,h.typeOffset);model.hands.update();
             }
             invalidate();return out;
@@ -1502,10 +1297,6 @@ export default function WorkspaceStage({
             projected.setFromMatrixPosition(m).applyMatrix4(model.keys.matrixWorld).project(camera);
             return { x: (projected.x * 0.5 + 0.5) * rect.width, y: (-projected.y * 0.5 + 0.5) * rect.height };
           },
-          inkPixels() {
-            const c = model.notes.image, d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
-            let n = 0; for (let i = 0; i < d.length; i += 4) if (d[i] < 80) n++; return n;
-          },
           fingerTips() {
             return [model.hands.left, model.hands.right].map(h => h.fingers.map(f => f.localToWorld(f.userData.tip.clone().sub(f.position)).toArray()));
           },
@@ -1513,14 +1304,12 @@ export default function WorkspaceStage({
           hands() {
             return [model.hands.left, model.hands.right].map(h => ({ wristDeg: +h.wristDeg.toFixed(1), pose: Object.fromEntries(Object.keys(POSES.rest).map(k => [k, +h.pose[k].toFixed(2)])), p: h.hand.position.toArray().map(v => +v.toFixed(3)) }));
           },
-          // Re-solve the drawer handle grip with other offsets and re-pose (tuning only).
-          tuneDrawerHandle(opts) { drawerGrips = drawerGripsFor(model.roomActions.objects.drawer, model.roomActions.resumePage, opts); poseDrawer(); invalidate(); return this.drawerClip(); },
           // Per hand: [deepest skin, deepest sleeve vertex inside the desk top (mm), skin + sleeve vertices inside the
           // held object's own mesh boxes (loose: a handle's box holds the fingers through it), wrist bend in degrees].
           handsProbe() {
             model.root.updateMatrixWorld(true);
             const desk=model.staticBoxes.desk.clone().expandByScalar(-.001),p=new THREE.Vector3(),q=new THREE.Vector3(),held=[],out={};
-            const obj=extraHeld?model.roomActions.objects[extraHeld]:phoneInHand?model.phone:notebookInHand?model.notebook:null;
+            const obj=extraHeld?model.roomActions.objects[extraHeld]:phoneInHand?model.phone:null;
             obj?.traverse(o=>{if(!o.isMesh||!o.visible)return;o.geometry.computeBoundingBox();held.push({box:o.geometry.boundingBox.clone().expandByScalar(-.001),inv:o.matrixWorld.clone().invert()});});
             const depth=v=>Math.min(v.x-desk.min.x,desk.max.x-v.x,v.y-desk.min.y,desk.max.y-v.y,v.z-desk.min.z,desk.max.z-v.z);
             for(const [k,h] of [['L',model.hands.left],['R',model.hands.right]]){const d=[0,0];let i=0;
@@ -1530,35 +1319,6 @@ export default function WorkspaceStage({
             // Body shift the reach clamp added on top of the authored lean (cm): non-zero means a target out of arm's reach.
             out.T=model.hands.torsoOffset.toArray().map(v=>Math.round(v*100));
             return out;
-          },
-          // Held notebook grips, tuning only: side-edge offset x (m). Per hand: [nearest skin to the notebook (mm), vertices inside it, wrist bend].
-          tuneNotebook(x) {
-            if(x!=null){NB_RIGHT.p[0]=x;NB_LEFT.p[0]=-x;}
-            nb.right=nb.left=1;followNotebook();model.root.updateMatrixWorld(true);
-            const boxes=[],p=new THREE.Vector3(),q=new THREE.Vector3(),out={};
-            model.notebook.traverse(o=>{if(!o.isMesh)return;o.geometry.computeBoundingBox();boxes.push({box:o.geometry.boundingBox,inv:o.matrixWorld.clone().invert()});});
-            for(const [k,h] of [['L',model.hands.left],['R',model.hands.right]]){let gap=Infinity,inside=0;const mesh=h.skinMesh,pos=mesh.geometry.attributes.position;
-              for(let v=0;v<pos.count;v++){p.fromBufferAttribute(pos,v);mesh.applyBoneTransform(v,p);p.applyMatrix4(mesh.matrixWorld);let d=Infinity;for(const b of boxes)d=Math.min(d,b.box.distanceToPoint(q.copy(p).applyMatrix4(b.inv)));if(d===0)inside++;gap=Math.min(gap,d);}
-              out[k]=[+(gap*1000).toFixed(1),inside,Math.round(h.wristDeg)];}
-            invalidate();return out;
-          },
-          // Right-hand skin and sleeve vertices inside the drawer's wooden parts (1 mm tolerance).
-          drawerClip() {
-            model.root.updateMatrixWorld(true);
-            const h=model.hands.right,parts=model.roomActions.objects.drawer.children.filter(o=>o.isMesh),p=new THREE.Vector3(),q=new THREE.Vector3(),out={};
-            const boxes=parts.map(o=>{o.geometry.computeBoundingBox();return {o,box:o.geometry.boundingBox.clone().expandByScalar(-.001),inv:o.matrixWorld.clone().invert()};});
-            for(const [name,mesh] of [['skin',h.skinMesh],['sleeve',h.clothMesh]]){
-              if(!mesh?.visible)continue;const pos=mesh.geometry.attributes.position,n=boxes.map(()=>0);
-              for(let i=0;i<pos.count;i++){
-                p.fromBufferAttribute(pos,i);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(i,p);p.applyMatrix4(mesh.matrixWorld);
-                boxes.forEach((b,j)=>{if(b.box.containsPoint(q.copy(p).applyMatrix4(b.inv)))n[j]++;});
-                // Nearest skin to the pull (the last part), in its local frame, for contact.
-                if(name==='skin'){const b=boxes[boxes.length-1];q.copy(p).applyMatrix4(b.inv);out.handleGapMm=Math.min(out.handleGapMm??Infinity,b.box.distanceToPoint(q)*b.o.scale.x*1000*model.roomActions.objects.drawer.scale.x);}
-              }
-              out[name]=n.join('/')+' of '+pos.count;
-            }
-            {const desk=model.staticBoxes.desk.clone().expandByScalar(-.001);let n=0;for(const mesh of [h.skinMesh,h.clothMesh]){if(!mesh?.visible)continue;const pos=mesh.geometry.attributes.position;for(let i=0;i<pos.count;i++){p.fromBufferAttribute(pos,i);if(mesh.isSkinnedMesh)mesh.applyBoneTransform(i,p);p.applyMatrix4(mesh.matrixWorld);if(desk.containsPoint(p))n++;}}out.desk=n;}
-            out.wristDeg=Math.round(h.wristDeg);out.wristL=Math.round(model.hands.left.wristDeg);return out;
           },
           // Left-hand skin to the phone body: nearest distance (mm, 0 = touching or inside), vertices inside, wrist bend.
           // Re-pose the left hand at phone grip blend `grip` (0 top, .5 side, 1 back) with other grip offsets (tuning only).
@@ -1604,7 +1364,7 @@ export default function WorkspaceStage({
       return () => {
         disposed = true; director?.cancel();afterHours?.dispose();entryTimers.forEach(clearTimeout); rig?.dispose(); action?.kill(); cancelAnimationFrame(raf); tween?.kill(); resizeObserver?.disconnect();
         document.removeEventListener('visibilitychange', refresh);
-        renderer.domElement.removeEventListener('keydown', physicalKey);
+        renderer.domElement.removeEventListener('keydown', physicalKey); window.removeEventListener('keydown', windowKey); clearInterval(hintTimer); clearTimeout(easeBack);
         renderer.domElement.removeEventListener('pointerdown', pointerDown);
         renderer.domElement.removeEventListener('pointermove', pointerMove);
         renderer.domElement.removeEventListener('wheel', wheelZoom);
@@ -1628,18 +1388,14 @@ export default function WorkspaceStage({
   return (
     <div ref={hostRef} className="stage-root workspace-stage" data-scene="workspace">
       <style>{css}</style>
-      {/* Lens grade: vignette and film grain composited over the canvas at no
-          WebGL cost. Room phase only, so the dhruvOS handoff frame stays clean. */}
-      <div className="stage-grade" aria-hidden="true" hidden={phase !== 'room'} />
       {phoneWanted && <Suspense fallback={null}>
         <PhoneScreen ref={phoneScreenRef} interactive={phoneLive} mode={phoneLive ? 'stage' : 'projected'} onExit={() => callbacks.current.onAnchorSelect?.('phone')}
           onOpenApp={() => api.current?.showFocusLock()} onHome={() => api.current?.phoneHome()} />
       </Suspense>}
-      <button className="pen-clear" onClick={() => api.current?.clearNotes()}>CLEAR PAGE</button>
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker workspace-sit" data-object="chair" aria-label="Sit in the chair"
         onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT DOWN</span></button>
-      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'drawer',label:'Resume'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'},{id:'pen',label:'Pen'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
+      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'resume',label:'Résumé'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
           data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
@@ -1648,7 +1404,7 @@ export default function WorkspaceStage({
             // The monitor goes straight in; the window only opens/closes (contact
             // info lives on the CONTACT button).
             if (anchor.id === 'monitor' && callbacks.current.onEnterScreen) callbacks.current.onEnterScreen();
-            else callbacks.current.onAnchorSelect?.(anchor.id === 'window' ? 'windowOpen' : anchor.id);
+            else callbacks.current.onAnchorSelect?.(anchor.id);
           }}>
           <span className="workspace-marker-dot" aria-hidden="true" />
           <span className="workspace-marker-label"><small>0{index + 1}</small>{anchor.label}<span aria-hidden="true">↗</span></span>
@@ -1662,11 +1418,7 @@ const css = `
 .workspace-stage { position:absolute; inset:0; overflow:hidden; background:#15191b; }
 .workspace-stage[data-phone-presentation=stage] ~ .seat-exit {display:none;}
 .workspace-stage canvas { display:block; width:100%; height:100%; touch-action:none; }
-.stage-grade { position:absolute; inset:0; pointer-events:none;
-  background:radial-gradient(ellipse 75% 70% at 50% 48%, transparent 55%, rgba(4,5,6,.42) 100%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E"); }
-.stage-grade[hidden] { display:none; }
-.workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
+.workspace-marker { position:absolute; top:0; left:0; display:flex; align-items:center; padding:0; gap:12px; opacity:0; visibility:hidden; transition:opacity var(--d-feedback) var(--ease); z-index:2; }
 .workspace-marker-dot { width:8px; height:8px; border:1px solid var(--bone); border-radius:50%; box-shadow:0 0 0 5px rgba(20,24,25,.18); background:var(--void); }
 .workspace-marker-label { display:flex; align-items:center; gap:12px; padding:8px 11px; background:rgba(20,24,25,.92); border:1px solid rgba(232,228,220,.18); color:var(--bone); font:12px var(--font-display); white-space:nowrap; }
 .workspace-marker:not([data-object=monitor]):not([data-object=phone]):not(.workspace-sit) .workspace-marker-label { opacity:0; transition:opacity .15s; }
@@ -1675,11 +1427,8 @@ const css = `
 .workspace-marker-label > span { color:var(--signal); }
 .workspace-marker:hover .workspace-marker-label,.workspace-marker:focus-visible .workspace-marker-label,.workspace-marker.is-active .workspace-marker-label { border-color:var(--signal); }
 .workspace-marker:hover .workspace-marker-dot,.workspace-marker.is-active .workspace-marker-dot { background:var(--signal); border-color:var(--signal); }
-.workspace-stage[data-action-state$="-reading"]::after { content:'SCROLL TO ZOOM · MOVE TO READ · ESC TO PUT DOWN'; position:absolute; top:24px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
-.workspace-stage[data-action-state="drawing"]::after { content:'DRAG ON THE PAGE TO DRAW · ESC TO PUT THE PEN DOWN'; position:absolute; top:24px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
-.pen-clear { display:none; position:absolute; top:64px; left:50%; translate:-50% 0; z-index:3; padding:8px 14px; background:var(--void); color:var(--bone); border:1px solid var(--dim); font:11px var(--font-mono); letter-spacing:.14em; }
-.workspace-stage[data-action-state="drawing"] .pen-clear { display:block; }
-.workspace-sit .workspace-marker-label { min-height:44px; padding:12px 22px; background:var(--signal); border-color:var(--signal); color:#141819; font:13px var(--font-mono); letter-spacing:.16em; }
+.workspace-stage[data-action-state$="-reading"]::after { content:'SCROLL TO ZOOM · MOVE TO READ · ESC TO PUT DOWN'; position:absolute; top:64px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:3; }
+.workspace-stage[data-type-hint="1"]::before { content:'TYPE SOMETHING · THE KEYBOARD IS LIVE'; position:absolute; bottom:180px; left:50%; translate:-50% 0; padding:8px 14px; background:rgba(20,24,25,.85); color:var(--bone); font:11px var(--font-mono); letter-spacing:.14em; pointer-events:none; z-index:5; }
 .workspace-sit { animation:sit-pulse .9s var(--ease) 1.2s 2; }
 @keyframes sit-pulse { 50% { scale:1.06; } }
 @media (prefers-reduced-motion:reduce) { .workspace-sit { animation:none; } }

@@ -237,29 +237,19 @@ async function runMuteAndIndependence(browser) {
     record('mute: persisted v3:room-muted renders ROOM SOUND OFF on load',
       initialPressed === 'false' && /OFF/.test(initialText), `pressed=${initialPressed} text="${initialText}"`);
 
-    await page.getByRole('button', { name: 'WINDOW', exact: true }).click();
-    await page.waitForTimeout(500);
-    const mutedPlaying = await page.evaluate(() => window.__cityAmbience?.playing());
-    record('mute: opening the window while room-muted does not start city ambience',
-      mutedPlaying === false, `playing=${mutedPlaying}`);
-
     await roomSoundBtn.click(); // unmute
     await page.waitForTimeout(500);
-    const unmutedText = (await roomSoundBtn.textContent() || '').trim();
-    const unmutedPlaying = await page.evaluate(() => window.__cityAmbience?.playing());
-    record('mute: unmuting with the window already open starts matching city ambience',
-      /ON/.test(unmutedText) && unmutedPlaying === true, `text="${unmutedText}" playing=${unmutedPlaying}`);
+    record('mute: unmuting renders ROOM SOUND ON', /ON/.test((await roomSoundBtn.textContent() || '').trim()), '');
 
     await page.getByRole('button', { name: 'HEADPHONES', exact: true }).click();
     await page.waitForTimeout(300);
     const musicPlayingBeforeMute = await page.evaluate(() => window.__v3Music?.getState().playing);
     await roomSoundBtn.click(); // re-mute
     await page.waitForTimeout(500);
-    const cityAfterRemute = await page.evaluate(() => window.__cityAmbience?.playing());
     const musicAfterRemute = await page.evaluate(() => window.__v3Music?.getState().playing);
-    record('mute: re-muting stops city ambience but leaves the Music Player untouched',
-      cityAfterRemute === false && musicPlayingBeforeMute === true && musicAfterRemute === true,
-      `city=${cityAfterRemute} musicBefore=${musicPlayingBeforeMute} musicAfter=${musicAfterRemute}`);
+    record('mute: re-muting leaves the Music Player untouched',
+      musicPlayingBeforeMute === true && musicAfterRemute === true,
+      `musicBefore=${musicPlayingBeforeMute} musicAfter=${musicAfterRemute}`);
 
     record('mute/independence: no page/console errors', errors.length === 0, errors.slice(0, 3).join(' | '));
   } finally {
@@ -366,17 +356,9 @@ async function runHiddenTabAndLifecycle(browser) {
     await enterRoom(page);
     await exploreRoom(page);
     await openObjects(page);
-    await page.getByRole('button', { name: 'WINDOW', exact: true }).click();
-    await page.waitForTimeout(500);
-    const playingBeforeHide = await page.evaluate(() => window.__cityAmbience?.playing());
-    record('hidden-tab: city ambience is playing before the tab is hidden', playingBeforeHide === true,
-      `playing=${playingBeforeHide}`);
-
     await setHidden(page, true);
     await page.waitForTimeout(200);
-    const playingHidden = await page.evaluate(() => window.__cityAmbience?.playing());
     const hiddenSnap = await probeSnapshot(page);
-    record('hidden-tab: city ambience stops while the tab is hidden', playingHidden === false, `playing=${playingHidden}`);
     record('hidden-tab: the room-audio AudioContext is suspended while hidden',
       hiddenSnap.contextStates[0] === 'suspended', `states=${JSON.stringify(hiddenSnap.contextStates)}`);
 
@@ -399,9 +381,6 @@ async function runHiddenTabAndLifecycle(browser) {
     const afterUnhide = await probeSnapshot(page);
     record('hidden-tab: returning to the foreground auto-resumes the suspended context',
       afterUnhide.contextStates[0] === 'running', `states=${JSON.stringify(afterUnhide.contextStates)}`);
-    const cityPlayingAfterUnhide = await page.evaluate(() => window.__cityAmbience?.playing());
-    record('hidden-tab: returning to the foreground resumes city ambience when window is open',
-      cityPlayingAfterUnhide === true, `playing=${cityPlayingAfterUnhide}`);
     await page.mouse.click(6, 6); // ensure subsequent gesture maintains running context
     await page.waitForTimeout(200);
     const afterNextGesture = await probeSnapshot(page);
@@ -414,6 +393,7 @@ async function runHiddenTabAndLifecycle(browser) {
     // fresh gesture creates a new (not stale) context, twice.
     for (let cycle = 1; cycle <= 2; cycle += 1) {
       const before = await probeSnapshot(page);
+      await page.evaluate(() => { window.__lifecycleMark = 1; });
       // The WORK link only exists in the overview (.launchpad); while seated
       // the seat-exit panel has no route link, so stand up first.
       await page.getByRole('button', { name: 'STAND UP / ESC', exact: true }).click();
@@ -438,9 +418,12 @@ async function runHiddenTabAndLifecycle(browser) {
       await page.mouse.click(6, 6);
       await page.waitForTimeout(200);
       const afterRemount = await probeSnapshot(page);
+      // /work is its own document in the production build, so going back reloads the page and the probe's counters restart at zero.
+      const reloaded = !(await page.evaluate(() => window.__lifecycleMark));
+      const expectedContexts = reloaded ? 1 : before.contextCount + 1;
       record(`lifecycle[${cycle}]: re-entering the room and gesturing again creates a fresh context, not a stale one`,
-        afterRemount.contextCount === before.contextCount + 1 && backAtRoom,
-        `before=${before.contextCount} after=${afterRemount.contextCount}`);
+        afterRemount.contextCount === expectedContexts && backAtRoom,
+        `before=${before.contextCount} after=${afterRemount.contextCount} reloaded=${reloaded}`);
     }
 
     record('hidden-tab/lifecycle: no page/console errors across the whole run', errors.length === 0, errors.slice(0, 5).join(' | '));

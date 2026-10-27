@@ -73,6 +73,26 @@ export function minimizeApp(id) {
   notify();
 }
 
+// Default size and cascaded position. Also re-run while the workspace is still settling (the
+// guided tour opens an app as the screen is zooming in, when it can measure only ~240 px tall).
+function placeWindow(win, appDef, cascade) {
+  const wsRect = workspace.getBoundingClientRect();
+  const W = Math.min(appDef.width || 500, wsRect.width - 40);
+  const H = Math.min(appDef.height || 360, wsRect.height - 60);
+  const startX = Math.min(80 + cascade * 28, wsRect.width - W - 20);
+  const startY = Math.min(30 + cascade * 28, wsRect.height - H - 20);
+  win.style.width = W + 'px';
+  win.style.height = H + 'px';
+  win.style.left = Math.max(8, startX) + 'px';
+  win.style.top = Math.max(8, startY) + 'px';
+}
+
+new ResizeObserver(() => {
+  openWindows.forEach((entry) => {
+    if (!entry.restore && !entry.el.dataset.moved) placeWindow(entry.el, entry.appDef, entry.cascade);
+  });
+}).observe(workspace);
+
 export function openApp(appDef, ctx) {
   // If already open, focus it
   if (openWindows.has(appDef.id)) {
@@ -80,20 +100,11 @@ export function openApp(appDef, ctx) {
     return;
   }
 
-  const wsRect = workspace.getBoundingClientRect();
-  const W = Math.min(appDef.width || 500, wsRect.width - 40);
-  const H = Math.min(appDef.height || 360, wsRect.height - 60);
-
   const cascade = openWindows.size;
-  const startX = Math.min(80 + cascade * 28, wsRect.width - W - 20);
-  const startY = Math.min(30 + cascade * 28, wsRect.height - H - 20);
 
   const win = document.createElement('div');
   win.className = 'os-window';
-  win.style.width = W + 'px';
-  win.style.height = H + 'px';
-  win.style.left = Math.max(8, startX) + 'px';
-  win.style.top = Math.max(8, startY) + 'px';
+  placeWindow(win, appDef, cascade);
 
   win.innerHTML = `
     <div class="win-titlebar" data-drag>
@@ -158,7 +169,7 @@ export function openApp(appDef, ctx) {
 
   openWindows.set(appDef.id, {
     el: win, titlebarEl: win.querySelector('.win-titlebar'), bodyEl,
-    cleanup, setVisible, minimized: false,
+    cleanup, setVisible, minimized: false, appDef, cascade,
   });
 
   focus(appDef.id);
@@ -198,6 +209,7 @@ function _makeDraggable(win, handle) {
   handle.addEventListener('pointerdown', e => {
     if (e.target.closest('.tl') || win.classList.contains('maximized')) return;
     dragging = true;
+    win.dataset.moved = '1';
     ox = e.clientX - win.offsetLeft;
     oy = e.clientY - win.offsetTop;
     handle.setPointerCapture(e.pointerId);

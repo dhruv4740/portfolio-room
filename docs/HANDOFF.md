@@ -1,306 +1,147 @@
 # Handoff
 
-The single source of truth for status, open problems and what to do next.
-Operational rules (commands, invariants, traps) are in [AGENTS.md](../AGENTS.md).
-Last updated 2026-09-25, after an unattended overnight run. **Start with "Owner decisions waiting" below.**
+The single status document: where the code lives, what is open, what the owner
+decided. Commands, invariants and traps are in [AGENTS.md](../AGENTS.md).
+Last updated 2026-10-20. Older status text is in
+`archive/HANDOFF-2026-09-25.md`, `archive/HANDOFF-OPUS-2026-10-08.md` and
+`archive/OVERNIGHT-REPORT-2026-10-08.md` (historical; they hold the detail
+behind several open items below).
 
-## Working mode
+## Where things are
 
-The owner, Dhruv, gave these instructions on 2026-09-24:
-- **Scope:** fix every open problem below in one pass rather than one small step at a time. Then work through every experience on the site until nothing is laggy, weird or cosmetically off.
-- **Unattended runs are allowed.** The laptop may be left locked but awake.
-- **Permission prompts:** the agent runs in auto-permission mode, so a prompt pauses the work until he returns. Avoid actions that need approval.
-- **Decisions that change the look or feel:** leave them written up here rather than choosing.
-- **Review:** show frame sheets for every interaction change (`scripts/shots/motion/`).
+- **`main` is live.** `main` = `d003949` = https://dhruvkothari.pages.dev
+  (Cloudflare Pages project `dhruvkothari`, direct upload). Preview alias:
+  https://preview.dhruvkothari.pages.dev. Deploy to preview only:
+  `npx wrangler pages deploy dist --project-name dhruvkothari --branch preview --commit-dirty=true`.
+  Never `--branch main` without a fresh explicit yes from the owner.
+- **Working branch: `perf/lighten-room`** (cut from `main`), in the worktree
+  `C:\Users\hp\pf-truescale`. Never commit to `main`; remote `origin` is
+  `dhruv4740/portfolio-room`.
+- The old stacked branches (`feat/v3`, `feat/true-scale-room`, `feat/relight`,
+  `feat/cutscenes`, `feat/recruiter-path`) are merged and deleted. Stray
+  commits are kept as tags `archive/feat-v3-overnight-docs` and
+  `archive/wip-window-view`.
+- The other checkout, `...\random sites\portfolio`, sits on `main`. Don't use it.
+- Build with `npx vite build` (not `npm run build`, which rewrites vendor files).
+- Never commit `public/os/vendor/*`, line-ending-only diffs of
+  `public/os/shell/content.js`, or `tmp-measure/`. `Scan.jsx`, `Deck.jsx`,
+  `Work.jsx`, `index.html` and `perfGovernor.js` have CRLF endings: edit with
+  newline-preserving tools.
+- Every project and where it is surfaced: [PROJECTS-MAP.md](PROJECTS-MAP.md).
 
 ## What the site is
 
-A personal portfolio. Its first job is to impress other builders; its second is to get an internship screener to the facts fast. `/work` is the static recruiter page and must never break.
+Personal portfolio. First job: get a screener to the facts fast (`/work`,
+`/resume`, no three.js). Second: let visitors **use the owner's real apps**, on
+`/work`, in the room's monitor (dhruvOS) and on the room's phone. Those must
+have good UI everywhere. The 3D room (Mumbai, live sky and weather) is the
+memorable extra; photoreal realism is not a goal.
 
-The desktop surface is a first-person 3D room at a desk in Mumbai:
-- The sky follows IST, and the weather comes live from Open-Meteo (rain, never snow).
-- The monitor opens dhruvOS, which runs the real web projects.
-- The phone runs the Android apps.
-- Every object on the desk can be picked up or used.
+## Current focus (2026-10-20): perf/lighten-room
 
-The room is a memorable extra, not the goal. The goal is a portfolio that gets an internship: `/work/` and `/resume/` are static pages with no three.js. Photoreal realism is not pursued.
+Owner complaint: for a first-time visitor, even on a laptop and worse on
+battery saver, the site is slow: first load about 15–20 s (owner's estimate),
+look-around lags, typing lags. Round 1 is measurement only
+([PERF-AUDIT.md](PERF-AUDIT.md)). **Hard rule: nothing visible is removed or
+changed without the owner's explicit permission.** Measure, propose, wait.
 
-## Branches
-
-Nothing is merged to main.
-
-| Branch | Contains |
-|---|---|
-| `feat/v3` | Launchpad, loading, deep links, live data, fixes |
-| `feat/true-scale-room` | + the true-scale room |
-| `feat/relight` | + baked lighting, dust, vignette and grain |
-| `feat/cutscenes` | + the cold open. **This is the latest; work from here.** |
-
-The worktree for the stacked branches is `C:\Users\hp\pf-truescale`. Its dev server is the `truescale` launch config (port 4175) and its production preview is `truescale-preview` (4176). The main checkout serves `feat/v3` on 4173.
-
-## What exists (all on `feat/cutscenes`)
-
-- **Launchpad:** six options (keys 1–6): projects, phone apps, explore, recruiter `/work`, About, a 60-second guided tour. Contact and GitHub are pinned top-right.
-- **Navigation:** deep links `/#/os/<app>`, `/#/phone[/<app>]`, `/#/about`, `/#/contact`, `/#/room/<object>`, and a Ctrl/⌘+K palette.
-- **Loading:** a real progress bar. Song, phone UI and phone apps load lazily.
-- **Payload:** meshopt city, WebP GLB textures, re-encoded JPEGs.
-- **Live data:** GitHub activity on the monitor; Mumbai sky, weather, rain and a corner readout.
-- **Link previews:** `public/og.jpg`.
-- **True-scale room** (`cinematicLayout.js`, `buildCinematicWorkspace.js`):
-  - Desk at 0.74 m, and the hand rig rebuilt around a real seat.
-  - Forward lean at rest went from 24.6 cm to 0.
-- **Baked lighting** for this room (`scripts/blender/bake_true_scale_room.py`), plus dust in the lamp beam and a CSS vignette and grain.
-- **Cold open:** 7.2 s. The camera comes in through the doorway, the lamp clicks on, and the name types onto the monitor. It plays once per visitor and SKIP works.
-
-Verification results and commit hashes for all of this are in the git log and in `docs/archive/MORNING-REPORT-2026-09-23.md`.
-
-## Owner feedback round (2026-09-24, afternoon)
-
-The owner reviewed on `npm run dev` in the **main checkout** (`feat/v3`, port 5173), which has none of the `feat/cutscenes` fixes; that is why the phone still felt "insanely fast" (feat/v3 plays the pick-up at 1.55×/3.2×). Review `feat/cutscenes` by running `npm run dev` in `C:\Users\hp\pf-truescale`.
-
-Owner answers on record: Reddit Growth Copilot is an internship project and must not be shown (removed everywhere); the window "look around / lean out" is future scope; /work must not load the 3D room — demos open beside the page; wallpapers and Skills were left to the agent's judgement; installs in `apps/*` approved.
-
-Done (all on `feat/cutscenes`):
-- **dhruvOS:** the green light maximises/restores (also title-bar double-click). Skills is a readable list grouped by area, each skill naming the projects that prove it (buttons open the project card); the Matter.js toy is gone. Wallpapers: the desktop now shows a still of the chosen flow field (Aurora, Ember, Nebula, Tide) or the live Mumbai skyline, dimmed by day with a shaded icon column; Plain is gone. Fixed: the preview glitch (sky/plain reset the canvas transform, so the palette loop painted 1/dpr of it), the flow field never visibly moving (its step was ~0.004 px), and black text-glyph desktop icons that were invisible on dark wallpapers.
-- **Projects app:** three groups, "Try it on this computer", "Try it on the phone" (button leaves the OS and opens that app on the phone), "Not interactive here". FocusLock is in both. The FocusLock window has a strip naming it the Windows half, with a button to the Android half.
-- **FraudShield:** "Start Free Trial" goes to the dashboard (`apps/fraud/PORTFOLIO.md`).
-- **CrisisWatch hero:** 20 → 60 fps (median frame 50 → 16.7 ms, `scripts/probe-crisiswatch-hero.mjs`): the five CSS-blur glows are radial gradients and two noise textures are gone (`apps/crisiswatch/PORTFOLIO.md`).
-- **Tour:** a step machine with ◀ PREV / ❚❚ PAUSE–▶ RESUME / NEXT ▶ / ✕ and ←/→/Space/Esc. Real input pauses instead of ending it; Alt (Alt-Tab), window switches and modifier keys are ignored; a hidden page pauses and resumes. Each step's hold starts once its scene is in place, so a load stall no longer eats steps. While paused the caption shrinks to one line so it doesn't cover the demo.
-- **/work:** each demo project has "Try it · …" buttons. On ≥1100 px the demo opens in a sticky panel beside the reading column; narrower, as a full-screen sheet. Web demos load `/apps/<name>/`; phone demos lazy-load the phone's React apps (`PhoneScreen` `embedded` mode). No three.js on /work, asserted in `verify-v3`. The page's overall visual design is unchanged: **owner to give a direction**.
-- **Dev server:** `/apps/<name>/` was served from whichever checkout the server was *started in* (cwd), so the 4175 server started from the main checkout served the main checkout's apps.
-
-- **Phone:** the arm now shows when picking up from the launchpad (render loop hid hands off-seat and never restored them); launchpad/standing pick-up sits first; pick-up retimed to ~3.3 s (1 s reach, 0.2 s beat, 0.45 s lift, 1.1 s bring, 0.55 s zoom; commit `d66bd7a` holds both the arm fix and the retime); fingers kept together (spread 0.35/0.1). Clips: `scripts/record-realtime.mjs`, `scripts/clip-frames.mjs`.
-
-**Left for the next session (not done):**
-1. **Keyboard finger travel: committed as WIP, unverified by eye.** `pressKey` in `WorkspaceStage.jsx` now assigns touch-typing fingers, slides the hand to the key, lifts for higher rows, dips, returns after 0.45 s. `node scripts/probe-typing.mjs` (with `BASE`): 50/52 keys pass (tip on cap, no finger inside a key, wrists 12–25°). Open: (a) instance 70 isn't the backtick (it sits at x=+150 mm), so find the real backtick index by position; (b) space misses its cap by ~4 mm because `planKey` aims with the thumb uncurled; measure the thumb tip with the pressed `tCurl`; (c) confirm 67/68/57/59 really are Enter/Backspace/←/→ by position; (d) record `record-realtime.mjs keyboard` and review frames; (e) run all suites.
-2. **Phone "air":** a real grip needs re-authoring `PHONE_TOP` as an edge pinch (thumb near long edge, fingers far edge), then re-solving `PHONE_ROLL_IN` (`probe-phone-tune.mjs DP=1`) and the held pose. Curling the current poses clips the case (`scripts/probe-phone-wrap.mjs`). Also check "air" on the notebook lift (known float).
-3. **/work visual redesign:** owner to give a direction; the demo panel is done.
-4. **Eco Water:** no facts on file; ask the owner.
-5. **verify-after-hours:** rerun once GitHub's rate limit resets; it failed only on 403s.
-6. **Window lean-out:** future scope (owner).
-
-Test notes: GitHub's unauthenticated API allows 60 requests/hour per IP; a day of suite runs exhausts it and the monitor's activity fetch then logs 403s, failing the "no console errors" checks in `verify-after-hours`/`verify-v3`. Confirmed for the 403s (rate-limit endpoint showed 60/60 used); the earlier one-off 503 is unconfirmed, and `verify-v3` now logs the URL of any 5xx so the next one is named. Not a site bug for normal visitors, who each get their own quota.
-
-## Owner decisions waiting (2026-09-25)
-
-Each links to its details further down. Nothing here was chosen for you.
-1. **First-load stall option** (Performance item 1): still yours to pick; untouched. The new background warm-up only compiles shaders the first render doesn't use (hands, seated body, contact casters) *after* the load settles. It doesn't change first load.
-2. **Lamp and blinds** now switch without a hand reach, like the window sash (Experience sweep). Alternatives: a 57 cm lean, moving the lamp within reach, or standing up for the blinds.
-3. **Mount dhruvOS in the background after load?** It would remove the ~500 ms GPU-side hitch on the first monitor entry, at the cost of loading the OS for every visitor (Performance, "Not fixed").
-4. **Interaction looks that need authoring while watching them** (Experience sweep, "Not fixed"):
-   - the pen's writing pose;
-   - the notebook lift;
-   - forearms through the desk's front edge (elbow placement in `seatedHands.js`);
-   - the phone's side phase and the fanned fingers of the held phone (item 7);
-   - the awards frame's size and fingertips.
-5. **Cold open:** the launchpad and markers show during the arrival fly-in.
-6. **Favicon:** still the Vite logo.
-7. **Phone walkthrough copy** (item 8): first person, from PROJECT-MATERIAL.md facts. Edit freely.
-
-## Open problems
-
-The owner reported most of these after using the site. A problem marked **likely** has a suspected cause that hasn't been confirmed.
+## Open problems (one list)
 
 ### Performance
+1. **First load is slow.** Shader compile on ANGLE D3D11 dominated in the
+   2026-09-25 profile (79 programs, ~0.45 s each). The warm-up gate in
+   `WorkspaceStage.jsx` hides the canvas, runs `compileAsync`, races a 20 s
+   cap, then fades in; at 4× CPU the cap can fire and the room reveals with
+   uncompiled programs. Current numbers: PERF-AUDIT.md.
+2. **Arrival intro costs ~25 ms/frame** for ~7–8 s, then ~4.5 ms (2026-10-08,
+   integrated AMD GPU). Ruled out then: scene size, resolution, shadows, DOM
+   overlays, OS iframe, extra passes, main-thread JS. See PERF-AUDIT.md.
+3. **First monitor entry** has one ~500 ms GPU-side frame (OS document first
+   raster). Option, owner's call: mount the OS iframe in the background.
+4. **Window open** is one ~200 ms frame at the click (AudioContext, favicon).
+5. A room opened straight into the seat (`/#/room/explore`) draws hands before
+   the background warm-up and can hit 150–530 ms frames.
+6. Model/texture compression and a cold-load re-measure were skipped earlier.
+7. Perf governor: `DOWNSHIFT_MS = 27`, `UPSHIFT_MS = 14`, `loweredOnce` latch;
+   cutting resolution did not lower cost on the intro.
 
-1. **First load is very slow. The owner will choose the fix; don't pick one.** On 2026-09-24 the agent recommended option 3 below (background compile), since it's the only one that leaves the look unchanged. Measured: the main thread blocks for 14–21 s after the room appears, and `feat/v3` behaves the same.
-   - A CPU profile puts about 32 s in three.js `onFirstUse`, which waits on shader compile and link on ANGLE D3D11.
-   - There are 79 shader programs, lit by 5 lights of which 3 cast shadows. That's about 0.45 s per program.
-   - Collapsing the environment and shadow variants made no difference.
-   - Options for the owner to choose between:
-     - fewer shadow-casting lights, or a cheaper shadow type;
-     - fewer distinct materials;
-     - compile in the background (`compileAsync` with `KHR_parallel_shader_compile`) behind the load bar.
-2. **The projects lag during the walkthrough, and entering or leaving the monitor lags.** Mostly fixed: the 2+ s freezes are gone. The first monitor entry still has one ~500 ms GPU-side frame. Details below.
-3. **Opening the window seems to freeze the site.** Not reproduced as a freeze: a ~200 ms hitch at the click. Details below.
+### Phones and small screens
+8. Landscape phone: FocusLock and Projects OS windows leave ~100 px of content
+   at 412 px height; the FocusLock phone demo is also cramped. Proposal: route
+   desktop-OS apps on touch screens to the phone app or `/work`. Not built.
+9. Seated touch look-around in landscape: unverified.
+10. The deck has no guided-tour option.
 
-**Baseline for 2 and 3, measured 2026-09-24/25 before any fix.** Tool: `scripts/profile-interaction.mjs <sit|window|enter|tour|tour-cold>`, which records a CPU profile, rAF frame gaps and long tasks on the real GPU. Setup: dev server on 4175, 1536×864 @ 1.25. React runs in dev mode on this server, so the React costs below are higher than in production.
-   - **First-use shader compile of the hand rig: 2.1–2.7 s freezes.** Four programs (`Hand skin` plus three unnamed ones) compile the first time the hands are visible. Whichever comes first pays:
-     - first sit: 2250 ms frame;
-     - first exit from the monitor, when entered from the launchpad: 2216–2283 ms;
-     - the tour's first seconds: 2149–2650 ms.
-     - `getProgramInfoLog` holds 2.0–2.1 s of each. The second enter/leave cycle is smooth: max frame 83–100 ms, 0 new programs.
-     - This is separate from the first-load stall: those 74–79 programs are already compiled by then. `KHR_parallel_shader_compile` is available here.
-   - **First monitor entry: 450–500 ms and 267–350 ms frames**, 255–263 ms of long tasks, including 80 ms in `unlockRoomAudio`. Leaving the second time: max 83 ms.
-   - **Window open: one 200–217 ms frame at the click, then 83–100 ms**, whether or not the first load had settled. No multi-second freeze reproduced in headless. The click path:
-     - `startCityAmbience` creates an AudioContext (72 ms for a first context in a clean page);
-     - the page re-fetches and parses `favicon.svg` (a 75 ms task);
-     - the rest is 275 ms of `(program)`, native time the profiler doesn't attribute.
-     - Guess, not measured: on the owner's machine a real audio device may make the AudioContext slower.
-   - **Whole-tree React re-render every 300 ms:** `Scan` keeps the telemetry `stats` in state, and `WorkspaceStage` emits them every 300 ms while the loop runs. The trace shows a 28–31 ms React task about 3 times a second, even with nothing happening. Telemetry is only shown with `?debug=1` or `v3:test`, but every visitor pays for the render.
-   - **Tour** (57.8 s): p50 17 ms, p95 33 ms, 33–34 frames over 50 ms, 13 over 100 ms. Worst frames:
-     - the hand compile (2.1–2.65 s);
-     - OS boot on entering (517–550 ms twice, then 283–300 ms);
-     - leaving the monitor (367–400 ms).
-   - **First-load stall (not being fixed, the owner's call):** settling took 18.4–20.6 s after the room appeared in 5 runs this session.
-   - GPU cost per frame (`measure-gpu.mjs`, auto tier; measured *after* the warm-up and telemetry commits, not a pre-fix baseline): 11.3 ms standing, 8.5 ms seated, 10.3 ms seated with the hands hidden. Steady-state GPU load isn't the lag.
+### Interactions (look decisions need the owner, reviewed in motion)
+11. Lamp and blinds switch without a hand reach (alternatives: 57 cm lean, move
+    the lamp, stand up for the blinds).
+12. Not authored: pen writing pose, notebook lift (floats), forearms through
+    the desk front edge (16 mm; elbow placement in `seatedHands.js`), phone side
+    phase and fanned fingers, awards frame size and fingertips, right wrist 80°
+    at drawer put-down. Detail: `archive/HANDOFF-2026-09-25.md`, "Experience sweep".
+13. Hands regression (owner's top complaint earlier; see session memory notes):
+    restore, then a skin pass.
 
-**Fixes (2026-09-25) and the same measurements after:**
-   - **Shader warm-up** (`WorkspaceStage.jsx`, `deskContactShadows.js` `warm()`):
-     - What it does: once the load has settled (30 frames under 50 ms), `renderer.compileAsync(scene, camera)` compiles everything the first render skipped. It also compiles the contact-shadow caster variants (render target, shadow map off). All of it runs in parallel with `KHR_parallel_shader_compile`.
-     - It finishes 0.8–1.0 s after settle and sets `data-shaders-warm="ready"`.
-     - Results:
-       - first sit: 0 new programs; worst frame 350 ms (was 2250);
-       - first monitor exit: 367 ms (was 2216–2283);
-       - tour worst frame: 567 ms (was 2149–2650).
-     - The remaining ~240 ms of `getProgramInfoLog` is three.js checking each warmed program on its first draw (`debug.checkShaderErrors`). Turning that off would also change the first-load stall, which is the owner's call, so it stays on.
-     - First-load settle after the change: 17.4–20.6 s, the same range as before. The warm-up starts only after settle.
-     - The warm-up itself, measured with every frame logged from page start and no input: on the launchpad it costs one 117 ms frame about 1.2 s before it reports ready; every other frame is 17–33 ms. So the 2.25 s freeze became a ~0.1 s hitch while the visitor is idle.
-     - If the room opens straight into the seat (`/#/room/explore`, or a sit during the stall), the hands are drawn before the warm-up can run, and frames just after the stall still reach 150–533 ms. The warm-up doesn't help that path.
-   - **Telemetry isolated** (`Scan.jsx` `LiveTelemetry`): the stats go straight to the HUD, so `Scan` no longer re-renders every 300 ms. React dev time over the tour went from 1962 to 737 ms; per monitor entry/exit, from 250–340 to 55–93 ms.
-   - **Pending OS app opens are queued** (`DhruvOSScreen.jsx`). A single slot dropped every app requested before the OS reported ready except the last one. See `verify-tour` below.
-   - **Not fixed:**
-     - First monitor entry: a 517 ms frame. The trace puts it in the GPU process: raster flushes of 130 ms and 242 ms while the OS document is first drawn, plus about 1.1 s of ANGLE worker tasks (likely Skia compiling shaders for that first raster; not confirmed).
-       - A possible fix: mount the OS iframe in the background after load. That means loading dhruvOS for every visitor, which the code comment deliberately avoids. **Owner decision.**
-     - Window open: still one 217 ms frame at the click (now 0 long tasks), native or GPU time. It's a hitch, not a freeze. If the owner still sees a multi-second freeze on the laptop, it wasn't reproduced here. One guess: a real audio device (e.g. Bluetooth) making the AudioContext slow.
-   - **`verify-tour` flake: root cause found and fixed** (`Scan.jsx` deep-link effect).
-     - Reproduced with fresh browsers (`scripts/_diag-tour.mjs`, verify-tour's first block with a 250 ms state log): a miss on run 2 of 2.
-     - The first-load stall blocked the page from +0.3 s to +16.3 s after the tour started. When it cleared, the tour's 6.5 s step called `navigate('/os/crisiswatch')`, and then the stale deep-link effect for step 0's `/room/explore` ran and called `navigate('/', {replace: true})`. That replaced the newer URL, so the OS was never entered.
-     - Fix: the effect still performs its link but clears the URL only while it's still that link.
-     - Real visitors hit this too whenever a long stall lines up with the tour.
-     - Earlier observation: `verify-tour` passed in this session's suite runs. When the tour is started cold, during the first-load stall, the key press isn't handled until the stall ends (about 14 s in the `tour-cold` run). The tour then ends at about 71.5 s, while `verify-tour` samples only to 62 s. `DhruvOSScreen` holds the only iframe on the page, so the suite's `querySelector('iframe')` isn't picking the wrong frame.
+### Content and product
+14. Owner questions: "Fact or Cap" name on the CrisisWatch card; Eco Water facts
+    (none on file); Blackout claim, Cellbook year, EFarm text, résumé C++
+    mismatch, 29.85 vs 29.82; favicon is still the Vite logo; domain decision
+    (`public/sitemap.xml`, `public/robots.txt`, `.env.production`
+    `VITE_SITE_URL` wait on it); delete the empty Pages project `dk-dev` (ask
+    first); `/work` visual direction.
+15. Dead code: `src/game`, `hooks`, `store`, `data`, `lib`, `lab`, `content`,
+    `shaders`, `flagship`, `components`, `index.css` (deletion approved,
+    pending). Also dead CSS (`.launchpad-more`, `.fd-note`), dead `aboutOpen`
+    panel code in `Scan.jsx`, and the `Scan.jsx:304` `about` focus-target regression.
+16. Deferred, unowned: global `--dim` token, launchpad absolute-positioning
+    refactor, `user-select`, keyboard-hint restoration, demo overlay dialog
+    semantics, deck room button's full reload, `whenSeated` rAF loop deadline,
+    stale `/os/index.html` intro, WhatsApp `og.jpg` size.
+17. Not built (approved, low priority): monsoon chai cutscene, depth of field,
+    bloom (too costly on the iGPU), more sound design, window lean-out,
+    `?hands=authored` bake in the true-scale room.
 
-### Interactions
-
-These were broken or made worse by the true-scale port. Its hand and camera constants were moved by one uniform seat offset, and its reach leans were halved; none of them was re-tuned while watching the motion.
-
-4. **Résumé: fixed in `5c399d2`.**
-   - The page is true letter size again. It had inherited the props' 0.625 scale, which also shrank the hand grips onto the text.
-   - It's held 29 cm from the eye, readable without zooming.
-   - Pick-up and put-down targets are computed from the drawer instead of old-room literals.
-   - The awards frame has its own held point (`AWARD_HELD`, the old value). It hasn't been re-captured since the split.
-5. **Drawer: fixed in `f790e76`.**
-   - The grips are re-solved in world metres, since the drawer is scaled and the hand isn't.
-   - Waypoints route the hand over the front panel and past the desk edge.
-   - During the drawer beat the head leans out over the drawer (`DRAWER_HEAD`), so the upper arm no longer fills the frame.
-   - New opt-in `elbowFollow` in `seatedHands.js`: the elbow goes where the hand's wrist axis points. Before it, wrists were bent 107–135° through the reach.
-   - Measured with `drawerClip`: 0 skin vertices in the drawer or desk at every sampled frame. The wrist stays at 1–25° except brief 64–70° moments while the page travels between the drawer and the face.
-   - **Correction (2026-09-25 sweep):** the right wrist reaches **80°** at 0.21 s into the put-down (`obj-drawer-s4-return-01.png`, a visible sideways kink while the hand holds the page's edge). It's 49° held and 58–59° at other moments. Not re-tuned.
-6. **Phone speed: fixed.** The pick-up `timeScale` is gone (it was 1.55× on a first visit, 3.2× on a repeat), so pick-up and put-down now play at the same 1× pace.
-   - Measured (`measure-phone-timing.mjs`, click → zoomed / Escape → desk): 2.50 s / 2.36 s on a first visit, 2.34 s / 2.36 s on a repeat. Before: 1.85 / 2.41 s and 1.17 / 2.37 s.
-7. **Phone gap and roll: fixed.** Cause: the grip offsets were authored for a larger phone. The true-size phone is 7.8 cm wide, and the old top grip put the palm 12.5 cm from its centre.
-   - The earlier "next idea" (a true rigid roll about the edge) was already what the first half did. The real cause: the top grip touched the phone only at its *far* edge (x = +40 mm), so any roll about the near edge lifted that contact off at once (1.8 mm → 13.6 mm within 5 % of the roll).
-   - Fix, all in `WorkspaceStage.jsx`:
-     - `PHONE_ROLL_IN`: a 41-knot push along the palm normal through the roll. It's solved for smoothness plus about a 1 mm gap by `scripts/probe-phone-tune.mjs` (`DP=1`).
-     - The side grip sits 4 cm further up the phone (z −0.005), so the fingertips clear its top end while the hand turns under. The top grip can't move: with the phone flat, the forearm would sink into it.
-     - `tunePhone` now poses the phone and body lean the way the timelines do at that grip. A probe against the already-held phone missed a 280-vertex forearm clip that only shows while the phone is flat.
-   - Measured in motion (`FRAMES=48 record-motion.mjs phone final`, 96 frames): 0 skin vertices inside the phone in any frame. The gap through the roll is ≤ 4.2 mm (it was 14–16 mm). The hand path in the phone frame is monotonic, with no out-and-back. Wrist: left 6–65°, right 17–42°.
-   - The 321-sample grip sweep shows 1–2 vertices inside at 2 samples. The probe measures against a sharp-cornered box, and the phone has 4 mm rounded corners.
-   - Look/feel, for the owner (not changed): in the side phase (`phone-final-pickup-3-sheet.png`, 1.46–1.54 s) the phone touches the palm only along its edge, with the fingers straight, so it reads as floating beside the hand. In the held pose the fingers fan open behind the phone and the wrist sits at 65° (`phone-final-pickup-47.png`). Both predate this fix.
-   - Tools: `__v3test.tunePhone(opts, grip)` (opts: top, side, back, backCurl, follow, push) and `phoneGap()` (now also logs the right wrist, the grip and the hand position in phone coordinates).
-8. **Mobile demo walkthrough: done.**
-   - In the phone's stage view, a text panel left of the phone says what the open app is and what to try. It changes per app: home, FocusLock, friction, hard block, Expense Tracker, BasketProof.
-   - Styled like the stage chrome, not the signal colour. It's hidden below 1100 px wide, where there's no room beside the phone.
-   - Copy comes from `WALKTHROUGH` in `PhoneScreen.jsx`, facts from PROJECT-MATERIAL.md only; BasketProof is framed neutrally.
-   - Screenshots: `scripts/shots/walk-1536-*.png`.
-   - **Owner review:** the copy is in the first person ("built for my family"), matching the tour captions. Edit freely.
-
-### Experience sweep (2026-09-25)
-
-Tool: `scripts/sweep-objects.mjs <tag> [ids]` clicks each desk object from the seat on the real GPU. It sweeps the action and return timelines (12 frames each, plus the held state) and captions every frame with `__v3test.handsProbe()`: per hand, the deepest skin and sleeve vertex inside the desk top (mm), vertices inside the held object's mesh boxes (loose: a handle's box holds the fingers through it, so check by eye), the wrist bend, and `T`, the reach clamp's torso shift. Sheets: `scripts/shots/motion/obj-<id>-<tag>-*`.
-
-Metrics per object (tag `s4`, before fixes). Wrist max per hand:
-
-| Object | Skin in desk | Sleeve in desk | Wrist L / R | Torso shift | Frames |
-|---|---|---|---|---|---|
-| lamp | 0 | 16 mm | 34° / **159°** | **57 cm** | `obj-lamp-s1-action-sheet` |
-| coffee | 0 | 0 | 52° / 34° | 0 | `obj-coffee-s4-*` |
-| award | 0 | 0 | 56° / 42° | 4 cm | `obj-award-s4-*` |
-| notebook | 15 mm | 0 | 46° / 62° | 2 cm | `obj-notebook-s4-*` |
-| pen | **16 mm** | 12 mm | 54° / 63° | 0 | `obj-pen-s4-held.png` |
-| blinds | 0 | 0 | **144°** / 80° | **138 cm** | `obj-blinds-s2-action-sheet` |
-| window | 0 | 0 | 20° / 17° | 0 | `obj-windowOpen-s4-*` |
-| headphones | 16 mm | 16 mm | 45° / 45° | 0 | `obj-headphones-s3-action-03.png` |
-| keyboard | 0 | 0 | 20° / 17° | 0 | `obj-keyboard-s4-*` |
-| phone | 0 | 16 mm | 65° / 42° | 9 cm | `obj-phone-s4-*` |
-| résumé | 0 | 0 | 52° / 80° | 0 | `obj-drawer-s4-*` |
-
-The desk top is 35 mm thick and depth is measured to the nearest face, so 16 mm means a limb passes right through the slab.
-
-**Fixed:**
-- **Lamp and blinds: a detached arm.** The switch is 57 cm and the cord 1.38 m beyond a seated arm, and neither had a lean. The reach clamp shifted the whole torso while the camera stayed in the seat. The result: a shoulder filling the frame (lamp), an arm floating off to the window (blinds), the non-reaching hand pinned to the keyboard with its wrist at ~150°, and the sleeve through the desk.
-  - Fix: they now switch the way the window sash already does, with the hands at rest and the camera glancing at the object. After: 0 torso shift, 0 desk contact, wrists 17–20° (`obj-lamp-s5-*`, `obj-blinds-s5-*`).
-  - **Owner decision:** this drops the hand gesture for those two. Alternatives:
-    - (a) a lean of about 57 cm for the lamp, twice the largest seated lean in the code (phone/award 27–28 cm);
-    - (b) move the lamp within reach (a layout change);
-    - (c) stand up and walk to the window for the blinds.
-- **Awards frame re-captured** (it got its own held point in 5c399d2). The held view looked at the frame's origin, which is its bottom edge, so the "HACKATHONS" title was cut off at the top. It now looks at the held frame's centre (`awardCenter()`); the whole frame and every line are readable (`obj-award-s5-held.png`). Grip and wrists unchanged: 56° / 42° at the most, 38° / 38° held.
-
-**Not fixed; needs the owner or a rig change:**
-- **Forearms through the desk's front edge** (sleeve 16 mm deep): headphones pick-up, phone reach, lamp (before). The hands work low on the desk while the elbows sit below desk height, so the forearm passes through the front edge. It shows as a light stripe across the sleeve (`obj-headphones-s3-action-03.png`). Changing elbow placement in `seatedHands.js` touches every grip and every reviewed motion, so it wasn't done unattended.
-- **Pen: the writing pose is wrong.** The hand sinks into the notebook and desk with only the thumb showing, and the pencil stands vertical above it instead of lying in the fingers (`obj-pen-s4-held.png`). The pose is derived from a writing-hand orientation (`PEN` in `WorkspaceStage.jsx`: the two direction vectors `f` and `n`) and needs re-authoring while watching the motion.
-- **Notebook, held: fixed.** The held side grips were 25 cm out from the centre on a 25 cm-wide notebook, so the hands hovered about 2 cm off its sides and it floated (`obj-notebook-s4-held.png`). Measured with `__v3test.tuneNotebook(x)` and set to 19 cm: gap 1.1 / 3.6 mm, no overlap, wrists 41° / 41° (`obj-notebook-nb1-*`). The lift's side waypoint went from 29 to 23 cm to match.
-- **Notebook, lift: not fixed.** At 1.23–1.48 s the notebook tips up while the open right hand is about 10 cm away, so it floats (`obj-notebook-nb1-action-sheet.png`). The right hand's pick is also 15–16 mm into the desk at 0.49–0.62 s. Both predate this session and need the pick/lift choreography re-authored while watching it.
-- **Awards frame:** fingertips show below its bottom edge, and the frame reads small next to the hands. It's probably still at the props' 0.625 scale, which the résumé page was taken off in 5c399d2. A look decision.
-- **Headphones:** both hands pass right in front of the camera on the way to the ears (1.50 s). The code comment says this is intended ("carry them up past the camera").
-
-**Other surfaces** (`scripts/sweep-surfaces.mjs <tag> [coldopen,launchpad,os,deeplinks,work]`, output in `scripts/shots/surfaces/`, contact sheets `SHEET-*.png`). No page errors or console errors on any surface.
-- **Every dhruvOS app opens and renders** (`SHEET-os.png`): about, terminal, projects, gallery, FocusLock, DarkSentinel, CrisisWatch, Fraud, wallpaper, contact, skills, music. Skills' tags pile at the bottom of an empty window: gravity needs Matter.js, which the embedded OS doesn't have (a known trap in AGENTS.md).
-- **Palette: fixed two bugs.**
-  - "res" or "resume" found nothing, because the only résumé entry is spelled with accents; matching is now accent-insensitive.
-  - With few results the box still stretched to 64vh, leaving empty space; it now fits its contents (`v3-palette-res.png`).
-- **`/room/<object>` deep links, opened cold on the dev server, did nothing.** React StrictMode runs the mount effect twice, and the second `handleSelect` toggled the object straight back off.
-  - Production worked with the original code (1 cold run on the 4176 preview); it only affected dev, where every review happens.
-  - Fixed: the effect is keyed by `location.key`, and the select waits for the seat to reach the stage instead of a fixed 400 ms timer that could fire right after a stall.
-  - `verify-deeplinks` has no `/room/<object>` case; checked with a probe, cold and warm, on dev and prod.
-- **/work:** renders and loads no three.js (`v1-work.png`).
-- **Tour captions on the phone steps: fixed.** The phone stage (fixed, `z-index: 100`) covered the tour caption and its SKIP control for two of the seven steps ("The phone runs my Android apps…" and "Expense Tracker…"). It now sits above the stage, in the free column right of the phone (≥1100 px wide), mirroring the walkthrough panel on the left (`surfaces/tour-47s.png`).
-- **Cold open, a look question for the owner** (`SHEET-coldopen.png`): the launchpad (name plus six options) and the Monitor/Phone markers are on screen for the whole arrival fly-in, from 1.2 s. The first-load stall also blocks the page during the fly-in: the screenshots show a 14.7 s gap.
-- **Favicon:** still the default Vite logo (`public/favicon.svg`). It needs an owner-supplied mark.
-
-### Test suite
-
-- `verify-phone-grip` passes (exit 0) since `11eb21f`. Before that, its skin-clipping assertion failed.
-- `verify-tour`'s OS-open failures were a real bug, not lag; fixed in `e0cd47e` (see Performance above). Afterwards: 3 of 3 suite runs and 8 of 8 fresh-browser diagnostic runs passed.
-- `verify-focuslock-app` (not in `run-suites.sh`) still fails as before. Run on 2026-09-25: 13 PASS, then it times out waiting for friction step `breathing` → `delay` (line 218). The test sets `__phoneTimeScale = 20`, so breathing should end in 600 ms, and the friction effect's deps look stable. Cause not found; not investigated further.
-- `verify-v3` failed once on 2026-09-25 with two "503 Service Unavailable" console errors. It passed 41/41 on an immediate re-run and on every other run; probably a live-data service, but the URL wasn't logged.
-- `verify-deeplinks` has no `/room/<object>` case.
-- `verify-held-objects` and `verify-reduced-hands` exit 0, but `run-suites.sh` counts 0 PASS lines for them, so they only prove the script ran.
-- The suites check state, not feel. A green run proves nothing about how an interaction looks or how fast it is. Every interaction change needs a frame sequence reviewed by eye, including the wrist angle (see below).
-
-### Tools for tuning interactions (added 2026-09-24)
-
-- **`scripts/record-motion.mjs <resume|phone> <tag>`** (with `BASE=http://localhost:4175`):
-  - Real-GPU frame sweeps of a whole timeline, plus a contact sheet per phase, with a per-frame probe in the captions.
-  - It slows the timeline rather than pausing it, because a paused timeline stops the render loop.
-  - `FRAMES=48` samples more densely (phone only). Sheets are split 16 frames each (`…-pickup-sheet`, `…-pickup-2-sheet`, …).
-- **`scripts/probe-phone-tune.mjs`:** phone grip sweeps through `tunePhone`. Pass an options array for one compact row per option set; `DP=1` re-solves `PHONE_ROLL_IN`.
-  - Never return a GSAP timeline from `page.evaluate`: serialising it takes about 150 s.
-- **`scripts/probe-drawer-tune.mjs [timeline | grid <t> <json>]`:** parameter sweeps through `__v3test.tuneDrawerHandle`.
-- **`scripts/measure-phone-timing.mjs`:** wall-clock phone pick-up and put-down.
-- **`__v3test` probes:**
-  - `drawerClip()`: skin in each drawer part, skin in the desk, gap to the handle, and wrist angles for both hands.
-  - `phoneGap()`.
-  - `tuneDrawerHandle(opts)`, `tunePhone(opts, grip)`.
-- **Lesson:** a zero-clip frame can still show a wrist bent 90°. Log `wristDeg` for both hands and look at every frame.
-
-## Not built yet (approved, lower priority than the problems above)
-
-- Monsoon chai moment by the window (second cutscene).
-- Depth of field in cutscenes; bloom (too costly on the iGPU so far).
-- Sound design beyond the rain layer.
-- Mocap or realistic rigged hands. Whether the MetaHuman licence allows use outside Unreal is unverified; ask the owner to run a deep-research pass.
-- Bake source for `?hands=authored` in the true-scale room.
-- Dead v1/v2 directories under `src/`. Deletion is approved; the agent's permission settings blocked it.
+### Tests
+18. GitHub's unauthenticated events API returns 403 after 60 requests/hour per
+    IP; this fails console-error checks in `verify-v3`, `verify-after-hours`
+    and others. Not a visitor bug; confirm the UI handles a 403 quietly.
+19. Stale: `verify-mobile.mjs`, the `verify-deeplinks` "Ctrl+K on /work" check,
+    `verify-focuslock-app` (times out at friction `breathing`→`delay`),
+    `verify-after-hours-audio` 2 of 35 (pre-existing). `verify-held-objects` and
+    `verify-reduced-hands` exit 0 but count 0 PASS lines in `run-suites.sh`.
+    `verify-deeplinks` has no `/room/<object>` case.
+20. Suites check state, not feel. Any hand, camera or timing change needs frames
+    reviewed by eye, including wrist angle.
 
 ## Owner decisions on record
 
-- **Monitor and phone:** each project runs as its real UI, built from its own repo with simulated data. Phone apps run on the phone, web apps on the monitor.
-- **Room:** bare walls, awards on the desk. The notebook is a blank page you draw on.
-- **Project order:** all projects shown, ranked by depth. FocusLock, Expense Tracker and Basket Price lead.
-- **Copy rules:**
-  - Basket Price is framed neutrally: no scraping or terms-of-service talk.
-  - CrisisWatch is framed around its fixed-model constraint, never as a poor design.
-- **Never fabricate** links, metrics or evidence.
-- **Parked:** a per-project case-study page (undecided).
-- **Scoped out:** AI chat (needs a paid key), multiplayer presence.
-- **Still open:**
-  - a downloadable résumé PDF (`public/resume.pdf` + `contact.resume`);
-  - a deploy host and domain (`og:image` is relative until then).
+- Each project runs as its real UI built from its own repo with simulated data;
+  phone apps on the phone, web apps on the monitor.
+- Room: bare walls, awards on the desk; the notebook is a blank page to draw on.
+- Project order: ranked by depth; FocusLock, Expense Tracker, Basket Price lead.
+- Copy: Basket Price framed neutrally; CrisisWatch framed around its
+  fixed-model constraint. Reddit Growth Copilot must not be shown. The word
+  "recruiter" must not appear in visible copy. Never fabricate links or metrics.
+- Scoped out: AI chat (paid key), multiplayer presence. Gaussian splats: gone.
+- Parked: per-project case-study page.
+
+## Tools
+
+`scripts/measure-gpu.mjs` (GPU ms per tier), `profile-interaction.mjs`,
+`record-motion.mjs`, `probe-*.mjs`, and the `__v3test` hooks
+(`localStorage['v3:test']='1'`). Run Playwright suites with `GPU=1`.
 
 ## Reference docs
 
-- [DESIGN.md](DESIGN.md): the UI design system and scene art rules.
-- [ASSET-REGISTER.md](ASSET-REGISTER.md): licences and provenance for every asset.
-- [PROJECT-MATERIAL.md](PROJECT-MATERIAL.md): verified facts about each project, for copy.
-- `docs/archive/`: superseded plans, reviews and prompts. Historical only; don't follow them.
+[DESIGN.md](DESIGN.md), [ASSET-REGISTER.md](ASSET-REGISTER.md),
+[PROJECT-MATERIAL.md](PROJECT-MATERIAL.md), [PROJECTS-MAP.md](PROJECTS-MAP.md),
+[PERF-AUDIT.md](PERF-AUDIT.md), `archive/` (historical only).
+
+## Round 3 status (perf/lighten-room)
+
+Done: real-time shadows off (97a4aea), GitHub API mocked in suites (366c06d), booted-OS pre-raster cuts the first-key gap ~480 to ~210 ms (32549af), FocusLock Windows demo scales to narrow /work panels (a8323b7), demo sweep harness `scripts/review-demos.mjs`.
+Corrections: `aboutOpen` is live (the `/about` deep link, not dead); the 25 ms arrival-intro interruption did not reproduce; backtick and space keys verified.
+Demo sweep (4 viewports, 3 surfaces): no overflow or errors; at 915x412 touch, `/os/*` deep links show the landing deck instead of a window, and the /work demo panel is a ~270 px strip (functional, cramped).
+Still open: landscape-phone routing of OS apps, seated touch look-around in landscape, first monitor-entry hitch measurement, Fact-or-Cap naming (owner decision), empty dk-dev Pages project (not deleted), hand/pose authoring items (need frame sheets), phone-basketproof 915x412 shot missing.
+
+Round 3 continued: /work demo panel header readable (6600d03); dhruvOS windows fill the height on landscape phones (`public/os/styles.css`, `DhruvOSScreen.jsx`); seated touch look-around verified by `scripts/verify-touch-look.mjs` (drag turns the head at 915x412 and 412x915); the earlier "503" is the open-meteo weather call (now mocked in `scripts/_gh-mock.mjs`). First monitor entry hitches (~500 ms gaps, wallpaper `toBlob` 377 ms + one program link 300 ms) only when entering within ~8 s of reveal on a cold browser; clean after 20 s and on warm runs. Open: touch deep-link routing (proposal sheet), portrait OS FocusLock window clips on 412 px, hand/pose items (sheet `scripts/shots/hands/sheet-hand-items.png`).

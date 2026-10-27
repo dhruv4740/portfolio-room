@@ -14,7 +14,7 @@ try {
   await p.locator('[data-testid="room-overview"]').waitFor(); await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(1500);
   const data = (k, v) => p.waitForFunction(([k, v]) => document.querySelector('.workspace-stage')?.dataset[k] === v, [k, v], { polling: 50, timeout: 4000 });
   const button = name => p.getByRole('button', { name, exact: true });
-  for (const [name, key, held, idle] of [['PEN', 'actionState', 'drawing', 'idle'], ['AWARD', 'actionState', 'award-reading', 'idle'], ['RESUME', 'actionState', 'resume-reading', 'idle'], ['COFFEE', 'actionState', 'idle', 'idle'], ['LAMP', 'actionState', 'idle', 'idle'], ['HEADPHONES', 'actionState', 'idle', 'idle'], ['NOTEBOOK', 'notebookState', 'reading', 'desk'], ['PHONE', 'phoneState', 'zoomed', 'desk']]) {
+  for (const [name, key, held, idle] of [['AWARD', 'actionState', 'award-reading', 'idle'], ['RESUME', 'actionState', 'resume-reading', 'idle'], ['COFFEE', 'actionState', 'idle', 'idle'], ['LAMP', 'actionState', 'idle', 'idle'], ['HEADPHONES', 'actionState', 'idle', 'idle'], ['PHONE', 'phoneState', 'zoomed', 'desk']]) {
     const t0 = Date.now(); await button(name).click(); await data(key, held); const ms = Date.now() - t0;
     const hands = await p.evaluate(() => window.__v3test.hands());
     console.log(name, 'held in', ms, 'ms', 'wrist', hands.map(h => h.wristDeg).join('/'));

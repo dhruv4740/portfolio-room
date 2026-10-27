@@ -53,6 +53,11 @@ export const experience = [
     to: 'Oct 2026',
     detail:
       'Built 4 internal growth tools: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.',
+    caseStudy: {
+      problem: 'Blink.new needed repeatable growth channels, and the team had no tooling for creator outreach, link building, AI-search visibility or Reddit.',
+      decisions: 'I built four internal tools as the sole developer. The outreach pipeline (Python, SQLite, YouTube Data API, Gmail API) uses an LLM to draft messages, but a human approves every send. The link-building engine is a Flask dashboard that finds and scores prospect sites and extracts contacts.',
+      result: '650 leads sourced, 489 emails sent, 41 of 228 contacted creators replied (18%), 14 positive. The link engine scored 676 prospect sites, AI-search tracking covered 18 prompts, and Reddit was 29.85% of Blink social traffic in Jun 2026.',
+    },
     bullets: [
       'Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).',
       'Built a link-building engine (Flask dashboard) that found and scored prospect sites and extracted contacts.',
@@ -129,6 +134,11 @@ export const projects = [
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
     detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK and installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
+    caseStudy: {
+      problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
+      decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
+      result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK and the Windows installer.',
+    },
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
   {
@@ -177,6 +187,11 @@ export const projects = [
     detail: 'I built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded.',
     badge: 'Top 5 in problem statement, IIT Madras & BITS Goa hackathon 2026',
     tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
+    caseStudy: {
+      problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
+      decisions: 'A Random Forest scores network flows for Tor traffic. Only predictions in the uncertain zone (Tor score 0.55 to 0.75) go to the Claude call, behind a 60-second cooldown, so cost is bounded by time rather than traffic. I removed a hardcoded fallback score that could show a result the model never produced.',
+      result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+    },
     links: { live: '', github: '' },
     note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture; I built the dashboards, the API features and the uncertain-zone Claude call.',
   },
@@ -236,6 +251,11 @@ export const projects = [
     detail:
       'Detects each visitor\'s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
     tech: ['Three.js', 'React 19', 'GSAP', 'GLSL', 'Playwright'],
+    caseStudy: {
+      problem: 'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
+      decisions: 'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version. The studio room’s monitor runs live demos of other projects, and Playwright checks cover the interactions.',
+      result: 'Holds 30 to 60 FPS on integrated graphics; the same content is reachable on every tier, including this /work page.',
+    },
     links: { live: '/', github: '' },
   },
   {
@@ -252,6 +272,11 @@ export const projects = [
       'Fingerprint unlock, a Quick Settings tile, and it uncovers automatically for calls and alarms. No internet permission.',
     tech: ['Kotlin', 'Android'],
     links: { live: '', github: 'https://github.com/dhruv4740/blackout' },
+    caseStudy: {
+      problem: 'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
+      decisions: 'Blackout turns the screen fully black while audio keeps playing. Fingerprint unlock and a Quick Settings tile control it, and it uncovers by itself for calls and alarms. It requests no internet permission.',
+      result: 'A Kotlin Android app; source at https://github.com/dhruv4740/blackout.',
+    },
   },
   {
     id: 'cellbook',
@@ -280,11 +305,13 @@ export const anchors = [
     body: 'Apps, sketches and projects, running live on the desk computer.',
   },
   {
-    id: 'notebook',
-    label: 'Notebook',
-    ref: 'about',
-    readout: 'THE BUILDER',
-    body: identity.statement,
+    id: 'resume',
+    label: 'Résumé',
+    ref: 'contact',
+    readout: 'READ RÉSUMÉ',
+    body: 'One page: experience, highlights, education and skills.',
+    href: '/resume/',
+    hrefLabel: 'OPEN THE RÉSUMÉ PAGE',
   },
   {
     id: 'window',
