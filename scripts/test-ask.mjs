@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { onRequestPost, onRequestGet } from '../functions/api/ask.js';
 import { runChain } from '../functions/_ask/chain.js';
 import { PROVIDERS } from '../functions/_ask/providers.js';
-import { cannedAnswer, systemPrompt, relevantSections } from '../functions/_ask/knowledge.js';
+import { cannedAnswer, systemPrompt, relevantSections, splitSource, sourceHref } from '../functions/_ask/knowledge.js';
 
 const kvStore = new Map();
 const KV = { get: async (k) => kvStore.get(k) ?? null, put: async (k, v) => { kvStore.set(k, v); } };
@@ -111,6 +111,14 @@ await t('answers that leak the rules are replaced; long answers are clipped', as
   const r = await ask(env()); assert.equal(r.provider, 'canned');
   handlers.groq = async () => ok('He builds things. '.repeat(200) + '(Source: About Dhruv)');
   const r2 = await ask(env()); assert.equal(r2.provider, 'groq'); assert.ok(r2.answer.length <= 1400);
+});
+await t('list answers keep their line breaks; the source gets a /work link', async () => {
+  handlers.groq = async () => ok('He built four tools:\n- Outreach   pipeline\n- **Link** engine\n\n\n(Source: Experience: Blink.new)');
+  const r = await ask(env());
+  assert.equal(r.answer, 'He built four tools:\n- Outreach pipeline\n- **Link** engine'); assert.equal(r.source, 'Experience: Blink.new'); assert.equal(r.href, '/work/#blink');
+  assert.equal(splitSource('One line. (Source: Project: FocusLock)').source, 'Project: FocusLock');
+  assert.equal(sourceHref('Project: FocusLock'), '/work/#p-focuslock'); assert.equal(sourceHref('Project: FocusLock, Project: Blackout'), '/work/#p-focuslock');
+  assert.equal(sourceHref('Experience: EFarm, KJSCE'), '/work/#experience'); assert.equal(sourceHref('Why hire Dhruv'), ''); assert.equal(sourceHref(''), '');
 });
 globalThis.fetch = realFetch;
 

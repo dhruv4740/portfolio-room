@@ -1,78 +1,102 @@
 // ask-pill.js — the always-visible "Ask about Dhruv" pill on every surface (/work, room, scan, deck).
 // A small field floats bottom-centre (bottom-right in the room, clear of the HUD). Submitting morphs it into a
-// centred rounded glass card (a JS spring drives its real box from the pill's rect); Esc or a tap outside morphs it back.
-// The blur and the WebGL glow run only while the card is open, so the room's frame rate is untouched the rest of the time.
+// rounded glass card (a JS spring drives its real box from the pill's rect); Esc or a tap outside morphs it back.
+// The blur and the WebGL glow are created on first touch of the pill and run only while the card is open, so pages
+// that never use Ask (and the room's frame rate) pay nothing.
 import { mountAsk } from './ask.js';
 
 const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+const coarse = () => matchMedia('(pointer: coarse)').matches;
 export function mountAskPill() {
   if (document.getElementById('ask-pill-root')) return;
   const root = document.createElement('div');
   root.id = 'ask-pill-root';
   root.innerHTML = `<style>
 #ask-pill-root{position:fixed;z-index:2147483000;left:0;top:0;width:0;height:0;font:400 14px/1.4 system-ui,-apple-system,sans-serif}
-#ask-wrap{position:fixed;left:50%;transform:translateX(-50%);bottom:16px;width:min(280px,calc(100vw - 32px));height:46px}
+html[data-overlay] #ask-pill-root{display:none}
+#ask-wrap{position:fixed;z-index:2;left:50%;transform:translateX(-50%);bottom:16px;width:min(280px,calc(100vw - 32px));height:46px}
 #ask-pill{position:relative;width:100%;height:100%;box-sizing:border-box;display:flex;align-items:center;gap:6px;padding:4px 4px 4px 16px;border:1px solid rgba(255,255,255,.16);border-radius:99px;background:rgba(30,30,34,.72);-webkit-backdrop-filter:blur(18px) saturate(170%);backdrop-filter:blur(18px) saturate(170%);box-shadow:0 10px 30px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.05);margin:0;transition:transform .35s cubic-bezier(.2,.9,.25,1.2),box-shadow .35s}
 #ask-pill:hover,#ask-pill:focus-within{box-shadow:0 14px 38px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.3)}
 #ask-pill input{flex:1;min-width:0;border:0;background:transparent;color:#f6f4ee;font:15px system-ui,-apple-system,sans-serif;outline:none;padding:0}
 #ask-pill input::placeholder{color:rgba(246,244,238,.62)}
-#ask-pill button{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:rgba(246,244,238,.92);color:#26251f;cursor:pointer;font:600 17px/1 system-ui,sans-serif;padding:0}
+#ask-pill button{flex:none;width:38px;height:38px;border:0;border-radius:50%;background:rgba(246,244,238,.92);color:#26251f;cursor:pointer;font:600 17px/1 system-ui,sans-serif;padding:0;transition:transform .12s ease-out}
+#ask-pill button:active{transform:scale(.9)}
 #ask-pill:focus-within{border-color:rgba(255,255,255,.5)}
 #ask-pill button:focus-visible{outline:2px solid #f6f4ee;outline-offset:2px}
+@media (pointer:coarse){#ask-pill input{font-size:16px}}
+/* While the card is out, the pill keeps only its text and button (fading over the first stretch of the morph) on top of
+   the card's own glass, so two half-transparent glass layers never stack. */
+#ask-wrap.morph #ask-pill{background:transparent;border-color:transparent;-webkit-backdrop-filter:none;backdrop-filter:none;box-shadow:none;transition:none}
+#ask-wrap.morph .halo{display:none}
 #ask-pill-root[data-ctx=room] #ask-wrap{left:auto;right:16px;bottom:68px;transform:none;width:min(250px,calc(100vw - 32px))}
 @media (max-width:699px){#ask-pill-root[data-ctx=work] #ask-wrap{bottom:calc(84px + env(safe-area-inset-bottom))}}
-#ask-scrim{position:fixed;inset:0;display:none;background:rgba(8,8,12,.42);opacity:0}
-#ask-card{position:fixed;display:none;overflow:hidden;contain:layout paint;will-change:transform,clip-path;color:#f6f4ee;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0) 30%),rgba(22,22,26,.74);-webkit-backdrop-filter:blur(28px) saturate(170%);backdrop-filter:blur(28px) saturate(170%);box-shadow:0 24px 70px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.2)}
+#ask-scrim{position:fixed;z-index:0;inset:0;display:none;background:rgba(8,8,12,.42);opacity:0}
+#ask-card{position:fixed;z-index:1;display:none;overflow:hidden;contain:layout paint;will-change:transform,clip-path;color:#f6f4ee;border-radius:28px;background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,0) 30%),rgba(22,22,26,.74);-webkit-backdrop-filter:blur(28px) saturate(170%);backdrop-filter:blur(28px) saturate(170%);box-shadow:0 24px 70px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.2)}
+#ask-card:focus{outline:none}
 #ask-card.fallback{box-shadow:0 24px 70px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.22),0 0 36px rgba(188,130,243,.38),0 0 90px rgba(141,159,255,.22)}
 @media (prefers-reduced-transparency:reduce){#ask-pill,#ask-card{-webkit-backdrop-filter:none;backdrop-filter:none;background:#26262a}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){#ask-pill,#ask-card{background:#26262a}}
 #ask-scrim.open,#ask-card.open{display:block}
-#ask-card .col{position:absolute;left:50%;bottom:0;box-sizing:border-box;padding:16px 20px calc(18px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
-#ask-card header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font:600 17px system-ui,-apple-system,sans-serif}
-#ask-card header button{width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#f6f4ee;font:20px/1 system-ui,sans-serif;cursor:pointer}
+#ask-card .col{position:absolute;left:50%;bottom:0;box-sizing:border-box;padding:16px 20px 18px;display:flex;flex-direction:column}
+#ask-card header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px;font:600 17px system-ui,-apple-system,sans-serif}
+#ask-card header .hb{display:flex;gap:8px}
+#ask-card header button{height:36px;border:0;border-radius:99px;background:rgba(255,255,255,.14);color:#f6f4ee;cursor:pointer}
+#ask-card header .x{width:36px;font:20px/1 system-ui,sans-serif}
+#ask-card header .new{padding:0 14px;font:500 13px system-ui,sans-serif}
+#ask-card header .new[hidden]{display:none}
 #ask-card .body{flex:1;min-height:0}
-#ask-card input::placeholder{color:rgba(246,244,238,.55)}
-#ask-card input:focus-visible,#ask-card button:focus-visible{outline:2px solid #f6f4ee;outline-offset:2px}
-#ask-glow{position:fixed;left:0;top:0;width:100vw;height:100vh;pointer-events:none;visibility:hidden}
-@keyframes ask-shim{from{background-position:200% 0}to{background-position:-200% 0}}
-@keyframes ask-word{from{opacity:0;filter:blur(6px);transform:translateY(3px)}to{opacity:1;filter:none;transform:none}}
+#ask-card input:focus-visible,#ask-card button:focus-visible,#ask-card a:focus-visible{outline:2px solid #f6f4ee;outline-offset:2px}
+#ask-glow{position:fixed;z-index:1;left:0;top:0;width:100vw;height:100vh;pointer-events:none;visibility:hidden}
+#ask-safe{position:fixed;visibility:hidden;pointer-events:none;padding-bottom:env(safe-area-inset-bottom)}
 /* idle pill: quiet glass, a faint iridescent sheen that only wakes on hover/focus */
 #ask-wrap .halo{position:absolute;inset:2px;border-radius:99px;background:linear-gradient(100deg,#f5b9ea,#bc82f3 40%,#8d9fff 70%,#ffba71);filter:blur(14px);opacity:0;transform:scale(.92);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1);pointer-events:none}
 #ask-wrap:hover .halo,#ask-wrap:focus-within .halo{opacity:.32;transform:scale(1)}
-.ask-shim{background:linear-gradient(90deg,rgba(246,244,238,.4) 0%,rgba(255,255,255,.95) 20%,rgba(246,244,238,.4) 40%,rgba(246,244,238,.4) 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:ask-shim 2.2s cubic-bezier(.4,0,.2,1) infinite}
-.ask-w{display:inline;animation:ask-word .5s cubic-bezier(.2,.8,.2,1) both}
-@media (prefers-reduced-motion:reduce){.ask-shim,.ask-w{animation:none}}
 </style>
 <div id="ask-wrap"><span class="halo"></span><form id="ask-pill" role="search" autocomplete="off"><input type="text" maxlength="300" placeholder="Ask about Dhruv" aria-label="Ask about Dhruv" spellcheck="false"><button type="submit" aria-label="Ask">↑</button></form></div>
-<div id="ask-scrim"></div><section id="ask-card" role="dialog" aria-modal="true" aria-label="Ask about Dhruv"><div class="col"><header><span>Ask about Dhruv</span><button type="button" aria-label="Close">×</button></header><div class="body"></div></div></section><canvas id="ask-glow" aria-hidden="true"></canvas>`;
+<div id="ask-scrim"></div><section id="ask-card" role="dialog" aria-modal="true" aria-label="Ask about Dhruv" tabindex="-1"><div class="col"><header><span>Ask about Dhruv</span><span class="hb"><button type="button" class="new" hidden>New chat</button><button type="button" class="x" aria-label="Close">×</button></span></header><div class="body"></div></div></section><canvas id="ask-glow" aria-hidden="true"></canvas><div id="ask-safe"></div>`;
   document.body.appendChild(root);
-  const wrap = root.querySelector('#ask-wrap'), pill = root.querySelector('#ask-pill'), pillInput = pill.querySelector('input'), scrim = root.querySelector('#ask-scrim'), card = root.querySelector('#ask-card'), body = card.querySelector('.body'), col = card.querySelector('.col'), cvs = root.querySelector('#ask-glow');
-  let chat = null, isOpen = false;
+  const $ = (s) => root.querySelector(s);
+  const wrap = $('#ask-wrap'), pill = $('#ask-pill'), pillInput = pill.querySelector('input'), scrim = $('#ask-scrim'), card = $('#ask-card'), body = card.querySelector('.body'), col = card.querySelector('.col'), cvs = $('#ask-glow'), newBtn = card.querySelector('.new'), safe = $('#ask-safe');
+  let chat = null, isOpen = false, settled = false, byKey = false;
 
   // Where the pill lives: bottom-right in the room (its HUD and object list sit bottom-left/centre), above the CTA bar on /work.
   const place = () => { root.dataset.ctx = document.querySelector('.scan-root') ? 'room' : document.querySelector('.w-root') ? 'work' : 'page'; };
   place(); setInterval(place, 1000); addEventListener('resize', place);
 
-  // Geometry: the card morphs between the pill's rect (p = 0) and a centred rounded card (p = 1).
+  // Geometry: the card morphs between the pill's rect (p = 0) and the card (p = 1). Desktop: a centred card. Phones: a
+  // floating card inset from the edges and sitting low, near the pill. Once the open has landed, the card follows the
+  // visual viewport, so an on-screen keyboard pushes it up instead of covering its input.
+  const vv = window.visualViewport;
   const pillBox = () => { const r = pill.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, r: r.height / 2 }; };
   const cardBox = () => {
-    const W = innerWidth, H = innerHeight, m = W < 700;
-    const w = m ? W - 16 : Math.min(640, W - 24), h = m ? H - 16 : Math.min(620, H - 48);
-    return { x: (W - w) / 2, y: (H - h) / 2, w, h, r: m ? 24 : 28 };
+    const W = innerWidth, top = settled && vv ? vv.offsetTop : 0, H = settled && vv ? vv.height : innerHeight;
+    if (W < 700) {
+      const kb = H < innerHeight * 0.8, sb = kb ? 0 : parseFloat(getComputedStyle(safe).paddingBottom) || 0;
+      const h = Math.max(200, Math.min(600, H - sb - (kb ? 32 : 112)));
+      return { x: 16, y: top + H - sb - h - 16, w: W - 32, h, r: 24 };
+    }
+    const w = Math.min(640, W - 24), h = Math.min(620, H - 48);
+    return { x: (W - w) / 2, y: top + (H - h) / 2, w, h, r: 28 };
   };
   let A = null, B = null, box = null;
   const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = (a, b, t) => { const x = Math.min(Math.max((t - a) / (b - a), 0), 1); return x * x * (3 - 2 * x); };
   const apply = (p) => {
-    box = { x: lerp(A.x, B.x, p), y: lerp(A.y, B.y, p), w: Math.max(lerp(A.w, B.w, p), 1), h: Math.max(lerp(A.h, B.h, p), 1), r: lerp(A.r, B.r, Math.min(Math.max(p, 0), 1)) };
+    // Geometry never passes the card's own size: a spring overshoot would otherwise invert the clip insets.
+    const g = Math.min(Math.max(p, 0), 1);
+    box = { x: lerp(A.x, B.x, g), y: lerp(A.y, B.y, g), w: Math.max(lerp(A.w, B.w, g), 1), h: Math.max(lerp(A.h, B.h, g), 1), r: lerp(A.r, B.r, g) };
     box.r = Math.min(box.r, box.w / 2, box.h / 2);
     // The card keeps its final size (resizing a backdrop-blurred layer every frame reallocates GPU surfaces and stutters);
-    // the visible shape is a rounded clip anchored bottom-centre, translated so it sits exactly on the morphing box.
+    // the visible shape is a rounded clip, translated so it sits exactly on the morphing box.
     const ix = (B.w - box.w) / 2, iy = B.h - box.h;
     card.style.clipPath = `inset(${iy}px ${ix}px 0px ${ix}px round ${box.r}px)`;
     card.style.transform = `translate(${box.x - B.x - ix}px,${box.y - B.y - iy}px)`;
-    scrim.style.opacity = Math.min(Math.max(p, 0), 1);
-    // The real pill and the card cross-fade over the first stretch, so neither end shows an empty dark blob.
-    const f = Math.min(Math.max(p / 0.2, 0), 1); card.style.opacity = f; wrap.style.opacity = 1 - f;
+    scrim.style.opacity = g;
+    // The card is opaque from the first frame and starts exactly on the pill; the pill's text fades out over it.
+    wrap.style.opacity = 1 - ease(0, 0.15, g);
+    // Content stays centred in the growing shape and fades in late, so header, thread and input arrive together.
+    const c = ease(0.4, 0.9, g);
+    col.style.opacity = c; col.style.transform = `translateY(${iy / 2 + (1 - c) * 10}px)`;
   };
   const sizeCol = () => {
     Object.assign(card.style, { left: B.x + 'px', top: B.y + 'px', width: B.w + 'px', height: B.h + 'px', borderRadius: B.r + 'px' });
@@ -81,6 +105,7 @@ export function mountAskPill() {
 
   // Spring on the morph progress (position + velocity), so a close mid-open reverses from where it is with its momentum.
   // Response/damping follow Apple's sheet values: open 0.42 s at 0.86 (a breath of overshoot), close 0.34 s critically damped.
+  // Both start with some velocity, so the first frame after a tap already moves.
   const S = { x: 0, v: 0, to: 0, resp: 0.42, damp: 0.86, live: false };
   const stepSpring = (dt) => {
     const k = (2 * Math.PI / S.resp) ** 2, c = 4 * Math.PI * S.damp / S.resp, n = 4, h = dt / n;
@@ -133,9 +158,13 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     } catch { gl = null; glFailed = true; }
     return !!gl;
   };
-  function sizeGL() { if (!gl) return; scale = Math.min(devicePixelRatio || 1, 1.5); cvs.width = Math.round(innerWidth * scale); cvs.height = Math.round(innerHeight * scale); }
-  addEventListener('resize', () => { sizeGL(); if (isOpen) { B = cardBox(); sizeCol(); if (!S.live) apply(S.x); kick(); } });
-  // Build the chat and lay the card out once, hidden, ahead of time so the first open has nothing to construct mid-morph.
+  // A soft glow needs no retina detail; on phones the canvas covers most of the screen, so it renders at 1x there.
+  function sizeGL() { if (!gl) return; scale = Math.min(devicePixelRatio || 1, coarse() ? 1 : 1.5); cvs.width = Math.round(innerWidth * scale); cvs.height = Math.round(innerHeight * scale); }
+  const refit = () => { if (isOpen) { B = cardBox(); sizeCol(); if (!S.live) apply(S.x); kick(); } };
+  addEventListener('resize', () => { sizeGL(); refit(); });
+  if (vv) { vv.addEventListener('resize', () => { if (settled) refit(); }); vv.addEventListener('scroll', () => { if (settled) refit(); }); }
+  // Build the chat and lay the card out once, hidden, as soon as the visitor reaches for the pill (hover, focus or touch),
+  // so the first open has nothing to construct mid-morph. Nothing is built for visitors who never touch it.
   const warm = () => {
     initGL();
     if (chat || isOpen) return;
@@ -153,13 +182,12 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     };
     requestAnimationFrame(tick);
   };
-  pill.addEventListener('pointerenter', warm, { once: true }); pillInput.addEventListener('focus', warm, { once: true });
-  if (window.requestIdleCallback) requestIdleCallback(warm, { timeout: 5000 }); else setTimeout(warm, 3000);
+  for (const [t, el] of [['pointerenter', pill], ['pointerdown', pill], ['focus', pillInput]]) el.addEventListener(t, warm, { once: true });
 
-  // Glow level eases toward a target: ignite on open, full while thinking, softer while typing, a quiet rim at rest.
+  // Glow level eases toward a target: ignite on open, full while thinking, softer while the answer lands, a quiet rim at rest.
   const G = { i: 0, to: 0, sw: 1, sw0: 0, o: 0.75, t0: performance.now() };
   const LEVEL = { thinking: 1, typing: 0.55, idle: 0.32 };
-  root.addEventListener('ask-state', (e) => { if (isOpen) G.to = LEVEL[e.detail] ?? LEVEL.idle; kick(); });
+  root.addEventListener('ask-state', (e) => { if (isOpen) G.to = LEVEL[e.detail] ?? LEVEL.idle; newBtn.hidden = !chat?.started(); kick(); });
   const draw = (now) => {
     if (!gl) return;
     const W = cvs.width, H = cvs.height, pad = 150;
@@ -175,11 +203,16 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   let raf = 0, last = 0;
   const frame = (now) => {
     const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
-    if (S.live) { stepSpring(dt); if (!isOpen && S.x < 0.01) Object.assign(S, { x: 0, v: 0, live: false }); apply(S.x); }
+    if (S.live) {
+      stepSpring(dt);
+      // The close lands on the pill's exact rect (0.3% of the way is under a pixel), then hands over in the same frame.
+      if (!isOpen && S.x < 0.003) Object.assign(S, { x: 0, v: 0, live: false });
+      apply(S.x);
+    }
+    if (isOpen && !S.live && !settled) { settled = true; refit(); }
     G.i += (G.to - G.i) * (1 - Math.exp(-dt / (G.to > G.i ? 0.16 : G.to ? 0.32 : 0.2)));
     if (G.sw < 1) { const t = Math.min((now - G.sw0) / 1100, 1); G.sw = 1 - (1 - t) ** 3; }
     draw(now);
-    // Hand back to the pill as soon as the shape lands on it; the light finishes fading around the pill.
     if (!isOpen && !S.live && card.classList.contains('open')) finish();
     if (S.live || isOpen || G.i > 0.002) raf = requestAnimationFrame(frame);
     else { raf = 0; cvs.style.visibility = 'hidden'; }
@@ -187,14 +220,16 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   function kick() { if (!raf && (gl || S.live)) { last = performance.now(); raf = requestAnimationFrame(frame); } }
 
   const open = (q) => {
-    if (isOpen) return; isOpen = true;
-    A = pillBox(); B = cardBox(); sizeCol();
-    wrap.style.pointerEvents = 'none'; pillInput.blur();
-    scrim.classList.add('open'); card.classList.add('open'); pill.setAttribute('aria-expanded', 'true');
+    if (isOpen) return; isOpen = true; settled = false; byKey = false;
     chat ||= mountAsk(body);
+    A = pillBox(); B = cardBox(); sizeCol();
+    wrap.style.pointerEvents = 'none'; wrap.classList.add('morph'); pillInput.blur();
+    card.style.opacity = '';
+    scrim.classList.add('open'); card.classList.add('open'); pill.setAttribute('aria-expanded', 'true');
+    newBtn.hidden = !chat.started();
     const lit = !reduced() && initGL();
     card.classList.toggle('fallback', !lit);
-    if (reduced()) { Object.assign(S, { x: 1, v: 0, to: 1, live: false }); apply(1); }
+    if (reduced()) { Object.assign(S, { x: 1, v: 0, to: 1, live: false }); apply(1); settled = true; refit(); }
     else {
       if (G.i < 0.05) {
         const pc = { x: A.x + A.w / 2, y: A.y + A.h / 2 }, cc = { x: B.x + B.w / 2, y: B.y + B.h / 2 };
@@ -202,41 +237,42 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
       }
       G.to = q ? LEVEL.thinking : 0.75;
       if (!q) setTimeout(() => { if (isOpen && G.to === 0.75) G.to = LEVEL.idle; }, 1200);
-      Object.assign(S, { to: 1, resp: 0.42, damp: 0.86, live: true }); apply(S.x);
+      Object.assign(S, { to: 1, resp: 0.42, damp: 0.86, live: true, v: S.v + 2 }); apply(S.x);
       if (lit) cvs.style.visibility = 'visible';
-      col.getAnimations().forEach((a) => a.cancel());
-      col.animate([{ opacity: 0, transform: 'translateY(16px) scale(.97)' }, { opacity: 1, transform: 'none' }], { duration: 560, delay: 90, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' });
       kick();
     }
     addEventListener('keydown', onKey, true);
-    if (q) chat.ask(q); else setTimeout(() => chat.input.focus(), 60);
+    // Phones: no auto-focus into the card's input, or the keyboard would jump up mid-morph over the suggestions.
+    if (q) chat.ask(q);
+    if (q || coarse()) card.focus({ preventScroll: true }); else setTimeout(() => chat.input.focus({ preventScroll: true }), 60);
   };
   function finish() {
     if (isOpen) return;
-    scrim.classList.remove('open'); card.classList.remove('open'); wrap.style.pointerEvents = wrap.style.opacity = '';
-    col.getAnimations().forEach((a) => a.cancel());
-    pillInput.focus({ preventScroll: true });
+    scrim.classList.remove('open'); card.classList.remove('open'); wrap.classList.remove('morph'); wrap.style.pointerEvents = wrap.style.opacity = '';
+    // Back to the pill's field for keyboard users; on a touch screen that would just pop the keyboard back up.
+    if (byKey || !coarse()) pillInput.focus({ preventScroll: true });
   }
   const close = () => {
-    if (!isOpen) return; isOpen = false; removeEventListener('keydown', onKey, true); pill.setAttribute('aria-expanded', 'false');
+    if (!isOpen) return; isOpen = false; settled = false; removeEventListener('keydown', onKey, true); pill.setAttribute('aria-expanded', 'false');
+    if (document.activeElement && card.contains(document.activeElement)) document.activeElement.blur();
     if (reduced()) { Object.assign(S, { x: 0, v: 0, to: 0, live: false }); return finish(); }
     A = pillBox(); G.to = 0;
-    Object.assign(S, { to: 0, resp: 0.34, damp: 1, live: true });
-    col.getAnimations().forEach((a) => a.cancel());
-    col.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.98)' }], { duration: 180, easing: 'ease-out', fill: 'forwards' });
+    Object.assign(S, { to: 0, resp: 0.34, damp: 1, live: true, v: S.v - 1.5 });
     kick();
   };
   // While open, the card owns the keyboard: nothing reaches the room's shortcuts, Escape closes the card (not the room).
   function onKey(e) {
-    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); byKey = true; close(); return; }
     if (e.key === 'Tab') {
-      const f = [...card.querySelectorAll('button,input,[tabindex]:not([tabindex="-1"])')].filter((n) => !n.disabled && n.offsetParent);
+      const f = [...card.querySelectorAll('button,input,a[href],[tabindex]:not([tabindex="-1"])')].filter((n) => !n.disabled && n.offsetParent);
       if (f.length) { const i = f.indexOf(document.activeElement), n = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i + 1) % f.length; e.preventDefault(); f[n].focus(); }
     }
     if (!card.contains(e.target)) { e.stopImmediatePropagation(); }
   }
   pill.addEventListener('submit', (e) => { e.preventDefault(); const q = pillInput.value.trim(); pillInput.value = ''; open(q.length >= 3 ? q : ''); });
   for (const t of ['keydown', 'keyup', 'keypress']) { pill.addEventListener(t, (e) => e.stopPropagation()); card.addEventListener(t, (e) => e.stopPropagation()); }
-  card.querySelector('header button').onclick = close;
+  card.querySelector('header .x').onclick = close;
+  newBtn.onclick = () => { chat.reset(); newBtn.hidden = true; if (coarse()) card.focus({ preventScroll: true }); else chat.input.focus(); };
+  root.addEventListener('ask-close', close);
   scrim.addEventListener('pointerdown', close);
 }
