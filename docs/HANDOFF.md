@@ -172,19 +172,36 @@ Done (preview only, not on `main`):
   Meshopt was rejected because its quantization breaks the keyboard's shared keycap
   geometry and the lamp merge.
 
+Also done in Round 4:
+- dhruvOS About shows Blink's metrics as a stat grid (`public/os/apps/about.js`
+  reads `exp.metrics`). The AEO bullet is neutral: "Tracked AI-search (AEO)
+  citations for Blink across 18 prompts." The owner does not want the
+  old citation-comparison finding shown anywhere. No copilot demo.
+- `/`, `/resume` and `/os` self-host Space Grotesk and JetBrains Mono
+  (`public/fonts/`, weight ranges clamped to what Google served). No page loads Google Fonts.
+- `og.jpg` re-rendered with `scripts/render-og.mjs`; its caption reads "Full-stack & AI developer".
+- Stale suites fixed: room scripts no longer wait for `data-winter-city="ready"`
+  (the city is skipped), keyboard dip sampling, recruiter selector, and
+  `verify-mobile.mjs` rewritten for the current site.
+
 Open:
+- **Résumé PDF:** `public/resume.pdf` still has the old citation-comparison
+  clause in the Blink bullet. The four `internship/resume/*.tex` sources were fixed on
+  2026-10-28; the PDF needs a rebuild (Overleaf, as there's no LaTeX install here) and then
+  copying to `public/resume.pdf`.
 - **Option A (to do):** a real phone-first room, not the desktop room on a small
   screen.
-- **Reddit simulated app:** owner decision pending. A simulation of the real copilot
-  would show what `internship/context.md` rule 2 forbids, and anything else would
-  be invented.
+- **Hands on the room's critical path:** `handSurface.js` awaits the 1.58 MB
+  hand binary at module scope, so no room asset starts until it lands. On
+  Chrome's slow-4G preset the reveal takes 30.7 s, and 23.0 s with the hand
+  file served instantly. A gain needs the bind deferred until after reveal: a
+  placeholder skinned mesh, a late geometry swap, a rest-lift recompute and
+  shader warm-up. That changes hand behaviour, so it needs owner approval and a
+  motion review. Only overlapping the fetch saves little because the bandwidth
+  is shared.
 - Held SEO (domain undecided): Search Console, swapping `/` and `/work`,
   prerendering `/work`, an HTML résumé page, llms.txt.
 - Open offers: Ask conversation memory, Turnstile on `/api/ask`.
 - Ask open under 4× CPU throttle has long frames, GPU/compositor side; none
   unthrottled. Check on a real phone.
-- `og.jpg` still reads "Full-stack developer" (its alt text was left matching).
-- `/`, `/resume` and `/os` still load Google Fonts; only `/work` is self-hosted.
-- Hands lazy-load deferred: it touches the hands code under the regression
-  review (item 13) and needs a motion review.
 - The Deck is a 2D duplicate of `/work`.
