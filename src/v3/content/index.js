@@ -9,7 +9,7 @@
 
 export const identity = {
   name: 'Dhruv Kothari',
-  role: 'AI & growth engineer',
+  role: 'Full-stack & AI developer',
   location: 'Mumbai, India',
   pitch: 'I build AI tools that move growth numbers.',
   now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote internships in AI and growth engineering.',
