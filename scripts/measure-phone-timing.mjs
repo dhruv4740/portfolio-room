@@ -6,7 +6,7 @@ const b = await chromium.launch({ channel: 'chromium', args: ['--use-angle=d3d11
 const p = await b.newPage({ viewport: { width: 1536, height: 864 }, deviceScaleFactor: 1.25 });
 await p.addInitScript(() => { localStorage.setItem('v3:test','1'); localStorage.setItem('v3:surface-override','scan'); localStorage.setItem('v3:seen-intro','1'); sessionStorage.setItem('v3:arrival-seen','1'); sessionStorage.setItem('v3:controls','open'); });
 await p.goto(BASE + '/?sky=day');
-await p.locator('.workspace-stage:is([data-winter-city="ready"],[data-winter-city="skipped"])').waitFor({ state: 'attached', timeout: 90000 });
+await p.locator('.workspace-stage:is(,[data-winter-city="skipped"])').waitFor({ state: 'attached', timeout: 90000 });
 await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(2500);
 // Timestamps are taken in the page on every phoneState change, so Playwright polling adds no error.
 await p.evaluate(() => { window.__phoneLog = []; const el = document.querySelector('.workspace-stage');

@@ -21,7 +21,7 @@ async function open(block) {
   });
   if (block) await page.route('**/models/after-hours/keyboard.glb', r => r.abort());
   await page.goto(`${BASE}/?sky=day`);
-  await page.locator('.workspace-stage[data-winter-city="ready"][data-room-materials="ready"][data-room-bake="ready"]').waitFor({ timeout: 30000 });
+  await page.locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]').waitFor({ timeout: 30000 });
   await page.waitForTimeout(2500);
   await page.addStyleTag({ content: '.telemetry-root{display:none!important}' });
   return { page, errors, assets };
@@ -56,8 +56,13 @@ try {
     const opts = { clientX: rect.left + at.x, clientY: rect.top + at.y, bubbles: true, pointerId: 1 };
     canvas.dispatchEvent(new PointerEvent('pointerdown', opts));
     canvas.dispatchEvent(new PointerEvent('pointerup', opts));
-    await new Promise(r => setTimeout(r, 70));
-    const dipped = window.__v3test.keyY(17);
+    // A click sends the hand to the key first, so the press lands a few hundred ms
+    // later: keep the lowest height seen over the whole reach-and-press.
+    let dipped = window.__v3test.keyY(17);
+    for (const end = performance.now() + 900; performance.now() < end;) {
+      await new Promise(r => requestAnimationFrame(r));
+      dipped = Math.min(dipped, window.__v3test.keyY(17));
+    }
     await new Promise(r => setTimeout(r, 300));
     return { hitKey: host.dataset.hitKey, rest: +window.__v3test.keyY(17).toFixed(5), dipped: +dipped.toFixed(5) };
   });

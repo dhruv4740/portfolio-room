@@ -108,7 +108,7 @@ try {
   }
   check('row counts: Blink 4, Personal 5, Hackathon 3', rowCounts.join(', ') === '4, 5, 3', rowCounts.join(', '));
   const personalNames = (await page.locator('main .w-label', { hasText: 'Personal projects' })
-    .locator('xpath=following-sibling::div[1]').locator('.w-row b').allInnerTexts()).map((s) => s.trim());
+    .locator('xpath=following-sibling::div[1]').locator('.w-row b:not(.w-did b)').allInnerTexts()).map((s) => s.trim());
   check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout | Eco Water System',
     personalNames.join(' | '));
 

@@ -82,7 +82,7 @@ try {
 
   await page.goto(`${BASE}/?sky=night`, { waitUntil: 'domcontentloaded' });
   await page
-    .locator('.workspace-stage[data-winter-city="ready"][data-room-materials="ready"][data-room-bake="ready"]')
+    .locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]')
     .waitFor({ state: 'attached', timeout: 30000 });
 
   await page.locator('[data-launchpad-action="explore-room"]').click();
@@ -249,7 +249,7 @@ try {
 
   await pageStd.goto(`${BASE}/?sky=night`, { waitUntil: 'domcontentloaded' });
   await pageStd
-    .locator('.workspace-stage[data-winter-city="ready"][data-room-materials="ready"][data-room-bake="ready"]')
+    .locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]')
     .waitFor({ state: 'attached', timeout: 30000 });
 
   await pageStd.locator('[data-launchpad-action="explore-room"]').click();
