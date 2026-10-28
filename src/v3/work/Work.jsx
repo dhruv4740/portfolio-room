@@ -4,6 +4,7 @@ import { identity, contact, education, experience, projects, proofPoints, blinkT
 import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 import { LIVE_APPS_HERO } from '../lib/features.js';
+import { phoneCanRoom } from '../lib/capability.js';
 
 const css = `
   /* ---- skip link --------------------------------------------------------- */
@@ -31,9 +32,11 @@ const css = `
   /* ---- résumé reader (full screen) ---------------------------------------- */
 
   .work-reader { position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; background: #0A0A0B; }
-  .work-reader-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 0.5rem 1rem; border-bottom: var(--hair) solid var(--faint); }
+  /* Prefixed with .w-root: these overlays render inside it, and its reset
+     (".w-root *", later in this sheet) would otherwise zero their padding. */
+  .w-root .work-reader-bar { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; padding: 0.5rem 1rem; border-bottom: var(--hair) solid var(--faint); }
   .work-reader-bar strong { margin-right: auto; }
-  .work-reader-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border: var(--hair) solid var(--faint); background: transparent; color: var(--bone); font: inherit; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
+  .w-root .work-reader-btn { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1rem; border: var(--hair) solid var(--faint); background: transparent; color: var(--bone); font: inherit; font-size: 0.875rem; cursor: pointer; text-decoration: none; }
   .work-reader-btn:hover, .work-reader-btn:focus-visible { background: var(--bone); color: var(--void); }
   .work-reader-frame { flex: 1; width: 100%; border: 0; background: #fff; }
 
@@ -49,7 +52,7 @@ const css = `
     min-width: 0;
   }
 
-  .work-demo-head {
+  .w-root .work-demo-head {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -64,7 +67,7 @@ const css = `
     letter-spacing: var(--track-data);
   }
 
-  .work-demo-title {
+  .w-root .work-demo-title {
     font-size: var(--t-body);
     font-weight: 500;
     margin-top: 0.3rem;
@@ -82,7 +85,7 @@ const css = `
     flex: none;
   }
 
-  .work-demo-action {
+  .w-root .work-demo-action {
     min-height: 44px;
     font-size: var(--t-micro);
     letter-spacing: var(--track-data);
@@ -114,6 +117,14 @@ const css = `
     overflow: auto;
   }
 
+  .work-demo-stage { position: relative; }
+  .w-root .work-demo-wait {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 10px;
+    background: #0b0d12; color: #9a9aa2; font: 13px var(--font-mono, monospace); letter-spacing: 0.04em;
+    transition: opacity 0.3s;
+  }
+  .work-demo-wait::before { content: ''; width: 14px; height: 14px; border-radius: 50%; border: 2px solid #9a9aa255; border-top-color: #f6f4ee; animation: w-spin 0.8s linear infinite; }
+  @keyframes w-spin { to { transform: rotate(1turn); } }
   .work-demo-frame {
     width: 100%;
     height: 100%;
@@ -151,7 +162,8 @@ const css = `
   .w-root h1 { font-size: 34px; line-height: 1.1; font-weight: 600; letter-spacing: -0.022em; margin-top: 28px; }
   .w-root h3 { font-weight: 600; }
 
-  .w-wrap { max-width: 1180px; margin: auto; padding: 24px 20px 112px; }
+  /* Bottom room for the fixed Résumé/Email bar plus the Ask pill above it. */
+  .w-wrap { max-width: 1180px; margin: auto; padding: 24px 20px calc(176px + env(safe-area-inset-bottom)); }
   .w-side { display: flex; flex-direction: column; }
   .w-desk { width: 100%; max-width: 420px; height: auto; display: block; }
   .w-status { display: flex; align-items: center; gap: 8px; font: 13px/1.4 var(--mono); color: var(--mute); margin-top: 10px; }
@@ -178,9 +190,12 @@ const css = `
   .w-room b { font-weight: 500; display: block; }
   .w-laptop { display: none; color: var(--mute); }
   @media (pointer: coarse) { .w-roomlink, .w-room { display: none !important; } .w-laptop { display: inline; } }
+  /* A phone that passed phoneCanRoom() gets the room offer back. */
+  @media (pointer: coarse) { .w-root--room .w-room { display: flex !important; } .w-root--room .w-roomlink { display: inline-flex !important; } .w-root--room .w-laptop { display: none !important; } }
   .w-room small { color: var(--mute); font-size: 13.5px; }
   .w-ar { margin-left: auto; font-family: var(--mono); color: var(--acc); }
 
+  .w-root [id] { scroll-margin-top: 24px; }
   .w-label { font: 500 13px/1 var(--mono); letter-spacing: 0.02em; color: var(--mute); margin: 48px 0 16px; display: flex; justify-content: space-between; }
   .w-proof { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
   .w-proof > div { background: var(--paper); padding: 16px 18px; display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: baseline; }
@@ -205,12 +220,14 @@ const css = `
   .w-case { margin-top: 6px; }
   .w-case > summary { margin-top: 0; }
   .w-case[open] > summary { margin-bottom: 10px; }
+  .w-bul a { display: inline-block; padding: 3px 0; }
   .w-bul { font-size: 14.5px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
 
   .w-list { border-top: 1px solid var(--line); }
   .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
   .w-row--xp { grid-template-columns: 118px 1fr; }
-  @media (max-width: 559px) { .w-row--xp { grid-template-columns: 1fr; gap: 4px; } }
+  .w-row--gh { grid-template-columns: 104px 1fr; }
+  @media (max-width: 559px) { .w-row--xp, .w-row--gh { grid-template-columns: 1fr; gap: 4px; } }
   .w-y { font: 13px var(--mono); color: var(--mute); }
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
@@ -223,7 +240,13 @@ const css = `
   .w-cs dd { margin: 2px 0 0; font-size: 15px; color: var(--ink2); }
   .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
-  .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; border-bottom: 1px solid var(--line); padding: 0 0 1px; cursor: pointer; text-decoration: none; }
+  /* 32 px tall hit area (WCAG 2.5.8 asks for 24) with the same thin underline look. */
+  .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; padding: 0; min-height: 32px; display: inline-flex; align-items: center; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 5px; }
+  .w-act.w-laptop { text-decoration: none; color: var(--mute); cursor: default; }
+  .w-case-in { margin-top: 6px; }
+  .w-case-in > summary { list-style: none; }
+  .w-case-in > summary::-webkit-details-marker { display: none; }
+  .w-case-in .w-cs { margin-bottom: 4px; }
   .w-contact { font-size: 15.5px; color: var(--ink2); max-width: 46ch; }
   .w-contact a { color: var(--ink); border-bottom: 1px solid var(--line); text-decoration: none; }
   .w-foot { margin-top: 40px; font-size: 14px; color: var(--mute); }
@@ -238,7 +261,7 @@ const css = `
   .w-bar .w-btn { height: 48px; }
 
   @media (min-width: 960px) {
-    .w-wrap { display: grid; grid-template-columns: 400px 1fr; gap: 88px; padding: 56px 48px; }
+    .w-wrap { display: grid; grid-template-columns: 400px 1fr; gap: 88px; padding: 56px 48px 104px; }
     .w-side { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
     .w-side::-webkit-scrollbar { width: 6px; }
     .w-side::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
@@ -315,10 +338,10 @@ function GithubProof() {
   if (!data) return null;
   return (
     <>
-      <div className="w-label"><span>Live from GitHub</span><span>updated {ago(data.updated)}</span></div>
+      <h2 className="w-label"><span>Live from GitHub</span><span>updated {ago(data.updated)}</span></h2>
       <div className="w-list" data-testid="gh-proof">
         {data.repos.map((r) => (
-          <div className="w-row" key={r.name}>
+          <div className="w-row w-row--gh" key={r.name}>
             <span className="w-y">{r.pushed ? ago(r.pushed) : ''}</span>
             <span>
               <b><a href={r.url} target="_blank" rel="noopener noreferrer">{r.name}</a></b>
@@ -334,7 +357,6 @@ function GithubProof() {
   );
 }
 
-const CASE_IDS = ['blink', 'focuslock', 'darksentinel', 'blackout', 'portfolio3d'];
 const caseText = (c) => c && (
   <dl className="w-cs">
     <dt>Problem</dt><dd>{c.problem}</dd>
@@ -342,6 +364,8 @@ const caseText = (c) => c && (
     <dt>Result</dt><dd>{c.result}</dd>
   </dl>
 );
+
+const casePdf = (id) => <a className="w-act" href={`/casefiles/${id}.pdf`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>;
 
 const didLine = (id) => WHAT_I_DID[id] && <p className="w-did"><b>What I did</b> {WHAT_I_DID[id]}</p>;
 
@@ -396,6 +420,16 @@ export default function Work() {
     trigger.current?.focus({ preventScroll: true });
   }, []);
 
+  // Phones only: probed at idle, after first paint, so it costs the page nothing.
+  const [roomOnPhone, setRoomOnPhone] = useState(false);
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: coarse)').matches) return undefined;
+    const idle = window.requestIdleCallback || ((f) => setTimeout(f, 1200));
+    const id = idle(() => setRoomOnPhone(phoneCanRoom()));
+    return () => (window.cancelIdleCallback || clearTimeout)(id);
+  }, []);
+  const roomHref = (tour) => (roomOnPhone ? '/?room=phone&tour=1' : tour ? '/?tour=1' : '/');
+
   const [now, setNow] = useState(() => new Date());
   const [temperature, setTemperature] = useState(null);
   useEffect(() => {
@@ -426,25 +460,46 @@ export default function Work() {
     readerTrigger.current = e.currentTarget;
     setReaderOpen(true);
   };
+  // Open the first variant that fits the screen: on a phone, FocusLock opens
+  // its Android app instead of the Windows app scaled to unreadable text.
   const tryDemo = (project, e) => {
     trigger.current = e.currentTarget;
-    setOpen({ id: project.id, index: 0 });
+    const list = DEMOS[project.id];
+    setOpen({ id: project.id, index: Math.max(0, list.findIndex((d) => !d.minWidth || window.innerWidth >= d.minWidth)) });
   };
+  // Tells the Ask pill (public/os/shell/ask-pill.js) to step aside while a
+  // demo or the résumé covers the page; it sits above everything otherwise.
+  useEffect(() => {
+    document.documentElement.toggleAttribute('data-overlay', Boolean(open || readerOpen));
+  }, [open, readerOpen]);
+  // A cold load of /work/#p-x (an Ask source opened from the room) arrives before
+  // these sections render, so the browser's own jump finds nothing.
+  useEffect(() => {
+    const id = decodeURIComponent(window.location.hash.slice(1));
+    if (id) document.getElementById(id)?.scrollIntoView({ block: 'start' });
+  }, []);
 
   const renderRow = (p) => (
-    <div className="w-row" key={p.id}>
+    <div className="w-row" key={p.id} id={`p-${p.id}`}>
       <span className="w-y">{p.year}</span>
       <span>
         <b>{p.name}</b>
         <p>{p.tagline || p.description}</p>
         {didLine(p.id)}
         {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
+        {p.caseStudy && (
+          <details className="w-case-in">
+            <summary className="w-act">Case study</summary>
+            {caseText(p.caseStudy)}
+            {casePdf(p.id)}
+          </details>
+        )}
       </span>
       <span className="w-acts">
         {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
         {p.links?.live === '/' && <span className="w-act w-laptop">Laptop only</span>}
         {p.links?.live && (
-          <a className={`w-act${p.links.live === '/' ? ' w-roomlink' : ''}`} href={p.links.live}
+          <a className={`w-act${p.links.live === '/' ? ' w-roomlink' : ''}`} href={p.links.live === '/' ? roomHref(false) : p.links.live}
             {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>{p.links.live === '/' ? 'Walk through it' : 'Visit'}</a>
         )}
         {p.links?.github && (
@@ -455,7 +510,7 @@ export default function Work() {
   );
 
   const renderFeatured = (project) => (
-    <article className="w-card" key={project.id}>
+    <article className="w-card" key={project.id} id={`p-${project.id}`}>
       <div className="w-shot">
         {PREVIEWS[project.id]
           ? <img src={PREVIEWS[project.id]} alt={`${project.name} screenshot`} loading="lazy" />
@@ -468,6 +523,13 @@ export default function Work() {
         {didLine(project.id)}
         {project.badge && (
           <div className="w-res"><small>{project.badge}</small></div>
+        )}
+        {project.caseStudy && (
+          <details className="w-case">
+            <summary className="w-go">Read the case<span>→</span></summary>
+            {caseText(project.caseStudy)}
+            {casePdf(project.id)}
+          </details>
         )}
         {DEMOS[project.id] ? (
           <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it<span>→</span></button>
@@ -491,7 +553,7 @@ export default function Work() {
       >
         Skip to content
       </button>
-      <div className="w-root">
+      <div className={`w-root${roomOnPhone ? ' w-root--room' : ''}`}>
         <div className="w-wrap">
           <aside className="w-side">
             <svg className="w-desk" viewBox="0 0 420 170" fill="none" stroke="#17160f" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -532,22 +594,24 @@ export default function Work() {
               <a href={contact.github} target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
               <a href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a>
             </div>
-            <a className="w-room" href="/?tour=1">
+            <a className="w-room" href={roomHref(true)}>
               <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#17160f" strokeWidth="1.2" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" stroke="#d8d2c6"/><path d="M9 23h16M12 23v-8h10v8M15 15v-3h4v3"/></svg>
-              <span><b>See my portfolio in 3D</b><small>Walk through my desk and try my projects live · 60-second guided tour</small></span>
+              <span><b>See my portfolio in 3D</b><small>{roomOnPhone
+                ? 'A 60-second guided tour of my desk · heavy on phones, smoothest on a laptop'
+                : 'Walk through my desk and try my projects live · 60-second guided tour'}</small></span>
               <span className="w-ar">→</span>
             </a>
           </aside>
 
           <main id="work-main" ref={mainRef} tabIndex={-1}>
-            <div className="w-label"><span>Proof</span></div>
+            <h2 className="w-label" id="proof"><span>Proof</span></h2>
             <div className="w-proof">
               {proofPoints.map((p) => (
                 <div key={p.text}><span className="w-n">{p.value}</span><p>{p.text}</p></div>
               ))}
             </div>
 
-            <div className="w-label"><span>Featured</span><span className="w-hint">swipe →</span></div>
+            <h2 className="w-label"><span>Featured</span><span className="w-hint">swipe →</span></h2>
             <div className="w-feat">
               <article className="w-card">
                 <div className="w-shot">
@@ -563,33 +627,20 @@ export default function Work() {
                     <ul className="w-bul">
                       {blink.bullets.map((b) => (<li key={b}>{b}</li>))}
                     </ul>
+                    {caseText(blink.caseStudy)}
+                    {casePdf('blink')}
                   </details>
                 </div>
               </article>
               {featured.map(renderFeatured)}
             </div>
 
-            <div className="w-label"><span>Room tour</span><span>1 min, no sound</span></div>
+            <h2 className="w-label"><span>Room tour</span><span>1 min, no sound</span></h2>
             <TourVideo />
 
             <GithubProof />
 
-            <div className="w-label"><span>Case studies</span><span>{CASE_IDS.length}</span></div>
-            <div className="w-list" data-testid="case-studies">
-              {CASE_IDS.map((id) => {
-                const p = id === 'blink' ? { ...blink, name: 'Blink.new growth tools', tech: [] } : projects.find((x) => x.id === id);
-                if (!p?.caseStudy) return null;
-                return (
-                  <details className="w-row w-cs-row" key={id}>
-                    <summary><b>{p.name}</b>{PREVIEWS[id] && <img src={PREVIEWS[id]} alt={`${p.name} screenshot`} loading="lazy" />}</summary>
-                    {caseText(p.caseStudy)}
-                    <a className="w-act" href={`/casefiles/${id}.pdf`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>
-                  </details>
-                );
-              })}
-            </div>
-
-            <div className="w-label"><span>At Blink.new (internship)</span></div>
+            <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
             <div className="w-list">
               {blinkTools.map((t) => (
                 <div className="w-row" key={t.id}>
@@ -599,13 +650,13 @@ export default function Work() {
               ))}
             </div>
 
-            <div className="w-label"><span>Personal projects</span><span>{personal.length}</span></div>
+            <h2 className="w-label"><span>Personal projects</span><span>{personal.length}</span></h2>
             <div className="w-list">{personal.map(renderRow)}</div>
 
-            <div className="w-label"><span>Hackathon projects</span><span>{hackathon.length}</span></div>
+            <h2 className="w-label" id="hackathons"><span>Hackathon projects</span><span>{hackathon.length}</span></h2>
             <div className="w-list">{hackathon.map(renderRow)}</div>
 
-            <div className="w-label"><span>Experience</span></div>
+            <h2 className="w-label" id="experience"><span>Experience</span></h2>
             <div className="w-list">
               {experience.map((job) => (
                 <div className="w-row w-row--xp" key={job.id}>
@@ -619,7 +670,7 @@ export default function Work() {
               </div>
             </div>
 
-            <div className="w-label"><span>Contact</span></div>
+            <h2 className="w-label" id="contact"><span>Contact</span></h2>
             <p className="w-contact">
               Open to remote internships in AI and growth engineering. Email{' '}
               <a href={`mailto:${contact.email}`}>{contact.email}</a>.

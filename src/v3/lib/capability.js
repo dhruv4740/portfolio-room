@@ -43,6 +43,29 @@ export function gpuHint() {
   }
 }
 
+/**
+ * Whether a phone gets the "open the 3D room" offer on /work. The room ran badly
+ * on phones, so only a hardware GPU with headroom qualifies. iOS hides memory
+ * and core counts, so there the GPU check alone decides. The probe context is
+ * released straight away so /work keeps no GPU state.
+ */
+export function phoneCanRoom() {
+  if (saveData()) return false;
+  const mem = deviceMemory(), cores = navigator.hardwareConcurrency || 0;
+  if ((mem !== null && mem < 6) || (cores && cores < 6)) return false;
+  try {
+    const gl = document.createElement('canvas').getContext('webgl2');
+    if (!gl) return false;
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    const renderer = ext ? String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL)) : '';
+    const max = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    gl.getExtension('WEBGL_lose_context')?.loseContext();
+    return !/swiftshader|llvmpipe|software|basic render|mali-g5[0-2]|mali-t|adreno \(tm\) (?:[3-5]\d\d|6[01]\d)|powervr/i.test(renderer) && max >= 4096;
+  } catch {
+    return false;
+  }
+}
+
 /** Device memory in GB where exposed (Chromium only). null when unknown. */
 export function deviceMemory() {
   return typeof navigator !== 'undefined' && 'deviceMemory' in navigator
@@ -66,6 +89,8 @@ export function resolveSurface() {
   if (override) return override;
 
   if (!hasWebGL2() || gpuHint().tier === 'software' || saveData()) return 'static';
+  // /work offers the room to capable phones as /?room=phone (see phoneCanRoom).
+  if (/[?&]room=phone(&|$)/.test(location.search)) return 'scan';
   return pointerType() === 'coarse' ? 'deck' : 'scan';
 }
 

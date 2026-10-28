@@ -199,6 +199,7 @@ export default function WorkspaceStage({
         const overview = document.querySelector('[data-testid="room-overview"]');
         const blockers = overview ? [...overview.querySelectorAll(':scope > :not(.launchpad-actions), .launchpad-actions > *')].map(c => c.getBoundingClientRect()).filter(r => r.width && r.height) : [];
         const sizes = new Map([...markerRefs.current].map(([id, el]) => [id, el ? [el.offsetWidth, el.offsetHeight] : [0, 0]]));
+        const shown = [];
         for (const [id, el] of markerRefs.current) {
           const point = (id === 'chair' ? WORKSPACE.chair : WORKSPACE.anchors[id]); if (!point || !el) continue;
           // The monitor's marker sits on the bezel's bottom-right corner, not the
@@ -217,7 +218,14 @@ export default function WorkspaceStage({
           el.style.visibility = visible ? 'visible' : 'hidden';
           el.style.pointerEvents = visible ? 'auto' : 'none';
           el.style.transform = `translate3d(${x}px,${y}px,0)`;
+          if (visible && id !== 'chair') shown.push(el);
         }
+        // Number only the markers on screen, in list order, so the overview
+        // reads 01, 02 rather than skipping the ones hidden while standing.
+        shown.sort((a, b) => a.dataset.order - b.dataset.order).forEach((el, i) => {
+          const n = el.querySelector('small'), t = String(i + 1).padStart(2, '0');
+          if (n && n.textContent !== t) n.textContent = t;
+        });
       }
       // Project the monitor screen's top-left/top-right/bottom-left corners and
       // derive the 2D affine CSS matrix that maps a full-viewport box onto that
@@ -1395,10 +1403,10 @@ export default function WorkspaceStage({
       <button ref={el => { if (el) markerRefs.current.set('chair', el); else markerRefs.current.delete('chair'); }}
         className="anchor-marker workspace-marker workspace-sit" data-object="chair" aria-label="Sit in the chair"
         onClick={() => callbacks.current.onSit?.()}><span className="workspace-marker-label">SIT DOWN</span></button>
-      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'resume',label:'Résumé'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
+      {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'resume',label:'Résumé'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].filter(a => !anchors.some(b => b.id === a.id)).map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
-          data-object={anchor.id} aria-label={`${anchor.label} — ${anchor.readout}`}
+          data-object={anchor.id} data-order={index} aria-label={`${anchor.label} — ${anchor.readout}`}
           onClick={() => {
             if (!seated && !['phone','monitor'].includes(anchor.id)) return;
             // The monitor goes straight in; the window only opens/closes (contact
