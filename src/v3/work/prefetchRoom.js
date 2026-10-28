@@ -68,6 +68,8 @@ async function run() {
     // No manifest: skip the scan chunks, still warm the models.
   }
   for (const name of MODELS) hints.push([`${import.meta.env.BASE_URL}models/after-hours/${name}`, 'fetch']);
+  // The models are Draco-compressed; warm the decoder too (src/v3/desktop/modelLoader.js).
+  for (const name of ['draco_wasm_wrapper.js', 'draco_decoder.wasm']) hints.push([`${import.meta.env.BASE_URL}draco/${name}`, 'fetch']);
   for (const [href, as] of hints) hint(href, as);
 }
 

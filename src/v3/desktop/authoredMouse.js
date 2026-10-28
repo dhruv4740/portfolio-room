@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { modelLoader } from './modelLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Licensed A4Tech Bloody V7, prepared by scripts/blender/prepare_mouse.py.
@@ -19,7 +19,7 @@ export function createAuthoredMouse({root, fallback, anchor, onReady}) {
     materials.forEach(m=>{Object.values(m).forEach(t=>{if(t?.isTexture)textures.add(t);});m.dispose();});
     geometries.forEach(g=>g.dispose());textures.forEach(t=>t.dispose());
   };
-  const ready=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/mouse.glb`).then(gltf=>{
+  const ready=modelLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/mouse.glb`).then(gltf=>{
     if(disposed){release(gltf.scene);return;}
     asset=gltf.scene;asset.updateMatrixWorld(true);
     const batches=new Map(),originalGeometries=new Set();
