@@ -39,7 +39,7 @@ export default Object.freeze({
       "bullets": [
         "Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).",
         "Built a link-building engine (Flask dashboard) that found and scored prospect sites and extracted contacts.",
-        "Tracked AI-search citations across 18 prompts and found competitor docs were cited over Reddit threads."
+        "Tracked AI-search (AEO) citations for Blink across 18 prompts."
       ],
       "metrics": [
         {

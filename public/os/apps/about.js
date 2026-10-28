@@ -76,6 +76,16 @@ export default {
         row.appendChild(top);
         if (exp.note) row.appendChild(el('div', `font-size:12px;color:${FAINT};margin-top:2px;font-style:italic;`, exp.note));
         if (exp.detail) row.appendChild(el('div', `font-size:13px;line-height:1.6;color:${INK};margin-top:6px;max-width:64ch;`, exp.detail));
+        if (Array.isArray(exp.metrics) && exp.metrics.length) {
+          const grid = el('div', 'display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 18px;margin-top:10px;max-width:64ch;');
+          exp.metrics.forEach(m => {
+            const cell = el('div', '');
+            cell.appendChild(el('div', `font-size:15px;font-weight:700;color:${ACCENT};`, m.value));
+            cell.appendChild(el('div', `font-size:11px;line-height:1.45;color:${SUBINK};margin-top:2px;`, m.label));
+            grid.appendChild(cell);
+          });
+          row.appendChild(grid);
+        }
         s.appendChild(row);
       });
     }
