@@ -2,7 +2,7 @@
 
 The single status document: where the code lives, what is open, what the owner
 decided. Commands, invariants and traps are in [AGENTS.md](../AGENTS.md).
-Last updated 2026-10-28. Older status text is in
+Last updated 2026-11-01. Older status text is in
 `archive/HANDOFF-2026-09-25.md`, `archive/HANDOFF-OPUS-2026-10-08.md` and
 `archive/OVERNIGHT-REPORT-2026-10-08.md` (historical; they hold the detail
 behind several open items below).
@@ -28,12 +28,18 @@ behind several open items below).
   `public/os/shell/content.js`, or `tmp-measure/`. `Scan.jsx`, `Deck.jsx`,
   `Work.jsx`, `index.html` and `perfGovernor.js` have CRLF endings: edit with
   newline-preserving tools.
+- **Routes (since PR #5, 2026-11-01):** `/` is the work page (root `index.html`,
+  `src/v3/work/entry.jsx`, no three.js). `/room/` is the 3D room (`room/index.html`,
+  HashRouter app `src/v3/App.jsx`). `/work` and `/work/` 301 to `/` via
+  `public/_redirects`; old room links (`/?tour=1`, `/#/...`) are forwarded to `/room/`
+  by a head script in the root `index.html`. Analytics: visits before 2026-11-01 are
+  under `/work/`, after under `/` ([ANALYTICS.md](ANALYTICS.md)).
 - Every project and where it is surfaced: [PROJECTS-MAP.md](PROJECTS-MAP.md).
 
 ## What the site is
 
-Personal portfolio. First job: get a screener to the facts fast (`/work`,
-`/resume`, no three.js). Second: let visitors **use the owner's real apps**, on
+Personal portfolio. First job: get a screener to the facts fast (the work
+page at `/`, `/resume`, no three.js). Second: let visitors **use the owner's real apps**, on
 `/work`, in the room's monitor (dhruvOS) and on the room's phone. Those must
 have good UI everywhere. The 3D room (Mumbai, live sky and weather) is the
 memorable extra; photoreal realism is not a goal.

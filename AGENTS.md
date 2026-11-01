@@ -6,11 +6,11 @@ invariants, traps. Narrative and rationale live in `docs/`.
 **Start with [docs/HANDOFF.md](docs/HANDOFF.md)**: status, branches, open
 problems and owner decisions. It is the only status document; don't add
 another one. Update it at the end of a session. Where every project is
-surfaced (/work, dhruvOS, phone): [docs/PROJECTS-MAP.md](docs/PROJECTS-MAP.md).
+surfaced (work page, dhruvOS, phone): [docs/PROJECTS-MAP.md](docs/PROJECTS-MAP.md).
 
 **Branches.** `main` is live (https://dhruvkothari.pages.dev, Cloudflare Pages
-project `dhruvkothari`). Work happens on `perf/lighten-room` in the worktree
-`C:\Users\hp\pf-truescale`. The old stacked `feat/*` branches are gone. Nothing
+project `dhruvkothari`). Work happens on a `fix/`, `chore/` or `docs/` branch in a worktree off
+`origin/main`. The old stacked `feat/*` branches are gone. Nothing
 visible changes without the owner's explicit OK.
 
 **Who works here.** One agent (Claude) owns the whole repo: code, 3D, tests,
@@ -22,7 +22,7 @@ forwards it, and nothing blocks on it. Old team, ownership and prompt documents
 are in `docs/archive/` and are historical only.
 
 **Direction.** The goal is a good portfolio that gets the owner an internship.
-The recruiter path (`/work/`, `/resume/`, the escape link on `/`) comes first and
+The recruiter path (the work page at `/`, `/resume/`, the escape link on `/room/`) comes first and
 must stay light: no three.js, models or audio. The 3D room, phone apps and
 laptop apps are the memorable part, and small fun details stay small: one
 camera or animation beat each, no new subsystems. Photoreal graphics (GTA V or
@@ -35,11 +35,16 @@ A personal portfolio (Dhruv Kothari). Its first job is to get an internship
 screener to the facts fast; its second is to show the work through the room. One
 content source drives three surfaces chosen at runtime by device capability:
 
-| Surface  | Route   | Who gets it                                       | Source            |
-|----------|---------|---------------------------------------------------|-------------------|
-| `scan`   | `/`     | desktop + real GPU                                | `src/v3/desktop/` |
-| `deck`   | `/`     | touch devices                                     | `src/v3/mobile/`  |
-| `static` | `/work` | software GPU, saveData, or anyone who clicks WORK | `src/v3/work/`    |
+| Surface  | Route    | Who gets it                                       | Source            |
+|----------|----------|---------------------------------------------------|-------------------|
+| `static` | `/`      | the default page, and anyone on a software GPU, saveData or a phone | `src/v3/work/` |
+| `scan`   | `/room/` | desktop + real GPU                                | `src/v3/desktop/` |
+| `deck`   | `/room/` | touch devices that open the room                  | `src/v3/mobile/`  |
+
+`/` is the work page (root `index.html`, React entry `src/v3/work/entry.jsx`, no router,
+no three.js). `/room/` (`room/index.html`) is the HashRouter app in `src/v3/App.jsx`.
+`/work` and `/work/` 301 to `/` (`public/_redirects`); old room links (`/?tour=1`,
+`/#/...`) are forwarded to `/room/` by a head script in the root `index.html`.
 
 The desktop surface is an **authored three.js room** — desk, monitor, keyboard,
 notebook, chair, lamp, window — with an interior launchpad and seated exploration. Clicking the monitor travels the
@@ -134,14 +139,14 @@ bind pose, run `node scripts/build-hand-assets.mjs` and commit both local
 `public/models/hands-v1.bin*` files. Browser startup normally loads the binary,
 not the procedural fallback.
 
-**Keep `/work` lightweight.** No three.js or 3D scene in its initial load; the
+**Keep the work page (`/`) lightweight.** No three.js or 3D scene in its initial load; the
 deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
 `verify-v3.mjs` asserts this.
 
 ## Traps
 
 - **Headless Chromium reports a SwiftShader software GPU**, so
-  `resolveSurface()` correctly routes it to `/work`. To test the 3D scene you
+  `resolveSurface()` correctly routes it to `/` (the work page). To test the 3D scene you
   must set `localStorage['v3:surface-override'] = 'scan'` via `addInitScript`
   *before* page load. If a surface test "fails," check the pin before touching
   `src/v3/lib/capability.js` — the fallback is intended and is asserted as its
@@ -177,8 +182,8 @@ deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
 
 ## Git
 
-- Never commit to `main`/`master`, never merge to main. Current work is on
-  `perf/lighten-room`; big bets get their own branch. Deploy to the `preview`
+- Never commit to `main`/`master`, never merge to main. Branch names are
+  `fix/`, `chore/`, `docs/`; big bets get their own branch. Deploy to the `preview`
   branch only (`wrangler pages deploy dist --project-name dhruvkothari --branch preview`).
 - Conventional Commits, subject under 72 chars, no trailing period.
 - Commit per logical unit and push. Remote `origin` is the private
@@ -206,7 +211,7 @@ deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
 
 ```
 src/v3/
-  App.jsx               HashRouter; / resolves by capability, /work always available
+  App.jsx               HashRouter for /room/; surface resolves by capability, #/work leaves for /
   tokens.css            design system — every other file pulls from here
   content/index.js      single source of truth for all three surfaces
   lib/capability.js     resolveSurface(), override + intro-seen localStorage keys
@@ -233,7 +238,7 @@ src/v3/
 apps/<name>/            copied project source + mock layer + PORTFOLIO.md
 public/apps/<name>/     its static build (committed; scripts/build-apps.mjs)
   mobile/Deck.jsx       100dvh scroll-snap + gyro
-  work/Work.jsx         static recruiter page, no WebGL
+  work/Work.jsx         the work page served at /, no WebGL
   ui/                   Telemetry, AnchorPanel, ScanIntro, CommandPalette (Ctrl/Cmd+K)
   lib/loadProgress.js   real load progress (boot bar, room-detail bar)
   lib/mumbai.js         IST sky + Open-Meteo weather (?sky=, ?weather= overrides)
