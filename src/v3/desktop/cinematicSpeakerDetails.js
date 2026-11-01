@@ -81,7 +81,7 @@ const SCREW_ANGLES = [Math.PI / 4, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (7 * Ma
 
 // Largest radius any profile reaches, before scaling. Exported so the review
 // harness can check the driver fits its cabinet face rather than trusting it.
-export const SOURCE_FLANGE_RADIUS = 0.0685;
+const SOURCE_FLANGE_RADIUS = 0.0685;
 export const FLANGE_RADIUS = SOURCE_FLANGE_RADIUS * SPEAKER.scale;
 export const TWEETER_RADIUS = 0.0210 * SPEAKER.scale;
 

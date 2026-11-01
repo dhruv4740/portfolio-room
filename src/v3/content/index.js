@@ -322,13 +322,6 @@ export const anchors = [
   },
 ];
 
-// /work shows these first, in the resume's order, as full cards; every other
-// listed project goes under "More projects".
-export const featuredProjectIds = ['focuslock', 'portfolio3d', 'darksentinel', 'blackout'];
-
-// Order of the compact "More projects" list on /work.
-export const moreProjectIds = ['fraud', 'crisiswatch', 'cellbook', 'expense', 'basket', 'ecowater'];
-
 // /work sections after the featured cards, in display order.
 export const blinkTools = [
   { id: 'outreach', name: 'Creator outreach pipeline', detail: 'Python, SQLite, YouTube Data API and Gmail API, with LLM drafting and human approval before every send.' },

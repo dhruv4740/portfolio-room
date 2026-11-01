@@ -23,7 +23,7 @@ import { createSceneDirector, COLD_OPEN } from './sceneDirector.js';
 import { keySurfaceBoxes, skinKeyClearance } from './handContact.js';
 
 // The room is locked to the night look (dusk/day and the live Mumbai sky were removed).
-export function resolveSkyState() {
+function resolveSkyState() {
   return 'night';
 }
 

@@ -13,7 +13,7 @@ const send = (body) => {
   try { navigator.sendBeacon('/api/hit', new Blob([JSON.stringify(body)], { type: 'text/plain' })); } catch { /* ignore */ }
 };
 const device = () => (matchMedia('(pointer:coarse)').matches ? (innerWidth < 700 ? 'phone' : 'tablet') : 'desktop');
-export function trackRoute(path = location.pathname + location.hash) {
+function trackRoute(path = location.pathname + location.hash) {
   if (!ok() || seen.has(path)) return;
   seen.add(path);
   let ref = '';

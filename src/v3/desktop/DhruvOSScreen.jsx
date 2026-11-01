@@ -497,7 +497,3 @@ const css = `
   .os-screen-foot { justify-content: flex-end; }
 }
 `;
-
-// Keep the style local to this component so the screen can be removed from
-// the scan surface without adding a global stylesheet dependency.
-export { css as dhruvOSScreenCss };

@@ -11,12 +11,12 @@ import { WINDOW, BLINDS, MAT, DESK } from './cinematicLayout.js';
 // were modelled for the old ~1.6x room. Rather than rewrite 60 literals by
 // hand, each prop group carries PROP_SCALE and only the world-space travels,
 // the blinds and the window sash are re-authored against cinematicLayout.
-export const PROP_SCALE = 0.625;
+const PROP_SCALE = 0.625;
 export const AWARD_REST = [-0.12, 0.62, 0];
 export const KEY_ROWS = ['1234567890-=', 'qwertyuiop[]', "asdfghjkl;'\\", 'zxcvbnm,./   ', '            '];
 
 // World-space travels, re-derived for this room.
-export const SASH_TRAVEL = (WINDOW.opening.maxX - WINDOW.opening.minX) * 0.40;
+const SASH_TRAVEL = (WINDOW.opening.maxX - WINDOW.opening.minX) * 0.40;
 
 export function buildCinematicRoomInteractions({
   root, materials: m, canvasTexture, anchors, achievements, bulb, lampInterior,
@@ -223,4 +223,3 @@ export function buildCinematicRoomInteractions({
 
 // Re-exported so a consumer can place the desk-bound props without importing
 // two modules; both are read-only views of cinematicLayout.
-export { MAT, DESK };

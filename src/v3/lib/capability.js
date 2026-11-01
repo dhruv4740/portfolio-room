@@ -13,7 +13,7 @@ export function prefersReducedMotion() {
 }
 
 /** WebGL2 is the floor for Spark. Below it we serve the static surface. */
-export function hasWebGL2() {
+function hasWebGL2() {
   if (typeof document === 'undefined') return false;
   try {
     const c = document.createElement('canvas');
@@ -24,7 +24,7 @@ export function hasWebGL2() {
 }
 
 /** Rough GPU tier via renderer string. Heuristic — treat as a hint, not truth. */
-export function gpuHint() {
+function gpuHint() {
   try {
     const gl = document.createElement('canvas').getContext('webgl2');
     if (!gl) return { tier: 'none', renderer: '' };
@@ -61,13 +61,13 @@ export function phoneCanRoom() {
 }
 
 /** Device memory in GB where exposed (Chromium only). null when unknown. */
-export function deviceMemory() {
+function deviceMemory() {
   return typeof navigator !== 'undefined' && 'deviceMemory' in navigator
     ? navigator.deviceMemory
     : null;
 }
 
-export function saveData() {
+function saveData() {
   const c = typeof navigator !== 'undefined' ? navigator.connection : null;
   return !!(c && (c.saveData || /^(slow-)?2g$/.test(c.effectiveType || '')));
 }
@@ -87,7 +87,7 @@ export function resolveSurface() {
   return 'scan';
 }
 
-export function readOverride() {
+function readOverride() {
   try {
     const v = localStorage.getItem(OVERRIDE_KEY);
     return v === 'scan' || v === 'static' ? v : null;

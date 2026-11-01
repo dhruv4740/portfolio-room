@@ -71,7 +71,7 @@ export const MAT = {
 // near-exact agreement is the evidence that 0.785 was derived from a 0.44 m
 // board, so the 0.44 m scale is adopted and the 0.9 mm residual is reported
 // rather than hidden.
-export const KEYBOARD_SOURCE = {
+const KEYBOARD_SOURCE = {
   exportedCaseWidth: 0.48,
   exportedHomeRowTop: 1.2375,     // KEY_TOP in prepare_keyboard.py
   exportedChassisOriginY: 1.19723,
@@ -276,7 +276,7 @@ SPEAKER.tweeterY = SPEAKER.centerY +
 export const KEY_TARGET = [-0.45, 1.05, -0.35];
 
 /** Position a directional key so target -> entry -> position is one straight line. */
-export function keyPositionThrough(entry, reach) {
+function keyPositionThrough(entry, reach) {
   return [
     entry[0] + (entry[0] - KEY_TARGET[0]) * reach,
     entry[1] + (entry[1] - KEY_TARGET[1]) * reach,
@@ -328,7 +328,7 @@ export const ANCHORS = {
 export const CEILING_FIXTURE_SCALE = 0.625;
 
 // Props that are already 1.0x keep their real sizes.
-export const PHONE_SIZE = { width: 0.078, height: 0.166, depth: 0.009 };
+const PHONE_SIZE = { width: 0.078, height: 0.166, depth: 0.009 };
 export const MOUSE_ANCHOR = { position: ANCHORS.mouse, rotationY: -0.08 };
 
 // --- the bounds the stage needs ---------------------------------------------

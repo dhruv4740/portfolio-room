@@ -25,7 +25,7 @@ import {
 // contract value, and the root group is never scaled: props that are already
 // 1.0x (phone, task lamp, mouse, keyboard) keep their real size and only move.
 
-export { WORKSPACE, SCREEN };
+export { WORKSPACE };
 const SKY_CONFIGS = {
   night: {
     hemi: { sky: '#8294b2', ground: '#21160e', intensity: 0.42 },
