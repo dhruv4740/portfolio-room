@@ -125,6 +125,19 @@ changed without the owner's explicit permission.** Measure, propose, wait.
 20. Suites check state, not feel. Any hand, camera or timing change needs frames
     reviewed by eye, including wrist angle.
 
+## Waiting on owner (do not start)
+
+Found in the 2026-11-01 audit. Each needs the owner's decision or a secret only
+the owner has. Do not start them.
+
+12. `/api/hit` has no rate limit and no origin check.
+13. The `ASK_SALT` secret is not set.
+14. The contact form sends from Resend's test sender, which may deliver only to
+    the Resend account owner. It needs a real test send, with the owner's OK.
+15. No CSP, X-Frame-Options or HSTS headers (`public/_headers`).
+16. The room markers' aria-labels do not match their visible text (Monitor,
+    Phone).
+
 ## Owner decisions on record
 
 - Each project runs as its real UI built from its own repo with simulated data;
@@ -209,6 +222,25 @@ Open:
   shader warm-up. That changes hand behaviour, so it needs owner approval and a
   motion review. Only overlapping the fetch saves little because the bandwidth
   is shared.
+- **Tried and dropped on 2026-11-01 (measured, not guessed):**
+  - KTX2 textures. The room's 17 images are 1.5 MB as JPG/PNG (the 1k roughness
+    maps are 11 KB). UASTC KTX2 came to 5.8 MB, and a plain ETC1S run of the
+    non-colour maps failed in `ktx2-encoder`. Adding the 584 KB Basis
+    transcoder makes it a net loss on the wire.
+  - Starting the room's own files beside `hands-v1.bin` (low-priority fetches
+    from `App.jsx`). Unthrottled it moved the first room request from 1.2 s to
+    0.4 s and the reveal stayed within noise (4.7 s against 4.4 s). At 10 Mbps it
+    was worse (7.8 s against 6.6 s). The hand file is done at 0.5 s; the wait is
+    shader compile after the assets land.
+  - Shrinking `ceiling-fixture.glb` and `desk-lamp.glb`. Both are already
+    Draco-compressed and geometry is under 150 KB; the weight is four 1k
+    textures each. Do not run `gltf-transform meshopt` on them:
+    `modelLoader.js` cannot decode it.
+- The room is night-only (`resolveSkyState()` always returns `'night'`), so
+  `?sky=day` and `?sky=dusk` render the same room.
+- The old brick set (`materials/after-hours/brick_wall_10/`) went with the
+  winter-city path; `phoneTextures.js` holds the phone-screen canvases that
+  used to live in `buildWorkspace.js`.
 - Held SEO (domain undecided): Search Console, swapping `/` and `/work`,
   prerendering `/work`, an HTML résumé page, llms.txt.
 - Open offers: Ask conversation memory, Turnstile on `/api/ask`.
