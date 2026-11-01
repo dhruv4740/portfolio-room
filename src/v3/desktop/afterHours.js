@@ -115,7 +115,7 @@ export function createAfterHours({scene,model,renderer,invalidate,tier,onStatus}
       shader.uniforms.taskLamp=uniforms.lamp;shader.uniforms.lampLightmap={value:on};
       shader.fragmentShader='uniform float taskLamp;uniform sampler2D lampLightmap;\n'+shader.fragmentShader;
       shader.fragmentShader=shader.fragmentShader.replace('#include <lights_fragment_maps>',THREE.ShaderChunk.lights_fragment_maps.replace('texture2D( lightMap, vLightMapUv )','mix(texture2D( lightMap, vLightMapUv ),texture2D(lampLightmap,vLightMapUv),taskLamp)'));
-    };m.customProgramCacheKey=()=>`after-hours-bake-${name}`;m.needsUpdate=true;
+    };m.customProgramCacheKey=()=>"after-hours-bake";m.needsUpdate=true;
   })).then(()=>{status.bake='ready';probeDirty=true;invalidate();report();}).catch(e=>{status.bake='fallback';console.warn('Room bake fallback:',e.message);report();});
 
   return {
