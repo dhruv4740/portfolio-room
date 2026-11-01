@@ -15,7 +15,7 @@ try{
     sessionStorage.setItem('v3:arrival-seen','1');sessionStorage.setItem('v3:controls','open');
   });
   await page.goto('http://localhost:4173/?sky=night');
-  await page.locator('.workspace-stage[data-winter-city="ready"][data-room-materials="ready"][data-room-bake="ready"]').waitFor({state:'attached',timeout:30000});
+  await page.locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]').waitFor({state:'attached',timeout:30000});
   await page.locator('[data-launchpad-action="explore-room"]').click();await page.waitForTimeout(2000);
   await page.addStyleTag({content:'.telemetry-root{display:none!important}'});
   console.log('contact state',await page.evaluate(()=>window.__v3test.contacts()));

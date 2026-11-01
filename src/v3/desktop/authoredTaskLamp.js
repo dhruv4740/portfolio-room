@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { modelLoader } from './modelLoader.js';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
 // Poly Haven's clamp pad is the origin; +X is the outside of the clamp.
@@ -17,7 +17,7 @@ export function createAuthoredTaskLamp({root, fallback, bulb, pool, desktop, onR
     materials.forEach(m=>{Object.values(m).forEach(t=>{if(t?.isTexture)textures.add(t);});m.dispose();});
     geometries.forEach(g=>g.dispose());textures.forEach(t=>{if(t.source?.data?.close)images.add(t.source.data);t.dispose();});images.forEach(i=>i.close());
   };
-  const ready=new GLTFLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/desk-lamp.glb`).then(gltf=>{
+  const ready=modelLoader().loadAsync(`${import.meta.env.BASE_URL}models/after-hours/desk-lamp.glb`).then(gltf=>{
     if(disposed){release(gltf.scene);return;}
     asset=gltf.scene;
     const screw=asset.getObjectByName('geo_pivot-holder');

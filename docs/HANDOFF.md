@@ -2,21 +2,22 @@
 
 The single status document: where the code lives, what is open, what the owner
 decided. Commands, invariants and traps are in [AGENTS.md](../AGENTS.md).
-Last updated 2026-10-20. Older status text is in
+Last updated 2026-10-28. Older status text is in
 `archive/HANDOFF-2026-09-25.md`, `archive/HANDOFF-OPUS-2026-10-08.md` and
 `archive/OVERNIGHT-REPORT-2026-10-08.md` (historical; they hold the detail
 behind several open items below).
 
 ## Where things are
 
-- **`main` is live.** `main` = `d003949` = https://dhruvkothari.pages.dev
+- **`main` is live.** `main` = `aeffab7` (PRs #1–#4: JSON-LD/SEO, Ask models,
+  Ask quota and retrieval, Ask source label) = https://dhruvkothari.pages.dev
   (Cloudflare Pages project `dhruvkothari`, direct upload). Preview alias:
   https://preview.dhruvkothari.pages.dev. Deploy to preview only:
   `npx wrangler pages deploy dist --project-name dhruvkothari --branch preview --commit-dirty=true`.
   Never `--branch main` without a fresh explicit yes from the owner.
-- **Working branch: `perf/lighten-room`** (cut from `main`), in the worktree
-  `C:\Users\hp\pf-truescale`. Never commit to `main`; remote `origin` is
-  `dhruv4740/portfolio-room`.
+- **Working branch: `fix/mobile-ask-polish`** (cut from `main` at `aeffab7`),
+  in `C:\Users\hp\pf-release`. Status: "Round 4" at the end. Never commit to
+  `main`; remote `origin` is `dhruv4740/portfolio-room`.
 - The old stacked branches (`feat/v3`, `feat/true-scale-room`, `feat/relight`,
   `feat/cutscenes`, `feat/recruiter-path`) are merged and deleted. Stray
   commits are kept as tags `archive/feat-v3-overnight-docs` and
@@ -61,7 +62,9 @@ changed without the owner's explicit permission.** Measure, propose, wait.
 4. **Window open** is one ~200 ms frame at the click (AudioContext, favicon).
 5. A room opened straight into the seat (`/#/room/explore`) draws hands before
    the background warm-up and can hit 150–530 ms frames.
-6. Model/texture compression and a cold-load re-measure were skipped earlier.
+6. The four after-hours GLBs are Draco-compressed (3.16 → 1.34 MB; Round 4).
+   Textures are untouched, and no cold-load re-measure was done. Still loaded
+   up front: `hands-v1.bin.gz` (1.58 MB, top-level await in `handAssets.js`).
 7. Perf governor: `DOWNSHIFT_MS = 27`, `UPSHIFT_MS = 14`, `loweredOnce` latch;
    cutting resolution did not lower cost on the intro.
 
@@ -85,10 +88,9 @@ changed without the owner's explicit permission.** Measure, propose, wait.
 ### Content and product
 14. Owner questions: "Fact or Cap" name on the CrisisWatch card; Eco Water facts
     (none on file); Blackout claim, Cellbook year, EFarm text, résumé C++
-    mismatch, 29.85 vs 29.82; favicon is still the Vite logo; domain decision
-    (`public/sitemap.xml`, `public/robots.txt`, `.env.production`
-    `VITE_SITE_URL` wait on it); delete the empty Pages project `dk-dev` (ask
-    first); `/work` visual direction.
+    mismatch; domain (undecided, staying on pages.dev for now; `public/sitemap.xml`,
+    `public/robots.txt`, `.env.production` `VITE_SITE_URL` follow it); delete
+    the empty Pages project `dk-dev` (ask first); `/work` visual direction.
 15. Dead code: `src/game`, `hooks`, `store`, `data`, `lib`, `lab`, `content`,
     `shaders`, `flagship`, `components`, `index.css` (deletion approved,
     pending). Also dead CSS (`.launchpad-more`, `.fd-note`), dead `aboutOpen`
@@ -145,3 +147,61 @@ Demo sweep (4 viewports, 3 surfaces): no overflow or errors; at 915x412 touch, `
 Still open: landscape-phone routing of OS apps, seated touch look-around in landscape, first monitor-entry hitch measurement, Fact-or-Cap naming (owner decision), empty dk-dev Pages project (not deleted), hand/pose authoring items (need frame sheets), phone-basketproof 915x412 shot missing.
 
 Round 3 continued: /work demo panel header readable (6600d03); dhruvOS windows fill the height on landscape phones (`public/os/styles.css`, `DhruvOSScreen.jsx`); seated touch look-around verified by `scripts/verify-touch-look.mjs` (drag turns the head at 915x412 and 412x915); the earlier "503" is the open-meteo weather call (now mocked in `scripts/_gh-mock.mjs`). First monitor entry hitches (~500 ms gaps, wallpaper `toBlob` 377 ms + one program link 300 ms) only when entering within ~8 s of reveal on a cold browser; clean after 20 s and on warm runs. Open: touch deep-link routing (proposal sheet), portrait OS FocusLock window clips on 412 px, hand/pose items (sheet `scripts/shots/hands/sheet-hand-items.png`).
+
+## Round 4 status (fix/mobile-ask-polish, 2026-10-28)
+
+Done (preview only, not on `main`):
+- Mobile fixes on `/work` and the room: section ids and headings, demo panel,
+  `?room=phone` opens the room on a phone instead of redirecting to `/work`
+  (option C; owner-approved). A cold load of `/work/#<id>` now scrolls to the section.
+- Ask: rewritten `public/os/shell/ask.js` / `ask-pill.js`. No fake typing,
+  lists and bold render, source links open the `/work` section, "Live AI
+  answer" vs "Saved answer" label (not the model name), New chat, Retry on
+  error (a 500 with an empty body shows the error, not "undefined"), and the close
+  animation runs to the end.
+- Job title is "Full-stack & AI developer" everywhere (`src/v3/content/index.js`,
+  the three HTML heads, Person JSON-LD with `sameAs` GitHub/LinkedIn/Blink and
+  `alumniOf`, a ProfilePage node on `/work`). dhruvOS content was regenerated with
+  `node scripts/gen-os-content.mjs` (the build doesn't run it).
+- Basic SEO: `Disallow: /api/` in robots.txt, sitemap `lastmod`, `/favicon.ico`.
+- Load: `/work` self-hosts IBM Plex (latin woff2 in `public/fonts/`, about 75 KB
+  total, no Google request). The after-hours GLBs are Draco: re-run
+  `npx gltf-transform draco in.glb out.glb` on any re-export. The decoder lives in
+  `public/draco/`, copied from `node_modules/three/examples/jsm/libs/draco/gltf/`.
+  Re-copy it when three is upgraded. Loaders go through `src/v3/desktop/modelLoader.js`.
+  Meshopt was rejected because its quantization breaks the keyboard's shared keycap
+  geometry and the lamp merge.
+
+Also done in Round 4:
+- dhruvOS About shows Blink's metrics as a stat grid (`public/os/apps/about.js`
+  reads `exp.metrics`). The AEO bullet is neutral: "Tracked AI-search (AEO)
+  citations for Blink across 18 prompts." The owner does not want the
+  old citation-comparison finding shown anywhere. No copilot demo.
+- `/`, `/resume` and `/os` self-host Space Grotesk and JetBrains Mono
+  (`public/fonts/`, weight ranges clamped to what Google served). No page loads Google Fonts.
+- `og.jpg` re-rendered with `scripts/render-og.mjs`; its caption reads "Full-stack & AI developer".
+- Stale suites fixed: room scripts no longer wait for `data-winter-city="ready"`
+  (the city is skipped), keyboard dip sampling, recruiter selector, and
+  `verify-mobile.mjs` rewritten for the current site.
+
+Open:
+- **Résumé PDF:** `public/resume.pdf` still has the old citation-comparison
+  clause in the Blink bullet. The four `internship/resume/*.tex` sources were fixed on
+  2026-10-28; the PDF needs a rebuild (Overleaf, as there's no LaTeX install here) and then
+  copying to `public/resume.pdf`.
+- **Option A (to do):** a real phone-first room, not the desktop room on a small
+  screen.
+- **Hands on the room's critical path:** `handSurface.js` awaits the 1.58 MB
+  hand binary at module scope, so no room asset starts until it lands. On
+  Chrome's slow-4G preset the reveal takes 30.7 s, and 23.0 s with the hand
+  file served instantly. A gain needs the bind deferred until after reveal: a
+  placeholder skinned mesh, a late geometry swap, a rest-lift recompute and
+  shader warm-up. That changes hand behaviour, so it needs owner approval and a
+  motion review. Only overlapping the fetch saves little because the bandwidth
+  is shared.
+- Held SEO (domain undecided): Search Console, swapping `/` and `/work`,
+  prerendering `/work`, an HTML résumé page, llms.txt.
+- Open offers: Ask conversation memory, Turnstile on `/api/ask`.
+- Ask open under 4× CPU throttle has long frames, GPU/compositor side; none
+  unthrottled. Check on a real phone.
+- The Deck is a 2D duplicate of `/work`.

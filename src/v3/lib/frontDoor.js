@@ -60,7 +60,8 @@ export function dismissFrontDoor(instant = false) {
 }
 
 const readStore = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
-chosen = readStore('v3:surface-override') === 'scan' || window.location.hash.replace(/^#\/?/, '') !== '' || /[?&](room|tour)(=|&|$)/.test(window.location.search);
+// The door lives on /room/, so opening the page is the choice already made.
+chosen = true;
 
 function maybeDismiss() {
   if (chosen && ready) dismissFrontDoor();

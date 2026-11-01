@@ -4,9 +4,9 @@
 export default Object.freeze({
   "identity": {
     "name": "Dhruv Kothari",
-    "role": "Full-stack developer",
+    "role": "Full-stack & AI developer",
     "location": "Mumbai, India",
-    "tagline": "Full-stack developer building Android apps, Python backends and AI integrations.",
+    "tagline": "I build AI tools that move growth numbers.",
     "statement": "I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure."
   },
   "contact": {
@@ -31,10 +31,15 @@ export default Object.freeze({
       "from": "Jan 2026",
       "to": "Oct 2026",
       "detail": "Built 4 internal growth tools: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.",
+      "caseStudy": {
+        "problem": "Blink.new needed repeatable growth channels, and the team had no tooling for creator outreach, link building, AI-search visibility or Reddit.",
+        "decisions": "I built four internal tools as the sole developer. The outreach pipeline (Python, SQLite, YouTube Data API, Gmail API) uses an LLM to draft messages, but a human approves every send. The link-building engine is a Flask dashboard that finds and scores prospect sites and extracts contacts.",
+        "result": "650 leads sourced, 489 emails sent, 41 of 228 contacted creators replied (18%), 14 positive. The link engine scored 676 prospect sites, AI-search tracking covered 18 prompts, and Reddit was 29.85% of Blink social traffic in Jun 2026."
+      },
       "bullets": [
         "Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).",
         "Built a link-building engine (Flask dashboard) that found and scored prospect sites and extracted contacts.",
-        "Tracked AI-search citations across 18 prompts and found competitor docs were cited over Reddit threads."
+        "Tracked AI-search (AEO) citations for Blink across 18 prompts."
       ],
       "metrics": [
         {
@@ -51,7 +56,7 @@ export default Object.freeze({
         },
         {
           "value": "18%",
-          "label": "human reply rate"
+          "label": "of contacted creators replied (41 of 228)"
         },
         {
           "value": "14",
@@ -160,9 +165,9 @@ export default Object.freeze({
     {
       "id": "ml",
       "label": "ML / data",
-      "note": "XGBoost, pandas",
+      "note": "scikit-learn, pandas",
       "projects": [
-        "fraud"
+        "darksentinel"
       ]
     },
     {
@@ -254,7 +259,7 @@ export default Object.freeze({
       "year": 2026,
       "kind": "research",
       "type": "SIDE QUEST",
-      "tagline": "Darknet threat monitoring. Top 5 in problem statement.",
+      "tagline": "Darknet threat monitoring. Top 5 at the IIT Madras × BITS Goa hackathon.",
       "description": "Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it placed top 5 in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.",
       "decision": "I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.",
       "broke": "A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.",
@@ -303,7 +308,7 @@ export default Object.freeze({
       "kind": "research",
       "type": "SIDE QUEST",
       "tagline": "Fraud detection for small businesses.",
-      "description": "Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Around 85% accuracy on the test set.",
+      "description": "Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Built with a team; won Innovathon 2025.",
       "decision": "",
       "broke": "",
       "tech": [
@@ -325,7 +330,7 @@ export default Object.freeze({
       "kind": "hardware",
       "type": "SIDE QUEST",
       "tagline": "Irrigation that waters when the soil says so.",
-      "description": "ESP32 and soil sensors driving threshold-based pump control with live monitoring.",
+      "description": "ESP32 and soil sensors driving threshold-based pump control with live monitoring. The pump starts automatically when the soil is dry and stops when it is wet.",
       "decision": "",
       "broke": "",
       "tech": [
@@ -378,7 +383,7 @@ export default Object.freeze({
       ],
       "links": {
         "live": "",
-        "github": ""
+        "github": "https://github.com/dhruv4740/blackout"
       },
       "note": ""
     },

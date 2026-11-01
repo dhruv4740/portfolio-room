@@ -24,6 +24,10 @@ export const DEMOS = {
 function WebDemo({ demo, title }) {
   const body = useRef(null);
   const [fit, setFit] = useState(null);
+  // Some builds (DarkSentinel) take seconds to boot; show that it is loading
+  // instead of a blank dark panel.
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => setLoaded(false), [demo.src]);
   useLayoutEffect(() => {
     const el = body.current?.parentElement;
     if (!demo.minWidth || !el) return undefined;
@@ -40,8 +44,9 @@ function WebDemo({ demo, title }) {
     ? { width: demo.minWidth, height: fit.h / fit.scale, flex: 'none', transform: `scale(${fit.scale})`, transformOrigin: '0 0' }
     : undefined;
   return (
-    <div ref={body} style={fit ? { width: fit.w, height: fit.h, overflow: 'hidden' } : { width: '100%', height: '100%' }}>
-      <iframe key={demo.src} className="work-demo-frame" src={demo.src} title={title} style={style} />
+    <div ref={body} className="work-demo-stage" style={fit ? { width: fit.w, height: fit.h, overflow: 'hidden' } : { width: '100%', height: '100%' }}>
+      <iframe key={demo.src} className="work-demo-frame" src={demo.src} title={title} style={style} onLoad={() => setLoaded(true)} />
+      <p className="work-demo-wait" aria-live="polite" style={loaded ? { opacity: 0, pointerEvents: 'none' } : undefined}>{loaded ? '' : `Loading ${title}…`}</p>
     </div>
   );
 }

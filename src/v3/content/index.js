@@ -1,5 +1,5 @@
 // ============================================================================
-// Single source of truth for every surface: the room, the deck and /work.
+// Single source of truth for every surface: the room and /work.
 //
 // Facts here come from Dhruv's resume and repos. Do not embellish them.
 // `decision` and `broke` are deliberately blank where the real answer is not
@@ -9,7 +9,7 @@
 
 export const identity = {
   name: 'Dhruv Kothari',
-  role: 'AI & growth engineer',
+  role: 'Full-stack & AI developer',
   location: 'Mumbai, India',
   pitch: 'I build AI tools that move growth numbers.',
   now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote internships in AI and growth engineering.',
@@ -61,7 +61,7 @@ export const experience = [
     bullets: [
       'Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).',
       'Built a link-building engine (Flask dashboard) that found and scored prospect sites and extracted contacts.',
-      'Tracked AI-search citations across 18 prompts and found competitor docs were cited over Reddit threads.',
+      'Tracked AI-search (AEO) citations for Blink across 18 prompts.',
     ],
     metrics: [
       { value: '4', label: 'internal growth tools' },

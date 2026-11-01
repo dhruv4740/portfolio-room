@@ -16,7 +16,7 @@ try {
     localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', 'mid');
     // Deliberately no v3:arrival-seen: the arrival plays.
   });
-  await page.goto(`${BASE}/?sky=${SKY}`);
+  await page.goto(`${BASE}/room/?sky=${SKY}`);
   await page.locator('.workspace-stage').waitFor({ timeout: 30000 });
   await page.addStyleTag({ content: '.telemetry-root{display:none!important}' });
   let last = 0;

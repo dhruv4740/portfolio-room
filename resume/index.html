@@ -10,22 +10,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0A0A0B" />
     <title>Dhruv Kothari — Résumé</title>
-    <meta name="description" content="Résumé of Dhruv Kothari, full-stack developer in Mumbai. Download the PDF." />
+    <meta name="description" content="Résumé of Dhruv Kothari, full-stack &amp; AI developer in Mumbai. Download the PDF." />
     <link rel="canonical" href="%VITE_SITE_URL%/resume/" />
     <meta property="og:type" content="profile" />
     <meta property="og:site_name" content="Dhruv Kothari" />
     <meta property="og:url" content="%VITE_SITE_URL%/resume/" />
     <meta property="og:title" content="Dhruv Kothari — Résumé" />
-    <meta property="og:description" content="Full-stack developer in Mumbai. Download the résumé (PDF)." />
+    <meta property="og:description" content="Full-stack &amp; AI developer in Mumbai. Download the résumé (PDF)." />
     <meta property="og:image" content="%VITE_SITE_URL%/og.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="%VITE_SITE_URL%/og.jpg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet" />
+    <!-- Space Grotesk, latin subset, self-hosted from public/fonts/ (Google Fonts v22). -->
+    <link rel="preload" href="/fonts/space-grotesk-latin.woff2" as="font" type="font/woff2" crossorigin />
     <style>
+      @font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 400 600; font-display: swap; src: url(/fonts/space-grotesk-latin.woff2) format('woff2'); unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
       html, body { margin: 0; min-height: 100%; background: #0A0A0B; color: #ececec;
         font: 16px/1.5 "Space Grotesk", system-ui, sans-serif; }
       main { max-width: 56rem; margin: 0 auto; padding: 2rem 1.25rem 3rem; }
@@ -42,11 +42,11 @@
   <body>
     <main>
       <h1>Dhruv Kothari</h1>
-      <p>Full-stack developer · Mumbai, India</p>
+      <p>Full-stack &amp; AI developer · Mumbai, India</p>
       <div class="row">
         <a class="btn primary" href="/resume.pdf" download="Dhruv-Kothari-Resume.pdf">Download résumé (PDF)</a>
-        <a class="btn" href="/work/">View work</a>
-        <a class="btn" href="/">Enter the 3D room</a>
+        <a class="btn" href="/">View work</a>
+        <a class="btn" href="/room/">Enter the 3D room</a>
       </div>
       <object data="/resume.pdf" type="application/pdf" aria-label="Résumé preview">
         <p>Your browser can't preview the PDF here. Use the download button above.</p>

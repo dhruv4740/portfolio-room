@@ -1,4 +1,4 @@
-// Readable project catalog. Content stays shared with /work and the phone deck.
+// Readable project catalog. Content stays shared with /work.
 import content from '../shell/content.js';
 import { mountContactStrip } from '../shell/contactStrip.js';
 

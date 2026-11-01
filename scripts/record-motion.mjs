@@ -17,7 +17,7 @@ await p.addInitScript(() => {
   sessionStorage.setItem('v3:arrival-seen', '1'); sessionStorage.setItem('v3:controls', 'open');
 });
 await p.goto(BASE + '/?sky=day');
-await p.locator('.workspace-stage:is([data-winter-city="ready"],[data-winter-city="skipped"])').waitFor({ state: 'attached', timeout: 60000 });
+await p.locator('.workspace-stage:is(,[data-winter-city="skipped"])').waitFor({ state: 'attached', timeout: 60000 });
 await p.locator('[data-launchpad-action="explore-room"]').click(); await p.waitForTimeout(2500);
 const HIDE = '.seat-exit,.telemetry-root{visibility:hidden!important}';
 const stage = k => p.evaluate(k => document.querySelector('.workspace-stage')?.dataset[k], k);

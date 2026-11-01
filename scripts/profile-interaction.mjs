@@ -20,7 +20,7 @@ await p.addInitScript(() => {
   try { new PerformanceObserver(l => { for (const e of l.getEntries()) window.__lt.push([e.startTime, e.duration]); }).observe({ type: 'longtask', buffered: true }); } catch {}
 });
 const t0 = Date.now(); await p.goto(BASE + '/');
-await p.locator('.workspace-stage:is([data-winter-city="ready"],[data-winter-city="skipped"])').waitFor({ state: 'attached', timeout: 90000 });
+await p.locator('.workspace-stage:is(,[data-winter-city="skipped"])').waitFor({ state: 'attached', timeout: 90000 });
 const roomAt = await p.evaluate(() => performance.now());
 const ds = (sel, k) => p.evaluate(([sel, k]) => document.querySelector(sel)?.dataset[k], [sel, k]);
 const until = (sel, k, v, timeout = 60000) => p.waitForFunction(([sel, k, v]) => document.querySelector(sel)?.dataset[k] === v, [sel, k, v], { polling: 50, timeout });

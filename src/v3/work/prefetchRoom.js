@@ -44,9 +44,9 @@ function closure(manifest, root, seen = new Set()) {
 // Scan chunk plus its static imports (three, shared react pieces). Files the
 // /work/ entry already imports are skipped.
 function scanHints(manifest) {
-  const scanKey = manifest['index.html']?.dynamicImports?.find((k) => /desktop\/Scan\.jsx$/.test(k));
+  const scanKey = manifest['room/index.html']?.dynamicImports?.find((k) => /desktop\/Scan\.jsx$/.test(k));
   if (!scanKey) return [];
-  const onWork = closure(manifest, 'work/index.html');
+  const onWork = closure(manifest, 'index.html');
   const hints = [];
   for (const key of closure(manifest, scanKey)) {
     if (onWork.has(key)) continue;
@@ -68,6 +68,8 @@ async function run() {
     // No manifest: skip the scan chunks, still warm the models.
   }
   for (const name of MODELS) hints.push([`${import.meta.env.BASE_URL}models/after-hours/${name}`, 'fetch']);
+  // The models are Draco-compressed; warm the decoder too (src/v3/desktop/modelLoader.js).
+  for (const name of ['draco_wasm_wrapper.js', 'draco_decoder.wasm']) hints.push([`${import.meta.env.BASE_URL}draco/${name}`, 'fetch']);
   for (const [href, as] of hints) hint(href, as);
 }
 
