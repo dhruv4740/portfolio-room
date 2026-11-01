@@ -44,9 +44,9 @@ function closure(manifest, root, seen = new Set()) {
 // Scan chunk plus its static imports (three, shared react pieces). Files the
 // /work/ entry already imports are skipped.
 function scanHints(manifest) {
-  const scanKey = manifest['index.html']?.dynamicImports?.find((k) => /desktop\/Scan\.jsx$/.test(k));
+  const scanKey = manifest['room/index.html']?.dynamicImports?.find((k) => /desktop\/Scan\.jsx$/.test(k));
   if (!scanKey) return [];
-  const onWork = closure(manifest, 'work/index.html');
+  const onWork = closure(manifest, 'index.html');
   const hints = [];
   for (const key of closure(manifest, scanKey)) {
     if (onWork.has(key)) continue;

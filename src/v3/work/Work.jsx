@@ -428,7 +428,7 @@ export default function Work() {
     const id = idle(() => setRoomOnPhone(phoneCanRoom()));
     return () => (window.cancelIdleCallback || clearTimeout)(id);
   }, []);
-  const roomHref = (tour) => (roomOnPhone ? '/?room=phone&tour=1' : tour ? '/?tour=1' : '/');
+  const roomHref = (tour) => (roomOnPhone ? '/room/?room=phone&tour=1' : tour ? '/room/?tour=1' : '/room/');
 
   const [now, setNow] = useState(() => new Date());
   const [temperature, setTemperature] = useState(null);

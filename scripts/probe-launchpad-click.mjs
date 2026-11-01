@@ -11,7 +11,7 @@ try {
     localStorage.setItem('v3:seen-intro', '1');
     sessionStorage.setItem('v3:arrival-seen', '1');
   });
-  await page.goto(`${BASE}/?sky=night`);
+  await page.goto(`${BASE}/room/?sky=night`);
   await page.locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]').waitFor({ timeout: 30000 });
   await page.waitForTimeout(2000);
   console.log(JSON.stringify(await page.evaluate(() => {

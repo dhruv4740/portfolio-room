@@ -305,7 +305,7 @@ await roomPage.addInitScript(() => {
   localStorage['v3:seen-intro'] = '1';
   localStorage['v3:test'] = '1';
 });
-await roomPage.goto(`${BASE}/#/?sky=dusk`);
+await roomPage.goto(`${BASE}/room/#/?sky=dusk`);
 await roomPage.locator('.scan-root').waitFor({ timeout: 15000 });
 await roomPage.waitForTimeout(1000);
 

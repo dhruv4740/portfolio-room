@@ -80,7 +80,7 @@ try {
       });
   });
 
-  await page.goto(`${BASE}/?sky=night`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/room/?sky=night`, { waitUntil: 'domcontentloaded' });
   await page
     .locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]')
     .waitFor({ state: 'attached', timeout: 30000 });
@@ -247,7 +247,7 @@ try {
     sessionStorage.setItem('v3:controls', 'open');
   });
 
-  await pageStd.goto(`${BASE}/?sky=night`, { waitUntil: 'domcontentloaded' });
+  await pageStd.goto(`${BASE}/room/?sky=night`, { waitUntil: 'domcontentloaded' });
   await pageStd
     .locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]')
     .waitFor({ state: 'attached', timeout: 30000 });

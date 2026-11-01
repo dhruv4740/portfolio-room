@@ -9,7 +9,7 @@ try {
   const errors=[];page.on('pageerror',e=>errors.push(e.message));
   page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
   await page.addInitScript(t=>{localStorage.setItem('v3:test','1');localStorage.setItem('v3:surface-override','scan');localStorage.setItem('v3:seen-intro','1');localStorage.setItem('v3:perf-tier',t);sessionStorage.setItem('v3:arrival-seen','1');sessionStorage.setItem('v3:controls','open');},tier);
-  await page.goto(`${BASE}/?sky=night`);
+  await page.goto(`${BASE}/room/?sky=night`);
   await page.locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]').waitFor({timeout:30000});
   await page.waitForTimeout(1800);
   await page.addStyleTag({content:'.telemetry-root{display:none!important}'});

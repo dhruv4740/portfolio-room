@@ -10,7 +10,7 @@ async function fresh(hash) {
   const errors = [];
   p.on('pageerror', e => errors.push(e.message));
   await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); });
-  await p.goto(`${BASE}/#${hash}`);
+  await p.goto(`${BASE}/room/#${hash}`);
   return { p, ctx, errors };
 }
 const osWindow = (p, app) => p.waitForFunction((app) => {

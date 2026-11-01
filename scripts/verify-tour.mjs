@@ -89,7 +89,7 @@ const state = (p) => p.evaluate(() => ({
 {
   const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
   await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); localStorage.setItem('v3:surface-override', 'scan'); });
-  await p.goto(`${BASE}/?tour=1#/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
+  await p.goto(`${BASE}/room/?tour=1#/`, { waitUntil: 'domcontentloaded', timeout: 90000 });
   const shown = await p.locator('[data-testid="tour-welcome"]').waitFor({ timeout: 60000 }).then(() => true, () => false);
   record('?tour=1 shows the welcome card instead of starting the tour', shown);
   await p.getByRole('button', { name: 'Look around first' }).click();

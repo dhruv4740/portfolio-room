@@ -54,11 +54,11 @@ function Booting() {
   );
 }
 
-/** /work is a static page (work/index.html), not a route in this app. Old
+/** /work is a static page (the root index.html, served at /), not a route in this app. Old
  *  /#/work links and the no-WebGL surface both land there with a real load,
  *  so the router and the 3D chunks are never part of the recruiter path. */
 function GoToWork() {
-  useEffect(() => { window.location.replace('/work/'); }, []);
+  useEffect(() => { window.location.replace('/'); }, []);
   return null;
 }
 

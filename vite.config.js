@@ -21,17 +21,17 @@ const staticAppIndex = {
   },
 }
 
-// Local parity with the host's _redirects: /work -> /work/ , /resume -> /resume/.
+// Local parity with the host's _redirects: /work(/) -> / , /room -> /room/ , /resume -> /resume/.
 const slashRedirects = {
   name: 'slash-redirects',
   configureServer(server) { server.middlewares.use(redirect) },
   configurePreviewServer(server) { server.middlewares.use(redirect) },
 }
 function redirect(req, res, next) {
-  const m = /^\/(work|resume)(\?.*)?$/.exec(req.url || '')
+  const m = /^\/(work\/?|room|resume)(\?.*)?$/.exec(req.url || '')
   if (!m) return next()
   res.statusCode = 301
-  res.setHeader('Location', `/${m[1]}/${m[2] || ''}`)
+  res.setHeader('Location', m[1].startsWith('work') ? `/${m[2] || ''}` : `/${m[1]}/${m[2] || ''}`)
   res.end()
 }
 
@@ -52,7 +52,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         main: resolve(import.meta.dirname, 'index.html'),
-        work: resolve(import.meta.dirname, 'work/index.html'),
+        room: resolve(import.meta.dirname, 'room/index.html'),
         resume: resolve(import.meta.dirname, 'resume/index.html'),
       },
       output: {

@@ -8,7 +8,7 @@ const p = await b.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleF
 await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); });
 // The caption tracks the job title in src/v3/content/index.js (identity.role).
 const CAPTION = 'Dhruv Kothari — Full-stack & AI developer';
-await p.goto(`${BASE}/?sky=night#/`);
+await p.goto(`${BASE}/room/?sky=night#/`);
 // The front door covers the room until a visitor picks it; skip the arrival flight.
 await p.locator('#fd-room').click({ timeout: 30000 });
 await p.waitForSelector('#front-door', { state: 'detached', timeout: 60000 });

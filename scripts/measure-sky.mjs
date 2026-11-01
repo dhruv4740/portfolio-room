@@ -47,7 +47,7 @@ async function main() {
       localStorage.setItem('v3:surface-override', 'scan');
       localStorage.setItem('v3:seen-intro', '1');
     });
-    await page.goto(`${BASE}/?sky=${skyState}`, { waitUntil: 'networkidle' });
+    await page.goto(`${BASE}/room/?sky=${skyState}`, { waitUntil: 'networkidle' });
     await page.waitForSelector('.workspace-stage');
     await page.waitForTimeout(1200);
     await page.screenshot({ path: `scripts/shots/sky-orbit-${skyState}.png` });

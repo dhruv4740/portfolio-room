@@ -17,7 +17,7 @@ await ctx.addInitScript(() => {
 const p = await ctx.newPage();
 const errors = [];
 p.on('pageerror', e => errors.push(e.message));
-await p.goto(`${BASE}/?sky=night`, { waitUntil: 'load' });
+await p.goto(`${BASE}/room/?sky=night`, { waitUntil: 'load' });
 await p.waitForFunction(() => window.__v3test, null, { timeout: 60000 });
 await p.waitForTimeout(3000);
 await p.locator('[data-launchpad-action="explore-room"]').click();

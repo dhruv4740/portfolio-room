@@ -70,7 +70,7 @@ const open = async (block) => {
     localStorage.setItem('v3:seen-intro', '1'); localStorage.setItem('v3:perf-tier', 'mid');
     sessionStorage.setItem('v3:arrival-seen', '1'); sessionStorage.setItem('v3:controls', 'open');
   });
-  await page.goto(`${BASE}/?sky=night`);
+  await page.goto(`${BASE}/room/?sky=night`);
   await page.locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]').waitFor({ timeout: 30000 });
   await page.waitForFunction(() => ['ready', 'fallback'].includes(document.querySelector('.workspace-stage')?.dataset.taskLamp), null, { timeout: 30000 });
   await page.waitForTimeout(1500);

@@ -27,7 +27,7 @@ const overflowX = (page) => page.evaluate(() => document.documentElement.scrollW
   await page.goto(`${BASE}/?notrack=1`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
   const where = await page.evaluate(() => ({ path: location.pathname }));
-  check('/ on a phone lands on /work', where.path.startsWith('/work'), JSON.stringify(where));
+  check('/ on a phone stays on the work page', where.path === '/', JSON.stringify(where));
   check('/ has no sideways scroll', (await overflowX(page)) <= 1, `${await overflowX(page)} px`);
   check('/ no page errors', !errors.length, errors.join(' | '));
   await ctx.close();
@@ -35,7 +35,7 @@ const overflowX = (page) => page.evaluate(() => document.documentElement.scrollW
 
 {
   const { ctx, page, errors } = await phonePage();
-  await page.goto(`${BASE}/work/?notrack=1`, { waitUntil: 'networkidle' });
+  await page.goto(`${BASE}/?notrack=1`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1200);
   check('/work has no sideways scroll', (await overflowX(page)) <= 1, `${await overflowX(page)} px`);
   const pill = await page.evaluate(() => { const r = document.querySelector('#ask-pill')?.getBoundingClientRect(); return r && { top: Math.round(r.top), bottom: Math.round(r.bottom), w: Math.round(r.width) }; });
@@ -49,9 +49,9 @@ const overflowX = (page) => page.evaluate(() => document.documentElement.scrollW
 
 {
   const { ctx, page, errors } = await phonePage();
-  await page.goto(`${BASE}/?room=phone&notrack=1`);
+  await page.goto(`${BASE}/room/?room=phone&notrack=1`);
   await page.waitForTimeout(1500);
-  check('/?room=phone stays on the room', !page.url().includes('/work'), page.url().replace(BASE, ''));
+  check('/?room=phone stays on the room', page.url().includes('/room/'), page.url().replace(BASE, ''));
   const revealed = await page.locator('.workspace-stage[data-room-revealed="1"]').waitFor({ timeout: 60000 }).then(() => true, () => false);
   check('/?room=phone reveals the room', revealed);
   check('/?room=phone no page errors', !errors.length, errors.join(' | '));

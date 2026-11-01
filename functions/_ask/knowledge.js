@@ -159,5 +159,5 @@ export function sourceHref(source) {
   const t = String(source ?? '').trim(), s = SECTIONS.find((x) => x.title === t) || SECTIONS.find((x) => x.title === t.split(', ')[0]);
   if (!s) return '';
   const id = s.id.startsWith('proj-') ? `p-${s.id.slice(5)}` : HOME[s.id] || (s.id.startsWith('exp-') ? 'experience' : '');
-  return id ? `/work/#${id}` : '';
+  return id ? `/#${id}` : '';
 }

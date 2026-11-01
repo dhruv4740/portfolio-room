@@ -118,10 +118,10 @@ export function mountAsk(el) {
     clearTimeout(scrollTo.t); scrollTo.t = setTimeout(() => { ours = false; }, 600);
   };
 
-  // A source on /work scrolls the page there (closing the card); anywhere else it opens /work in a new tab.
+  // A source on / (the work page) scrolls the page there (closing the card); anywhere else it opens / in a new tab.
   const sourceLink = (label, href) => {
     const a = Object.assign(document.createElement('a'), { textContent: label, href });
-    if (location.pathname.startsWith('/work')) {
+    if (location.pathname === '/') {
       a.onclick = (e) => {
         e.preventDefault(); el.dispatchEvent(new CustomEvent('ask-close', { bubbles: true }));
         const id = href.split('#')[1];

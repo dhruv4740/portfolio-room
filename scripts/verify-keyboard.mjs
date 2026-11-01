@@ -20,7 +20,7 @@ async function open(block) {
     sessionStorage.setItem('v3:arrival-seen', '1'); sessionStorage.setItem('v3:controls', 'open');
   });
   if (block) await page.route('**/models/after-hours/keyboard.glb', r => r.abort());
-  await page.goto(`${BASE}/?sky=day`);
+  await page.goto(`${BASE}/room/?sky=day`);
   await page.locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]').waitFor({ timeout: 30000 });
   await page.waitForTimeout(2500);
   await page.addStyleTag({ content: '.telemetry-root{display:none!important}' });

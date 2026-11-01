@@ -45,7 +45,7 @@ page.on('response', (r) => resps.push(r));
 try {
   // 1. WebGL off (checked on the first /work/ load; the request window starts here).
   reqs = []; resps = [];
-  await page.goto(`${BASE}/work/`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.w-root', { timeout: 15_000 });
   await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => {});
   const workReqs = [...reqs];
@@ -59,12 +59,12 @@ try {
   // 2. Trailing-slash routing and identity heading.
   await page.goto(`${BASE}/work`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.w-root', { timeout: 15_000 });
-  check('/work resolves to /work/', page.url().endsWith('/work/'), page.url());
+  check('/work redirects to /', new URL(page.url()).pathname === '/', page.url());
   const nameH1 = await page.locator('h1', { hasText: 'Dhruv Kothari' }).count();
   check('/work page has h1 "Dhruv Kothari"', nameH1 > 0, `${nameH1} match(es)`);
 
   // 3. Identity and the three action links.
-  await page.goto(`${BASE}/work/`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.w-root', { timeout: 15_000 });
   const h1Visible = await page.getByRole('heading', { level: 1, name: 'Dhruv Kothari' }).isVisible().catch(() => false);
   check('h1 "Dhruv Kothari" is visible', h1Visible);

@@ -41,7 +41,7 @@ try {
     sessionStorage.setItem('v3:controls', 'open');
   });
   // No arrival-seen flag: the arrival plays on load.
-  await page.goto(`${BASE}/?sky=night`);
+  await page.goto(`${BASE}/room/?sky=night`);
   await page.locator('.workspace-stage[data-room-materials="ready"][data-room-bake="ready"]').waitFor({ timeout: 30000 });
   await page.waitForFunction(() => ['ready', 'fallback'].includes(document.querySelector('.workspace-stage')?.dataset.ceilingFixture), null, { timeout: 30000 });
   result.status = await page.locator('.workspace-stage').evaluate(e => e.dataset.ceilingFixture);
