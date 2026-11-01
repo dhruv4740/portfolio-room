@@ -21,7 +21,6 @@ import {
   prefersReducedMotion,
   hasSeenIntro,
   markIntroSeen,
-  setOverride,
 } from '../lib/capability.js';
 
 import { LIVE_APPS_HERO } from '../lib/features.js';
@@ -981,13 +980,6 @@ export default function Scan() {
         </div>
         <nav className="scan-nav mono">
           <Link to="/work" onClick={cancelArrival}>WORK</Link>
-          <span className="sep" aria-hidden="true">/</span>
-          <button
-            onClick={() => { setOverride('deck'); window.location.reload(); }}
-            title="Switch to the mobile deck"
-          >
-            DECK
-          </button>
         </nav>
       </header>
 
@@ -1197,15 +1189,14 @@ body[data-launchpad-open] .escape-link { display:none; }
 .scan-id p { margin-top: 0.15rem; }
 
 .scan-nav { display: flex; align-items: center; gap: 0.6rem; }
-.scan-nav a, .scan-nav button {
+.scan-nav a {
   color: var(--dim);
   transition: color var(--d-feedback) var(--ease);
   font-family: var(--font-mono);
   font-size: var(--t-data);
   letter-spacing: var(--track-data);
 }
-.scan-nav a:hover, .scan-nav button:hover { color: var(--signal); }
-.scan-nav .sep { color: var(--faint); }
+.scan-nav a:hover { color: var(--signal); }
 
 .scan-hint {
   position: absolute;

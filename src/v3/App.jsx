@@ -1,9 +1,8 @@
 // ============================================================================
 // v3 app shell.
 //
-// One content source, three surfaces:
-//   scan   — desktop: the modeled 3D room
-//   deck   — touch: vertical gyro-driven card deck
+// One content source, two surfaces (phones go to /work, or the room with ?room=phone):
+//   scan   — the modeled 3D room
 //   static — no WebGL2 / software GPU / data-saver: straight to /work
 //
 // HashRouter so it deploys to any static host with no rewrite rules.
@@ -15,14 +14,12 @@ import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import './tokens.css';
 import { resolveSurface } from './lib/capability.js';
 import { reportProgress, subscribeProgress } from './lib/loadProgress.js';
-import { dismissFrontDoor } from './lib/frontDoor.js';
 
 // The scan bundle is one weighted task; the hand bake reports its own bytes.
 const Scan = lazy(() => {
   reportProgress('bundle', 0, 1_000_000);
   return import('./desktop/Scan.jsx').then(m => { reportProgress('bundle', 1_000_000, 1_000_000); return m; });
 });
-const Deck = lazy(() => import('./mobile/Deck.jsx'));
 const CommandPalette = lazy(() => import('./ui/CommandPalette.jsx'));
 
 /** Minimal first paint. Never a blank screen — see ScanIntro's same rule. */
@@ -79,11 +76,8 @@ function Home() {
     return s;
   }, []);
 
-  // The deck has no heavy scene to wait for; the room dismisses it itself.
-  useEffect(() => { if (surface === 'deck') dismissFrontDoor(true); }, [surface]);
-
   if (surface === 'static') return <GoToWork />;
-  return surface === 'deck' ? <Deck /> : <Scan />;
+  return <Scan />;
 }
 
 export default function App() {

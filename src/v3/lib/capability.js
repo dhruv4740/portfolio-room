@@ -7,12 +7,6 @@
 
 const OVERRIDE_KEY = 'v3:surface-override';
 
-/** @returns {'coarse'|'fine'} primary pointer type */
-export function pointerType() {
-  if (typeof window === 'undefined') return 'fine';
-  return window.matchMedia('(pointer: coarse)').matches ? 'coarse' : 'fine';
-}
-
 export function prefersReducedMotion() {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -81,7 +75,6 @@ export function saveData() {
 /**
  * Which surface should render.
  *  'scan'   — desktop 3D room
- *  'deck'   — mobile vertical deck with gyro
  *  'static' — no WebGL2, software GPU, or data-saver: the fast /work page
  */
 export function resolveSurface() {
@@ -91,24 +84,15 @@ export function resolveSurface() {
   if (!hasWebGL2() || gpuHint().tier === 'software' || saveData()) return 'static';
   // /work offers the room to capable phones as /?room=phone (see phoneCanRoom).
   if (/[?&]room=phone(&|$)/.test(location.search)) return 'scan';
-  return pointerType() === 'coarse' ? 'deck' : 'scan';
+  return 'scan';
 }
 
 export function readOverride() {
   try {
     const v = localStorage.getItem(OVERRIDE_KEY);
-    return v === 'scan' || v === 'deck' || v === 'static' ? v : null;
+    return v === 'scan' || v === 'static' ? v : null;
   } catch {
     return null;
-  }
-}
-
-export function setOverride(surface) {
-  try {
-    if (surface) localStorage.setItem(OVERRIDE_KEY, surface);
-    else localStorage.removeItem(OVERRIDE_KEY);
-  } catch {
-    /* private mode — override simply won't persist */
   }
 }
 

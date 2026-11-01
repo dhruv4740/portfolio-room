@@ -60,7 +60,7 @@ for (const vp of VPS) {
       const c = await ctxFor(vp), p = await c.newPage(), errors = []; p.on('pageerror', e => errors.push(e.message)); p.on('console', m => { if (m.type() === 'error') errors.push(m.text().slice(0, 120)); });
       try {
         await p.goto(BASE + route(id));
-        await p.waitForFunction(() => document.querySelector('.workspace-stage')?.dataset.roomRevealed === '1' || document.querySelector('[data-testid="deck"], .deck'), null, { timeout: 90000 }).catch(() => {});
+        await p.waitForFunction(() => document.querySelector('.workspace-stage')?.dataset.roomRevealed === '1', null, { timeout: 90000 }).catch(() => {});
         await shot(p, `${kind}-${id}`, vp, errors, kind === 'os' ? '.dhruv-os-screen' : '.phone-screen, .phone-presentation'); await p.waitForTimeout(kind === 'phone' ? 4000 : 2500);
         await p.screenshot({ path: `${OUT}/${kind}-${id}-${vp.join('x')}.png` });
       } catch (e) { console.log(JSON.stringify({ shot: `${kind}-${id}`, vp: vp.join('x'), fail: String(e).split('\n')[0].slice(0, 120) })); }

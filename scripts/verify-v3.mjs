@@ -6,7 +6,7 @@
 //   2. the desktop scan mounts and paints the authored workspace geometry
 //   3. workspace objects expose real, keyboard-operable anchor buttons
 //   4. the monitor enters dhruvOS, returns, and retains app state
-//   5. the touch surface serves the deck, not the desktop workspace
+//   5. a phone at / is sent to /work, not the desktop workspace
 //   6. no console errors on any surface
 //
 // Usage: npx vite preview --port 4173   then   node scripts/verify-v3.mjs
@@ -77,7 +77,7 @@ async function saveScreenshot(page, options) {
 // Headless Chromium reports a SwiftShader renderer, which resolveSurface()
 // correctly treats as "software GPU -> serve the static surface". That is the
 // behaviour we want in production but it makes the 3D surfaces untestable, so
-// the scan/deck contexts below pin the surface override explicitly, and the
+// the scan context below pin the surface override explicitly, and the
 // fallback itself is asserted as its own case.
 const browser = await chromium.launch(process.env.GPU === '1'
   ? { channel: 'chromium', args: ['--use-angle=d3d11', '--ignore-gpu-blocklist'] }
@@ -517,17 +517,15 @@ try {
   const errors = [];
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   page.on('pageerror', (e) => errors.push(String(e)));
-  await pinSurface(page, 'deck');
-
   await page.goto(`${BASE}/#/`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(2500);
 
-  const deck = await page.locator('.deck-root').count();
+  const path = new URL(page.url()).pathname;
   const stage = await page.locator('.stage-root').count();
-  record('touch: serves the deck', deck > 0, `deck=${deck}`);
+  record('touch: sent to /work', path.startsWith('/work'), path);
   record('touch: does NOT serve the scan', stage === 0, `stage=${stage}`);
 
-  await saveScreenshot(page, { path: `${SHOTS}/v3-deck.png` });
+  await saveScreenshot(page, { path: `${SHOTS}/v3-touch.png` });
   record('touch: no console errors', errors.length === 0, errors.slice(0, 2).join(' | ') || 'clean');
   await ctx.close();
 }

@@ -1,6 +1,6 @@
 // Phone checks for the current site (390x844, touch). Run against a served build:
 //   BASE=http://localhost:8788 GPU=1 node scripts/verify-mobile.mjs
-// 1. / on a phone lands on a usable page (the deck or /work), no sideways scroll.
+// 1. / on a phone lands on /work, no sideways scroll.
 // 2. /work: no sideways scroll, the Ask pill is on screen, headings are present.
 // 3. /?room=phone opens the room instead of redirecting, and it reveals.
 // No page errors anywhere. Exits 1 on any FAIL.
@@ -26,8 +26,8 @@ const overflowX = (page) => page.evaluate(() => document.documentElement.scrollW
   const { ctx, page, errors } = await phonePage();
   await page.goto(`${BASE}/?notrack=1`, { waitUntil: 'networkidle' });
   await page.waitForTimeout(1500);
-  const where = await page.evaluate(() => ({ path: location.pathname, deck: !!document.querySelector('[data-testid="deck"], .deck'), main: !!document.querySelector('main') }));
-  check('/ on a phone lands on the deck or /work', where.path.startsWith('/work') || where.deck || where.main, JSON.stringify(where));
+  const where = await page.evaluate(() => ({ path: location.pathname }));
+  check('/ on a phone lands on /work', where.path.startsWith('/work'), JSON.stringify(where));
   check('/ has no sideways scroll', (await overflowX(page)) <= 1, `${await overflowX(page)} px`);
   check('/ no page errors', !errors.length, errors.join(' | '));
   await ctx.close();

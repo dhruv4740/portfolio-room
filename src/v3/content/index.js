@@ -1,5 +1,5 @@
 // ============================================================================
-// Single source of truth for every surface: the room, the deck and /work.
+// Single source of truth for every surface: the room and /work.
 //
 // Facts here come from Dhruv's resume and repos. Do not embellish them.
 // `decision` and `broke` are deliberately blank where the real answer is not
