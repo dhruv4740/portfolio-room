@@ -1,4 +1,4 @@
-// ask-pill.js — the always-visible "Ask about Dhruv" pill on every surface (/work, room, scan, deck).
+// ask-pill.js — the always-visible "Ask about Dhruv" pill on every surface (/work, room, scan).
 // A small field floats bottom-centre (bottom-right in the room, clear of the HUD). Submitting morphs it into a
 // rounded glass card (a JS spring drives its real box from the pill's rect); Esc or a tap outside morphs it back.
 // The blur and the WebGL glow are created on first touch of the pill and run only while the card is open, so pages
@@ -159,7 +159,9 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     return !!gl;
   };
   // A soft glow needs no retina detail; on phones the canvas covers most of the screen, so it renders at 1x there.
-  function sizeGL() { if (!gl) return; scale = Math.min(devicePixelRatio || 1, coarse() ? 1 : 1.5); cvs.width = Math.round(innerWidth * scale); cvs.height = Math.round(innerHeight * scale); }
+  // CSS size is pinned to innerWidth/innerHeight, the frame the shader draws in: on a phone 100vh is the height with
+  // the address bar hidden, so a 100vh canvas was stretched and the glow slid off the card's edges.
+  function sizeGL() { if (!gl) return; scale = Math.min(devicePixelRatio || 1, coarse() ? 1 : 1.5); cvs.width = Math.round(innerWidth * scale); cvs.height = Math.round(innerHeight * scale); cvs.style.width = innerWidth + 'px'; cvs.style.height = innerHeight + 'px'; }
   const refit = () => { if (isOpen) { B = cardBox(); sizeCol(); if (!S.live) apply(S.x); kick(); } };
   addEventListener('resize', () => { sizeGL(); refit(); });
   if (vv) { vv.addEventListener('resize', () => { if (settled) refit(); }); vv.addEventListener('scroll', () => { if (settled) refit(); }); }
