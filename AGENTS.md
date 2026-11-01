@@ -69,7 +69,7 @@ you to `curl` a `.splat` file, they are stale — ignore them.**
 ## Commands
 
 ```bash
-npx vite build    # production build (npm run build rewrites vendor files)
+npm run build     # production build; also generates the OS vendor libs, OS content.js and case-file PDFs
 npm run dev       # dev server (port 4173 via .claude/launch.json)
 node node_modules/vite/bin/vite.js preview --host localhost --port 4173
 GPU=1 BASE=http://localhost:4173 node scripts/verify-v3.mjs
@@ -96,8 +96,7 @@ release works, because the two use different JSX transform paths.
 ## Invariants
 
 **The desktop scene is authored geometry, not photogrammetry.**
-`cinematicLayout.js` exports `WORKSPACE` (built by `buildCinematicWorkspace.js`;
-the old-room `buildWorkspace.js` still supplies textures and sky configs) with world-space `anchors` and `screen`
+`cinematicLayout.js` exports `WORKSPACE` (built by `buildCinematicWorkspace.js`) with world-space `anchors` and `screen`
 dimensions. Content anchors in `src/v3/content/index.js` stay normalised and map
 onto it. Do not write raw world coordinates into the content file.
 
@@ -230,8 +229,7 @@ src/v3/
     musicPlayer.js      the one shared song player (room, headphones, monitor)
     cinematicRoomInteractions.js  movable desk objects: lamp, coffee, awards,
                         drawer, pen, blinds, headphones, window
-    (buildWorkspace.js, buildRoomInteractions.js: the old room; only its
-                        textures and sky configs are still imported)
+    phoneTextures.js    canvas textures for the phone's home and lock screens
   (public/os/apps/*.js  monitor apps: one per project, Skills, Music Player;
                         darksentinel.js is an iframeApp() entry for the real UI)
   (public/os/shell/iframeApp.js  window wrapper for a built project UI)

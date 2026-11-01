@@ -23,9 +23,13 @@ behind several open items below).
   commits are kept as tags `archive/feat-v3-overnight-docs` and
   `archive/wip-window-view`.
 - The other checkout, `...\random sites\portfolio`, sits on `main`. Don't use it.
-- Build with `npx vite build` (not `npm run build`, which rewrites vendor files).
-- Never commit `public/os/vendor/*`, line-ending-only diffs of
-  `public/os/shell/content.js`, or `tmp-measure/`. `Scan.jsx`, `Deck.jsx`,
+- Build with `npm run build`. It regenerates `public/os/vendor/*` and
+  `public/os/shell/content.js` (both git-ignored, so a clean checkout needs one
+  build or `npm run dev` before the OS works) and the case-file PDFs.
+  `public/casefiles/*.pdf` stay tracked because `build-casefiles.mjs` skips
+  silently when Playwright's Chromium is missing; they differ by a few bytes on
+  every build (embedded dates), so commit one only when its text changed.
+  Never commit `tmp-measure/`. `Scan.jsx`, `Deck.jsx`,
   `Work.jsx`, `index.html` and `perfGovernor.js` have CRLF endings: edit with
   newline-preserving tools.
 - **Routes (since PR #5, 2026-11-01):** `/` is the work page (root `index.html`,
