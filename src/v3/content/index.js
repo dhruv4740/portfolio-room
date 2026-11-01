@@ -254,9 +254,9 @@ export const projects = [
     caseStudy: {
       problem: 'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
       decisions: 'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version. The studio room’s monitor runs live demos of other projects, and Playwright checks cover the interactions.',
-      result: 'Holds 30 to 60 FPS on integrated graphics; the same content is reachable on every tier, including this /work page.',
+      result: 'Holds 30 to 60 FPS on integrated graphics; the same content is reachable on every tier, including the plain work page.',
     },
-    links: { live: '/', github: '' },
+    links: { live: '/room/', github: '' },
   },
   {
     id: 'blackout',
