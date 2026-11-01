@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/vendor-os-libs.mjs && node scripts/gen-os-content.mjs",
     "dev": "vite",
     "build": "node scripts/vendor-os-libs.mjs && node scripts/gen-os-content.mjs && node scripts/build-casefiles.mjs && vite build",
     "preview": "vite preview"
