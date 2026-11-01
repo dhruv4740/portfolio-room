@@ -2,7 +2,7 @@
 
 The single status document: where the code lives, what is open, what the owner
 decided. Commands, invariants and traps are in [AGENTS.md](../AGENTS.md).
-Last updated 2026-10-28. Older status text is in
+Last updated 2026-11-01. Older status text is in
 `archive/HANDOFF-2026-09-25.md`, `archive/HANDOFF-OPUS-2026-10-08.md` and
 `archive/OVERNIGHT-REPORT-2026-10-08.md` (historical; they hold the detail
 behind several open items below).
@@ -23,17 +23,27 @@ behind several open items below).
   commits are kept as tags `archive/feat-v3-overnight-docs` and
   `archive/wip-window-view`.
 - The other checkout, `...\random sites\portfolio`, sits on `main`. Don't use it.
-- Build with `npx vite build` (not `npm run build`, which rewrites vendor files).
-- Never commit `public/os/vendor/*`, line-ending-only diffs of
-  `public/os/shell/content.js`, or `tmp-measure/`. `Scan.jsx`, `Deck.jsx`,
+- Build with `npm run build`. It regenerates `public/os/vendor/*` and
+  `public/os/shell/content.js` (both git-ignored, so a clean checkout needs one
+  build or `npm run dev` before the OS works) and the case-file PDFs.
+  `public/casefiles/*.pdf` stay tracked because `build-casefiles.mjs` skips
+  silently when Playwright's Chromium is missing; they differ by a few bytes on
+  every build (embedded dates), so commit one only when its text changed.
+  Never commit `tmp-measure/`. `Scan.jsx`, `Deck.jsx`,
   `Work.jsx`, `index.html` and `perfGovernor.js` have CRLF endings: edit with
   newline-preserving tools.
+- **Routes (since PR #5, 2026-11-01):** `/` is the work page (root `index.html`,
+  `src/v3/work/entry.jsx`, no three.js). `/room/` is the 3D room (`room/index.html`,
+  HashRouter app `src/v3/App.jsx`). `/work` and `/work/` 301 to `/` via
+  `public/_redirects`; old room links (`/?tour=1`, `/#/...`) are forwarded to `/room/`
+  by a head script in the root `index.html`. Analytics: visits before 2026-11-01 are
+  under `/work/`, after under `/` ([ANALYTICS.md](ANALYTICS.md)).
 - Every project and where it is surfaced: [PROJECTS-MAP.md](PROJECTS-MAP.md).
 
 ## What the site is
 
-Personal portfolio. First job: get a screener to the facts fast (`/work`,
-`/resume`, no three.js). Second: let visitors **use the owner's real apps**, on
+Personal portfolio. First job: get a screener to the facts fast (the work
+page at `/`, `/resume`, no three.js). Second: let visitors **use the owner's real apps**, on
 `/work`, in the room's monitor (dhruvOS) and on the room's phone. Those must
 have good UI everywhere. The 3D room (Mumbai, live sky and weather) is the
 memorable extra; photoreal realism is not a goal.
@@ -114,6 +124,19 @@ changed without the owner's explicit permission.** Measure, propose, wait.
     `verify-deeplinks` has no `/room/<object>` case.
 20. Suites check state, not feel. Any hand, camera or timing change needs frames
     reviewed by eye, including wrist angle.
+
+## Waiting on owner (do not start)
+
+Found in the 2026-11-01 audit. Each needs the owner's decision or a secret only
+the owner has. Do not start them.
+
+12. `/api/hit` has no rate limit and no origin check.
+13. The `ASK_SALT` secret is not set.
+14. The contact form sends from Resend's test sender, which may deliver only to
+    the Resend account owner. It needs a real test send, with the owner's OK.
+15. No CSP, X-Frame-Options or HSTS headers (`public/_headers`).
+16. The room markers' aria-labels do not match their visible text (Monitor,
+    Phone).
 
 ## Owner decisions on record
 
@@ -199,6 +222,25 @@ Open:
   shader warm-up. That changes hand behaviour, so it needs owner approval and a
   motion review. Only overlapping the fetch saves little because the bandwidth
   is shared.
+- **Tried and dropped on 2026-11-01 (measured, not guessed):**
+  - KTX2 textures. The room's 17 images are 1.5 MB as JPG/PNG (the 1k roughness
+    maps are 11 KB). UASTC KTX2 came to 5.8 MB, and a plain ETC1S run of the
+    non-colour maps failed in `ktx2-encoder`. Adding the 584 KB Basis
+    transcoder makes it a net loss on the wire.
+  - Starting the room's own files beside `hands-v1.bin` (low-priority fetches
+    from `App.jsx`). Unthrottled it moved the first room request from 1.2 s to
+    0.4 s and the reveal stayed within noise (4.7 s against 4.4 s). At 10 Mbps it
+    was worse (7.8 s against 6.6 s). The hand file is done at 0.5 s; the wait is
+    shader compile after the assets land.
+  - Shrinking `ceiling-fixture.glb` and `desk-lamp.glb`. Both are already
+    Draco-compressed and geometry is under 150 KB; the weight is four 1k
+    textures each. Do not run `gltf-transform meshopt` on them:
+    `modelLoader.js` cannot decode it.
+- The room is night-only (`resolveSkyState()` always returns `'night'`), so
+  `?sky=day` and `?sky=dusk` render the same room.
+- The old brick set (`materials/after-hours/brick_wall_10/`) went with the
+  winter-city path; `phoneTextures.js` holds the phone-screen canvases that
+  used to live in `buildWorkspace.js`.
 - Held SEO (domain undecided): Search Console, swapping `/` and `/work`,
   prerendering `/work`, an HTML résumé page, llms.txt.
 - Open offers: Ask conversation memory, Turnstile on `/api/ask`.

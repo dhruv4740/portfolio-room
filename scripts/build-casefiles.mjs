@@ -18,7 +18,7 @@ const entry = (id) => {
     return { id, name: 'Blink.new growth tools', line: `${e.role}, ${e.org} · ${e.from} to ${e.to}`, cs: e.caseStudy, tech: ['Python', 'SQLite', 'Flask', 'YouTube Data API', 'Gmail API'], facts: e.metrics.map((m) => `${m.value} ${m.label}`), links: [] };
   }
   const p = projects.find((x) => x.id === id);
-  return { id, name: p.name, line: p.tagline, cs: p.caseStudy, tech: p.tech || [], facts: [p.badge].filter(Boolean), broke: p.broke, links: [p.links?.github, p.links?.live && p.links.live !== '/' ? p.links.live : ''].filter(Boolean) };
+  return { id, name: p.name, line: p.tagline, cs: p.caseStudy, tech: p.tech || [], facts: [p.badge].filter(Boolean), broke: p.broke, links: [p.links?.github, p.links?.live && p.links.live !== '/room/' ? p.links.live : ''].filter(Boolean) };
 };
 
 async function html(id) {

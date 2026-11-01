@@ -21,12 +21,6 @@
       "baseColor": "/materials/after-hours/dark_wooden_planks/dark_wooden_planks_diff_1k.jpg",
       "normal": "/materials/after-hours/dark_wooden_planks/dark_wooden_planks_nor_gl_1k.jpg",
       "roughness": "/materials/after-hours/dark_wooden_planks/dark_wooden_planks_rough_1k.jpg"
-    },
-    "brick": {
-      "assetId": "brick_wall_10",
-      "baseColor": "/materials/after-hours/brick_wall_10/brick_wall_10_diff_1k.jpg",
-      "normal": "/materials/after-hours/brick_wall_10/brick_wall_10_nor_gl_1k.jpg",
-      "roughness": "/materials/after-hours/brick_wall_10/brick_wall_10_rough_1k.jpg"
     }
   }
 }

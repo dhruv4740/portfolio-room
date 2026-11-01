@@ -9,7 +9,7 @@ import { createAuthoredTaskLamp } from './authoredTaskLamp.js';
 import { createAuthoredMouse } from './authoredMouse.js';
 import { createAuthoredCeilingFixture } from './authoredCeilingFixture.js';
 import { createAuthoredKeyboard } from './authoredKeyboard.js';
-import { phoneFocusLockTexture, phoneHomeTexture, SKY_CONFIGS } from './buildWorkspace.js';
+import { canvasTexture, phoneFocusLockTexture, phoneHomeTexture } from './phoneTextures.js';
 import { achievements, identity, contact, education, experience, proofPoints, skills } from '../content/index.js';
 import {
   WORKSPACE, ROOM, DESK, DESK_BOUNDS, MAT, KEYBOARD, KEYBOARD_CHASSIS, CINEMATIC_KEYCAPS,
@@ -19,24 +19,21 @@ import {
 
 // Cinematic room — a replacement environment built at true metre scale.
 //
-// Adopted on feat/true-scale-room: WorkspaceStage builds this instead of
-// buildWorkspace.js. The return shape is the live builder's, key for key.
+// WorkspaceStage builds the room with this module.
 //
 // Every dimension comes from cinematicLayout.js. No literal below restates a
 // contract value, and the root group is never scaled: props that are already
 // 1.0x (phone, task lamp, mouse, keyboard) keep their real size and only move.
 
-export { WORKSPACE, SCREEN };
-export { SKY_CONFIGS };
+export { WORKSPACE };
+const SKY_CONFIGS = {
+  night: {
+    hemi: { sky: '#8294b2', ground: '#21160e', intensity: 0.42 },
+    key: { color: '#8eadd8', closed: 1.15, open: 1.60, position: [1.65, 2.85, -3.0] },
+    windowLight: 0.55,
+  },
+};
 
-function canvasTexture(draw, width = 1024, height = 512) {
-  const canvas = document.createElement('canvas');
-  canvas.width = width; canvas.height = height;
-  draw(canvas.getContext('2d'), width, height);
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace; texture.anisotropy = 4;
-  return texture;
-}
 function woodTexture() {
   return canvasTexture((ctx, w, h) => {
     ctx.fillStyle = '#a88661'; ctx.fillRect(0, 0, w, h);

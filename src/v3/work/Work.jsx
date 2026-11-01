@@ -497,10 +497,10 @@ export default function Work() {
       </span>
       <span className="w-acts">
         {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
-        {p.links?.live === '/' && <span className="w-act w-laptop">Laptop only</span>}
+        {p.links?.live === '/room/' && <span className="w-act w-laptop">Laptop only</span>}
         {p.links?.live && (
-          <a className={`w-act${p.links.live === '/' ? ' w-roomlink' : ''}`} href={p.links.live === '/' ? roomHref(false) : p.links.live}
-            {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>{p.links.live === '/' ? 'Walk through it' : 'Visit'}</a>
+          <a className={`w-act${p.links.live === '/room/' ? ' w-roomlink' : ''}`} href={p.links.live === '/room/' ? roomHref(false) : p.links.live}
+            {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>{p.links.live === '/room/' ? 'Walk through it' : 'Visit'}</a>
         )}
         {p.links?.github && (
           <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>

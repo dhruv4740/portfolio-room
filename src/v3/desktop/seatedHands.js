@@ -33,7 +33,7 @@ export const POSES = {
   // Writing: index and thumb on the pencil, the other fingers tucked under.
   pen:   { c0: 0.50, c1: 0.60, c2: 0.80, c3: 0.90, spread: 0.20, tOpp: 0.90, tCurl: 0.45 },
 };
-export const POSE_KEYS = Object.keys(POSES.rest);
+const POSE_KEYS = Object.keys(POSES.rest);
 export function lerpPose(out, a, b, w) { for (const k of POSE_KEYS) out[k] = a[k] + (b[k] - a[k]) * w; return out; }
 export function curlSum(p) { return p.c0 + p.c1 + p.c2 + p.c3 + p.tCurl * 0.5; }
 
