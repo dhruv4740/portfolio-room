@@ -28,8 +28,9 @@ Preview, then redeploy:
 
 Any subset works; the order is Groq → Gemini → OpenRouter → canned. Keys never reach the browser or the repo.
 
-Optional: Turnstile. Add a widget for `dhruvkothari.pages.dev`, then secret `TURNSTILE_SECRET` and plain variable
-`TURNSTILE_SITE_KEY`. When `TURNSTILE_SECRET` is set the token is required; when unset the check is skipped and the KV
+Turnstile (on since 2026-11-02): widget for `dhruvkothari.pages.dev`, secrets `TURNSTILE_SECRET` and
+`TURNSTILE_SITE_KEY`. Store both as secrets: `wrangler.toml` is the config source, so a deploy deletes plain-text
+dashboard variables. When `TURNSTILE_SECRET` is set the token is required; when unset the check is skipped and the KV
 caps are the only abuse control. Other optional variables: `ASK_VISITOR_CAP` (default 10 questions per visitor per UTC
 day), `ASK_GLOBAL_CAP` (default 300 model answers a day, site-wide), `ASK_SALT`, `GROQ_MODEL`, `GEMINI_MODEL`,
 `OPENROUTER_MODELS` (comma list; entries not ending in `:free` are ignored). Model names change often; if a provider
