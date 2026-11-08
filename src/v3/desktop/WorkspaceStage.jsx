@@ -1406,7 +1406,7 @@ export default function WorkspaceStage({
       {[...anchors, ...[{id:'phone',label:'Phone'},{id:'lamp',label:'Lamp switch'},{id:'coffee',label:'Coffee'},{id:'award',label:'Awards'},{id:'resume',label:'Résumé'},{id:'blinds',label:'Blind cord'},{id:'headphones',label:'Headphones'},{id:'keyboard',label:'Keyboard'}].filter(a => !anchors.some(b => b.id === a.id)).map(a=>({...a,readout:'Interact'}))].filter(anchor => WORKSPACE.anchors[anchor.id]).map((anchor, index) => (
         <button key={anchor.id} ref={el => { if (el) markerRefs.current.set(anchor.id, el); else markerRefs.current.delete(anchor.id); }}
           className={`anchor-marker workspace-marker${activeAnchorId === anchor.id ? ' is-active' : ''}`}
-          data-object={anchor.id} data-order={index} aria-label={`${anchor.label} — ${anchor.readout}`}
+          data-object={anchor.id} data-order={index} aria-label={anchor.label}
           onClick={() => {
             if (!seated && !['phone','monitor'].includes(anchor.id)) return;
             // The monitor goes straight in; the window only opens/closes (contact
@@ -1415,7 +1415,7 @@ export default function WorkspaceStage({
             else callbacks.current.onAnchorSelect?.(anchor.id);
           }}>
           <span className="workspace-marker-dot" aria-hidden="true" />
-          <span className="workspace-marker-label"><small>0{index + 1}</small>{anchor.label}<span aria-hidden="true">↗</span></span>
+          <span className="workspace-marker-label"><small aria-hidden="true">0{index + 1}</small>{anchor.label}<span aria-hidden="true">↗</span></span>
         </button>
       ))}
     </div>

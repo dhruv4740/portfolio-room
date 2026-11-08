@@ -44,7 +44,7 @@ export async function onRequestPost({ request, env }) {
           html: `<p><b>${esc(name || '(no name)')}</b> &lt;${esc(email)}&gt;</p><p>${esc(message).replace(/\n/g, '<br>')}</p>`,
         }),
       });
-      if (r.ok) via = 'email'; else console.log(JSON.stringify({ contact: 'resend failed', status: r.status }));
+      if (r.ok) via = 'email'; else console.log(JSON.stringify({ contact: 'resend failed', status: r.status, body: (await r.text().catch(() => '')).slice(0, 300) }));
     } catch (e) { console.log(JSON.stringify({ contact: 'resend error', err: String(e) })); }
   }
   if (via === 'saved' && !kv) return reply({ error: 'unavailable' }, 503);
