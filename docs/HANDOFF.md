@@ -1,249 +1,135 @@
 # Handoff
 
-The single status document: where the code lives, what is open, what the owner
-decided. Commands, invariants and traps are in [AGENTS.md](../AGENTS.md).
-Last updated 2026-11-01. Older status text is in
-`archive/HANDOFF-2026-09-25.md`, `archive/HANDOFF-OPUS-2026-10-08.md` and
-`archive/OVERNIGHT-REPORT-2026-10-08.md` (historical; they hold the detail
-behind several open items below).
+The single status document. Commands, invariants and traps: [AGENTS.md](../AGENTS.md).
+Last updated 2026-11-08. The previous version, with the history behind older items, is
+[archive/HANDOFF-2026-11-01.md](archive/HANDOFF-2026-11-01.md).
 
 ## Where things are
 
-- **`main` is live.** `main` = `aeffab7` (PRs #1–#4: JSON-LD/SEO, Ask models,
-  Ask quota and retrieval, Ask source label) = https://dhruvkothari.pages.dev
-  (Cloudflare Pages project `dhruvkothari`, direct upload). Preview alias:
-  https://preview.dhruvkothari.pages.dev. Deploy to preview only:
-  `npx wrangler pages deploy dist --project-name dhruvkothari --branch preview --commit-dirty=true`.
-  Never `--branch main` without a fresh explicit yes from the owner.
-- **Working branch: `fix/mobile-ask-polish`** (cut from `main` at `aeffab7`),
-  in `C:\Users\hp\pf-release`. Status: "Round 4" at the end. Never commit to
-  `main`; remote `origin` is `dhruv4740/portfolio-room`.
-- The old stacked branches (`feat/v3`, `feat/true-scale-room`, `feat/relight`,
-  `feat/cutscenes`, `feat/recruiter-path`) are merged and deleted. Stray
-  commits are kept as tags `archive/feat-v3-overnight-docs` and
-  `archive/wip-window-view`.
-- The other checkout, `...\random sites\portfolio`, sits on `main`. Don't use it.
-- Build with `npm run build`. It regenerates `public/os/vendor/*` and
-  `public/os/shell/content.js` (both git-ignored, so a clean checkout needs one
-  build or `npm run dev` before the OS works) and the case-file PDFs.
-  `public/casefiles/*.pdf` stay tracked because `build-casefiles.mjs` skips
-  silently when Playwright's Chromium is missing; they differ by a few bytes on
-  every build (embedded dates), so commit one only when its text changed.
-  Never commit `tmp-measure/`. `Scan.jsx`, `Deck.jsx`,
-  `Work.jsx`, `index.html` and `perfGovernor.js` have CRLF endings: edit with
-  newline-preserving tools.
-- **Routes (since PR #5, 2026-11-01):** `/` is the work page (root `index.html`,
-  `src/v3/work/entry.jsx`, no three.js). `/room/` is the 3D room (`room/index.html`,
-  HashRouter app `src/v3/App.jsx`). `/work` and `/work/` 301 to `/` via
-  `public/_redirects`; old room links (`/?tour=1`, `/#/...`) are forwarded to `/room/`
-  by a head script in the root `index.html`. Analytics: visits before 2026-11-01 are
-  under `/work/`, after under `/` ([ANALYTICS.md](ANALYTICS.md)).
-- Every project and where it is surfaced: [PROJECTS-MAP.md](PROJECTS-MAP.md).
+- **`main` is live**: `071176d` (PR #6) = https://dhruvkothari.pages.dev. Repo
+  `dhruv4740/portfolio-room`. No open PRs. Never commit to `main`; branch, PR, merge.
+- **Hosting:** Cloudflare Pages project `dhruvkothari`, direct upload (no Git
+  integration, so deployments cannot be retried; every change needs a fresh deploy).
+  - Preview: `npx wrangler pages deploy dist --project-name dhruvkothari --branch preview --commit-dirty=true`
+    → https://preview.dhruvkothari.pages.dev
+  - Production: same with `--branch main`, **only after a fresh explicit yes from the owner**.
+  - Build production from a clean worktree at `origin/main` with its own `npm ci`. Never
+    junction `node_modules` into a worktree: `git worktree remove --force` deletes the target.
+- **No Cloudflare zone.** The account owns no domain; the site is only on `pages.dev`.
+  Zone features (Bot Fight Mode, WAF custom rules, rate-limiting rules, Transform rules)
+  are unavailable until the owner adds a domain. Domain: undecided.
+- **Pages variables** (all stored as `secret_text`, production): `GROQ_API_KEY`,
+  `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `RESEND_API_KEY`, `STATS_TOKEN`, `ASK_SALT`,
+  `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY`. Preview has `STATS_TOKEN`, `ASK_SALT` and the two
+  Turnstile ones (no AI keys, so preview Ask always gives saved answers).
+  **Trap:** `wrangler.toml` is the config source of truth, so every deploy deletes
+  dashboard/API `plain_text` variables. Store new ones as `secret_text` or add `[vars]`.
+- **Turnstile** widget "dhruvkothari.pages.dev Ask" (managed mode, covers subdomains) guards
+  `/api/ask` since 2026-11-02. Verified 3/3 in a visible Chrome (Groq answered). A hidden or
+  non-painting browser pane fails it. Analytics so far: 2 challenges on 2026-11-06, neither
+  solved; too few to judge. Off switch: delete `TURNSTILE_SECRET` and redeploy.
+- **Checkouts:** `C:\Users\hp\pf-truescale` (this one), `pf-release`, `pf-roomspeed` and
+  `pf-docs` are worktrees of the same repo; branches in them are merged. The Desktop checkout
+  `...\random sites\portfolio` is 88 commits behind with the owner's untracked art candidates
+  and `resume/resume.tex`: don't use it, don't clean it.
+- **Routes:** `/` work page (root `index.html`, `src/v3/work/entry.jsx`, no three.js);
+  `/room/` 3D room (`room/index.html`, HashRouter `src/v3/App.jsx`); `/resume/`;
+  `/work*` 301 → `/`; old room links (`/?tour=1`, `/#/...`) forwarded to `/room/` by the
+  root head script. Phones go to `/` unless `?room=phone`. Analytics paths split on
+  2026-11-01 ([ANALYTICS.md](ANALYTICS.md)).
+- **Build:** `npm run build` regenerates `public/os/vendor/*`, `public/os/shell/content.js`
+  (both git-ignored) and the case-file PDFs (tracked; commit only when text changed).
+  Never commit `tmp-measure/`. CRLF files: `Scan.jsx`, `Deck.jsx`, `Work.jsx`, `index.html`,
+  `perfGovernor.js`.
+- Every project and where it shows: [PROJECTS-MAP.md](PROJECTS-MAP.md).
 
-## What the site is
+## Approved work queue (owner, 2026-11-08)
 
-Personal portfolio. First job: get a screener to the facts fast (the work
-page at `/`, `/resume`, no three.js). Second: let visitors **use the owner's real apps**, on
-`/work`, in the room's monitor (dhruvOS) and on the room's phone. Those must
-have good UI everywhere. The 3D room (Mumbai, live sky and weather) is the
-memorable extra; photoreal realism is not a goal.
+1. **Security** (from the 2026-11-01 audit):
+   - `/api/hit` has no rate limit or origin check. No zone, so do it in the Function
+     (KV counter like `/api/ask`, plus an `Origin`/`Referer` check).
+   - Contact form: Resend's test sender may only deliver to the Resend account owner.
+     Do a real test send to the owner's own address and report whether it arrives; a real
+     sender needs a verified domain, which needs the domain decision.
+   - No CSP, X-Frame-Options or HSTS. Add them in `public/_headers` (it already sets
+     `nosniff` and `Referrer-Policy`). The CSP must allow Turnstile
+     (`challenges.cloudflare.com`), the Web Analytics beacon, open-meteo, the GitHub API,
+     blob/worker use by three.js and the dhruvOS iframe (`frame-ancestors 'self'`, not `DENY`).
+     Test every page and the room on preview with the console open before production.
+   - Room markers' `aria-label`s don't match their visible text (Monitor, Phone).
+2. **Résumé PDF.** `public/resume.pdf` still has the old citation-comparison clause in the
+   Blink bullet (the owner never wants that finding shown). Sources are in
+   `C:\Users\hp\OneDrive\Desktop\internship\resume\` (`mine.tex`, `resume_internship.tex`,
+   `resume_linkedin.tex`, `src/resume_faangpath.tex`); work out which one the public PDF
+   comes from by comparing text. Tectonic is installed:
+   `C:\Users\hp\AppData\Local\Programs\tectonic\tectonic.exe`. The public PDF must not
+   contain a phone number. Show the owner the rebuilt PDF before it goes live.
+3. **Option A: a real phone room.** Same room on phones with fixed viewpoints: tap an
+   object and the camera glides there, no drag-to-look, no hands, lighter models and
+   textures. Today phones get `/` with an opt-in `?room=phone` (option C, shipped).
+   Measure on a real phone; show the owner frames/recordings in motion before shipping.
 
-## Current focus (2026-10-20): perf/lighten-room
+## Still the owner's call (ask once, only these)
 
-Owner complaint: for a first-time visitor, even on a laptop and worse on
-battery saver, the site is slow: first load about 15–20 s (owner's estimate),
-look-around lags, typing lags. Round 1 is measurement only
-([PERF-AUDIT.md](PERF-AUDIT.md)). **Hard rule: nothing visible is removed or
-changed without the owner's explicit permission.** Measure, propose, wait.
+- **Cellbook year:** the site says 2026, guessed from the repo creation date; the résumé gives none.
+- **Blackout claim:** the site and résumé say the black screen lifts for calls and alarms;
+  never verified on the owner's phone.
+- **Domain:** unlocks zone security features, a real Resend sender and the held SEO work
+  (Search Console, HTML résumé, llms.txt).
+- Behaviour-changing speed work (below).
 
-## Open problems (one list)
+## Owner decisions on record (never re-ask)
 
-### Performance
-1. **First load is slow.** Shader compile on ANGLE D3D11 dominated in the
-   2026-09-25 profile (79 programs, ~0.45 s each). The warm-up gate in
-   `WorkspaceStage.jsx` hides the canvas, runs `compileAsync`, races a 20 s
-   cap, then fades in; at 4× CPU the cap can fire and the room reveals with
-   uncompiled programs. Current numbers: PERF-AUDIT.md.
-2. **Arrival intro costs ~25 ms/frame** for ~7–8 s, then ~4.5 ms (2026-10-08,
-   integrated AMD GPU). Ruled out then: scene size, resolution, shadows, DOM
-   overlays, OS iframe, extra passes, main-thread JS. See PERF-AUDIT.md.
-3. **First monitor entry** has one ~500 ms GPU-side frame (OS document first
-   raster). Option, owner's call: mount the OS iframe in the background.
-4. **Window open** is one ~200 ms frame at the click (AudioContext, favicon).
-5. A room opened straight into the seat (`/#/room/explore`) draws hands before
-   the background warm-up and can hit 150–530 ms frames.
-6. The four after-hours GLBs are Draco-compressed (3.16 → 1.34 MB; Round 4).
-   Textures are untouched, and no cold-load re-measure was done. Still loaded
-   up front: `hands-v1.bin.gz` (1.58 MB, top-level await in `handAssets.js`).
-7. Perf governor: `DOWNSHIFT_MS = 27`, `UPSHIFT_MS = 14`, `loweredOnce` latch;
-   cutting resolution did not lower cost on the intro.
+- Hands are not a concern. Don't list hand regressions, poses or hand checks as open items.
+- `dk-dev` Pages project: deleted long ago.
+- "Fact or Cap" stays as the CrisisWatch card name. Eco Water / EFarm (same college project)
+  stay as they are, including its C++ chip.
+- Each project runs as its real UI with simulated data; phone apps on the phone, web apps on the monitor.
+- Room: bare walls, awards on the desk, notebook is a blank page. Night only.
+- Project order by depth: FocusLock, Expense Tracker, Basket Price lead.
+- Copy: Basket Price neutral; CrisisWatch framed around its fixed-model constraint. Reddit
+  Growth Copilot never shown. The word "recruiter" never in visible copy. Never fabricate
+  links or metrics. The AEO citation-comparison finding is never shown.
+- Scoped out: multiplayer, Gaussian splats. Parked: per-project case-study page.
+- Nothing visible is removed or changed without the owner's permission.
 
-### Phones and small screens
-8. Landscape phone: FocusLock and Projects OS windows leave ~100 px of content
-   at 412 px height; the FocusLock phone demo is also cramped. Proposal: route
-   desktop-OS apps on touch screens to the phone app or `/work`. Not built.
-9. Seated touch look-around in landscape: unverified.
-10. The deck has no guided-tour option.
+## Open problems (not approved; propose, don't start)
 
-### Interactions (look decisions need the owner, reviewed in motion)
-11. Lamp and blinds switch without a hand reach (alternatives: 57 cm lean, move
-    the lamp, stand up for the blinds).
-12. Not authored: pen writing pose, notebook lift (floats), forearms through
-    the desk front edge (16 mm; elbow placement in `seatedHands.js`), phone side
-    phase and fanned fingers, awards frame size and fingertips, right wrist 80°
-    at drawer put-down. Detail: `archive/HANDOFF-2026-09-25.md`, "Experience sweep".
-13. Hands regression (owner's top complaint earlier; see session memory notes):
-    restore, then a skin pass.
+- **Room load on slow networks.** On Chrome's "Slow 4G" preset (≈1.4–1.6 Mbps, ≈560 ms
+  latency, closer to bad 3G) the room appears after 30.7 s; ~5 MB at that speed is ~25–28 s
+  of transfer alone. At 10 Mbps it's 6.6 s, on a fast line 4.4 s. The work page at `/` is
+  light. `handSurface.js` awaits the 1.58 MB hand binary at module scope; deferring it would
+  save ~7 s on Slow 4G but changes behaviour (needs the owner's OK).
+- **Shader compile stall** on first load (ANGLE D3D11); longest pause now 0.6–1.1 s around
+  23–24%. Arrival intro ~25 ms/frame for 7–8 s on an integrated GPU. First monitor entry has
+  one ~500 ms frame (option: mount the OS iframe in the background; owner's call).
+- **Phones:** landscape OS windows are cramped (FocusLock, Projects); Ask panel opening had
+  long frames at 4× CPU throttle; Turnstile not tested on a real phone.
+- Tried and dropped (measured 2026-11-01): KTX2 textures (bigger), parallel room fetches
+  beside the hand file (no gain), shrinking the lamp/fixture GLBs (already Draco; never
+  meshopt them).
 
-### Content and product
-14. Owner questions: "Fact or Cap" name on the CrisisWatch card; Eco Water facts
-    (none on file); Blackout claim, Cellbook year, EFarm text, résumé C++
-    mismatch; domain (undecided, staying on pages.dev for now; `public/sitemap.xml`,
-    `public/robots.txt`, `.env.production` `VITE_SITE_URL` follow it); delete
-    the empty Pages project `dk-dev` (ask first); `/work` visual direction.
-15. Dead code: `src/game`, `hooks`, `store`, `data`, `lib`, `lab`, `content`,
-    `shaders`, `flagship`, `components`, `index.css` (deletion approved,
-    pending). Also dead CSS (`.launchpad-more`, `.fd-note`), dead `aboutOpen`
-    panel code in `Scan.jsx`, and the `Scan.jsx:304` `about` focus-target regression.
-16. Deferred, unowned: global `--dim` token, launchpad absolute-positioning
-    refactor, `user-select`, keyboard-hint restoration, demo overlay dialog
-    semantics, deck room button's full reload, `whenSeated` rAF loop deadline,
-    stale `/os/index.html` intro, WhatsApp `og.jpg` size.
-17. Not built (approved, low priority): monsoon chai cutscene, depth of field,
-    bloom (too costly on the iGPU), more sound design, window lean-out,
-    `?hands=authored` bake in the true-scale room.
+## Housekeeping (no decision needed)
 
-### Tests
-18. GitHub's unauthenticated events API returns 403 after 60 requests/hour per
-    IP; this fails console-error checks in `verify-v3`, `verify-after-hours`
-    and others. Not a visitor bug; confirm the UI handles a 403 quietly.
-19. Stale: `verify-mobile.mjs`, the `verify-deeplinks` "Ctrl+K on /work" check,
-    `verify-focuslock-app` (times out at friction `breathing`→`delay`),
-    `verify-after-hours-audio` 2 of 35 (pre-existing). `verify-held-objects` and
-    `verify-reduced-hands` exit 0 but count 0 PASS lines in `run-suites.sh`.
-    `verify-deeplinks` has no `/room/<object>` case.
-20. Suites check state, not feel. Any hand, camera or timing change needs frames
-    reviewed by eye, including wrist angle.
+- Dead code deletion was approved and is still pending: `src/game`, `hooks`, `store`, `data`,
+  `lib`, `lab`, `content`, `shaders`, `flagship`, `components`, `index.css`, CSS
+  `.launchpad-more`, `.fd-note`. Check imports before deleting (`npx knip`).
+- Stale suites: `verify-focuslock-app` times out at `breathing`→`delay`;
+  `verify-held-objects` and `verify-reduced-hands` exit 0 with 0 PASS lines;
+  `verify-deeplinks` has no `/room/<object>` case. GitHub's unauthenticated API 403s after
+  60 requests/hour and fails console-error checks (not a visitor bug).
+- Remove merged worktrees/branches and `dist-ab/`, `dist-old/`, the garbled-name file in
+  `pf-truescale` once nothing needs them.
 
-## Waiting on owner (do not start)
+## Testing
 
-Found in the 2026-11-01 audit. Each needs the owner's decision or a secret only
-the owner has. Do not start them.
-
-12. `/api/hit` has no rate limit and no origin check.
-13. The `ASK_SALT` secret is not set.
-14. The contact form sends from Resend's test sender, which may deliver only to
-    the Resend account owner. It needs a real test send, with the owner's OK.
-15. No CSP, X-Frame-Options or HSTS headers (`public/_headers`).
-16. The room markers' aria-labels do not match their visible text (Monitor,
-    Phone).
-
-## Owner decisions on record
-
-- Each project runs as its real UI built from its own repo with simulated data;
-  phone apps on the phone, web apps on the monitor.
-- Room: bare walls, awards on the desk; the notebook is a blank page to draw on.
-- Project order: ranked by depth; FocusLock, Expense Tracker, Basket Price lead.
-- Copy: Basket Price framed neutrally; CrisisWatch framed around its
-  fixed-model constraint. Reddit Growth Copilot must not be shown. The word
-  "recruiter" must not appear in visible copy. Never fabricate links or metrics.
-- Scoped out: AI chat (paid key), multiplayer presence. Gaussian splats: gone.
-- Parked: per-project case-study page.
-
-## Tools
-
-`scripts/measure-gpu.mjs` (GPU ms per tier), `profile-interaction.mjs`,
-`record-motion.mjs`, `probe-*.mjs`, and the `__v3test` hooks
-(`localStorage['v3:test']='1'`). Run Playwright suites with `GPU=1`.
+Serve a build with `npx wrangler pages dev dist --port 8799`, then `BASE=http://localhost:8799`
+for the suites: `verify-v3` (45), `verify-mobile`, `verify-recruiter` (44), `verify-deeplinks`
+(13, needs `GPU=1`), `verify-keyboard`, `verify-os-apps` (5), `test-ask`. Suites check state,
+not feel: camera, timing and interaction changes need frames reviewed by eye.
 
 ## Reference docs
 
 [DESIGN.md](DESIGN.md), [ASSET-REGISTER.md](ASSET-REGISTER.md),
 [PROJECT-MATERIAL.md](PROJECT-MATERIAL.md), [PROJECTS-MAP.md](PROJECTS-MAP.md),
-[PERF-AUDIT.md](PERF-AUDIT.md), `archive/` (historical only).
-
-## Round 3 status (perf/lighten-room)
-
-Done: real-time shadows off (97a4aea), GitHub API mocked in suites (366c06d), booted-OS pre-raster cuts the first-key gap ~480 to ~210 ms (32549af), FocusLock Windows demo scales to narrow /work panels (a8323b7), demo sweep harness `scripts/review-demos.mjs`.
-Corrections: `aboutOpen` is live (the `/about` deep link, not dead); the 25 ms arrival-intro interruption did not reproduce; backtick and space keys verified.
-Demo sweep (4 viewports, 3 surfaces): no overflow or errors; at 915x412 touch, `/os/*` deep links show the landing deck instead of a window, and the /work demo panel is a ~270 px strip (functional, cramped).
-Still open: landscape-phone routing of OS apps, seated touch look-around in landscape, first monitor-entry hitch measurement, Fact-or-Cap naming (owner decision), empty dk-dev Pages project (not deleted), hand/pose authoring items (need frame sheets), phone-basketproof 915x412 shot missing.
-
-Round 3 continued: /work demo panel header readable (6600d03); dhruvOS windows fill the height on landscape phones (`public/os/styles.css`, `DhruvOSScreen.jsx`); seated touch look-around verified by `scripts/verify-touch-look.mjs` (drag turns the head at 915x412 and 412x915); the earlier "503" is the open-meteo weather call (now mocked in `scripts/_gh-mock.mjs`). First monitor entry hitches (~500 ms gaps, wallpaper `toBlob` 377 ms + one program link 300 ms) only when entering within ~8 s of reveal on a cold browser; clean after 20 s and on warm runs. Open: touch deep-link routing (proposal sheet), portrait OS FocusLock window clips on 412 px, hand/pose items (sheet `scripts/shots/hands/sheet-hand-items.png`).
-
-## Round 4 status (fix/mobile-ask-polish, 2026-10-28)
-
-Done (preview only, not on `main`):
-- Mobile fixes on `/work` and the room: section ids and headings, demo panel,
-  `?room=phone` opens the room on a phone instead of redirecting to `/work`
-  (option C; owner-approved). A cold load of `/work/#<id>` now scrolls to the section.
-- Ask: rewritten `public/os/shell/ask.js` / `ask-pill.js`. No fake typing,
-  lists and bold render, source links open the `/work` section, "Live AI
-  answer" vs "Saved answer" label (not the model name), New chat, Retry on
-  error (a 500 with an empty body shows the error, not "undefined"), and the close
-  animation runs to the end.
-- Job title is "Full-stack & AI developer" everywhere (`src/v3/content/index.js`,
-  the three HTML heads, Person JSON-LD with `sameAs` GitHub/LinkedIn/Blink and
-  `alumniOf`, a ProfilePage node on `/work`). dhruvOS content was regenerated with
-  `node scripts/gen-os-content.mjs` (the build doesn't run it).
-- Basic SEO: `Disallow: /api/` in robots.txt, sitemap `lastmod`, `/favicon.ico`.
-- Load: `/work` self-hosts IBM Plex (latin woff2 in `public/fonts/`, about 75 KB
-  total, no Google request). The after-hours GLBs are Draco: re-run
-  `npx gltf-transform draco in.glb out.glb` on any re-export. The decoder lives in
-  `public/draco/`, copied from `node_modules/three/examples/jsm/libs/draco/gltf/`.
-  Re-copy it when three is upgraded. Loaders go through `src/v3/desktop/modelLoader.js`.
-  Meshopt was rejected because its quantization breaks the keyboard's shared keycap
-  geometry and the lamp merge.
-
-Also done in Round 4:
-- dhruvOS About shows Blink's metrics as a stat grid (`public/os/apps/about.js`
-  reads `exp.metrics`). The AEO bullet is neutral: "Tracked AI-search (AEO)
-  citations for Blink across 18 prompts." The owner does not want the
-  old citation-comparison finding shown anywhere. No copilot demo.
-- `/`, `/resume` and `/os` self-host Space Grotesk and JetBrains Mono
-  (`public/fonts/`, weight ranges clamped to what Google served). No page loads Google Fonts.
-- `og.jpg` re-rendered with `scripts/render-og.mjs`; its caption reads "Full-stack & AI developer".
-- Stale suites fixed: room scripts no longer wait for `data-winter-city="ready"`
-  (the city is skipped), keyboard dip sampling, recruiter selector, and
-  `verify-mobile.mjs` rewritten for the current site.
-
-Open:
-- **Résumé PDF:** `public/resume.pdf` still has the old citation-comparison
-  clause in the Blink bullet. The four `internship/resume/*.tex` sources were fixed on
-  2026-10-28; the PDF needs a rebuild (Overleaf, as there's no LaTeX install here) and then
-  copying to `public/resume.pdf`.
-- **Option A (to do):** a real phone-first room, not the desktop room on a small
-  screen.
-- **Hands on the room's critical path:** `handSurface.js` awaits the 1.58 MB
-  hand binary at module scope, so no room asset starts until it lands. On
-  Chrome's slow-4G preset the reveal takes 30.7 s, and 23.0 s with the hand
-  file served instantly. A gain needs the bind deferred until after reveal: a
-  placeholder skinned mesh, a late geometry swap, a rest-lift recompute and
-  shader warm-up. That changes hand behaviour, so it needs owner approval and a
-  motion review. Only overlapping the fetch saves little because the bandwidth
-  is shared.
-- **Tried and dropped on 2026-11-01 (measured, not guessed):**
-  - KTX2 textures. The room's 17 images are 1.5 MB as JPG/PNG (the 1k roughness
-    maps are 11 KB). UASTC KTX2 came to 5.8 MB, and a plain ETC1S run of the
-    non-colour maps failed in `ktx2-encoder`. Adding the 584 KB Basis
-    transcoder makes it a net loss on the wire.
-  - Starting the room's own files beside `hands-v1.bin` (low-priority fetches
-    from `App.jsx`). Unthrottled it moved the first room request from 1.2 s to
-    0.4 s and the reveal stayed within noise (4.7 s against 4.4 s). At 10 Mbps it
-    was worse (7.8 s against 6.6 s). The hand file is done at 0.5 s; the wait is
-    shader compile after the assets land.
-  - Shrinking `ceiling-fixture.glb` and `desk-lamp.glb`. Both are already
-    Draco-compressed and geometry is under 150 KB; the weight is four 1k
-    textures each. Do not run `gltf-transform meshopt` on them:
-    `modelLoader.js` cannot decode it.
-- The room is night-only (`resolveSkyState()` always returns `'night'`), so
-  `?sky=day` and `?sky=dusk` render the same room.
-- The old brick set (`materials/after-hours/brick_wall_10/`) went with the
-  winter-city path; `phoneTextures.js` holds the phone-screen canvases that
-  used to live in `buildWorkspace.js`.
-- Held SEO (domain undecided): Search Console, swapping `/` and `/work`,
-  prerendering `/work`, an HTML résumé page, llms.txt.
-- Open offers: Ask conversation memory, Turnstile on `/api/ask`.
-- Ask open under 4× CPU throttle has long frames, GPU/compositor side; none
-  unthrottled. Check on a real phone.
-- The Deck is a 2D duplicate of `/work`.
+[PERF-AUDIT.md](PERF-AUDIT.md), [ASK.md](ASK.md), [CONTACT.md](CONTACT.md), `archive/` (historical).
