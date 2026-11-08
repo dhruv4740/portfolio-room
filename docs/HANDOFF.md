@@ -6,8 +6,9 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
 
 ## Where things are
 
-- **`main` is live**: `071176d` (PR #6) = https://dhruvkothari.pages.dev. Repo
-  `dhruv4740/portfolio-room`. No open PRs. Never commit to `main`; branch, PR, merge.
+- **`main` is live**: `370d9ff` (PR #8) = https://dhruvkothari.pages.dev. Repo
+  `dhruv4740/portfolio-room`. No open PRs; `main` is the only branch on GitHub. Never
+  commit to `main`; branch, PR, merge.
 - **Hosting:** Cloudflare Pages project `dhruvkothari`, direct upload (no Git
   integration, so deployments cannot be retried; every change needs a fresh deploy).
   - Preview: `npx wrangler pages deploy dist --project-name dhruvkothari --branch preview --commit-dirty=true`
@@ -20,7 +21,8 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
   are unavailable until the owner adds a domain. Domain: undecided.
 - **Pages variables** (all stored as `secret_text`, production): `GROQ_API_KEY`,
   `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `RESEND_API_KEY`, `STATS_TOKEN`, `ASK_SALT`,
-  `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY`. Preview has `STATS_TOKEN`, `ASK_SALT` and the two
+  `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY`; optional `HIT_VISITOR_CAP` (per-visitor daily
+  `/api/hit` cap, default 60). Preview has `STATS_TOKEN`, `ASK_SALT` and the two
   Turnstile ones (no AI keys, so preview Ask always gives saved answers).
   **Trap:** `wrangler.toml` is the config source of truth, so every deploy deletes
   dashboard/API `plain_text` variables. Store new ones as `secret_text` or add `[vars]`.
@@ -28,8 +30,11 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
   `/api/ask` since 2026-11-02. Verified 3/3 in a visible Chrome (Groq answered). A hidden or
   non-painting browser pane fails it. Analytics so far: 2 challenges on 2026-11-06, neither
   solved; too few to judge. Off switch: delete `TURNSTILE_SECRET` and redeploy.
-- **Checkouts:** `C:\Users\hp\pf-truescale` (this one), `pf-release`, `pf-roomspeed` and
-  `pf-docs` are worktrees of the same repo; branches in them are merged. The Desktop checkout
+- **D1** `dhruvkothari-analytics` (binding `DB`): `hits` and `hit_rate` (the `/api/hit`
+  limiter, `migrations/0002_hit_rate.sql`, applied to remote 2026-11-08).
+- **Checkouts:** `C:\Users\hp\pf-security` is the working worktree. `pf-truescale` is detached and holds
+  untracked owner/agent files (mockups/redesign, HANDOFF-PROMPT, PNGs). `pf-release`,
+  `pf-roomspeed` and `pf-docs` are pending removal. The Desktop checkout
   `...\random sites\portfolio` is 88 commits behind with the owner's untracked art candidates
   and `resume/resume.tex`: don't use it, don't clean it.
 - **Routes:** `/` work page (root `index.html`, `src/v3/work/entry.jsx`, no three.js);
@@ -45,25 +50,22 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
 
 ## Approved work queue (owner, 2026-11-08)
 
-1. **Security** (from the 2026-11-01 audit):
-   - `/api/hit` has no rate limit or origin check. No zone, so do it in the Function
-     (KV counter like `/api/ask`, plus an `Origin`/`Referer` check).
-   - Contact form: Resend's test sender may only deliver to the Resend account owner.
-     Do a real test send to the owner's own address and report whether it arrives; a real
-     sender needs a verified domain, which needs the domain decision.
-   - No CSP, X-Frame-Options or HSTS. Add them in `public/_headers` (it already sets
-     `nosniff` and `Referrer-Policy`). The CSP must allow Turnstile
-     (`challenges.cloudflare.com`), the Web Analytics beacon, open-meteo, the GitHub API,
-     blob/worker use by three.js and the dhruvOS iframe (`frame-ancestors 'self'`, not `DENY`).
-     Test every page and the room on preview with the console open before production.
-   - Room markers' `aria-label`s don't match their visible text (Monitor, Phone).
-2. **Résumé PDF.** `public/resume.pdf` still has the old citation-comparison clause in the
-   Blink bullet (the owner never wants that finding shown). Sources are in
-   `C:\Users\hp\OneDrive\Desktop\internship\resume\` (`mine.tex`, `resume_internship.tex`,
-   `resume_linkedin.tex`, `src/resume_faangpath.tex`); work out which one the public PDF
-   comes from by comparing text. Tectonic is installed:
-   `C:\Users\hp\AppData\Local\Programs\tectonic\tectonic.exe`. The public PDF must not
-   contain a phone number. Show the owner the rebuilt PDF before it goes live.
+1. **Security** (from the 2026-11-01 audit): shipped 2026-11-08 (PR #8).
+   - `/api/hit`: same-origin check (Origin, else Referer) plus a per-visitor daily cap in D1
+     (not KV: the KV free plan allows 1,000 writes/day, shared with Ask). Fails open.
+   - Enforcing CSP, `X-Frame-Options: SAMEORIGIN` and HSTS (no preload) in `public/_headers`.
+     `script-src` keeps `'unsafe-inline'` (inline scripts in the pages and ~190 in the static
+     app exports), so it limits sources, not injection. Functions responses don't get `_headers`.
+   - Room markers' `aria-label`s now match their visible text.
+   - **Contact:** 3 real sends on 2026-11-08 were saved to KV but Resend returned 403, so
+     nothing was emailed. `contact.js` now logs Resend's error body. Cause unconfirmed (likely
+     the Resend account address differs from `CONTACT_TO`); owner to check. A real sender
+     needs a verified domain.
+2. **Résumé PDF.** Rebuilt without the citation-comparison clause or a phone number from
+   `resume_linkedin.tex` (the source of the public PDF) in `C:\Users\hp\pf-resume-build\`.
+   Font is TeX Gyre Termes: Times New Roman breaks `;` text extraction. Awaiting the owner's
+   approval before it replaces `public/resume.pdf`. Tectonic:
+   `C:\Users\hp\AppData\Local\Programs\tectonic\tectonic.exe`.
 3. **Option A: a real phone room.** Same room on phones with fixed viewpoints: tap an
    object and the camera glides there, no drag-to-look, no hands, lighter models and
    textures. Today phones get `/` with an opt-in `?room=phone` (option C, shipped).
@@ -71,9 +73,6 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
 
 ## Still the owner's call (ask once, only these)
 
-- **Cellbook year:** the site says 2026, guessed from the repo creation date; the résumé gives none.
-- **Blackout claim:** the site and résumé say the black screen lifts for calls and alarms;
-  never verified on the owner's phone.
 - **Domain:** unlocks zone security features, a real Resend sender and the held SEO work
   (Search Console, HTML résumé, llms.txt).
 - Behaviour-changing speed work (below).
@@ -91,6 +90,8 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
   Growth Copilot never shown. The word "recruiter" never in visible copy. Never fabricate
   links or metrics. The AEO citation-comparison finding is never shown.
 - Scoped out: multiplayer, Gaussian splats. Parked: per-project case-study page.
+- Cellbook is 2026 (owner, 2026-11-08). The Blackout calls-and-alarms claim is treated as
+  verified (owner, 2026-11-08).
 - Nothing visible is removed or changed without the owner's permission.
 
 ## Open problems (not approved; propose, don't start)
@@ -125,8 +126,11 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
 
 Serve a build with `npx wrangler pages dev dist --port 8799`, then `BASE=http://localhost:8799`
 for the suites: `verify-v3` (45), `verify-mobile`, `verify-recruiter` (44), `verify-deeplinks`
-(13, needs `GPU=1`), `verify-keyboard`, `verify-os-apps` (5), `test-ask`. Suites check state,
-not feel: camera, timing and interaction changes need frames reviewed by eye.
+(13, needs `GPU=1`), `verify-keyboard`, `verify-os-apps` (5), `test-ask`, `test-hit` (plain `node scripts/test-hit.mjs`).
+Suites check state,
+not feel: camera, timing and interaction changes need frames reviewed by eye. CSP violations
+do not reach Playwright console events or the Chrome extension console: check them with a
+`securitypolicyviolation` listener added via `addInitScript`.
 
 ## Reference docs
 
