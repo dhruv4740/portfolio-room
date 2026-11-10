@@ -23,9 +23,11 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
 - **Domain:** the owner bought `dhruvkothari.com` on Cloudflare Registrar on 2026-11-11 (zone
   `e42ac34366ff8e326ea6b2da2c474bf0`, Free plan, active, Cloudflare nameservers). On 2026-11-11
   (owner-approved) `dhruvkothari.com` and `www.dhruvkothari.com` were attached as custom
-  domains on the Pages project via the API: status `pending` (HTTP validation, certificate
-  authority Google), no DNS records visible yet at the time of writing; re-check in the
-  dashboard. The Turnstile widget "dhruvkothari.pages.dev Ask" now lists `dhruvkothari.pages.dev`,
+  domains on the Pages project via the API (certificate authority Google). The API created no DNS
+  records, so two proxied CNAMEs were added to the zone the same day, `dhruvkothari.com` and
+  `www`, both → `dhruvkothari.pages.dev` (the records the dashboard flow would create). Both
+  domains then went `active` (HTTP validation) and serve 200 over TLS; they currently serve the
+  last production deploy, whose canonicals still say `pages.dev`. The Turnstile widget "dhruvkothari.pages.dev Ask" now lists `dhruvkothari.pages.dev`,
   `dhruvkothari.com` and `www.dhruvkothari.com`. Not done on purpose: redirects, email routing,
   WAF/bot settings, deploys, remote D1 migration. Zone Bot settings are all off (AI bot
   protection, managed robots.txt, Bot Fight Mode); Security Level is `medium`. On the branch

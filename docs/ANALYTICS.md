@@ -2,7 +2,7 @@
 
 Two layers, production hosts only (`dhruvkothari.pages.dev`, `dhruvkothari.com`, `www.dhruvkothari.com`; preview and per-deploy URLs are excluded):
 
-1. **Cloudflare Web Analytics** beacon, injected from `index.html`.
+1. **Cloudflare Web Analytics** beacon, injected by an inline host-gated script in `room/index.html` only (the work page `/` and `/resume/` do not load it).
 2. **First-party visit log**: `src/v3/lib/analytics.js` (and an inline snippet in `resume/index.html`)
    `sendBeacon`s to `functions/api/hit.js`, stored in D1 `dhruvkothari-analytics` (binding `DB`,
    schema `migrations/0001_hits.sql`).
