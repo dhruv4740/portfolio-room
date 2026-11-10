@@ -3,6 +3,7 @@
 // Guards: same-origin only (Origin, else Referer host must equal the request host) and a
 // per-visitor daily cap kept in D1 (table hit_rate, key = salted SHA-256 of IP + UTC day).
 // The limiter fails open: a missing table or D1 error still records the hit.
+const PROD_HOSTS = ['dhruvkothari.pages.dev', 'dhruvkothari.com', 'www.dhruvkothari.com'];
 const hostOf = (u) => { try { return new URL(u).host; } catch { return null; } };
 
 async function overCap(request, env) {
@@ -22,7 +23,7 @@ async function overCap(request, env) {
 export async function onRequestPost({ request, env }) {
   const url = new URL(request.url);
   // Production host only: preview and per-deploy URLs never count toward the owner's numbers.
-  if (url.hostname !== 'dhruvkothari.pages.dev') return new Response(null, { status: 204 });
+  if (!PROD_HOSTS.includes(url.hostname)) return new Response(null, { status: 204 });
   const origin = request.headers.get('Origin');
   const from = origin ? hostOf(origin) : hostOf(request.headers.get('Referer'));
   if (from !== url.host) return new Response(null, { status: 403 });
@@ -31,8 +32,13 @@ export async function onRequestPost({ request, env }) {
   if (await overCap(request, env)) return new Response(null, { status: 429 });
   const s = (v, n) => String(v ?? '').slice(0, n);
   const cf = request.cf || {};
-  await env.DB.prepare('INSERT INTO hits (ts, kind, path, ref, dev, country, city, secs) VALUES (?,?,?,?,?,?,?,?)')
-    .bind(Date.now(), b.t === 'end' ? 'end' : 'view', s(b.path, 200), s(b.ref, 100), s(b.dev, 10), s(cf.country, 4), s(cf.city, 60), Number(b.secs) || 0)
-    .run();
+  const src = typeof b.src === 'string' && /^[a-z0-9-]{1,24}$/.test(b.src.toLowerCase()) ? b.src.toLowerCase() : null;
+  const row = [Date.now(), b.t === 'end' ? 'end' : 'view', s(b.path, 200), s(b.ref, 100), s(b.dev, 10), s(cf.country, 4), s(cf.city, 60), Number(b.secs) || 0];
+  try {
+    await env.DB.prepare('INSERT INTO hits (ts, kind, path, ref, dev, country, city, secs, src) VALUES (?,?,?,?,?,?,?,?,?)').bind(...row, src).run();
+  } catch {
+    // Fail open: migration 0003 (src column) may not be applied yet; store the hit without it.
+    await env.DB.prepare('INSERT INTO hits (ts, kind, path, ref, dev, country, city, secs) VALUES (?,?,?,?,?,?,?,?)').bind(...row).run();
+  }
   return new Response(null, { status: 204 });
 }

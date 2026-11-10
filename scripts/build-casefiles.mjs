@@ -43,7 +43,7 @@ ${sec('Problem', e.cs.problem)}${sec('Decisions', e.cs.decisions)}${sec('Result'
 ${shot ? `<img src="${shot}" alt="">` : ''}
 ${e.facts.length ? `<ul class="facts">${e.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
 <p class="chips">${esc(e.tech.join(' · '))}</p>
-<footer>${esc(contact.email)} · ${esc(contact.githubLabel || contact.github)}${e.links.length ? ` · ${esc(e.links.join(' · '))}` : ''} · dhruvkothari.pages.dev</footer>`;
+<footer>${esc(contact.email)} · ${esc(contact.githubLabel || contact.github)}${e.links.length ? ` · ${esc(e.links.join(' · '))}` : ''} · dhruvkothari.com</footer>`;
 }
 
 let chromium;

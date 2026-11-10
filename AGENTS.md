@@ -9,17 +9,17 @@ another one. Update it at the end of a session. Where every project is
 surfaced (work page, dhruvOS, phone): [docs/PROJECTS-MAP.md](docs/PROJECTS-MAP.md).
 
 **Branches.** `main` is live (https://dhruvkothari.pages.dev, Cloudflare Pages
-project `dhruvkothari`). Work happens on a `fix/`, `chore/` or `docs/` branch in a worktree off
-`origin/main`. The old stacked `feat/*` branches are gone. Nothing
-visible changes without the owner's explicit OK.
+project `dhruvkothari`). Work happens on a `feat/`, `fix/`, `chore/` or `docs/` branch in a
+worktree off `origin/main`. Merging to `main` happens only after the owner says yes.
+The owner reviews visual changes on the preview URL after being told what changed and what
+to look for. Nothing visible changes without the owner's explicit OK.
 
-**Who works here.** One agent (Claude) owns the whole repo: code, 3D, tests,
-docs. There are no file reservations and no GPU-slot protocol. Subagents are
-allowed for exploration (Sonnet or Haiku). An optional offline Gemini lane
-exists for menial, well-specified work: write a self-contained prompt (template
-`docs/archive/PROMPT-GEMINI-WORKHORSE.md`), the owner
-forwards it, and nothing blocks on it. Old team, ownership and prompt documents
-are in `docs/archive/` and are historical only.
+**Who works here.** Claude only: an Opus lead (decisions, review, no code changes) and
+one Sonnet worker session that makes all changes. The worker commits and pushes to
+branches; the lead reviews; the owner approves merges and visual changes. Subagents are
+for read-only exploration (Haiku). There are no file reservations and no GPU-slot
+protocol. Old team, ownership and prompt documents are in `docs/archive/` and are
+historical only.
 
 **Direction.** The goal is a good portfolio that gets the owner an internship.
 The recruiter path (the work page at `/`, `/resume/`, the escape link on `/room/`) comes first and
@@ -33,13 +33,15 @@ IST and the weather is live (never snow).
 
 A personal portfolio (Dhruv Kothari). Its first job is to get an internship
 screener to the facts fast; its second is to show the work through the room. One
-content source drives three surfaces chosen at runtime by device capability:
+content source drives two surfaces chosen at runtime by device capability:
 
 | Surface  | Route    | Who gets it                                       | Source            |
 |----------|----------|---------------------------------------------------|-------------------|
 | `static` | `/`      | the default page, and anyone on a software GPU, saveData or a phone | `src/v3/work/` |
 | `scan`   | `/room/` | desktop + real GPU                                | `src/v3/desktop/` |
-| `deck`   | `/room/` | touch devices that open the room                  | `src/v3/mobile/`  |
+
+There is no separate phone surface (`src/v3/mobile/` does not exist). Phones get `/`;
+`?room=phone` opens the same desktop room on a phone (`src/v3/lib/capability.js`).
 
 `/` is the work page (root `index.html`, React entry `src/v3/work/entry.jsx`, no router,
 no three.js). `/room/` (`room/index.html`) is the HashRouter app in `src/v3/App.jsx`.
@@ -70,27 +72,30 @@ you to `curl` a `.splat` file, they are stale — ignore them.**
 
 ```bash
 npm run build     # production build; also generates the OS vendor libs, OS content.js and case-file PDFs
-npm run dev       # dev server (port 4173 via .claude/launch.json)
-node node_modules/vite/bin/vite.js preview --host localhost --port 4173
-GPU=1 BASE=http://localhost:4173 node scripts/verify-v3.mjs
-GPU=1 BASE=http://localhost:4173 node scripts/verify-os-apps.mjs
-GPU=1 BASE=http://localhost:4173 node scripts/verify-deeplinks.mjs
-GPU=1 BASE=http://localhost:4173 node scripts/verify-tour.mjs
+npm run dev       # vite dev server (editing only; not the test server)
+npx wrangler pages dev dist --port 8799   # the test server: dist plus functions/ and a local D1
+BASE=http://localhost:8799 node scripts/verify-v3.mjs
+BASE=http://localhost:8799 node scripts/verify-recruiter.mjs
+GPU=1 BASE=http://localhost:8799 node scripts/verify-os-apps.mjs
+GPU=1 BASE=http://localhost:8799 node scripts/verify-deeplinks.mjs
+GPU=1 BASE=http://localhost:8799 node scripts/verify-tour.mjs
 GPU=1 node scripts/report-frames.mjs <prefix>   # landing, seated, hands, window frames
-BASE=http://localhost:4175 sh scripts/run-suites.sh   # the ten GPU regression suites, one line each
+BASE=http://localhost:8799 sh scripts/run-suites.sh   # the GPU regression suites, one line each
 node scripts/build-apps.mjs darksentinel   # rebuild a real project UI into public/apps/
 ```
 
-Invoke Vite's bin directly for preview — `npm run preview` strips arguments on
-this machine. There is **no lint and no test script**; `npm run build` plus the
-Playwright harness is the entire quality signal.
-
-The verification scripts default to `http://localhost:4173`; keep the preview
-and `BASE` on that same origin so a run cannot silently test another server.
+There is **no lint and no test script**; `npm run build` plus the Playwright harness
+is the entire quality signal. The one documented test server is
+`npx wrangler pages dev dist --port 8799` (the functions need it); always pass
+`BASE=http://localhost:8799`, because some scripts still default to other ports
+(4173, 4176) and would silently test another server. Local D1: apply `migrations/*.sql`
+with `npx wrangler d1 execute dhruvkothari-analytics --local --file <file>`. The analytics
+client reports only on production hosts, so exercise `/api/hit` with curl and `Host` and
+`Origin` headers (see `scripts/test-hit.mjs`).
 **Run Playwright suites with `GPU=1`** (real AMD iGPU through ANGLE D3D11).
 Without it, software rendering starves input and clicks hang. Never trust a
 SwiftShader frame for a visual claim. The dev server has run every suite so far;
-also check a production build (`npm run build`, then preview) before claiming a
+also check a production build (`npm run build`, then the test server) before claiming a
 release works, because the two use different JSX transform paths.
 
 ## Invariants
@@ -181,11 +186,11 @@ deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
 
 ## Git
 
-- Never commit to `main`/`master`, never merge to main. Branch names are
-  `fix/`, `chore/`, `docs/`; big bets get their own branch. Deploy to the `preview`
+- Never commit to `main`/`master`; merge to `main` only after the owner says yes.
+  Branch names are `feat/`, `fix/`, `chore/`, `docs/`; big bets get their own branch. Deploy to the `preview`
   branch only (`wrangler pages deploy dist --project-name dhruvkothari --branch preview`).
 - Conventional Commits, subject under 72 chars, no trailing period.
-- Commit per logical unit and push. Remote `origin` is the private
+- Commit per logical unit and push to the working branch. Remote `origin` is the public
   `dhruv4740/portfolio-room` (not the unrelated `dhruv4740/portfolio`).
 - No attribution or co-author lines.
 
@@ -198,7 +203,7 @@ deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
   passing suite.
 - State what is measured vs. inferred. "I don't know" is a complete answer.
 - Anything skipped or stubbed gets a named line in the final report.
-- The user dislikes long waits, redundant checks and heavy delegation. One clean
+- The user dislikes long waits and redundant checks. One clean
   verification run, fix, one confirming run — not a probe loop.
 - Never fabricate project links, metrics or evidence. Those come from the user.
 - **Green suites don't prove an interaction feels right.** The suites check
@@ -235,7 +240,6 @@ src/v3/
   (public/os/shell/iframeApp.js  window wrapper for a built project UI)
 apps/<name>/            copied project source + mock layer + PORTFOLIO.md
 public/apps/<name>/     its static build (committed; scripts/build-apps.mjs)
-  mobile/Deck.jsx       100dvh scroll-snap + gyro
   work/Work.jsx         the work page served at /, no WebGL
   ui/                   Telemetry, AnchorPanel, ScanIntro, CommandPalette (Ctrl/Cmd+K)
   lib/loadProgress.js   real load progress (boot bar, room-detail bar)
