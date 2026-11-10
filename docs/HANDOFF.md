@@ -10,6 +10,8 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
   (all changes). The worker commits and pushes to branches; `main` is merged only after the
   owner says yes; the owner reviews visual changes on the preview URL after being told what
   changed and what to look for.
+- **Branch names:** `feat/`, `fix/`, `chore/` or `docs/` only. The owner does not want
+  `claude/...` branches; rename any session-generated branch before pushing or opening a PR.
 - **`main` is live**: `a369674` (PR #9, docs-only on top of `370d9ff`, PR #8) =
   https://dhruvkothari.pages.dev. Repo `dhruv4740/portfolio-room` (public). Never commit to
   `main`; branch, then merge after the owner's yes.
