@@ -1,6 +1,6 @@
 # Analytics
 
-Two layers, production hosts only (`*.dhruvkothari.pages.dev`):
+Two layers, production hosts only (`dhruvkothari.pages.dev`, `dhruvkothari.com`, `www.dhruvkothari.com`; preview and per-deploy URLs are excluded):
 
 1. **Cloudflare Web Analytics** beacon, injected from `index.html`.
 2. **First-party visit log**: `src/v3/lib/analytics.js` (and an inline snippet in `resume/index.html`)

@@ -3,7 +3,7 @@
 // only; skipped for the owner (localStorage v3:no-track) and test runs (v3:test).
 const ok = () => {
   try {
-    return location.hostname==='dhruvkothari.pages.dev'
+    return ['dhruvkothari.pages.dev','dhruvkothari.com','www.dhruvkothari.com'].includes(location.hostname)
       && !localStorage.getItem('v3:no-track') && !localStorage.getItem('v3:test');
   } catch { return false; }
 };

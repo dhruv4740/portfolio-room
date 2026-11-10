@@ -33,4 +33,8 @@ reset(); assert.equal(await post(same, 'abc123.dhruvkothari.pages.dev'), 204); a
 reset(); await post(same, undefined, {}, { src: 'LinkedIn' }); assert.equal(inserts[0][8], 'linkedin'); t('src stored, lowercased');
 reset(); for (const bad of ['a b', 'x'.repeat(25), '<script>', '', 5, null]) await post(same, undefined, {}, { src: bad }); assert.ok(inserts.length === 6 && inserts.every((r) => r[8] === null)); t('bad src -> null');
 reset(); noSrcCol = true; assert.equal(await post(same, undefined, {}, { src: 'github' }), 204); assert.equal(inserts.length, 1); assert.equal(inserts[0].length, 8); t('missing src column: hit stored without src');
+for (const h of ['dhruvkothari.com', 'www.dhruvkothari.com']) { reset(); assert.equal(await post({ origin: `https://${h}` }, h), 204); assert.equal(inserts.length, 1); t(`${h} recorded`); }
+reset(); assert.equal(await post({ origin: 'https://evil.example' }, 'dhruvkothari.com'), 403); assert.equal(inserts.length, 0); t('dhruvkothari.com host, foreign origin 403');
+reset(); assert.equal(await post({ origin: 'https://dhruvkothari.com' }), 403); t('pages.dev host, cross-site origin 403');
+reset(); assert.equal(await post({ origin: 'https://dhruvkothari.com' }, 'evil-dhruvkothari.com'), 204); assert.equal(inserts.length, 0); t('lookalike host not recorded');
 console.log('hit tests passed');
