@@ -1,14 +1,18 @@
 # Handoff
 
 The single status document. Commands, invariants and traps: [AGENTS.md](../AGENTS.md).
-Last updated 2026-11-08. The previous version, with the history behind older items, is
+Last updated 2026-11-11. The previous version, with the history behind older items, is
 [archive/HANDOFF-2026-11-01.md](archive/HANDOFF-2026-11-01.md).
 
 ## Where things are
 
-- **`main` is live**: `370d9ff` (PR #8) = https://dhruvkothari.pages.dev. Repo
-  `dhruv4740/portfolio-room`. No open PRs; `main` is the only branch on GitHub. Never
-  commit to `main`; branch, PR, merge.
+- **Team:** an Opus lead (decisions, review, no code changes) plus one Sonnet worker session
+  (all changes). The worker commits and pushes to branches; `main` is merged only after the
+  owner says yes; the owner reviews visual changes on the preview URL after being told what
+  changed and what to look for.
+- **`main` is live**: `a369674` (PR #9, docs-only on top of `370d9ff`, PR #8) =
+  https://dhruvkothari.pages.dev. Repo `dhruv4740/portfolio-room` (public). Never commit to
+  `main`; branch, then merge after the owner's yes.
 - **Hosting:** Cloudflare Pages project `dhruvkothari`, direct upload (no Git
   integration, so deployments cannot be retried; every change needs a fresh deploy).
   - Preview: `npx wrangler pages deploy dist --project-name dhruvkothari --branch preview --commit-dirty=true`
@@ -16,9 +20,12 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
   - Production: same with `--branch main`, **only after a fresh explicit yes from the owner**.
   - Build production from a clean worktree at `origin/main` with its own `npm ci`. Never
     junction `node_modules` into a worktree: `git worktree remove --force` deletes the target.
-- **No Cloudflare zone.** The account owns no domain; the site is only on `pages.dev`.
-  Zone features (Bot Fight Mode, WAF custom rules, rate-limiting rules, Transform rules)
-  are unavailable until the owner adds a domain. Domain: undecided.
+- **Domain:** the owner bought `dhruvkothari.com` on Cloudflare Registrar on 2026-11-11. It is
+  not yet attached to the Pages project, so the live site is still only on `pages.dev`. Zone
+  features (Bot Fight Mode, WAF custom rules, rate-limiting rules, Transform rules) become
+  available once the zone is active. The code (branch `claude/docs-and-source-tracking-7dff75`)
+  accepts `dhruvkothari.com` and `www.dhruvkothari.com` for analytics; canonical/OG/sitemap/
+  robots URLs still say `pages.dev` and switch in one later commit.
 - **Pages variables** (all stored as `secret_text`, production): `GROQ_API_KEY`,
   `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `RESEND_API_KEY`, `STATS_TOKEN`, `ASK_SALT`,
   `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY`; optional `HIT_VISITOR_CAP` (per-visitor daily
@@ -32,11 +39,13 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
   solved; too few to judge. Off switch: delete `TURNSTILE_SECRET` and redeploy.
 - **D1** `dhruvkothari-analytics` (binding `DB`): `hits` and `hit_rate` (the `/api/hit`
   limiter, `migrations/0002_hit_rate.sql`, applied to remote 2026-11-08).
-- **Checkouts:** `C:\Users\hp\pf-security` is the working worktree. `pf-truescale` is detached and holds
-  untracked owner/agent files (mockups/redesign, HANDOFF-PROMPT, PNGs). `pf-release`,
-  `pf-roomspeed` and `pf-docs` are pending removal. The Desktop checkout
-  `...\random sites\portfolio` is 88 commits behind with the owner's untracked art candidates
-  and `resume/resume.tex`: don't use it, don't clean it.
+- **Checkouts:** the Desktop checkout `...\random sites\portfolio` is current with
+  `origin/main` and is the lead's checkout; its untracked owner files (art candidates, an old
+  `resume/resume.tex` draft) must not be cleaned. That `resume.tex` is an old untracked draft,
+  not the source of `public/resume.pdf` (that is `resume_linkedin.tex`, see work queue 2).
+  The worker uses its own worktree under `.claude/worktrees/`. `pf-docs` and `pf-roomspeed`
+  were removed 2026-11-10; `pf-release` is pending removal by the owner; `pf-truescale` is
+  detached and still holds owner files (mockups/redesign, HANDOFF-PROMPT, PNGs): don't clean it.
 - **Routes:** `/` work page (root `index.html`, `src/v3/work/entry.jsx`, no three.js);
   `/room/` 3D room (`room/index.html`, HashRouter `src/v3/App.jsx`); `/resume/`;
   `/work*` 301 → `/`; old room links (`/?tour=1`, `/#/...`) forwarded to `/room/` by the
@@ -44,8 +53,9 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
   2026-11-01 ([ANALYTICS.md](ANALYTICS.md)).
 - **Build:** `npm run build` regenerates `public/os/vendor/*`, `public/os/shell/content.js`
   (both git-ignored) and the case-file PDFs (tracked; commit only when text changed).
-  Never commit `tmp-measure/`. CRLF files: `Scan.jsx`, `Deck.jsx`, `Work.jsx`, `index.html`,
-  `perfGovernor.js`.
+  Never commit `tmp-measure/`. CRLF files: `Scan.jsx`, `Work.jsx`, `index.html`,
+  `perfGovernor.js`, and in practice most tracked source and docs (check with `file` before
+  editing).
 - Every project and where it shows: [PROJECTS-MAP.md](PROJECTS-MAP.md).
 
 ## Approved work queue (owner, 2026-11-08)
@@ -66,15 +76,25 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
    Font is TeX Gyre Termes: Times New Roman breaks `;` text extraction. Awaiting the owner's
    approval before it replaces `public/resume.pdf`. Tectonic:
    `C:\Users\hp\AppData\Local\Programs\tectonic\tectonic.exe`.
-3. **Option A: a real phone room.** Same room on phones with fixed viewpoints: tap an
-   object and the camera glides there, no drag-to-look, no hands, lighter models and
-   textures. Today phones get `/` with an opt-in `?room=phone` (option C, shipped).
-   Measure on a real phone; show the owner frames/recordings in motion before shipping.
+3. **Option A (phone room): dropped for now.** Revisit with real traffic data. Phones get `/`
+   with an opt-in `?room=phone` (option C, shipped).
+4. **Multi-page recruiter path with software-engineering positioning** (home, 3-4 case-study
+   pages, résumé). Approved, not started. Target role is software engineering.
+5. **Room frozen:** stays live, no new development.
+6. **Cellbook demo:** planned.
+7. **Eco Water card removal:** proposed by the lead, not yet confirmed by the owner. Do not
+   remove it until the owner says yes.
+8. **`?from=` visit-source tracking:** on branch `claude/docs-and-source-tracking-7dff75`,
+   awaiting review. Migration `0003_hits_src.sql` must be applied to remote D1 on merge;
+   until then hits are still stored, without `src`. Tags in use: `linkedin`, `github`,
+   `resume`.
 
 ## Still the owner's call (ask once, only these)
 
-- **Domain:** unlocks zone security features, a real Resend sender and the held SEO work
-  (Search Console, HTML résumé, llms.txt).
+- **Attaching `dhruvkothari.com`** to Pages (bought 2026-11-11): unlocks zone security
+  features, a real Resend sender and the held SEO work (Search Console, HTML résumé,
+  llms.txt). Account-side steps: add the custom domain to the Pages project, add the new
+  hostnames to the Turnstile widget, check the Web Analytics site hostnames.
 - Behaviour-changing speed work (below).
 
 ## Owner decisions on record (never re-ask)
@@ -87,7 +107,10 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
 - Room: bare walls, awards on the desk, notebook is a blank page. Night only.
 - Project order by depth: FocusLock, Expense Tracker, Basket Price lead.
 - Copy: Basket Price neutral; CrisisWatch framed around its fixed-model constraint. Reddit
-  Growth Copilot never shown. The word "recruiter" never in visible copy. Never fabricate
+  Growth Copilot never shown (**conflicts with the live page, pending owner**: the work page
+  shows a "Reddit growth copilot" row: `blinkTools` entry `reddit` at
+  `src/v3/content/index.js:330`, rendered in the Blink tools list in `src/v3/work/Work.jsx`;
+  Reddit is also named in `content/index.js` lines 24, 55 and 73). The word "recruiter" never in visible copy. Never fabricate
   links or metrics. The AEO citation-comparison finding is never shown.
 - Scoped out: multiplayer, Gaussian splats. Parked: per-project case-study page.
 - Cellbook is 2026 (owner, 2026-11-08). The Blackout calls-and-alarms claim is treated as
@@ -124,8 +147,8 @@ Last updated 2026-11-08. The previous version, with the history behind older ite
 
 ## Testing
 
-Serve a build with `npx wrangler pages dev dist --port 8799`, then `BASE=http://localhost:8799`
-for the suites: `verify-v3` (45), `verify-mobile`, `verify-recruiter` (44), `verify-deeplinks`
+Serve a build with `npx wrangler pages dev dist --port 8799` (the only test server), then
+`BASE=http://localhost:8799` for the suites: `verify-v3` (45), `verify-mobile`, `verify-recruiter` (44), `verify-deeplinks`
 (13, needs `GPU=1`), `verify-keyboard`, `verify-os-apps` (5), `test-ask`, `test-hit` (plain `node scripts/test-hit.mjs`).
 Suites check state,
 not feel: camera, timing and interaction changes need frames reviewed by eye. CSP violations
