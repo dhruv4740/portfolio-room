@@ -31,8 +31,13 @@ export async function onRequestPost({ request, env }) {
   if (await overCap(request, env)) return new Response(null, { status: 429 });
   const s = (v, n) => String(v ?? '').slice(0, n);
   const cf = request.cf || {};
-  await env.DB.prepare('INSERT INTO hits (ts, kind, path, ref, dev, country, city, secs) VALUES (?,?,?,?,?,?,?,?)')
-    .bind(Date.now(), b.t === 'end' ? 'end' : 'view', s(b.path, 200), s(b.ref, 100), s(b.dev, 10), s(cf.country, 4), s(cf.city, 60), Number(b.secs) || 0)
-    .run();
+  const src = typeof b.src === 'string' && /^[a-z0-9-]{1,24}$/.test(b.src.toLowerCase()) ? b.src.toLowerCase() : null;
+  const row = [Date.now(), b.t === 'end' ? 'end' : 'view', s(b.path, 200), s(b.ref, 100), s(b.dev, 10), s(cf.country, 4), s(cf.city, 60), Number(b.secs) || 0];
+  try {
+    await env.DB.prepare('INSERT INTO hits (ts, kind, path, ref, dev, country, city, secs, src) VALUES (?,?,?,?,?,?,?,?,?)').bind(...row, src).run();
+  } catch {
+    // Fail open: migration 0003 (src column) may not be applied yet; store the hit without it.
+    await env.DB.prepare('INSERT INTO hits (ts, kind, path, ref, dev, country, city, secs) VALUES (?,?,?,?,?,?,?,?)').bind(...row).run();
+  }
   return new Response(null, { status: 204 });
 }

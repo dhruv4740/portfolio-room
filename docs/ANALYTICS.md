@@ -9,7 +9,7 @@ Two layers, production hosts only (`*.dhruvkothari.pages.dev`):
 
 Logged per event: time, kind (view/end), path incl. hash route, referrer host, device class
 (phone/tablet/desktop), country and city from `request.cf`, dwell seconds (on `pagehide`).
-Not logged: IP, cookies, fingerprints, user agent. No `?r=` tags; every visit is logged untagged.
+Not logged: IP, cookies, fingerprints, user agent. Visit source: links tagged `?from=<slug>` (lowercase a-z, 0-9, `-`, max 24 chars; anything else is ignored) store the slug in `hits.src`. The client keeps it in `sessionStorage` so later pages of the same visit carry it; the server re-validates and stores null for bad values. Tags in use: `linkedin`, `github`, `resume`. Untagged visits show as `(untagged)` in the "By source" table on `/stats`. Needs migration `0003_hits_src.sql`; until it is applied remotely, hits are still stored, just without `src`.
 Surfaces reached show up as paths (`/`, `/resume/`, `/resume/pdf-click`, `/room/#/...`).
 
 **Path change:** the work page moved from `/work/` to `/` (room: `/` to `/room/`). Visits
