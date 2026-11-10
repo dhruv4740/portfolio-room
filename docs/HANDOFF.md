@@ -20,12 +20,18 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
   - Production: same with `--branch main`, **only after a fresh explicit yes from the owner**.
   - Build production from a clean worktree at `origin/main` with its own `npm ci`. Never
     junction `node_modules` into a worktree: `git worktree remove --force` deletes the target.
-- **Domain:** the owner bought `dhruvkothari.com` on Cloudflare Registrar on 2026-11-11. It is
-  not yet attached to the Pages project, so the live site is still only on `pages.dev`. Zone
-  features (Bot Fight Mode, WAF custom rules, rate-limiting rules, Transform rules) become
-  available once the zone is active. The code (branch `claude/docs-and-source-tracking-7dff75`)
-  accepts `dhruvkothari.com` and `www.dhruvkothari.com` for analytics; canonical/OG/sitemap/
-  robots URLs still say `pages.dev` and switch in one later commit.
+- **Domain:** the owner bought `dhruvkothari.com` on Cloudflare Registrar on 2026-11-11 (zone
+  `e42ac34366ff8e326ea6b2da2c474bf0`, Free plan, active, Cloudflare nameservers). On 2026-11-11
+  (owner-approved) `dhruvkothari.com` and `www.dhruvkothari.com` were attached as custom
+  domains on the Pages project via the API: status `pending` (HTTP validation, certificate
+  authority Google), no DNS records visible yet at the time of writing; re-check in the
+  dashboard. The Turnstile widget "dhruvkothari.pages.dev Ask" now lists `dhruvkothari.pages.dev`,
+  `dhruvkothari.com` and `www.dhruvkothari.com`. Not done on purpose: redirects, email routing,
+  WAF/bot settings, deploys, remote D1 migration. Zone Bot settings are all off (AI bot
+  protection, managed robots.txt, Bot Fight Mode); Security Level is `medium`. On the branch
+  `claude/docs-and-source-tracking-7dff75` the analytics/host checks accept all three hosts and
+  `dhruvkothari.com` (apex) is the canonical/OG/sitemap/robots URL (`.env.production`); the
+  live site only serves it after the next production deploy.
 - **Pages variables** (all stored as `secret_text`, production): `GROQ_API_KEY`,
   `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `RESEND_API_KEY`, `STATS_TOKEN`, `ASK_SALT`,
   `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY`; optional `HIT_VISITOR_CAP` (per-visitor daily
@@ -91,10 +97,11 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
 
 ## Still the owner's call (ask once, only these)
 
-- **Attaching `dhruvkothari.com`** to Pages (bought 2026-11-11): unlocks zone security
-  features, a real Resend sender and the held SEO work (Search Console, HTML résumé,
-  llms.txt). Account-side steps: add the custom domain to the Pages project, add the new
-  hostnames to the Turnstile widget, check the Web Analytics site hostnames.
+- **Using `dhruvkothari.com`** (bought 2026-11-11, attached to Pages, see Domain above):
+  unlocks zone security features, a real Resend sender and the held SEO work (Search Console,
+  HTML résumé, llms.txt). Still open: 301 `pages.dev` production host to the apex (documented
+  option: account-level Bulk Redirect; `www` to apex via a Single Redirect), email routing,
+  and checking the Web Analytics site hostnames.
 - Behaviour-changing speed work (below).
 
 ## Owner decisions on record (never re-ask)
