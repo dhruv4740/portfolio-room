@@ -14,3 +14,6 @@
   Cache-Control: public, max-age=604800
 /os/*
   Cache-Control: public, max-age=3600, must-revalidate
+
+/mock/*
+  X-Robots-Tag: noindex, nofollow
