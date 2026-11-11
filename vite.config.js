@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import crawlableHtml from './scripts/crawlable-html.mjs'
 
 // Dev only: Vite's SPA fallback answers /apps/<name>/ with the portfolio's own
 // index.html, which booted the whole room recursively inside the OS windows.
@@ -36,7 +37,7 @@ function redirect(req, res, next) {
 }
 
 export default defineConfig({
-  plugins: [react(), staticAppIndex, slashRedirects],
+  plugins: [react(), staticAppIndex, slashRedirects, crawlableHtml()],
   // Production builds were emitting classic React.createElement with no React
   // in scope ("React is not defined" on first paint) even though the resolved
   // oxc config says automatic. Pinning esbuild's JSX mode fixes the output.
