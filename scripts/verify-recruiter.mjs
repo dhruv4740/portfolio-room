@@ -106,10 +106,10 @@ try {
     const label = page.locator('main .w-label', { hasText: heading });
     rowCounts.push(await label.locator('xpath=following-sibling::div[1]').locator('.w-row').count());
   }
-  check('row counts: Blink 4, Personal 5, Hackathon 3', rowCounts.join(', ') === '4, 5, 3', rowCounts.join(', '));
+  check('row counts: Blink 4, Personal 4, Hackathon 4', rowCounts.join(', ') === '4, 4, 4', rowCounts.join(', '));
   const personalNames = (await page.locator('main .w-label', { hasText: 'Personal projects' })
     .locator('xpath=following-sibling::div[1]').locator('.w-row b:not(.w-did b)').allInnerTexts()).map((s) => s.trim());
-  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout | Eco Water System',
+  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout',
     personalNames.join(' | '));
 
   // 5. Blink metrics. textContent, not innerText: the "Read the case" bullets sit in a closed <details>.

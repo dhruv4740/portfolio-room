@@ -11,9 +11,9 @@ export const identity = {
   name: 'Dhruv Kothari',
   role: 'Full-stack & AI developer',
   location: 'Mumbai, India',
-  pitch: 'I build AI tools that move growth numbers.',
-  now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote internships in AI and growth engineering.',
-  tagline: 'I build AI tools that move growth numbers.',
+  pitch: "I'm a software engineer who builds tools that move growth numbers.",
+  now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote software engineering and growth engineering internships from December 2026.',
+  tagline: "I'm a software engineer who builds tools that move growth numbers.",
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
     'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',
@@ -22,7 +22,7 @@ export const identity = {
 export const proofPoints = [
   { value: '18%', text: 'of contacted creators replied, across 489 outreach emails from an LLM pipeline I built at Blink' },
   { value: '4', text: 'internal growth tools shipped at Blink: outreach, link building, SEO tracking, Reddit copilot' },
-  { value: 'Top 5', text: "at the IIT Madras × BITS Goa security hackathon, for DarkSentinel's LLM review layer" },
+  { value: 'Top 5', text: "finalist at the IIT Madras × BITS Goa security hackathon, for DarkSentinel's LLM review layer" },
   { value: '2×', text: 'hackathon wins: Innovathon 2025 and REALMS 2025' },
 ];
 
@@ -99,7 +99,7 @@ export const achievements = [
   {
     id: 'saiss',
     label: 'Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)',
-    result: 'Top 5 in problem statement',
+    result: 'Top 5 finalist in problem statement',
     year: 2026,
   },
 ];
@@ -176,24 +176,38 @@ export const projects = [
     name: 'DarkSentinel',
     year: 2026,
     kind: 'research',
-    tagline: 'Darknet threat monitoring. Top 5 at the IIT Madras × BITS Goa hackathon.',
+    tagline: 'Darknet threat monitoring. Top 5 finalist at the IIT Madras × BITS Goa hackathon.',
     description:
-      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it placed top 5 in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
+      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it was a top 5 finalist in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
     decision:
       'I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
     broke:
       'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
     summary: 'A team dark-web traffic monitor that classifies network traffic and shows alerts on a live dashboard.',
     detail: 'I built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded.',
-    badge: 'Top 5 in problem statement, IIT Madras & BITS Goa hackathon 2026',
+    badge: 'Top 5 finalist in problem statement, IIT Madras & BITS Goa hackathon 2026',
     tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
     caseStudy: {
       problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
       decisions: 'A Random Forest scores network flows for Tor traffic. Only predictions in the uncertain zone (Tor score 0.55 to 0.75) go to the Claude call, behind a 60-second cooldown, so cost is bounded by time rather than traffic. I removed a hardcoded fallback score that could show a result the model never produced.',
-      result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+      result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 finalist in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
     },
     links: { live: '', github: '' },
     note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture; I built the dashboards, the API features and the uncertain-zone Claude call.',
+  },
+  {
+    id: 'hexfence',
+    name: 'HexFence',
+    year: 2026,
+    kind: 'product',
+    tagline: 'A Safe Guard that refuses lookalike payments, with open address-poisoning evidence on Arkiv.',
+    description:
+      'Built at ETHGlobal Mumbai 2026. Detects address poisoning, publishes the evidence openly on Arkiv, warns you locally before you sign, and makes a protected Safe refuse to pay a lookalike of an approved supplier while new suppliers still work.',
+    decision: '',
+    broke: '',
+    badge: 'ETHGlobal Mumbai 2026 (5 to 7 Nov)',
+    tech: ['Solidity', 'Safe', 'Arkiv', 'viem', 'Hardhat', 'Vite'],
+    links: { live: 'https://deven1305.github.io/hexfence/', github: 'https://github.com/Deven1305/hexfence' },
   },
   {
     id: 'crisiswatch',
@@ -330,6 +344,6 @@ export const blinkTools = [
   { id: 'reddit', name: 'Reddit growth copilot', detail: 'Reddit was 29.85% of Blink social traffic (Jun 2026).' },
 ];
 
-export const personalProjectIds = ['cellbook', 'portfolio3d', 'expense', 'blackout', 'ecowater'];
+export const personalProjectIds = ['cellbook', 'portfolio3d', 'expense', 'blackout'];
 
-export const hackathonProjectIds = ['darksentinel', 'crisiswatch', 'fraud'];
+export const hackathonProjectIds = ['darksentinel', 'hexfence', 'crisiswatch', 'fraud'];
