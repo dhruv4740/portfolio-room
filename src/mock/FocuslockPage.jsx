@@ -23,7 +23,7 @@ function Diagram() {
       <text x="320" y="90" textAnchor="middle" {...s}>users/&lt;sync code&gt;/</text>
       <text x="320" y="106" textAnchor="middle" {...s}>policy · usage_days</text>
       <path d="M180 85h60M400 85h60" stroke="#17160f" strokeWidth="1.25" />
-      <path d="M232 80l8 5-8 5M468 80l-8 5 8 5M188 80l-8 5 8 5M392 80l8 5-8 5" stroke="#17160f" strokeWidth="1.25" />
+      <path d="M186 79l-6 6 6 6M234 79l6 6-6 6M406 79l-6 6 6 6M454 79l6 6-6 6" stroke="#17160f" strokeWidth="1.25" />
       <text x="320" y="24" textAnchor="middle" {...s}>no application server</text>
     </svg>
   );

@@ -23,6 +23,7 @@
 .m-proof{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1.5px solid var(--ink);border-bottom:1px solid var(--line)}
 .m-proof li{padding:18px 14px 18px 0}
 .m-proof b{display:block;font:600 clamp(2rem,6vw,3rem)/1 "IBM Plex Sans",system-ui,sans-serif;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.m-proof b{white-space:nowrap}
 .m-proof span{display:block;margin-top:8px;font-size:12.5px;line-height:1.4;color:var(--mute)}
 .m-ask{background:var(--paper);border:1px solid var(--line);border-radius:20px;padding:24px 22px}
 .m-ask h2{font:600 1.3rem/1.25 "IBM Plex Sans",system-ui,sans-serif}
@@ -64,7 +65,7 @@
 /* variant b */
 .m-b h1{font-size:clamp(3.2rem,12vw,6.6rem);line-height:.94;letter-spacing:-.035em}
 .m-b .m-head{font-size:clamp(1.3rem,3.4vw,1.9rem);max-width:24ch}
-.m-b .m-proof b{font-size:clamp(2.6rem,9vw,4.4rem)}
+.m-b .m-proof b{font-size:clamp(2.4rem,7.4vw,3.8rem)}
 .m-b .m-proof li:first-child b{color:var(--acc)}
 .m-b .m-row h3{font-size:clamp(1.9rem,6vw,2.8rem)}
 .m-b .m-desk path,.m-b .m-desk rect,.m-b .m-desk circle{stroke-dasharray:var(--len,1);stroke-dashoffset:var(--len,1);animation:m-draw 1.6s ease forwards}

@@ -7,8 +7,9 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 const byId = (id) => projects.find((p) => p.id === id);
 const DEMO = { focuslock: '/apps/focuslock/', darksentinel: '/apps/darksentinel/' };
 const SHOT = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg' };
-const ROLE = { focuslock: 'Personal project', basket: 'Personal project', darksentinel: 'Team build: dashboards, API and the uncertain-zone Claude call', hexfence: 'Team build (ETHGlobal Mumbai)' };
-const ROWS = ['focuslock', 'basket', 'darksentinel', 'hexfence'];
+const ROLE = { focuslock: 'Personal project', basket: 'Personal project', blink: 'Sole developer, growth intern', darksentinel: 'Team build: dashboards, API and the uncertain-zone Claude call', hexfence: 'Team build (ETHGlobal Mumbai)' };
+const ROWS = ['focuslock', 'blink', 'basket', 'darksentinel', 'hexfence'];
+const BLINK = { name: 'Creator outreach pipeline (Blink.new)', tagline: '18% of contacted creators replied, across 489 outreach emails drafted by an LLM pipeline.', year: 2026, tech: ['Python', 'SQLite', 'YouTube Data API', 'Gmail API', 'LLM drafting'], links: {} };
 const QUESTIONS = ['What did Dhruv build at Blink?', 'How does FocusLock work?', 'Is he open to internships?'];
 
 function Reveal({ children, className = '' }) {
@@ -128,7 +129,7 @@ export default function Mock({ variant = 'a' }) {
           <span className="m-label">Selected work</span>
           <Reveal>
             {ROWS.map((id) => {
-              const p = byId(id);
+              const p = id === 'blink' ? BLINK : byId(id);
               const cs = id === 'focuslock';
               return (
                 <article className="m-row" key={id}>
