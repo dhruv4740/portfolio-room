@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="robots" content="noindex,nofollow" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="theme-color" content="#ece7de" />
+<title>Redesign mock-up C · Dhruv Kothari</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="preload" href="/fonts/plex-sans-latin.woff2" as="font" type="font/woff2" crossorigin />
+<style>
+@font-face{font-family:'IBM Plex Sans';font-weight:400 600;font-display:swap;src:url(/fonts/plex-sans-latin.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:400;font-display:swap;src:url(/fonts/plex-mono-400-latin.woff2) format('woff2')}
+@font-face{font-family:'IBM Plex Mono';font-weight:500;font-display:swap;src:url(/fonts/plex-mono-500-latin.woff2) format('woff2')}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#ece7de;--paper:#fbfaf7;--ink:#17160f;--ink2:#3a3832;--mute:#6b675e;--line:#d8d2c6;--acc:#c2410c;--mono:"IBM Plex Mono",ui-monospace,monospace}
+html,body{background:var(--bg);color:var(--ink);font:16px/1.6 "IBM Plex Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:3px;border-radius:4px}
+.top{font:400 12.5px/1.4 var(--mono);color:var(--mute);padding:20px 20px 0;text-align:center}
+.hero{min-height:calc(100vh - 150px);min-height:calc(100svh - 150px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 20px 24px;text-align:center}
+.glow-wrap{position:relative;width:min(640px,100%)}
+.glow{position:absolute;inset:-26px;border-radius:44px;filter:blur(30px);opacity:.75;overflow:hidden;pointer-events:none}
+.glow::before{content:"";position:absolute;left:50%;top:50%;width:150%;aspect-ratio:1;translate:-50% -50%;background:conic-gradient(from 0deg,#c2410c,#f59e0b,#fde68a,#f97316,#b45309,#c2410c);animation:spin 14s linear infinite}
+@keyframes spin{to{rotate:360deg}}
+.card{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:20px 20px 18px;text-align:left;box-shadow:0 1px 0 #fff inset}
+.card label{display:block;font:500 12px/1 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:12px}
+.row{display:flex;gap:10px;align-items:center}
+.row input{flex:1;min-width:0;font:400 clamp(1rem,2.6vw,1.2rem)/1.3 "IBM Plex Sans",system-ui,sans-serif;color:var(--ink);background:transparent;border:0;border-bottom:1.5px solid var(--line);padding:10px 2px;outline:none}
+.row input:focus{border-color:var(--acc)}
+.row input::placeholder{color:var(--mute);opacity:1}
+.row button{flex:none;width:46px;height:46px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:18px;cursor:pointer}
+.row button:hover{background:var(--acc)}
+.sub{margin-top:14px;font-size:13.5px;color:var(--mute)}
+.proof{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:0;width:min(760px,100%);margin-top:44px;border-top:1.5px solid var(--ink);text-align:left}
+.proof li{padding:14px 14px 0 0}
+.proof b{display:block;font:600 clamp(1.5rem,4vw,2.1rem)/1 "IBM Plex Sans",system-ui,sans-serif;letter-spacing:-.02em;white-space:nowrap}
+.proof li:first-child b{color:var(--acc)}
+.proof span{display:block;margin-top:6px;font-size:12px;line-height:1.4;color:var(--mute)}
+.open{margin-top:30px;font-size:clamp(.95rem,2.2vw,1.05rem);color:var(--ink2);max-width:46ch}
+.open::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#2f7d4f;margin-right:8px;vertical-align:1px}
+.links{display:flex;gap:22px;margin-top:12px;font:500 13px var(--mono)}
+.links a{color:var(--acc);text-underline-offset:4px;min-height:44px;display:inline-flex;align-items:center}
+.next{max-width:760px;margin:0 auto;padding:0 20px;height:110px;overflow:hidden}
+.next .lab{font:500 12px/1.2 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--mute);padding-bottom:10px;border-bottom:1px solid var(--line)}
+.next h2{margin-top:18px;font:600 clamp(1.7rem,5vw,2.4rem)/1.15 "IBM Plex Sans",system-ui,sans-serif;letter-spacing:-.01em}
+.next p{color:var(--ink2);margin-top:6px}
+.next{-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+@media (max-width:560px){.proof{grid-template-columns:repeat(2,1fr);margin-top:30px}.hero{justify-content:flex-start;padding-top:28px}.glow{inset:-16px;filter:blur(22px)}}
+@media (prefers-reduced-motion:reduce){.glow::before{animation:none}}
+</style>
+</head>
+<body>
+<p class="top">Dhruv Kothari · software engineer who builds growth tooling · Mumbai</p>
+<main>
+<section class="hero" aria-label="Ask">
+  <div class="glow-wrap">
+    <div class="glow" aria-hidden="true"></div>
+    <form class="card" onsubmit="return false" role="search">
+      <label for="q">Ask about Dhruv</label>
+      <div class="row"><input id="q" type="text" autocomplete="off" spellcheck="false" placeholder="What did Dhruv build at Blink?" /><button type="submit" aria-label="Ask">↑</button></div>
+      <p class="sub">Answers come from his résumé and project notes.</p>
+    </form>
+  </div>
+  <ul class="proof">
+    <li><b>18%</b><span>of contacted creators replied, across 489 outreach emails</span></li>
+    <li><b>4 tools</b><span>shipped at Blink: outreach, links, SEO, Reddit</span></li>
+    <li><b>Top 5 finalist</b><span>IIT Madras × BITS Goa security hackathon</span></li>
+    <li><b>2× wins</b><span>Innovathon 2025 and REALMS 2025</span></li>
+  </ul>
+  <p class="open">Open to remote software engineering and growth engineering internships from December 2026</p>
+  <div class="links"><a href="/resume/">Résumé</a><a href="#work">Work ↓</a><a href="/room/">3D room</a></div>
+</section>
+<section class="next" id="work" aria-label="Selected work preview">
+  <p class="lab">Selected work</p>
+  <h2>FocusLock</h2>
+  <p>Screen-time limits that follow you across Android and Windows.</p>
+</section>
+</main>
+<script>
+(function(){
+  var qs=["What did Dhruv build at Blink?","How does FocusLock share one limit across phone and PC?","Is he open to internships?"],
+      el=document.getElementById('q'),i=0;
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  function wait(ms){return new Promise(function(r){setTimeout(r,ms)})}
+  (async function loop(){
+    while(true){
+      var q=qs[i%qs.length];
+      for(var n=0;n<=q.length;n++){if(el.value||document.activeElement===el){await wait(600);n=-1;continue}el.placeholder=q.slice(0,n);await wait(45)}
+      await wait(1600);
+      for(var n=q.length;n>=0;n--){if(el.value||document.activeElement===el)break;el.placeholder=q.slice(0,n);await wait(18)}
+      i++;await wait(300);
+    }
+  })();
+})();
+</script>
+</body>
+</html>
