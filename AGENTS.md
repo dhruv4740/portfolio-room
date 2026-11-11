@@ -8,7 +8,7 @@ problems and owner decisions. It is the only status document; don't add
 another one. Update it at the end of a session. Where every project is
 surfaced (work page, dhruvOS, phone): [docs/PROJECTS-MAP.md](docs/PROJECTS-MAP.md).
 
-**Branches.** `main` is live (https://dhruvkothari.pages.dev, Cloudflare Pages
+**Branches.** `main` is live (https://dhruvkothari.com, Cloudflare Pages
 project `dhruvkothari`). Work happens on a `feat/`, `fix/`, `chore/` or `docs/` branch in a
 worktree off `origin/main`. Merging to `main` happens only after the owner says yes.
 The owner reviews visual changes on the preview URL after being told what changed and what

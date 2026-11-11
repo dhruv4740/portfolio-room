@@ -12,8 +12,8 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
   changed and what to look for.
 - **Branch names:** `feat/`, `fix/`, `chore/` or `docs/` only. The owner does not want
   `claude/...` branches; rename any session-generated branch before pushing or opening a PR.
-- **`main` is live**: `a369674` (PR #9, docs-only on top of `370d9ff`, PR #8) =
-  https://dhruvkothari.pages.dev. Repo `dhruv4740/portfolio-room` (public). Never commit to
+- **`main` is live**: `88a6c89` (PR #10), deployed to production 2026-11-11 =
+  https://dhruvkothari.com (canonical). Repo `dhruv4740/portfolio-room` (public). Never commit to
   `main`; branch, then merge after the owner's yes.
 - **Hosting:** Cloudflare Pages project `dhruvkothari`, direct upload (no Git
   integration, so deployments cannot be retried; every change needs a fresh deploy).
@@ -22,20 +22,18 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
   - Production: same with `--branch main`, **only after a fresh explicit yes from the owner**.
   - Build production from a clean worktree at `origin/main` with its own `npm ci`. Never
     junction `node_modules` into a worktree: `git worktree remove --force` deletes the target.
-- **Domain:** the owner bought `dhruvkothari.com` on Cloudflare Registrar on 2026-11-11 (zone
-  `e42ac34366ff8e326ea6b2da2c474bf0`, Free plan, active, Cloudflare nameservers). On 2026-11-11
-  (owner-approved) `dhruvkothari.com` and `www.dhruvkothari.com` were attached as custom
-  domains on the Pages project via the API (certificate authority Google). The API created no DNS
-  records, so two proxied CNAMEs were added to the zone the same day, `dhruvkothari.com` and
-  `www`, both → `dhruvkothari.pages.dev` (the records the dashboard flow would create). Both
-  domains then went `active` (HTTP validation) and serve 200 over TLS; they currently serve the
-  last production deploy, whose canonicals still say `pages.dev`. The Turnstile widget "dhruvkothari.pages.dev Ask" now lists `dhruvkothari.pages.dev`,
-  `dhruvkothari.com` and `www.dhruvkothari.com`. Not done on purpose: redirects, email routing,
-  WAF/bot settings, deploys, remote D1 migration. Zone Bot settings are all off (AI bot
-  protection, managed robots.txt, Bot Fight Mode); Security Level is `medium`. On the branch
-  `claude/docs-and-source-tracking-7dff75` the analytics/host checks accept all three hosts and
-  `dhruvkothari.com` (apex) is the canonical/OG/sitemap/robots URL (`.env.production`); the
-  live site only serves it after the next production deploy.
+- **Domain (shipped 2026-11-11):** `dhruvkothari.com` (Cloudflare Registrar, zone
+  `e42ac34366ff8e326ea6b2da2c474bf0`, Free plan) and `www` are attached to the Pages project as
+  proxied CNAMEs to `dhruvkothari.pages.dev`; canonical/OG/sitemap/robots use the apex
+  (`.env.production`). Remote D1 migration `0003_hits_src.sql` is applied (`hits.src`).
+  Email Routing is on: rule `ccdb93142c4140a2a6f4d4241a8c7d7d` forwards
+  `hello@dhruvkothari.com` to the owner's Gmail (destination already verified). Redirect rule
+  `d80f01b6d9e4451794f17768c16bbfd6` (ruleset `36dedbfa85fa499999f798fa8cba2504`) 301s `www` to
+  the apex keeping path and query. `dhruvkothari.pages.dev` stays a second live host: it is not
+  in the zone, so no zone rule (Redirect or Bulk) can match it, and a Pages middleware redirect
+  was decided against; canonical tags cover it. Preview hosts are unaffected. The Turnstile widget
+  "dhruvkothari.pages.dev Ask" lists all three hosts. Zone Bot settings are all off (AI bot
+  protection, managed robots.txt, Bot Fight Mode); Security Level is `medium`.
 - **Pages variables** (all stored as `secret_text`, production): `GROQ_API_KEY`,
   `GEMINI_API_KEY`, `OPENROUTER_API_KEY`, `RESEND_API_KEY`, `STATS_TOKEN`, `ASK_SALT`,
   `TURNSTILE_SECRET`, `TURNSTILE_SITE_KEY`; optional `HIT_VISITOR_CAP` (per-visitor daily
@@ -88,42 +86,58 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
    `C:\Users\hp\AppData\Local\Programs\tectonic\tectonic.exe`.
 3. **Option A (phone room): dropped for now.** Revisit with real traffic data. Phones get `/`
    with an opt-in `?room=phone` (option C, shipped).
-4. **Multi-page recruiter path with software-engineering positioning** (home, 3-4 case-study
-   pages, résumé). Approved, not started. Target role is software engineering.
-5. **Room frozen:** stays live, no new development.
+4. **Multi-page redesign** (home, case-study pages, résumé): approved direction, see "Positioning
+   and redesign" below. A mock-up goes on preview for owner approval before anything goes live.
+5. **Room frozen:** stays live, no new development; one labelled link from the new site.
 6. **Cellbook demo:** planned.
-7. **Eco Water card removal:** proposed by the lead, not yet confirmed by the owner. Do not
-   remove it until the owner says yes.
-8. **`?from=` visit-source tracking:** on branch `claude/docs-and-source-tracking-7dff75`,
-   awaiting review. Migration `0003_hits_src.sql` must be applied to remote D1 on merge;
-   until then hits are still stored, without `src`. Tags in use: `linkedin`, `github`,
+7. **Eco Water card:** removed from the work page (owner decision, 2026-11-11).
+8. **`?from=` visit-source tracking:** shipped (PR #10). Tags in use: `linkedin`, `github`,
    `resume`.
+
+## Positioning and redesign (owner, 2026-11-11)
+
+- **Positioning:** a software engineer who builds growth tooling. Open to remote software
+  engineering AND growth engineering internships from December 2026 (exams 18 Nov to 3 Dec).
+  Blink growth numbers stay prominent.
+- **Redesign:** new single-column layout in the same visual language; multi-page (home,
+  case-study pages, résumé); mock-up on preview and owner approval before live. The whole site
+  should feel like a showpiece while staying fast to scan. The Ask box is a deliberate wow
+  feature: keep the glow, give it a proper place, never demote it to a plain section. The room
+  stays live, frozen, behind one labelled link.
+- **Blink:** show what each tool does, a pipeline diagram, sole developer, technical decisions
+  and the public totals (489 emails, 18% replies, 650 creators). Never creator names or emails,
+  email text, internal dashboards, money or company code.
+- **Projects:** BasketProof stays private (case-study page, no repo link). DarkSentinel reads
+  "Top 5 finalist" on the site and résumé. VAYU Drishti is left off; revisit if its V4 model
+  lands. HexFence is added as a project, no award claim. Case studies use "trade-offs", not
+  "what I'd do differently".
+- **LinkedIn:** the owner plans two posts (ETHGlobal now; portfolio launch in December). Agents
+  take no LinkedIn actions.
+- **Team note:** cross-session briefs to the worker can be held when the lead's and worker's
+  permission modes differ; the lead must confirm a turn started rather than wait on a note.
 
 ## Still the owner's call (ask once, only these)
 
-- **Using `dhruvkothari.com`** (bought 2026-11-11, attached to Pages, see Domain above):
-  unlocks zone security features, a real Resend sender and the held SEO work (Search Console,
-  HTML résumé, llms.txt). Still open: 301 `pages.dev` production host to the apex (documented
-  option: account-level Bulk Redirect; `www` to apex via a Single Redirect), email routing,
-  and checking the Web Analytics site hostnames.
+- **Using `dhruvkothari.com`:** still open: zone security features (WAF, Bot settings), a real
+  Resend sender (Email Routing only receives; sending needs a verified Resend domain), Search
+  Console, HTML résumé, llms.txt, and checking the Web Analytics site hostnames.
 - Behaviour-changing speed work (below).
 
 ## Owner decisions on record (never re-ask)
 
 - Hands are not a concern. Don't list hand regressions, poses or hand checks as open items.
 - `dk-dev` Pages project: deleted long ago.
-- "Fact or Cap" stays as the CrisisWatch card name. Eco Water / EFarm (same college project)
-  stay as they are, including its C++ chip.
+- "Fact or Cap" stays as the CrisisWatch card name. The Eco Water card is removed
+  (2026-11-11); EFarm and its C++ chip are closed.
 - Each project runs as its real UI with simulated data; phone apps on the phone, web apps on the monitor.
 - Room: bare walls, awards on the desk, notebook is a blank page. Night only.
 - Project order by depth: FocusLock, Expense Tracker, Basket Price lead.
-- Copy: Basket Price neutral; CrisisWatch framed around its fixed-model constraint. Reddit
-  Growth Copilot never shown (**conflicts with the live page, pending owner**: the work page
-  shows a "Reddit growth copilot" row: `blinkTools` entry `reddit` at
-  `src/v3/content/index.js:330`, rendered in the Blink tools list in `src/v3/work/Work.jsx`;
-  Reddit is also named in `content/index.js` lines 24, 55 and 73). The word "recruiter" never in visible copy. Never fabricate
-  links or metrics. The AEO citation-comparison finding is never shown.
-- Scoped out: multiplayer, Gaussian splats. Parked: per-project case-study page.
+- Copy: Basket Price neutral; CrisisWatch framed around its fixed-model constraint. The
+  Reddit growth copilot is kept and may be shown (replaces the old "never shown" line; it is
+  the `reddit` entry in `blinkTools`, `src/v3/content/index.js`). The word "recruiter" never
+  in visible copy. Never fabricate links or metrics. The AEO citation-comparison finding is
+  never shown.
+- Scoped out: multiplayer, Gaussian splats. Per-project case-study pages are no longer parked.
 - Cellbook is 2026 (owner, 2026-11-08). The Blackout calls-and-alarms claim is treated as
   verified (owner, 2026-11-08).
 - Nothing visible is removed or changed without the owner's permission.
