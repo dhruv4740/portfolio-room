@@ -295,6 +295,7 @@ const WHAT_I_DID = {
   darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
   basket: 'Price comparator with 636 tests.',
+  hexfence: 'Team project with Deven; I made 229 of the repo’s 286 commits.',
 };
 // Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
 function TourVideo() {
@@ -511,11 +512,11 @@ export default function Work() {
 
   const renderFeatured = (project) => (
     <article className="w-card" key={project.id} id={`p-${project.id}`}>
-      <div className="w-shot">
-        {PREVIEWS[project.id]
-          ? <img src={PREVIEWS[project.id]} alt={`${project.name} screenshot`} loading="lazy" />
-          : <span aria-hidden="true" />}
-      </div>
+      {PREVIEWS[project.id] && (
+        <div className="w-shot">
+          <img src={PREVIEWS[project.id]} alt={`${project.name} screenshot`} loading="lazy" />
+        </div>
+      )}
       <div className="w-ci">
         <span className="w-meta">{project.year} · {project.tech.slice(0, 3).join(', ')}</span>
         <h3>{project.name}</h3>
@@ -614,9 +615,6 @@ export default function Work() {
             <h2 className="w-label"><span>Featured</span><span className="w-hint">swipe →</span></h2>
             <div className="w-feat">
               <article className="w-card">
-                <div className="w-shot">
-                  <svg viewBox="0 0 320 200" preserveAspectRatio="none" aria-hidden="true"><path d="M0 170 L60 150 L120 156 L180 110 L240 92 L320 40" stroke="#c2410c" strokeWidth="1.4" fill="none"/></svg>
-                </div>
                 <div className="w-ci">
                   <span className="w-meta">Blink.new · {blink.from.slice(-4)} · Python, Gmail API, LLM</span>
                   <h3>An outreach pipeline people actually replied to</h3>
@@ -672,7 +670,7 @@ export default function Work() {
 
             <h2 className="w-label" id="contact"><span>Contact</span></h2>
             <p className="w-contact">
-              Open to remote internships in AI and growth engineering. Email{' '}
+              Open to remote software engineering and growth engineering internships from December 2026. Email{' '}
               <a href={`mailto:${contact.email}`}>{contact.email}</a>.
             </p>
             <p className="w-foot">{footText}</p>
