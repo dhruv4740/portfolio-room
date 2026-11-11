@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../tokens.css';
-import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds } from '../content/index.js';
+import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid } from '../content/index.js';
 import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 import { LIVE_APPS_HERO } from '../lib/features.js';
@@ -285,18 +285,6 @@ const css = `
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
 
-// The cards in the "Featured" band, after Blink (built from experience[0]).
-const FEATURED_IDS = ['focuslock', 'basket'];
-
-// Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
-const WHAT_I_DID = {
-  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK and the Windows installer.',
-  portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
-  darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
-  blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
-  basket: 'Price comparator with 636 tests.',
-  hexfence: 'Team project with Deven; I made 229 of the repo’s 286 commits.',
-};
 // Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
 function TourVideo() {
   const ref = useRef(null);
@@ -368,7 +356,7 @@ const caseText = (c) => c && (
 
 const casePdf = (id) => <a className="w-act" href={`/casefiles/${id}.pdf`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>;
 
-const didLine = (id) => WHAT_I_DID[id] && <p className="w-did"><b>What I did</b> {WHAT_I_DID[id]}</p>;
+const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b> {whatIDid[id]}</p>;
 
 // Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
 // Android shows nothing), so there the button opens the file in its own tab.
@@ -450,7 +438,7 @@ export default function Work() {
   // there is something true to say about it.
   const listed = projects.filter((p) => p.description || p.tagline);
   const pick = (ids) => ids.map((id) => listed.find((p) => p.id === id)).filter(Boolean);
-  const featured = pick(FEATURED_IDS);
+  const featured = pick(featuredProjectIds);
   const personal = pick(personalProjectIds);
   const hackathon = pick(hackathonProjectIds);
 
