@@ -116,6 +116,29 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
 - **Team note:** cross-session briefs to the worker can be held when the lead's and worker's
   permission modes differ; the lead must confirm a turn started rather than wait on a note.
 
+## Roadmap (2026-11-11)
+
+**Mock-up verdicts.** B rejected. A acceptable but wastes desktop width. C (Ask-first opening)
+liked, but the résumé is too hard to reach. **D is the current favourite, not yet approved for
+build**: wide canvas, name block with a solid Résumé button on the left, Ask card with glow on
+the right, proof row full width, project rows with always-visible screenshots. Mocks are single
+static files on preview with no PRs; keep future mocks that cheap.
+
+**Owner's design note.** Two columns were never the problem with the old page. The execution
+was: button placement, inconsistent button styles and sizes, hierarchy.
+
+**Before 18 Nov (exams 18 Nov to 3 Dec), owner:** update the LinkedIn headline and profile link
+to `https://dhruvkothari.com/?from=linkedin` and the GitHub link to `?from=github`; ETHGlobal
+post; message the Blink manager about the show list; approve the résumé draft
+(`C:\Users\hp\pf-resume-build\resume-draft.tex`; HexFence does not fit on one page).
+
+**During exams:** rebuild home in the approved direction; case-study pages (FocusLock, Blink
+pipeline, BasketProof, DarkSentinel, HexFence) drafted from `PROJECT-MATERIAL` for owner
+correction; link-preview images; contact-form sender on the new domain; Search Console and Bing
+(owner sign-in).
+
+**From 4 Dec:** launch post with `?from=launch`; read by-source stats weekly.
+
 ## Still the owner's call (ask once, only these)
 
 - **Using `dhruvkothari.com`:** still open: zone security features (WAF, Bot settings), a real
