@@ -68,17 +68,17 @@ try {
   await page.waitForSelector('.w-root', { timeout: 15_000 });
   const h1Visible = await page.getByRole('heading', { level: 1, name: 'Dhruv Kothari' }).isVisible().catch(() => false);
   check('h1 "Dhruv Kothari" is visible', h1Visible);
-  // Résumé and Email exist twice (sidebar .w-cta on desktop, fixed .w-bar on phone); test only the visible copies.
-  const actionAll = page.locator('.w-cta a, .w-links a, .w-bar a');
+  // Résumé and Email exist twice (hero .h-actions on desktop, fixed .w-bar on phone); test only the visible copies.
+  const actionAll = page.locator('.h-actions a, .h-links a, .w-bar a');
   const actions = [];
   for (let i = 0; i < await actionAll.count(); i++) {
     if (await actionAll.nth(i).isVisible()) actions.push(actionAll.nth(i));
   }
   // textContent, not innerText: the site uppercases these via CSS, and innerText reports the rendered case.
   const actionTexts = await Promise.all(actions.map((a) => a.textContent().then((t) => t || '')));
-  const wanted = [/Résumé/, /Email me/, /GitHub/, /LinkedIn/];
-  const actionsOk = actionTexts.length === 4 && wanted.every((re) => actionTexts.some((t) => re.test(t)));
-  check('action links: Résumé, Email me, GitHub, LinkedIn — visible', actionsOk,
+  const wanted = [/Résumé/, /Email/, /GitHub/, /LinkedIn/, /3D room/];
+  const actionsOk = actionTexts.length === 5 && wanted.every((re) => actionTexts.some((t) => re.test(t)));
+  check('action links: Résumé, Email, GitHub, LinkedIn, 3D room — visible', actionsOk,
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.
