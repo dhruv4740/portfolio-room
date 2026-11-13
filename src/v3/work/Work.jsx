@@ -280,7 +280,7 @@ const css = `
 
   .w-root { overflow-x: clip; }
   .w-root .h-hero { padding: 0 0 48px; }
-  .h-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+  .h-grid { display: grid; grid-template-columns: 1fr; gap: 48px; align-items: center; }
   .h-left { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
   .w-root .h-name { font-size: clamp(48px, 5.5vw, 72px); line-height: 1; letter-spacing: -0.03em; font-weight: 600; margin: 0; }
   .h-head { font-size: 24px; line-height: 1.35; letter-spacing: -0.01em; color: var(--ink); margin-top: 16px; }
@@ -296,23 +296,25 @@ const css = `
   .h-btn--s:hover { background: var(--paper); }
   .w-root .h-link { min-height: 44px; color: var(--mute); }
   .h-link:hover, .h-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
-  .h-btn:focus-visible, .h-link:focus-visible, .h-chip:focus-visible, .h-ask input:focus-visible, .h-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .h-btn:focus-visible, .h-link:focus-visible, .h-chip:focus-visible, .h-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
-  .h-glow { position: relative; height: 100%; }
-  .h-glow::before { content: ""; position: absolute; inset: -32px; z-index: 0; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--acc) 34%, transparent), transparent); }
-  .h-ask { position: relative; z-index: 1; height: 100%; min-height: 280px; display: flex; flex-direction: column; justify-content: center; gap: 24px; padding: 32px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); }
-  .h-ask label { font-size: 15px; line-height: 1.4; color: var(--mute); }
-  .h-row { display: flex; align-items: center; gap: 16px; }
-  .h-ask input { flex: 1; min-width: 0; height: 44px; font: 400 16px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--mute); border-radius: 0; outline: none; }
-  .h-ask input:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+  .h-glow { position: relative; align-self: center; }
+  /* The one accent: a static soft glow hugging all four sides of the card. */
+  .h-glow::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: var(--r); box-shadow: 0 0 72px 20px color-mix(in srgb, var(--acc) 45%, transparent); }
+  .h-ask { position: relative; z-index: 1; display: flex; flex-direction: column; padding: 32px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); }
+  .w-root .h-ask h2 { font-size: 24px; line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+  .h-ask-sub { font-size: 15px; line-height: 1.5; color: var(--mute); margin-top: 8px; }
+  .h-field { display: flex; align-items: center; gap: 8px; height: 48px; margin-top: 24px; padding: 0 6px 0 16px; background: var(--bg); border: 1px solid var(--mute); border-radius: 12px; }
+  .h-field:focus-within { border-color: var(--ink); outline: 2px solid var(--ink); outline-offset: 2px; }
+  .h-ask input { flex: 1; min-width: 0; height: 100%; font: 400 16px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); background: transparent; border: 0; outline: none; }
   .h-ask input::placeholder { color: var(--mute); opacity: 1; }
-  .h-go { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--ink); color: var(--bg); font: 500 16px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
+  .h-go { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--ink); color: var(--bg); font: 500 16px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
   .h-go:hover { background: var(--ink2); }
-  .h-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .h-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .h-chip { height: 36px; padding: 0 16px; border: 1px solid var(--mute); border-radius: 99px; background: transparent; color: var(--ink2); font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
   .h-chip:hover { background: var(--paper); }
 
-  .h-proof { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 24px 16px; margin-top: 48px; padding-top: 48px; border-top: 1px solid var(--line); }
+  .h-proof { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 24px 16px; margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--line); }
   .h-proof b { display: block; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
   .h-proof span { display: block; margin-top: 8px; font-size: 15px; line-height: 1.5; color: var(--mute); }
 
@@ -331,6 +333,14 @@ const css = `
 
 // The two strongest existing Ask questions (the same ones the pill suggests).
 const ASK_CHIPS = ['Why should we hire Dhruv?', 'What did he build at Blink?'];
+
+// Short captions for the hero proof row only; the full text stays in the content file (Ask, résumé, llms.txt).
+const PROOF_SHORT = {
+  '18%': 'reply rate on 489 outreach emails at Blink',
+  '4': 'growth tools shipped at Blink as sole developer',
+  'Top 5': 'finalist, IIT Madras × BITS Goa security hackathon',
+  '2×': 'hackathon wins: Innovathon 2025, REALMS 2025',
+};
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
 
@@ -594,7 +604,7 @@ export default function Work() {
     </article>
   );
 
-  const footText = 'Built by hand. The desk at the top is a real 3D room you can walk through on a laptop.';
+  const footText = 'Built by hand. There is also a real 3D room you can walk around on a laptop.';
 
   return (
     <>
@@ -628,9 +638,10 @@ export default function Work() {
               </div>
               <div className="h-glow" ref={askCardRef}>
                 <form className="h-ask" role="search" onSubmit={(e) => { e.preventDefault(); askFromHero(askText); }}>
-                  <label htmlFor="h-ask-q">Ask about Dhruv</label>
-                  <div className="h-row" ref={askRowRef}>
-                    <input id="h-ask-q" type="text" maxLength={300} autoComplete="off" spellCheck="false" placeholder="What did Dhruv build at Blink?"
+                  <h2>Ask about my work</h2>
+                  <p className="h-ask-sub">An AI answers from my projects and résumé.</p>
+                  <div className="h-field" ref={askRowRef}>
+                    <input id="h-ask-q" type="text" maxLength={300} autoComplete="off" spellCheck="false" aria-label="Ask about Dhruv" placeholder="What did Dhruv build at Blink?"
                       value={askText} onChange={(e) => setAskText(e.target.value)} onFocus={warmAsk} onPointerEnter={warmAsk} />
                     <button type="submit" className="h-go" aria-label="Ask">↑</button>
                   </div>
@@ -644,7 +655,7 @@ export default function Work() {
             </div>
             <ul className="h-proof" id="proof" aria-label="Proof">
               {proofPoints.map((p) => (
-                <li key={p.text}><b>{p.value}</b><span>{p.text}</span></li>
+                <li key={p.text}><b>{p.value}</b><span>{PROOF_SHORT[p.value] || p.text}</span></li>
               ))}
             </ul>
           </section>
