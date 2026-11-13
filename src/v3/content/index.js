@@ -11,9 +11,9 @@ export const identity = {
   name: 'Dhruv Kothari',
   role: 'Software engineer',
   location: 'Mumbai, India',
-  pitch: "I'm a software engineer who builds tools that move growth numbers.",
+  pitch: "He is a software engineer who ships real products, from Android apps to growth tools.",
   now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote software engineering and growth engineering internships from December 2026.',
-  tagline: "I'm a software engineer who builds tools that move growth numbers.",
+  tagline: "I'm a software engineer who ships real products, from Android apps to growth tools.",
   // Home page headline and availability lines. `pitch`, `now` and `tagline` stay: the Ask knowledge base and dhruvOS read them.
   headline: "I'm a software engineer who ships real products, from Android apps to growth tools.",
   availability: ['Growth intern at Blink.new (YC) until October 2026.', 'Open to remote software and growth engineering internships from December 2026.'],

@@ -25,9 +25,9 @@ const CSS = `.ask-box{font:400 15px/1.55 system-ui,-apple-system,sans-serif;colo
 .ask-thread{position:relative;flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px 2px 6px;scrollbar-width:thin;overscroll-behavior:contain}
 .ask-intro{margin:0;color:${MUTE};font-size:14px}
 .ask-q{align-self:flex-end;max-width:88%;padding:9px 14px;border-radius:18px 18px 4px 18px;background:rgba(246,244,238,.92);color:#26251f}
-.ask-a{align-self:flex-start;max-width:96%;line-height:1.6;padding:10px 14px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
+.ask-a{align-self:flex-start;max-width:96%;line-height:1.5;padding:10px 14px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
 .ask-a p{margin:0}.ask-a p+p,.ask-a p+ul,.ask-a ul+p,.ask-a p+ol,.ask-a ol+p{margin-top:12px}
-.ask-a ul,.ask-a ol{margin:8px 0 0;padding-left:20px}.ask-a li{margin:2px 0}.ask-a strong{font-weight:650}
+.ask-a ul,.ask-a ol{margin:10px 0 0;padding-left:22px}.ask-a ul{list-style:disc outside}.ask-a ol{list-style:decimal outside}.ask-a li{margin:0;padding-left:2px}.ask-a li+li{margin-top:7px}.ask-a li::marker{color:currentColor}.ask-a strong{font-weight:650}
 .ask-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;color:${MUTE};font-size:12px}
 .ask-meta a{color:${INK};text-decoration:underline;text-decoration-color:rgba(246,244,238,.4);text-underline-offset:3px}
 .ask-meta button{border:0;background:none;color:${INK};font:inherit;text-decoration:underline;text-decoration-color:rgba(246,244,238,.4);text-underline-offset:3px;padding:4px 0;cursor:pointer}
