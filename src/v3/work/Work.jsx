@@ -161,7 +161,7 @@ const css = `
   .w-root h3 { font-weight: 600; }
 
   /* Bottom room for the fixed Résumé/Email bar plus the Ask pill above it. */
-  .w-wrap { max-width: 1120px; margin: auto; padding: 24px 20px calc(176px + env(safe-area-inset-bottom)); }
+  .w-wrap { max-width: 1280px; margin: auto; padding: 24px 20px calc(176px + env(safe-area-inset-bottom)); }
   .w-side { display: flex; flex-direction: column; }
   .w-desk { width: 100%; max-width: 420px; height: auto; display: block; }
   .w-status { display: flex; align-items: center; gap: 8px; font: 13px/1.4 var(--mono); color: var(--mute); margin-top: 10px; }
@@ -234,8 +234,17 @@ const css = `
   .w-cs-row { display: block; }
   .w-cs-row summary { cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
   .w-cs-row summary img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; }
-  .w-cs dt { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink2); margin-top: 10px; }
-  .w-cs dd { margin: 2px 0 0; font-size: 15px; color: var(--ink2); }
+  .w-cs dt { font: 600 17px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); margin: 24px 0 8px; }
+  .w-cs dd { margin: 0; font-size: 16px; color: var(--ink2); }
+  .w-root .w-row p, .w-root .w-card p, .w-root .w-cs dd, .w-root .w-bul, .w-root .w-contact { max-width: 72ch; }
+  .w-casewrap { position: relative; margin-top: 6px; }
+  .w-casewrap .w-case { margin-top: 0; }
+  .w-pdf { display: inline-flex; align-items: center; gap: 8px; height: 44px; margin-top: 16px; padding: 0 16px; border: 1px solid var(--ink); border-radius: 10px; color: var(--ink); font: 500 15px/1 "IBM Plex Sans", system-ui, sans-serif; text-decoration: none; }
+  .w-pdf:hover, .w-pdf:focus-visible { background: var(--paper); }
+  .w-pdf svg { flex: none; }
+  .w-pdfq { position: absolute; top: 0; right: 44px; height: 44px; display: inline-flex; align-items: center; font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; color: var(--mute); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+  .w-pdfq:hover, .w-pdfq:focus-visible { color: var(--ink); }
+  .w-case[open] + .w-pdfq { display: none; }
   .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
   /* 32 px tall hit area (WCAG 2.5.8 asks for 24) with the same thin underline look. */
@@ -256,7 +265,7 @@ const css = `
     backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px);
     border-top: 1px solid var(--line);
   }
-  .w-bar .w-btn { height: 48px; }
+  .w-bar .w-btn { height: 52px; }
 
   @media (min-width: 960px) {
     .w-wrap { padding: 48px 32px 104px; }
@@ -283,18 +292,21 @@ const css = `
   .h-grid { display: grid; grid-template-columns: 1fr; gap: 48px; align-items: center; }
   .h-left { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
   .w-root .h-name { font-size: clamp(48px, 5.5vw, 72px); line-height: 1; letter-spacing: -0.03em; font-weight: 600; margin: 0; }
-  .h-head { font-size: 24px; line-height: 1.35; letter-spacing: -0.01em; color: var(--ink); margin-top: 16px; }
-  .h-avail { font-size: 16px; line-height: 1.6; color: var(--mute); margin-top: 16px; max-width: 52ch; }
+  .h-head { font-size: 24px; line-height: 1.35; letter-spacing: -0.01em; color: var(--ink); margin-top: 16px; text-wrap: balance; }
+  .h-avail { margin-top: 16px; }
+  .w-root .h-avail p { font-size: 17px; line-height: 1.5; color: var(--mute); }
+  .w-root .h-avail p + p { margin-top: 8px; }
   .h-actions { display: none; gap: 16px; margin-top: 32px; }
-  .h-links { display: flex; flex-wrap: wrap; gap: 0 24px; margin-top: 8px; }
+  .h-links { display: flex; flex-wrap: wrap; gap: 0 32px; margin-top: 8px; }
 
-  .h-btn, .h-link { font: 500 15px/1 "IBM Plex Sans", system-ui, sans-serif; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
-  .h-btn { height: 44px; padding: 0 24px; border-radius: 12px; border: 1px solid var(--ink); }
+  .h-btn, .h-link { font: 500 17px/1 "IBM Plex Sans", system-ui, sans-serif; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .h-btn { height: 56px; min-width: 160px; padding: 0 28px; border-radius: 12px; border: 1px solid var(--ink); }
   .w-root .h-btn--p { background: var(--ink); color: var(--bg); }
   .h-btn--p:hover { background: var(--ink2); border-color: var(--ink2); }
   .w-root .h-btn--s { background: transparent; color: var(--ink); }
   .h-btn--s:hover { background: var(--paper); }
   .w-root .h-link { min-height: 44px; color: var(--mute); }
+  .w-root .h-link:hover { color: var(--ink); }
   .h-link:hover, .h-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
   .h-btn:focus-visible, .h-link:focus-visible, .h-chip:focus-visible, .h-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
@@ -306,9 +318,9 @@ const css = `
   .h-ask-sub { font-size: 15px; line-height: 1.5; color: var(--mute); margin-top: 8px; }
   .h-field { display: flex; align-items: center; gap: 8px; height: 48px; margin-top: 24px; padding: 0 6px 0 16px; background: var(--bg); border: 1px solid var(--mute); border-radius: 12px; }
   .h-field:focus-within { border-color: var(--ink); outline: 2px solid var(--ink); outline-offset: 2px; }
-  .h-ask input { flex: 1; min-width: 0; height: 100%; font: 400 16px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); background: transparent; border: 0; outline: none; }
+  .h-ask input { flex: 1; min-width: 0; height: 100%; font: 400 17px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); background: transparent; border: 0; outline: none; }
   .h-ask input::placeholder { color: var(--mute); opacity: 1; }
-  .h-go { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--ink); color: var(--bg); font: 500 16px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
+  .h-go { flex: none; width: 36px; height: 36px; border: 0; border-radius: 50%; background: var(--ink); color: var(--bg); font: 500 17px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
   .h-go:hover { background: var(--ink2); }
   .h-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
   .h-chip { height: 36px; padding: 0 16px; border: 1px solid var(--mute); border-radius: 99px; background: transparent; color: var(--ink2); font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
@@ -320,9 +332,16 @@ const css = `
 
   @media (min-width: 641px) { .w-wrap { padding-left: 32px; padding-right: 32px; } }
   @media (min-width: 960px) {
-    .h-grid { grid-template-columns: 7fr 5fr; gap: 64px; }
+    .h-grid { grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); gap: 64px; }
     .h-actions { display: flex; }
     .h-proof { grid-template-columns: repeat(4, 1fr); gap: 32px; }
+    .h-head { font-size: 28px; line-height: 1.3; }
+    .h-ask { padding: 40px; }
+    .w-root .h-ask h2 { font-size: 28px; }
+    .h-field { height: 56px; }
+    .h-go { width: 40px; height: 40px; }
+    .h-chip { height: 40px; }
+    .h-proof b { font-size: 28px; }
   }
   html[data-hero-ask] #ask-wrap { visibility: hidden; }
 
@@ -332,7 +351,7 @@ const css = `
 `;
 
 // The two strongest existing Ask questions (the same ones the pill suggests).
-const ASK_CHIPS = ['Why should we hire Dhruv?', 'What did he build at Blink?'];
+const ASK_CHIPS = ['Why hire Dhruv?', 'What did he build at Blink?'];
 
 // Short captions for the hero proof row only; the full text stays in the content file (Ask, résumé, llms.txt).
 const PROOF_SHORT = {
@@ -413,7 +432,15 @@ const caseText = (c) => c && (
   </dl>
 );
 
-const casePdf = (id) => <a className="w-act" href={`/casefiles/${id}.pdf`} aria-label={`One-page case file (PDF) for ${projects.find((x) => x.id === id)?.name ?? id}`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>;
+// Same-site PDF: opens in this tab so Back returns to the page.
+const caseLabel = (id) => `One-page case file (PDF) for ${projects.find((x) => x.id === id)?.name ?? id}`;
+const casePdf = (id) => (
+  <a className="w-pdf" href={`/casefiles/${id}.pdf`} aria-label={caseLabel(id)}>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 1.5h6l3 3v10h-9z" /><path d="M9.5 1.5v3h3M8 7v4.5M6 9.5l2 2 2-2" strokeLinecap="round" /></svg>
+    One-page case file (PDF)
+  </a>
+);
+const casePdfQuiet = (id) => <a className="w-pdfq" href={`/casefiles/${id}.pdf`} aria-label={caseLabel(id)}>Case file (PDF)</a>;
 
 const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b> {whatIDid[id]}</p>;
 
@@ -430,8 +457,13 @@ function ResumeReader({ src, onClose }) {
     const onKey = (e) => { if (e.key === 'Escape') onClose(); };
     document.addEventListener('keydown', onKey);
     const prev = document.body.style.overflow;
+    const y = window.scrollY;
     document.body.style.overflow = 'hidden';
-    return () => { document.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+      window.scrollTo(0, y); // Back's own scroll restore runs while overflow is still hidden and lands on 0
+    };
   }, [onClose]);
   return (
     <div className="work-reader" role="dialog" aria-modal="true" aria-label="Résumé">
@@ -450,16 +482,29 @@ export default function Work() {
   const mainRef = useRef(null);
   const [readerOpen, setReaderOpen] = useState(false);
   const readerTrigger = useRef(null);
-  const closeReader = useCallback(() => {
-    setReaderOpen(false);
-    readerTrigger.current?.focus({ preventScroll: true });
-  }, []);
   // { id, index } of the open demo; the trigger gets focus back on close.
   const [open, setOpen] = useState(null);
   const trigger = useRef(null);
-  const closeDemo = useCallback(() => {
-    setOpen(null);
-    trigger.current?.focus({ preventScroll: true });
+  // The résumé reader and demo panels are in-page overlays. Each pushes one history entry when it opens, so browser
+  // Back (or the trackpad gesture) closes the overlay instead of leaving the site; the close button pops that same
+  // entry, so no dangling entry is left behind.
+  const closeOverlay = useCallback((el) => {
+    if (window.history.state?.wOverlay) window.history.back(); // popstate below closes it and returns focus
+    else { setReaderOpen(false); setOpen(null); el.current?.focus({ preventScroll: true }); }
+  }, []);
+  const closeReader = useCallback(() => closeOverlay(readerTrigger), [closeOverlay]);
+  const closeDemo = useCallback(() => closeOverlay(trigger), [closeOverlay]);
+  useEffect(() => {
+    const onPop = () => {
+      if (window.history.state?.wOverlay) return;
+      setReaderOpen(false);
+      setOpen(null);
+      (trigger.current || readerTrigger.current)?.focus({ preventScroll: true });
+      trigger.current = null;
+      readerTrigger.current = null;
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   // Phones only: probed at idle, after first paint, so it costs the page nothing.
@@ -486,12 +531,16 @@ export default function Work() {
     if (!canEmbedPdf()) return;
     e.preventDefault();
     readerTrigger.current = e.currentTarget;
+    trigger.current = null;
+    window.history.pushState({ wOverlay: 'resume' }, '');
     setReaderOpen(true);
   };
   // Open the first variant that fits the screen: on a phone, FocusLock opens
   // its Android app instead of the Windows app scaled to unreadable text.
   const tryDemo = (project, e) => {
     trigger.current = e.currentTarget;
+    readerTrigger.current = null;
+    window.history.pushState({ wOverlay: 'demo' }, '');
     const list = DEMOS[project.id];
     setOpen({ id: project.id, index: Math.max(0, list.findIndex((d) => !d.minWidth || window.innerWidth >= d.minWidth)) });
   };
@@ -554,8 +603,8 @@ export default function Work() {
         {p.caseStudy && (
           <details className="w-case-in">
             <summary className="w-act">Case study</summary>
-            {caseText(p.caseStudy)}
             {casePdf(p.id)}
+            {caseText(p.caseStudy)}
           </details>
         )}
       </span>
@@ -589,11 +638,14 @@ export default function Work() {
           <div className="w-res"><small>{project.badge}</small></div>
         )}
         {project.caseStudy && (
-          <details className="w-case">
-            <summary className="w-go">Read the case<span>→</span></summary>
-            {caseText(project.caseStudy)}
-            {casePdf(project.id)}
-          </details>
+          <div className="w-casewrap">
+            <details className="w-case">
+              <summary className="w-go">Read the case<span>→</span></summary>
+              {casePdf(project.id)}
+              {caseText(project.caseStudy)}
+            </details>
+            {casePdfQuiet(project.id)}
+          </div>
         )}
         {DEMOS[project.id] ? (
           <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it<span>→</span></button>
@@ -622,11 +674,13 @@ export default function Work() {
             <div className="h-grid">
               <div className="h-left">
                 <h1 className="h-name">{identity.name}</h1>
-                <p className="h-head">{identity.pitch}</p>
-                <p className="h-avail">{identity.now}</p>
+                <p className="h-head">{identity.headline}</p>
+                <div className="h-avail">
+                  {identity.availability.map((line) => (<p key={line}>{line}</p>))}
+                </div>
                 <div className="h-actions">
                   {contact.resume && (
-                    <a className="h-btn h-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>
+                    <a className="h-btn h-btn--p" href={contact.resume} onClick={openResume}>Résumé</a>
                   )}
                   <a className="h-btn h-btn--s" href={`mailto:${contact.email}`}>Email</a>
                 </div>
@@ -669,39 +723,24 @@ export default function Work() {
                   <h3>An outreach pipeline people actually replied to</h3>
                   <p>Sole developer on four growth tools I built and maintained: a creator outreach pipeline that sourced 650 creators, a link-building engine, SEO and AI-search mention tracking, and a Reddit growth copilot.</p>
                   <div className="w-res"><b>18%</b><small>of contacted creators replied · 14 positive</small></div>
-                  <details className="w-case">
-                    <summary className="w-go">Read the case<span>→</span></summary>
-                    <ul className="w-bul">
-                      {blink.bullets.map((b) => (<li key={b}>{b}</li>))}
-                    </ul>
-                    {caseText(blink.caseStudy)}
-                    {casePdf('blink')}
-                  </details>
+                  <div className="w-casewrap">
+                    <details className="w-case">
+                      <summary className="w-go">Read the case<span>→</span></summary>
+                      <ul className="w-bul">
+                        {blink.bullets.map((b) => (<li key={b}>{b}</li>))}
+                      </ul>
+                      {casePdf('blink')}
+                      {caseText(blink.caseStudy)}
+                    </details>
+                    {casePdfQuiet('blink')}
+                  </div>
                 </div>
               </article>
               {featured.map(renderFeatured)}
             </div>
 
-            <h2 className="w-label"><span>Room tour</span><span>1 min, no sound</span></h2>
-            <TourVideo />
-
-            <GithubProof />
-
-            <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
-            <div className="w-list">
-              {blinkTools.map((t) => (
-                <div className="w-row" key={t.id}>
-                  <span className="w-y">2026</span>
-                  <span><b>{t.name}</b><p>{t.detail}</p></span>
-                </div>
-              ))}
-            </div>
-
             <h2 className="w-label"><span>Personal projects</span><span>{personal.length}</span></h2>
             <div className="w-list">{personal.map(renderRow)}</div>
-
-            <h2 className="w-label" id="hackathons"><span>Hackathon projects</span><span>{hackathon.length}</span></h2>
-            <div className="w-list">{hackathon.map(renderRow)}</div>
 
             <h2 className="w-label" id="experience"><span>Experience</span></h2>
             <div className="w-list">
@@ -717,6 +756,24 @@ export default function Work() {
               </div>
             </div>
 
+            <h2 className="w-label" id="hackathons"><span>Hackathon projects</span><span>{hackathon.length}</span></h2>
+            <div className="w-list">{hackathon.map(renderRow)}</div>
+
+            <GithubProof />
+
+            <h2 className="w-label"><span>Room tour</span><span>1 min, no sound</span></h2>
+            <TourVideo />
+
+            <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
+            <div className="w-list">
+              {blinkTools.map((t) => (
+                <div className="w-row" key={t.id}>
+                  <span className="w-y">2026</span>
+                  <span><b>{t.name}</b><p>{t.detail}</p></span>
+                </div>
+              ))}
+            </div>
+
             <h2 className="w-label" id="contact"><span>Contact</span></h2>
             <p className="w-contact">
               Open to remote software engineering and growth engineering internships from December 2026. Email{' '}
@@ -727,9 +784,9 @@ export default function Work() {
         </div>
         <nav className="w-bar" aria-label="Quick actions">
           {contact.resume && (
-            <a className="w-btn w-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>
+            <a className="w-btn w-btn--p" href={contact.resume} onClick={openResume}>Résumé</a>
           )}
-          <a className="w-btn" href={`mailto:${contact.email}`}>Email me</a>
+          <a className="w-btn" href={`mailto:${contact.email}`}>Email</a>
         </nav>
         {readerOpen && contact.resume && <ResumeReader src={contact.resume} onClose={closeReader} />}
         {open && (
