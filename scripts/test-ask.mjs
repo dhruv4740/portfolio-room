@@ -118,7 +118,7 @@ await t('list answers keep their line breaks; the source gets a /work link', asy
   assert.equal(r.answer, 'He built four tools:\n- Outreach pipeline\n- **Link** engine'); assert.equal(r.source, 'Experience: Blink.new'); assert.equal(r.href, '/#blink');
   assert.equal(splitSource('One line. (Source: Project: FocusLock)').source, 'Project: FocusLock');
   assert.equal(sourceHref('Project: FocusLock'), '/#p-focuslock'); assert.equal(sourceHref('Project: FocusLock, Project: Blackout'), '/#p-focuslock');
-  assert.equal(sourceHref('Experience: EFarm, KJSCE'), '/#experience'); assert.equal(sourceHref('Why hire Dhruv'), ''); assert.equal(sourceHref(''), '');
+  assert.equal(sourceHref('Experience: ARH Tubes Pvt. Ltd.'), '/#experience'); assert.equal(sourceHref('Why hire Dhruv'), ''); assert.equal(sourceHref(''), '');
 });
 globalThis.fetch = realFetch;
 

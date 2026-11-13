@@ -9,7 +9,7 @@
 
 export const identity = {
   name: 'Dhruv Kothari',
-  role: 'Full-stack & AI developer',
+  role: 'Software engineer',
   location: 'Mumbai, India',
   pitch: "I'm a software engineer who builds tools that move growth numbers.",
   now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote software engineering and growth engineering internships from December 2026.',
@@ -82,15 +82,6 @@ export const experience = [
     detail:
       'Built and launched the company e-commerce storefront, tanttu.in, on Shopify.',
   },
-  {
-    id: 'efarm',
-    role: 'IoT Developer Intern',
-    org: 'EFarm, KJSCE',
-    from: 'Feb 2025',
-    to: 'Mar 2025',
-    detail:
-      'Automated irrigation prototype on Raspberry Pi with threshold-based pump control from live sensor data.',
-  },
 ];
 
 export const achievements = [
@@ -114,7 +105,6 @@ export const skills = [
   { id: 'kotlin',   label: 'Kotlin / Android',     proof: ['focuslock', 'expense'],             note: 'native modules, accessibility services' },
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
   { id: 'ml',       label: 'ML / data',            proof: ['darksentinel'],                     note: 'scikit-learn, pandas' },
-  { id: 'iot',      label: 'ESP32 / Raspberry Pi', proof: ['ecowater'],                         note: 'sensor integration, control logic' },
   { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: DarkSentinel, Expense Tracker' },
 ];
 
@@ -132,12 +122,12 @@ export const projects = [
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
-    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK and installer.',
+    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK plus Windows installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     caseStudy: {
       problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
       decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
-      result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK and the Windows installer.',
+      result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK plus Windows installer.',
     },
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
@@ -236,20 +226,6 @@ export const projects = [
     decision: '',
     broke: '',
     tech: ['Python', 'XGBoost', 'Flask', 'pandas'],
-    links: { live: '', github: '' },
-  },
-  {
-    id: 'ecowater',
-    name: 'Eco Water System',
-    year: 2025,
-    kind: 'hardware',
-    label: 'College project',
-    tagline: 'Irrigation that waters when the soil says so.',
-    description:
-      'ESP32 and soil sensors driving threshold-based pump control with live monitoring. The pump starts automatically when the soil is dry and stops when it is wet.',
-    decision: '',
-    broke: '',
-    tech: ['ESP32', 'Sensors', 'C++'],
     links: { live: '', github: '' },
   },
   {
@@ -353,7 +329,7 @@ export const featuredProjectIds = ['focuslock', 'basket'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 export const whatIDid = {
-  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK and the Windows installer.',
+  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK plus Windows installer.',
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
   darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',

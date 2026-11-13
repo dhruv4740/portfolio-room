@@ -90,7 +90,8 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
    and redesign" below. A mock-up goes on preview for owner approval before anything goes live.
 5. **Room frozen:** stays live, no new development; one labelled link from the new site.
 6. **Cellbook demo:** planned.
-7. **Eco Water card:** removed from the work page (owner decision, 2026-11-11).
+7. **Eco Water / EFarm:** removed everywhere on 2026-11-13 by owner decision (project, EFarm
+   experience entry, ESP32 / Raspberry Pi skill; room, OS, Ask, llms.txt, crawlable HTML).
 8. **`?from=` visit-source tracking:** shipped (PR #10). Tags in use: `linkedin`, `github`,
    `resume`.
 
@@ -150,8 +151,12 @@ correction; link-preview images; contact-form sender on the new domain; Search C
 
 - Hands are not a concern. Don't list hand regressions, poses or hand checks as open items.
 - `dk-dev` Pages project: deleted long ago.
-- "Fact or Cap" stays as the CrisisWatch card name. The Eco Water card is removed
-  (2026-11-11); EFarm and its C++ chip are closed.
+- "Fact or Cap" stays as the CrisisWatch card name. Eco Water / EFarm was removed
+  everywhere on 2026-11-13 by owner decision (earlier: card removed 2026-11-11; C++ chip closed).
+- Public role label is "Software engineer" (2026-11-13).
+- Résumé draft approved 2026-11-13.
+- Mock D approved as structure only; colour and buttons still to iterate.
+- Delegation now uses lean subagents instead of the worker session.
 - Each project runs as its real UI with simulated data; phone apps on the phone, web apps on the monitor.
 - Room: bare walls, awards on the desk, notebook is a blank page. Night only.
 - Project order by depth: FocusLock, Expense Tracker, Basket Price lead.

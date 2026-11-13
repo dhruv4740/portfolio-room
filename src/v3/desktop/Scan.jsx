@@ -1279,6 +1279,7 @@ body[data-launchpad-open] .escape-link { display:none; }
   .launchpad-role {max-width:240px;line-height:1.6;}
   .launchpad-statement {display:none;}
   .launchpad-actions { top:auto; bottom:16px; gap:6px; }
+  @media (min-height:560px) { .launchpad-actions { bottom:124px; } } /* clears the Ask pill (bottom:68px + 46px tall) */
   .launchpad-actions button { min-height:52px; padding:8px 12px 8px 50px; } .launchpad-actions small { font-size:11.5px; }
 }
 `;
