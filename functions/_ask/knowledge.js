@@ -12,7 +12,7 @@ export function buildSections() {
   const out = [];
   const add = (id, title, text, keys = '') => { text = clean(text); if (text) out.push({ id, title, text, keys }); };
 
-  add('about', 'About Dhruv', `${identity.name} is an ${identity.role} based in ${identity.location}. ${identity.pitch} ${identity.now} ${identity.statement}`,
+  add('about', 'About Dhruv', `${identity.name} is a ${identity.role.toLowerCase()} based in ${identity.location}. ${identity.pitch} ${identity.now} ${identity.statement}`,
     'who about introduce hire hiring available open internship remote location based mumbai role');
   const summary = `${identity.name} is a third-year B.Tech Information Technology student at ${education.school} in ${identity.location}, working as a growth intern at Blink.new (YC-backed, remote) from Jan 2026 to Oct 2026. He builds AI and automation tools end to end: at Blink he was the sole developer of four internal growth tools (creator outreach, link building, AI-search and SEO tracking, a Reddit copilot) that sourced 650 leads and got an 18% reply rate from contacted creators. Outside work he has shipped Android and cross-device apps (FocusLock, Expense Tracker, Blackout), a private price-comparison tool (BasketProof), and hackathon projects in security and data science (DarkSentinel, F-Shield, CrisisWatch). He won Innovathon 2025 and REALMS 2025 and placed top 5 at the IIT Madras x BITS Goa security hackathon in 2026.`;
   add('summary', 'Summary of Dhruv', summary, 'summary summarise summarize overview tldr resume cv profile introduce who background');
@@ -79,7 +79,7 @@ const CANNED = {
     'His interests are AI and growth engineering, and backend and automation work.',
     'He also likes Android and cross-platform apps.',
     `You can email him at ${contact.email}.`]],
-  'why-hire': ['He has measurable results, engineering judgement and range.', [
+  'why-hire': ['He ships working software and measures what it did.', [
     'At Blink he built four tools alone, and 18% of contacted creators replied.',
     'In FocusLock he deleted a self-hosted backend and moved to Firestore.',
     'He debugs real faults and writes down what broke, like the Windows Ctrl+W bug.',

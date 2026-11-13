@@ -433,7 +433,7 @@ export const featuredProjectIds = ['focuslock', 'basket'];
 export const whatIDid = {
   focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests. CI builds a signed APK plus Windows installer.',
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
-  darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project, and we were finalists at the IIT Madras x BITS Goa hackathon 2026.',
+  darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project, and we were top 5 finalists in our problem statement at the IIT Madras x BITS Goa hackathon 2026.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
   basket: 'Price comparator with 636 tests.',
   hexfence: 'Team project with Deven. I made 229 of the repo’s 286 commits.',

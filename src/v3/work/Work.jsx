@@ -567,10 +567,9 @@ export default function Work() {
     const list = DEMOS[project.id];
     setOpen({ id: project.id, index: Math.max(0, list.findIndex((d) => !d.minWidth || window.innerWidth >= d.minWidth)) });
   };
-  // Hero Ask card -> the existing Ask pill (public/os/shell/ask-pill.js). The card has no client of its own: it
-  // sets the pill's value, parks the pill's box over the card's input row so the morph opens from there, and submits
-  // the pill's form, so Turnstile, the answer card and the glow all stay in one place. While the card is on screen
-  // the pill is hidden (html[data-hero-ask]).
+  // Hero Ask card -> the existing Ask panel (public/os/shell/ask-pill.js, hero variant). The card has no client of its
+  // own: it sends the question and its own element, and the panel grows out of the card's rect. While the card is on
+  // screen the floating pill is hidden (html[data-hero-ask]).
   const [askText, setAskText] = useState('');
   const askCardRef = useRef(null);
   const askRowRef = useRef(null);
@@ -583,24 +582,11 @@ export default function Work() {
   }, []);
   const warmAsk = () => document.getElementById('ask-pill')?.dispatchEvent(new Event('pointerenter'));
   const askFromHero = (q, tries = 0) => {
-    const pill = document.getElementById('ask-pill');
-    const wrap = document.getElementById('ask-wrap');
     const card = document.getElementById('ask-card');
-    if (!pill || !wrap || !card) { if (tries < 15) setTimeout(() => askFromHero(q, tries + 1), 200); return; }
-    const row = askRowRef.current;
-    const r = row.getBoundingClientRect();
-    Object.assign(wrap.style, { left: `${r.left}px`, top: `${r.top}px`, bottom: 'auto', width: `${r.width}px`, height: `${r.height}px`, transform: 'none' });
-    pill.querySelector('input').value = q.trim();
-    pill.requestSubmit();
+    if (!card) { if (tries < 15) setTimeout(() => askFromHero(q, tries + 1), 200); return; }
     setAskText('');
-    if (!card.classList.contains('open')) return;
-    const mo = new MutationObserver(() => {
-      if (card.classList.contains('open')) return;
-      mo.disconnect();
-      ['left', 'top', 'bottom', 'width', 'height', 'transform'].forEach((k) => { wrap.style[k] = ''; });
-      if (!window.matchMedia('(pointer: coarse)').matches) row.querySelector('input')?.focus({ preventScroll: true });
-    });
-    mo.observe(card, { attributes: true, attributeFilter: ['class'] });
+    // The panel grows out of this card's rect and closes back into it (ask-pill.js, hero variant).
+    card.dispatchEvent(new CustomEvent('ask-hero', { detail: { q: q.trim(), from: askCardRef.current, input: askRowRef.current?.querySelector('input') } }));
   };
 
   // Tells the Ask pill (public/os/shell/ask-pill.js) to step aside while a

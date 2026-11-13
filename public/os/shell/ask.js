@@ -41,7 +41,9 @@ const CSS = `.ask-box{font:400 15px/1.55 system-ui,-apple-system,sans-serif;colo
 .ask-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 @keyframes ask-shim{from{background-position:200% 0}to{background-position:-200% 0}}
 .ask-shim{background:linear-gradient(90deg,rgba(246,244,238,.4) 0%,rgba(255,255,255,.95) 20%,rgba(246,244,238,.4) 40%,rgba(246,244,238,.4) 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent!important;animation:ask-shim 2.2s cubic-bezier(.4,0,.2,1) infinite}
-@media (prefers-reduced-motion:reduce){.ask-shim{animation:none}}`;
+.ask-dots{display:inline-flex;gap:5px;padding:6px 0}.ask-dots i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.25;animation:ask-dot 1s ease-in-out infinite}.ask-dots i:nth-child(2){animation-delay:.15s}.ask-dots i:nth-child(3){animation-delay:.3s}
+@keyframes ask-dot{0%,100%{opacity:.25}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.ask-shim{animation:none}.ask-dots i{animation:none;opacity:.6}}`;
 
 // Light formatting from model text, built as DOM nodes (never innerHTML): blank-line paragraphs, "- " lists, **bold**.
 function inline(parent, text) {
@@ -142,7 +144,9 @@ export function mountAsk(el) {
     const mine = seq;
     if (thread.firstChild?.classList?.contains('ask-intro')) thread.replaceChildren();
     const qb = add('ask-q'); qb.textContent = q; appear(qb);
-    const a = add('ask-a'); a.innerHTML = '<span class="ask-shim">Thinking</span>'; appear(a, 60);
+    // Opened from the hero card (data-variant="hero" on the panel root): three pulsing dots, held for at least 350 ms so a saved answer still reads as deliberate.
+    const isHero = !!el.closest('[data-variant="hero"]'), t0 = performance.now();
+    const a = add('ask-a'); a.innerHTML = isHero ? '<span class="ask-dots" role="status" aria-label="Thinking"><i></i><i></i><i></i></span>' : '<span class="ask-shim">Thinking</span>'; appear(a, 60);
     readerMoved = false; scrollTo(qb.offsetTop - 4);
     state('thinking');
     let d;
@@ -150,6 +154,7 @@ export function mountAsk(el) {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q, token: await token() }) });
       d = await r.json();
     } catch { d = { failed: true }; }
+    if (isHero && !reduced()) { const wait = 350 - (performance.now() - t0); if (wait > 0) await new Promise((r) => setTimeout(r, wait)); }
     if (mine !== seq) return; // the chat was reset while this was in flight
     a.replaceChildren();
     const meta = Object.assign(document.createElement('div'), { className: 'ask-meta' });
@@ -161,20 +166,25 @@ export function mountAsk(el) {
       state('typing');
       const parts = blocks(d.answer);
       a.append(...parts);
-      parts.forEach((n, i) => appear(n, i * 60));
+      // Hero panel: the lead line, then each bullet 40 ms apart (180 ms each, 6 px rise). Other surfaces keep the block stagger.
+      const units = isHero ? parts.flatMap((n) => (n.tagName === 'UL' || n.tagName === 'OL' ? [...n.children] : [n])) : parts;
+      units.forEach((n, i) => { if (!isHero) appear(n, i * 60); else if (!reduced()) n.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 180, delay: i * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); });
       meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' ? 'Saved answer' : 'Live AI answer' }));
       if (d.source) meta.appendChild(d.href ? sourceLink(`Source: ${d.source}`, d.href) : Object.assign(document.createElement('span'), { textContent: `Source: ${d.source}` }));
       if (d.note) meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.note }));
       if (navigator.clipboard) meta.appendChild(metaBtn('Copy', (b) => navigator.clipboard.writeText(d.answer + (d.source ? `\n(Source: ${d.source})` : '')).then(() => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); }, () => {})));
       live.textContent = d.answer;
-      appear(meta, parts.length * 60);
-      setTimeout(() => state('idle'), 300 + parts.length * 60);
+      if (isHero) { if (!reduced()) meta.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, delay: units.length * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); }
+      else appear(meta, parts.length * 60);
+      setTimeout(() => state('idle'), 300 + units.length * (isHero ? 40 : 60));
     }
     a.appendChild(meta);
     if (!readerMoved) scrollTo(qb.offsetTop - 4);
     if (widget != null) window.turnstile.reset(widget);
     if (d.failed || d.error) state('idle');
-    busy = false; go.disabled = false; showChips(3);
+    busy = false; go.disabled = false;
+    // Hero panel on a phone: the answer gets the room, so the suggestions stay hidden once there is an answer.
+    if (isHero && matchMedia('(max-width:959px)').matches && !d.failed && !d.error) chips.style.display = 'none'; else showChips(3);
   }
   // Back to the empty state; an answer still in flight is dropped when it lands.
   const reset = () => { seq++; busy = false; go.disabled = false; asked.clear(); shown = 0; intro(); showChips(4); shown = 0; input.value = ''; state('idle'); };
