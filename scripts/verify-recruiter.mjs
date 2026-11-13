@@ -96,8 +96,8 @@ try {
   check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 3);
   // Section labels after the featured band, in order, each followed by its row group.
   const sectionLabels = (await page.locator('main .w-label > span:first-child').allInnerTexts()).map((s) => s.trim());
-  const expectedSections = ['Featured', 'Personal projects', 'Experience', 'Hackathon projects', 'Live from GitHub'];
-  check('sections in order: Featured, Personal projects, Experience, Hackathon projects, Live from GitHub',
+  const expectedSections = ['Featured', 'At Blink.new (internship)', 'Personal projects', 'Experience', 'Hackathon projects', 'Live from GitHub', 'Room tour', 'Contact'];
+  check('sections in order: Featured, At Blink.new, Personal projects, Experience, Hackathon projects, Live from GitHub, Room tour, Contact',
     expectedSections.every((s, i) => sectionLabels[i] === s),
     sectionLabels.join(' | ') || 'none');
   const rowCounts = [];

@@ -20,7 +20,8 @@ const dates = (e) => `${e.from} to ${e.to}`;
 
 function caseStudy(c) {
   if (!c) return '';
-  return `<p><b>Problem.</b> ${esc(c.problem)}</p><p><b>Decisions and trade-offs.</b> ${esc(c.decisions)}</p><p><b>Result.</b> ${esc(c.result)}</p>`;
+  const t = (v) => esc(Array.isArray(v) ? v.join(' ') : v);
+  return `<p><b>Problem.</b> ${t(c.problem)}</p><p><b>Decisions and trade-offs.</b> ${t(c.decisions)}</p>${c.broke ? `<p><b>What broke.</b> ${t(c.broke)}</p>` : ''}${c.result ? `<p><b>Result.</b> ${t(c.result)}</p>` : ''}`;
 }
 
 function projectBlock(p, c, site) {

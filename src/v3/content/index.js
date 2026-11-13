@@ -57,9 +57,31 @@ export const experience = [
     detail:
       'Built 4 internal growth tools: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.',
     caseStudy: {
-      problem: 'Blink.new needed repeatable growth channels, and the team had no tooling for creator outreach, link building, AI-search visibility or Reddit.',
-      decisions: 'I built four internal tools as the sole developer. The outreach pipeline (Python, SQLite, YouTube Data API, Gmail API) uses an LLM to draft messages, but a human approves every send. The link-building engine is a Flask dashboard that finds and scores prospect sites and extracts contacts.',
-      result: '650 leads sourced, 489 emails sent, 41 of 228 contacted creators replied (18%), 14 positive. The link engine scored 676 prospect sites, AI-search tracking covered 18 prompts, and Reddit was 29.85% of Blink social traffic in Jun 2026.',
+      // Panel text on the work page: bullets. Every other consumer joins them into prose; `pdf` keeps the one-page case file's original prose.
+      summary: [
+        'I built an outreach pipeline that drafts emails with an LLM and needs human approval.',
+        'I built a link-building engine that scored 676 prospect sites and extracted contacts.',
+        'I tracked AI-search (AEO) citations for Blink across 18 prompts.',
+      ],
+      problem: [
+        'Blink.new needed repeatable growth channels.',
+        'The team had no tooling for creator outreach, link building, AI-search visibility or Reddit.',
+      ],
+      decisions: [
+        'I built four internal tools as the sole developer.',
+        'I made a human approve every outreach email the LLM drafts.',
+        'The link-building engine is a Flask dashboard.',
+      ],
+      result: [
+        'I sourced 650 leads and sent 489 emails.',
+        '41 of 228 contacted creators replied (18%) and 14 were positive.',
+        'Reddit was 29.85% of Blink social traffic in Jun 2026.',
+      ],
+      pdf: {
+        problem: 'Blink.new needed repeatable growth channels, and the team had no tooling for creator outreach, link building, AI-search visibility or Reddit.',
+        decisions: 'I built four internal tools as the sole developer. The outreach pipeline (Python, SQLite, YouTube Data API, Gmail API) uses an LLM to draft messages, but a human approves every send. The link-building engine is a Flask dashboard that finds and scores prospect sites and extracts contacts.',
+        result: '650 leads sourced, 489 emails sent, 41 of 228 contacted creators replied (18%), 14 positive. The link engine scored 676 prospect sites, AI-search tracking covered 18 prompts, and Reddit was 29.85% of Blink social traffic in Jun 2026.',
+      },
     },
     bullets: [
       'Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).',
@@ -128,9 +150,25 @@ export const projects = [
     detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK plus Windows installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     caseStudy: {
-      problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
-      decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
-      result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK plus Windows installer.',
+      problem: [
+        'Screen-time limits are easy to dodge.',
+        'Switching browsers or devices resets the allowance.',
+      ],
+      decisions: [
+        'I enforce limits at the OS level with one shared daily allowance.',
+        'I replaced a self-hosted backend and browser extension with Firestore and an Electron agent.',
+        'I wrote security rules so each sync code only reaches its members, capped at 10.',
+      ],
+      result: [
+        'One allowance now covers an Android phone and a Windows PC.',
+        'Ctrl+W logged as closed but the tab stayed open until I switched to SendInput.',
+        '233 automated tests back it, and CI builds a signed APK plus Windows installer.',
+      ],
+      pdf: {
+        problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
+        decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
+        result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK plus Windows installer.',
+      },
     },
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
@@ -162,6 +200,23 @@ export const projects = [
     broke:
       'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
     tech: ['Python', 'FastAPI', 'PostgreSQL', 'Kotlin'],
+    summary: 'A private grocery price comparison tool for one family, built on one rule: unknown beats wrong.',
+    caseStudy: {
+      problem: [
+        'One family needed grocery prices compared across three delivery services.',
+        'A wrong total is worse than no total.',
+      ],
+      decisions: [
+        'The rule is UNKNOWN is better than WRONG.',
+        'It declines to state a total unless it has verified evidence for every line.',
+        'I removed cart undo because its extra state and failures cost more than it returned.',
+      ],
+      broke: [
+        'A bot-mitigation 403 looked the same as an expired session.',
+        'My recovery path deleted the stored credential, so a temporary block became a lockout loop.',
+        'I fixed it by classifying the two failures separately and keeping the session on a block.',
+      ],
+    },
     links: { live: '', github: '' },
   },
   {
@@ -181,9 +236,25 @@ export const projects = [
     badge: 'Top 5 finalist in problem statement, IIT Madras & BITS Goa hackathon 2026',
     tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
     caseStudy: {
-      problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
-      decisions: 'A Random Forest scores network flows for Tor traffic. Only predictions in the uncertain zone (Tor score 0.55 to 0.75) go to the Claude call, behind a 60-second cooldown, so cost is bounded by time rather than traffic. I removed a hardcoded fallback score that could show a result the model never produced.',
-      result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 finalist in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+      problem: [
+        'Darknet traffic monitoring needs a classifier.',
+        'Sending every flow to a paid LLM would be costly and slow.',
+      ],
+      decisions: [
+        'A Random Forest scores network flows for Tor traffic.',
+        'Only Tor scores between 0.55 and 0.75 reach Claude, behind a 60-second cooldown.',
+        'I removed a fallback score that could show a result the model never produced.',
+      ],
+      result: [
+        'This was a team build, and Deven did model training and live Tor capture.',
+        'I built the dashboards and API features.',
+        'Top 5 finalist in our problem statement at IIT Madras x BITS Goa 2026.',
+      ],
+      pdf: {
+        problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
+        decisions: 'A Random Forest scores network flows for Tor traffic. Only predictions in the uncertain zone (Tor score 0.55 to 0.75) go to the Claude call, behind a 60-second cooldown, so cost is bounded by time rather than traffic. I removed a hardcoded fallback score that could show a result the model never produced.',
+        result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 finalist in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+      },
     },
     links: { live: '', github: '' },
     note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture; I built the dashboards, the API features and the uncertain-zone Claude call.',
@@ -245,9 +316,23 @@ export const projects = [
       'Detects each visitor\'s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
     tech: ['Three.js', 'React 19', 'GSAP', 'GLSL', 'Playwright'],
     caseStudy: {
-      problem: 'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
-      decisions: 'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version. The studio room’s monitor runs live demos of other projects, and Playwright checks cover the interactions.',
-      result: 'Holds 30 to 60 FPS on integrated graphics; the same content is reachable on every tier, including the plain work page.',
+      problem: [
+        'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
+      ],
+      decisions: [
+        'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version.',
+        'The studio room’s monitor runs live demos of my other projects.',
+        'Playwright checks cover the interactions.',
+      ],
+      result: [
+        'It holds 30 to 60 FPS on integrated graphics.',
+        'The same content is reachable on every tier, including the plain work page.',
+      ],
+      pdf: {
+        problem: 'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
+        decisions: 'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version. The studio room’s monitor runs live demos of other projects, and Playwright checks cover the interactions.',
+        result: 'Holds 30 to 60 FPS on integrated graphics; the same content is reachable on every tier, including the plain work page.',
+      },
     },
     links: { live: '/room/', github: '' },
   },
@@ -266,9 +351,23 @@ export const projects = [
     tech: ['Kotlin', 'Android'],
     links: { live: '', github: 'https://github.com/dhruv4740/blackout' },
     caseStudy: {
-      problem: 'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
-      decisions: 'Blackout turns the screen fully black while audio keeps playing. Fingerprint unlock and a Quick Settings tile control it, and it uncovers by itself for calls and alarms. It requests no internet permission.',
-      result: 'A Kotlin Android app; source at https://github.com/dhruv4740/blackout.',
+      problem: [
+        'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
+      ],
+      decisions: [
+        'Blackout turns the screen fully black while audio keeps playing.',
+        'Fingerprint unlock and a Quick Settings tile control it.',
+        'It uncovers for calls and alarms and has no internet permission.',
+      ],
+      result: [
+        'It is a Kotlin Android app.',
+        'The source is at github.com/dhruv4740/blackout.',
+      ],
+      pdf: {
+        problem: 'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
+        decisions: 'Blackout turns the screen fully black while audio keeps playing. Fingerprint unlock and a Quick Settings tile control it, and it uncovers by itself for calls and alarms. It requests no internet permission.',
+        result: 'A Kotlin Android app; source at https://github.com/dhruv4740/blackout.',
+      },
     },
   },
   {

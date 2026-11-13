@@ -2,6 +2,7 @@
 // Also the canned FAQ: keyword-matched sections returned when no provider answers.
 import { identity, proofPoints, contact, education, experience, achievements, skills, projects, blinkTools } from '../../src/v3/content/index.js';
 
+const prose = (v) => (Array.isArray(v) ? v.join(' ') : v);
 const clean = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
 // Canned answers are runs of sentences; group them into short paragraphs (blank-line separated) so they read as text, not a wall.
 export const paras = (s, per = 2) => { const x = clean(s).split(/(?<=[.!?])\s+(?=[A-Z0-9(])/), o = []; for (let i = 0; i < x.length; i += per) o.push(x.slice(i, i + per).join(' ')); return o.join('\n\n'); };
@@ -40,7 +41,7 @@ export function buildSections() {
     const body = [
       p.tagline, p.description, p.summary, p.detail,
       p.decision && `Key decision: ${p.decision}`, p.broke && `What broke: ${p.broke}`,
-      p.caseStudy && `Case study: ${[p.caseStudy.problem, p.caseStudy.decisions, p.caseStudy.result].filter(Boolean).join(' ')}`,
+      p.caseStudy && `Case study: ${[p.caseStudy.problem, p.caseStudy.decisions, p.caseStudy.result].filter(Boolean).map(prose).join(' ')}`,
       p.badge, p.note, p.tech?.length && `Built with ${p.tech.join(', ')}.`, p.links?.github && `Code: ${p.links.github}`,
     ].filter(Boolean).join(' ');
     add(`proj-${p.id}`, `Project: ${p.name}`, body, `project projects built ${p.name} ${p.tech?.join(' ') || ''} ${p.kind}`);
@@ -115,7 +116,7 @@ function compareAnswer(question) {
   if (!/\b(compare|versus|vs|difference|differ)\b/.test(q)) return null;
   const hit = projects.filter((p) => q.includes(p.name.toLowerCase()) || q.includes(p.id));
   if (hit.length < 2) return null;
-  const part = (p) => `${p.name}: ${firstSentences([p.tagline, p.caseStudy?.decisions || p.description, p.caseStudy?.result].filter(Boolean).join(' '), 3)}`;
+  const part = (p) => `${p.name}: ${firstSentences([p.tagline, prose(p.caseStudy?.decisions) || p.description, prose(p.caseStudy?.result)].filter(Boolean).join(' '), 3)}`;
   return { answer: hit.slice(0, 3).map(part).join('\n\n'), source: hit.slice(0, 3).map((p) => `Project: ${p.name}`).join(', ') };
 }
 

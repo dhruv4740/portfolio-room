@@ -236,6 +236,10 @@ const css = `
   .w-cs-row summary img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; }
   .w-cs dt { font: 600 17px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); margin: 24px 0 8px; }
   .w-cs dd { margin: 0; font-size: 16px; color: var(--ink2); }
+  .w-cs dd ul { list-style: disc; padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .w-csw { container-type: inline-size; }
+  /* Wide panels (the full-width Blink card, project rows) lay the sections out as equal columns; half-width cards stay stacked. */
+  @media (min-width: 1024px) { @container (min-width: 640px) { .w-cs { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 0 32px; } } }
   .w-root .w-row p, .w-root .w-card p, .w-root .w-cs dd, .w-root .w-bul, .w-root .w-contact { max-width: 72ch; }
   .w-casewrap { position: relative; margin-top: 6px; }
   .w-casewrap .w-case { margin-top: 0; }
@@ -245,6 +249,8 @@ const css = `
   .w-pdfq { position: absolute; top: 0; right: 44px; height: 44px; display: inline-flex; align-items: center; font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; color: var(--mute); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
   .w-pdfq:hover, .w-pdfq:focus-visible { color: var(--ink); }
   .w-case[open] + .w-pdfq { display: none; }
+  /* On phones the link would sit over the middle of the Read the case bar; the panel's own PDF button covers it there. */
+  @media (max-width: 639px) { .w-pdfq { display: none; } }
   .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
   /* 32 px tall hit area (WCAG 2.5.8 asks for 24) with the same thin underline look. */
@@ -356,7 +362,6 @@ const ASK_CHIPS = ['Why hire Dhruv?', 'What did he build at Blink?'];
 // Short captions for the hero proof row only; the full text stays in the content file (Ask, résumé, llms.txt).
 const PROOF_SHORT = {
   '18%': 'reply rate on 489 outreach emails at Blink',
-  '4': 'growth tools shipped at Blink as sole developer',
   'Top 5': 'finalist, IIT Madras × BITS Goa security hackathon',
   '2×': 'hackathon wins: Innovathon 2025, REALMS 2025',
 };
@@ -424,23 +429,28 @@ function GithubProof() {
   );
 }
 
+const CASE_SECTIONS = [['problem', 'Problem'], ['decisions', 'Decisions'], ['broke', 'What broke'], ['result', 'Result']];
 const caseText = (c) => c && (
-  <dl className="w-cs">
-    <dt>Problem</dt><dd>{c.problem}</dd>
-    <dt>Decisions</dt><dd>{c.decisions}</dd>
-    <dt>Result</dt><dd>{c.result}</dd>
-  </dl>
+  <div className="w-csw">
+    <dl className="w-cs" style={{ '--cols': CASE_SECTIONS.filter(([k]) => c[k]?.length).length }}>
+      {CASE_SECTIONS.filter(([k]) => c[k]?.length).map(([k, label]) => (
+        <div key={k}><dt>{label}</dt><dd><ul>{c[k].map((b) => (<li key={b}>{b}</li>))}</ul></dd></div>
+      ))}
+    </dl>
+  </div>
 );
 
 // Same-site PDF: opens in this tab so Back returns to the page.
 const caseLabel = (id) => `One-page case file (PDF) for ${projects.find((x) => x.id === id)?.name ?? id}`;
-const casePdf = (id) => (
+// Only projects whose case study carries a `pdf` field have a generated case file.
+const hasPdf = (id) => Boolean((id === 'blink' ? experience[0] : projects.find((x) => x.id === id))?.caseStudy?.pdf);
+const casePdf = (id) => hasPdf(id) && (
   <a className="w-pdf" href={`/casefiles/${id}.pdf`} aria-label={caseLabel(id)}>
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" aria-hidden="true"><path d="M3.5 1.5h6l3 3v10h-9z" /><path d="M9.5 1.5v3h3M8 7v4.5M6 9.5l2 2 2-2" strokeLinecap="round" /></svg>
     One-page case file (PDF)
   </a>
 );
-const casePdfQuiet = (id) => <a className="w-pdfq" href={`/casefiles/${id}.pdf`} aria-label={caseLabel(id)}>Case file (PDF)</a>;
+const casePdfQuiet = (id) => hasPdf(id) && <a className="w-pdfq" href={`/casefiles/${id}.pdf`} aria-label={caseLabel(id)}>Case file (PDF)</a>;
 
 const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b> {whatIDid[id]}</p>;
 
@@ -525,6 +535,19 @@ export default function Work() {
   const featured = pick(featuredProjectIds);
   const personal = pick(personalProjectIds);
   const hackathon = pick(hackathonProjectIds);
+
+  // The hero's second proof item counts the projects that have a Try it demo on this page.
+  const demoCount = listed.filter((p) => DEMOS[p.id]).length;
+  const proofItems = proofPoints.map((p) => (p.value === '4'
+    ? { value: String(demoCount), text: 'projects with a demo you can try on this page' }
+    : { ...p, text: PROOF_SHORT[p.value] || p.text }));
+  const [narrow, setNarrow] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 639px)').matches);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 639px)');
+    const on = () => setNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
 
   const blink = experience[0];
   const openResume = (e) => {
@@ -695,7 +718,7 @@ export default function Work() {
                   <h2>Ask about my work</h2>
                   <p className="h-ask-sub">An AI answers from my projects and résumé.</p>
                   <div className="h-field" ref={askRowRef}>
-                    <input id="h-ask-q" type="text" maxLength={300} autoComplete="off" spellCheck="false" aria-label="Ask about Dhruv" placeholder="What did Dhruv build at Blink?"
+                    <input id="h-ask-q" type="text" maxLength={300} autoComplete="off" spellCheck="false" aria-label="Ask about Dhruv" placeholder={narrow ? 'Ask a question' : 'What did Dhruv build at Blink?'}
                       value={askText} onChange={(e) => setAskText(e.target.value)} onFocus={warmAsk} onPointerEnter={warmAsk} />
                     <button type="submit" className="h-go" aria-label="Ask">↑</button>
                   </div>
@@ -708,8 +731,8 @@ export default function Work() {
               </div>
             </div>
             <ul className="h-proof" id="proof" aria-label="Proof">
-              {proofPoints.map((p) => (
-                <li key={p.text}><b>{p.value}</b><span>{PROOF_SHORT[p.value] || p.text}</span></li>
+              {proofItems.map((p) => (
+                <li key={p.text}><b>{p.value}</b><span>{p.text}</span></li>
               ))}
             </ul>
           </section>
@@ -727,7 +750,7 @@ export default function Work() {
                     <details className="w-case">
                       <summary className="w-go">Read the case<span>→</span></summary>
                       <ul className="w-bul">
-                        {blink.bullets.map((b) => (<li key={b}>{b}</li>))}
+                        {blink.caseStudy.summary.map((b) => (<li key={b}>{b}</li>))}
                       </ul>
                       {casePdf('blink')}
                       {caseText(blink.caseStudy)}
@@ -737,6 +760,16 @@ export default function Work() {
                 </div>
               </article>
               {featured.map(renderFeatured)}
+            </div>
+
+            <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
+            <div className="w-list">
+              {blinkTools.map((t) => (
+                <div className="w-row" key={t.id}>
+                  <span className="w-y">2026</span>
+                  <span><b>{t.name}</b><p>{t.detail}</p></span>
+                </div>
+              ))}
             </div>
 
             <h2 className="w-label"><span>Personal projects</span><span>{personal.length}</span></h2>
@@ -763,16 +796,6 @@ export default function Work() {
 
             <h2 className="w-label"><span>Room tour</span><span>1 min, no sound</span></h2>
             <TourVideo />
-
-            <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
-            <div className="w-list">
-              {blinkTools.map((t) => (
-                <div className="w-row" key={t.id}>
-                  <span className="w-y">2026</span>
-                  <span><b>{t.name}</b><p>{t.detail}</p></span>
-                </div>
-              ))}
-            </div>
 
             <h2 className="w-label" id="contact"><span>Contact</span></h2>
             <p className="w-contact">
