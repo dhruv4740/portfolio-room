@@ -82,15 +82,6 @@ export const experience = [
     detail:
       'Built and launched the company e-commerce storefront, tanttu.in, on Shopify.',
   },
-  {
-    id: 'efarm',
-    role: 'IoT Developer Intern',
-    org: 'EFarm, KJSCE',
-    from: 'Feb 2025',
-    to: 'Mar 2025',
-    detail:
-      'Automated irrigation prototype on Raspberry Pi with threshold-based pump control from live sensor data.',
-  },
 ];
 
 export const achievements = [
@@ -114,7 +105,6 @@ export const skills = [
   { id: 'kotlin',   label: 'Kotlin / Android',     proof: ['focuslock', 'expense'],             note: 'native modules, accessibility services' },
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
   { id: 'ml',       label: 'ML / data',            proof: ['darksentinel'],                     note: 'scikit-learn, pandas' },
-  { id: 'iot',      label: 'ESP32 / Raspberry Pi', proof: ['ecowater'],                         note: 'sensor integration, control logic' },
   { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: DarkSentinel, Expense Tracker' },
 ];
 
@@ -236,20 +226,6 @@ export const projects = [
     decision: '',
     broke: '',
     tech: ['Python', 'XGBoost', 'Flask', 'pandas'],
-    links: { live: '', github: '' },
-  },
-  {
-    id: 'ecowater',
-    name: 'Eco Water System',
-    year: 2025,
-    kind: 'hardware',
-    label: 'College project',
-    tagline: 'Irrigation that waters when the soil says so.',
-    description:
-      'ESP32 and soil sensors driving threshold-based pump control with live monitoring. The pump starts automatically when the soil is dry and stops when it is wet.',
-    decision: '',
-    broke: '',
-    tech: ['ESP32', 'Sensors', 'C++'],
     links: { live: '', github: '' },
   },
   {

@@ -5,10 +5,10 @@ Every project the owner shows, and where it is surfaced. Swept 2026-10-20 on
 
 Content source: `src/v3/content/index.js` `projects` array (ids: focuslock ~118,
 expense ~135, basket ~150, darksentinel ~165, crisiswatch ~184, fraud ~199,
-ecowater ~213, portfolio3d ~227, blackout ~242, cellbook ~257).
+portfolio3d ~227, blackout ~242, cellbook ~257; Eco Water / EFarm removed 2026-11-13).
 `public/os/shell/content.js` is **generated** from it
 (`scripts/gen-os-content.mjs`). Groupings in the same file: `personalProjectIds`
-(cellbook, portfolio3d, expense, blackout, ecowater), `hackathonProjectIds`
+(cellbook, portfolio3d, expense, blackout), `hackathonProjectIds`
 (darksentinel, crisiswatch, fraud), `featuredProjectIds` (focuslock,
 portfolio3d, darksentinel, blackout; used only by the mobile deck,
 `Deck.jsx`). `/work` features `FEATURED_IDS = ['focuslock','basket']`
@@ -26,7 +26,6 @@ portfolio3d, darksentinel, blackout; used only by the mobile deck,
 | fraud (F-Shield) | `apps/fraud/` (Vite); original `C:\Users\hp\kharghar-hacks\kharghar` @31c0cd4 | `public/apps/fraud/` | Try-it: web | `public/os/apps/fraud.js` | none |
 | blackout | none; GitHub dhruv4740/blackout (content) | none | link only | none | none |
 | cellbook | none, no URL | none | card only | none | none |
-| ecowater | none, no URL (hardware; no facts on file) | none | card only | none | none |
 | portfolio3d | this site | none | link to `/` | none | none |
 
 Each `apps/<name>/` has a `PORTFOLIO.md` listing the files changed from the
@@ -53,10 +52,10 @@ original (mock layer replaces the backend). Rebuild with
 
 ## Gaps (facts, not decisions)
 
-- No /work demo: blackout, cellbook, ecowater, portfolio3d.
-- No dhruvOS window: expense, basket, blackout, cellbook, ecowater, portfolio3d.
+- No /work demo: blackout, cellbook, portfolio3d.
+- No dhruvOS window: expense, basket, blackout, cellbook, portfolio3d.
 - No phone app: darksentinel, crisiswatch, fraud, and the non-interactive ones.
 - `PREVIEWS` in `Work.jsx` lacks crisiswatch and fraud although
   `public/previews/crisiswatch.jpg` and `fraud.jpg` exist.
-- Repo URLs absent from content: basket, cellbook, ecowater, fraud;
+- Repo URLs absent from content: basket, cellbook, fraud;
   darksentinel is private.
