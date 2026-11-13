@@ -59,8 +59,8 @@ html[data-overlay] #ask-pill-root{display:none}
   const wrap = $('#ask-wrap'), pill = $('#ask-pill'), pillInput = pill.querySelector('input'), scrim = $('#ask-scrim'), card = $('#ask-card'), body = card.querySelector('.body'), col = card.querySelector('.col'), cvs = $('#ask-glow'), newBtn = card.querySelector('.new'), safe = $('#ask-safe');
   let chat = null, isOpen = false, settled = false, byKey = false;
 
-  // Where the pill lives: bottom-right in the room (its HUD and object list sit bottom-left/centre), above the CTA bar on /work.
-  const place = () => { root.dataset.ctx = document.querySelector('.scan-root') ? 'room' : document.querySelector('.w-root') ? 'work' : 'page'; };
+  // Where the pill lives (decided from the URL as well as the DOM: <Scan> is lazy, so waiting for .scan-root made the pill start centred and jump right): bottom-right in the room (its HUD and object list sit bottom-left/centre), above the CTA bar on /work.
+  const place = () => { root.dataset.ctx = document.querySelector('.scan-root') || location.pathname.startsWith('/room') ? 'room' : document.querySelector('.w-root') ? 'work' : 'page'; };
   place(); setInterval(place, 1000); addEventListener('resize', place);
 
   // Geometry: the card morphs between the pill's rect (p = 0) and the card (p = 1). Desktop: a centred card. Phones: a

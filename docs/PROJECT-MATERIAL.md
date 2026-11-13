@@ -179,10 +179,9 @@ back and fixed.
 ### Status
 - Actively developed. Local repo's most recent commit: `9a13ab4`, "bump version to 0.7.1"
   (2026-07-28). 72 total commits. VERIFIED via `git log`.
-- Release signing, code-signing for the Windows installer, and GitHub Actions CI are all
-  explicitly deferred (`docs/UPDATES.md`: "Decision deferred by the maintainer: manual releases
-  for now"). Windows installer is unsigned (SmartScreen warning on first run) — an accepted
-  cost/benefit tradeoff, documented as such.
+- CI exists: `release.yml` builds a signed Android APK and an unsigned Windows installer
+  (checked 2026-11-11; the earlier "CI deferred" note was stale). The Windows installer is
+  unsigned (SmartScreen warning on first run), an accepted cost/benefit tradeoff.
 - Public GitHub mirror (`dhruv4740/focuslock`) is behind the local tree — last pushed
   2026-07-17, local work continued after that. Note this discrepancy if the portfolio links to
   GitHub directly.
