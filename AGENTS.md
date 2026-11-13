@@ -211,6 +211,18 @@ deliberate idle prefetch is in `src/v3/work/prefetchRoom.js`.
   frame sequence or recording reviewed by eye before it's called done.
 - The owner is present. Work in small reviewed steps, not long autonomous runs.
 
+## Where the project repos are
+
+- FocusLock: `C:\Users\hp\OneDrive\Desktop\new-focuslock`
+- BasketProof: `C:\Users\hp\OneDrive\Desktop\comparison`. Private. Never publish
+  its code, file names or a repo link. Another agent may be working there, so
+  never write in it.
+- HexFence: `C:\Users\hp\OneDrive\Desktop\hexfence`
+- DarkSentinel: `C:\Users\hp\OneDrive\Documents\demo_website` (UI in `darksentinel-ui`)
+- Agents may read these and run their tests. Never commit, push or delete there.
+  Never copy secrets files, teammates' personal data, datasets or model files
+  into this repo.
+
 ## Map
 
 ```

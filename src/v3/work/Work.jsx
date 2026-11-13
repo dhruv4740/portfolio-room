@@ -363,7 +363,7 @@ const ASK_CHIPS = ['Why hire Dhruv?', 'What did he build at Blink?'];
 const PROOF_SHORT = {
   '18%': 'reply rate on 489 outreach emails at Blink',
   'Top 5': 'finalist, IIT Madras × BITS Goa security hackathon',
-  '2×': 'hackathon wins: Innovathon 2025, REALMS 2025',
+  '2×': 'hackathon wins at Innovathon 2025 and REALMS 2025',
 };
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };

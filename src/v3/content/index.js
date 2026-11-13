@@ -19,14 +19,14 @@ export const identity = {
   availability: ['Growth intern at Blink.new (YC) until October 2026.', 'Open to remote software and growth engineering internships from December 2026.'],
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
-    'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',
+    'I like building things end to end. That means mobile apps, backend automation and hackathon projects under time pressure.',
 };
 
 export const proofPoints = [
   { value: '18%', text: 'of contacted creators replied, across 489 outreach emails from an LLM pipeline I built at Blink' },
-  { value: '4', text: 'internal growth tools shipped at Blink: outreach, link building, SEO tracking, Reddit copilot' },
+  { value: '4', text: 'internal growth tools shipped at Blink. They cover outreach, link building, SEO tracking and a Reddit copilot.' },
   { value: 'Top 5', text: "finalist at the IIT Madras × BITS Goa security hackathon, for DarkSentinel's LLM review layer" },
-  { value: '2×', text: 'hackathon wins: Innovathon 2025 and REALMS 2025' },
+  { value: '2×', text: 'hackathon wins at Innovathon 2025 and REALMS 2025' },
 ];
 
 export const contact = {
@@ -55,7 +55,7 @@ export const experience = [
     from: 'Jan 2026',
     to: 'Oct 2026',
     detail:
-      'Built 4 internal growth tools: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.',
+      'Built 4 internal growth tools. They cover creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.',
     caseStudy: {
       // Panel text on the work page: bullets. Every other consumer joins them into prose; `pdf` keeps the one-page case file's original prose.
       summary: [
@@ -110,8 +110,8 @@ export const experience = [
 ];
 
 export const achievements = [
-  { id: 'innovathon', label: 'Innovathon 2025 — Data Science track', result: 'Winner', year: 2025 },
-  { id: 'realms',     label: 'REALMS 2025 — AR Tourism track',       result: 'Winner', year: 2025 },
+  { id: 'innovathon', label: 'Innovathon 2025, Data Science track', result: 'Winner', year: 2025 },
+  { id: 'realms',     label: 'REALMS 2025, AR Tourism track',       result: 'Winner', year: 2025 },
   {
     id: 'saiss',
     label: 'Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)',
@@ -147,7 +147,7 @@ export const projects = [
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
-    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK plus Windows installer.',
+    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. Over 200 automated tests. CI builds a signed APK plus Windows installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     caseStudy: {
       problem: [
@@ -200,7 +200,7 @@ export const projects = [
     broke:
       'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
     tech: ['Python', 'FastAPI', 'PostgreSQL', 'Kotlin'],
-    summary: 'A private grocery price comparison tool for one family, built on one rule: unknown beats wrong.',
+    summary: 'A private grocery price comparison tool for one family. Its one rule is that unknown beats wrong.',
     caseStudy: {
       problem: [
         'One family needed grocery prices compared across three delivery services.',
@@ -232,7 +232,7 @@ export const projects = [
     broke:
       'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
     summary: 'A team dark-web traffic monitor that classifies network traffic and shows alerts on a live dashboard.',
-    detail: 'I built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded.',
+    detail: 'I built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded.',
     badge: 'Top 5 finalist in problem statement, IIT Madras & BITS Goa hackathon 2026',
     tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
     caseStudy: {
@@ -307,7 +307,7 @@ export const projects = [
     name: '3D Portfolio',
     year: 2026,
     kind: 'product',
-    tagline: 'This site: a 3D studio room whose monitor runs live demos of other projects.',
+    tagline: 'This site is a 3D studio room whose monitor runs live demos of other projects.',
     description: '',
     decision: '',
     broke: '',
@@ -431,10 +431,10 @@ export const featuredProjectIds = ['focuslock', 'basket'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 export const whatIDid = {
-  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK plus Windows installer.',
+  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests. CI builds a signed APK plus Windows installer.',
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
-  darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
+  darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project, and we were finalists at the IIT Madras x BITS Goa hackathon 2026.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
   basket: 'Price comparator with 636 tests.',
-  hexfence: 'Team project with Deven; I made 229 of the repo’s 286 commits.',
+  hexfence: 'Team project with Deven. I made 229 of the repo’s 286 commits.',
 };
