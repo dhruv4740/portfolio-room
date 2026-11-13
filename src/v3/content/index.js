@@ -14,6 +14,9 @@ export const identity = {
   pitch: "I'm a software engineer who builds tools that move growth numbers.",
   now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote software engineering and growth engineering internships from December 2026.',
   tagline: "I'm a software engineer who builds tools that move growth numbers.",
+  // Home page headline and availability lines. `pitch`, `now` and `tagline` stay: the Ask knowledge base and dhruvOS read them.
+  headline: "I'm a software engineer who ships real products, from Android apps to growth tools.",
+  availability: ['Growth intern at Blink.new (YC) until October 2026.', 'Open to remote software and growth engineering internships from December 2026.'],
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
     'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',
