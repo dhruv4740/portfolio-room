@@ -354,7 +354,7 @@ const caseText = (c) => c && (
   </dl>
 );
 
-const casePdf = (id) => <a className="w-act" href={`/casefiles/${id}.pdf`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>;
+const casePdf = (id) => <a className="w-act" href={`/casefiles/${id}.pdf`} aria-label={`One-page case file (PDF) for ${projects.find((x) => x.id === id)?.name ?? id}`} target="_blank" rel="noopener noreferrer">One-page case file (PDF)</a>;
 
 const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b> {whatIDid[id]}</p>;
 

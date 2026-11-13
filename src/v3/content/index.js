@@ -132,12 +132,12 @@ export const projects = [
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
-    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK and installer.',
+    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK plus Windows installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     caseStudy: {
       problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
       decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
-      result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK and the Windows installer.',
+      result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK plus Windows installer.',
     },
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
@@ -353,7 +353,7 @@ export const featuredProjectIds = ['focuslock', 'basket'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 export const whatIDid = {
-  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK and the Windows installer.',
+  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK plus Windows installer.',
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
   darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
