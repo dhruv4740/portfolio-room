@@ -1,9 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import '../tokens.css';
 import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid } from '../content/index.js';
-import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
-import { LIVE_APPS_HERO } from '../lib/features.js';
 import { phoneCanRoom } from '../lib/capability.js';
 
 const css = `
@@ -163,7 +161,7 @@ const css = `
   .w-root h3 { font-weight: 600; }
 
   /* Bottom room for the fixed Résumé/Email bar plus the Ask pill above it. */
-  .w-wrap { max-width: 1180px; margin: auto; padding: 24px 20px calc(176px + env(safe-area-inset-bottom)); }
+  .w-wrap { max-width: 1120px; margin: auto; padding: 24px 20px calc(176px + env(safe-area-inset-bottom)); }
   .w-side { display: flex; flex-direction: column; }
   .w-desk { width: 100%; max-width: 420px; height: auto; display: block; }
   .w-status { display: flex; align-items: center; gap: 8px; font: 13px/1.4 var(--mono); color: var(--mute); margin-top: 10px; }
@@ -261,7 +259,7 @@ const css = `
   .w-bar .w-btn { height: 48px; }
 
   @media (min-width: 960px) {
-    .w-wrap { display: grid; grid-template-columns: 400px 1fr; gap: 88px; padding: 56px 48px 104px; }
+    .w-wrap { padding: 48px 32px 104px; }
     .w-side { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
     .w-side::-webkit-scrollbar { width: 6px; }
     .w-side::-webkit-scrollbar-thumb { background: var(--line); border-radius: 3px; }
@@ -278,10 +276,61 @@ const css = `
     .w-card:hover { border-color: #cfcbc0; }
   }
 
+  /* ---- hero (mock D structure): one canvas, one left edge, three button levels ---- */
+
+  .w-root { overflow-x: clip; }
+  .w-root .h-hero { padding: 0 0 48px; }
+  .h-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+  .h-left { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+  .w-root .h-name { font-size: clamp(48px, 5.5vw, 72px); line-height: 1; letter-spacing: -0.03em; font-weight: 600; margin: 0; }
+  .h-head { font-size: 24px; line-height: 1.35; letter-spacing: -0.01em; color: var(--ink); margin-top: 16px; }
+  .h-avail { font-size: 16px; line-height: 1.6; color: var(--mute); margin-top: 16px; max-width: 52ch; }
+  .h-actions { display: none; gap: 16px; margin-top: 32px; }
+  .h-links { display: flex; flex-wrap: wrap; gap: 0 24px; margin-top: 8px; }
+
+  .h-btn, .h-link { font: 500 15px/1 "IBM Plex Sans", system-ui, sans-serif; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
+  .h-btn { height: 44px; padding: 0 24px; border-radius: 12px; border: 1px solid var(--ink); }
+  .w-root .h-btn--p { background: var(--ink); color: var(--bg); }
+  .h-btn--p:hover { background: var(--ink2); border-color: var(--ink2); }
+  .w-root .h-btn--s { background: transparent; color: var(--ink); }
+  .h-btn--s:hover { background: var(--paper); }
+  .w-root .h-link { min-height: 44px; color: var(--mute); }
+  .h-link:hover, .h-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
+  .h-btn:focus-visible, .h-link:focus-visible, .h-chip:focus-visible, .h-ask input:focus-visible, .h-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+  .h-glow { position: relative; height: 100%; }
+  .h-glow::before { content: ""; position: absolute; inset: -32px; z-index: 0; pointer-events: none; background: radial-gradient(closest-side, color-mix(in srgb, var(--acc) 34%, transparent), transparent); }
+  .h-ask { position: relative; z-index: 1; height: 100%; min-height: 280px; display: flex; flex-direction: column; justify-content: center; gap: 24px; padding: 32px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--r); }
+  .h-ask label { font-size: 15px; line-height: 1.4; color: var(--mute); }
+  .h-row { display: flex; align-items: center; gap: 16px; }
+  .h-ask input { flex: 1; min-width: 0; height: 44px; font: 400 16px/1.4 "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--mute); border-radius: 0; outline: none; }
+  .h-ask input:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; }
+  .h-ask input::placeholder { color: var(--mute); opacity: 1; }
+  .h-go { flex: none; width: 44px; height: 44px; border: 0; border-radius: 50%; background: var(--ink); color: var(--bg); font: 500 16px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
+  .h-go:hover { background: var(--ink2); }
+  .h-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .h-chip { height: 36px; padding: 0 16px; border: 1px solid var(--mute); border-radius: 99px; background: transparent; color: var(--ink2); font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
+  .h-chip:hover { background: var(--paper); }
+
+  .h-proof { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 24px 16px; margin-top: 48px; padding-top: 48px; border-top: 1px solid var(--line); }
+  .h-proof b { display: block; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
+  .h-proof span { display: block; margin-top: 8px; font-size: 15px; line-height: 1.5; color: var(--mute); }
+
+  @media (min-width: 641px) { .w-wrap { padding-left: 32px; padding-right: 32px; } }
+  @media (min-width: 960px) {
+    .h-grid { grid-template-columns: 7fr 5fr; gap: 64px; }
+    .h-actions { display: flex; }
+    .h-proof { grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  }
+  html[data-hero-ask] #ask-wrap { visibility: hidden; }
+
   @media (prefers-reduced-motion: reduce) {
     .w-root *, .w-root *::before, .w-root *::after { transition: none !important; scroll-behavior: auto !important; }
   }
 `;
+
+// The two strongest existing Ask questions (the same ones the pill suggests).
+const ASK_CHIPS = ['Why should we hire Dhruv?', 'What did he build at Blink?'];
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
 
@@ -387,12 +436,6 @@ function ResumeReader({ src, onClose }) {
   );
 }
 
-// "3:28 pm" in Mumbai time.
-function formatIst(date) {
-  const { hour, minute } = istParts(date);
-  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'am' : 'pm'}`;
-}
-
 export default function Work() {
   const mainRef = useRef(null);
   const [readerOpen, setReaderOpen] = useState(false);
@@ -419,20 +462,6 @@ export default function Work() {
   }, []);
   const roomHref = (tour) => (roomOnPhone ? '/room/?room=phone&tour=1' : tour ? '/room/?tour=1' : '/room/');
 
-  const [now, setNow] = useState(() => new Date());
-  const [temperature, setTemperature] = useState(null);
-  useEffect(() => {
-    const id = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(id);
-  }, []);
-  useEffect(() => {
-    let alive = true;
-    fetchMumbaiWeather()
-      .then((w) => { if (alive && typeof w?.temperature === 'number') setTemperature(w.temperature); })
-      .catch(() => {});
-    return () => { alive = false; };
-  }, []);
-
   // A project with no description yet renders as a bare title and a lone tech
   // chip, which reads as a broken stub rather than as work. Withhold it until
   // there is something true to say about it.
@@ -456,6 +485,42 @@ export default function Work() {
     const list = DEMOS[project.id];
     setOpen({ id: project.id, index: Math.max(0, list.findIndex((d) => !d.minWidth || window.innerWidth >= d.minWidth)) });
   };
+  // Hero Ask card -> the existing Ask pill (public/os/shell/ask-pill.js). The card has no client of its own: it
+  // sets the pill's value, parks the pill's box over the card's input row so the morph opens from there, and submits
+  // the pill's form, so Turnstile, the answer card and the glow all stay in one place. While the card is on screen
+  // the pill is hidden (html[data-hero-ask]).
+  const [askText, setAskText] = useState('');
+  const askCardRef = useRef(null);
+  const askRowRef = useRef(null);
+  useEffect(() => {
+    const el = askCardRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return undefined;
+    const io = new IntersectionObserver(([e]) => document.documentElement.toggleAttribute('data-hero-ask', e.isIntersecting), { threshold: 0.15 });
+    io.observe(el);
+    return () => { io.disconnect(); document.documentElement.removeAttribute('data-hero-ask'); };
+  }, []);
+  const warmAsk = () => document.getElementById('ask-pill')?.dispatchEvent(new Event('pointerenter'));
+  const askFromHero = (q, tries = 0) => {
+    const pill = document.getElementById('ask-pill');
+    const wrap = document.getElementById('ask-wrap');
+    const card = document.getElementById('ask-card');
+    if (!pill || !wrap || !card) { if (tries < 15) setTimeout(() => askFromHero(q, tries + 1), 200); return; }
+    const row = askRowRef.current;
+    const r = row.getBoundingClientRect();
+    Object.assign(wrap.style, { left: `${r.left}px`, top: `${r.top}px`, bottom: 'auto', width: `${r.width}px`, height: `${r.height}px`, transform: 'none' });
+    pill.querySelector('input').value = q.trim();
+    pill.requestSubmit();
+    setAskText('');
+    if (!card.classList.contains('open')) return;
+    const mo = new MutationObserver(() => {
+      if (card.classList.contains('open')) return;
+      mo.disconnect();
+      ['left', 'top', 'bottom', 'width', 'height', 'transform'].forEach((k) => { wrap.style[k] = ''; });
+      if (!window.matchMedia('(pointer: coarse)').matches) row.querySelector('input')?.focus({ preventScroll: true });
+    });
+    mo.observe(card, { attributes: true, attributeFilter: ['class'] });
+  };
+
   // Tells the Ask pill (public/os/shell/ask-pill.js) to step aside while a
   // demo or the résumé covers the page; it sits above everything otherwise.
   useEffect(() => {
@@ -529,7 +594,6 @@ export default function Work() {
     </article>
   );
 
-  const statusText = `${formatIst(now)} in Mumbai${temperature !== null ? ` · ${temperature}°C` : ''}`;
   const footText = 'Built by hand. The desk at the top is a real 3D room you can walk through on a laptop.';
 
   return (
@@ -544,62 +608,48 @@ export default function Work() {
       </button>
       <div className={`w-root${roomOnPhone ? ' w-root--room' : ''}`}>
         <div className="w-wrap">
-          <aside className="w-side">
-            <svg className="w-desk" viewBox="0 0 420 170" fill="none" stroke="#17160f" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="276" y="8" width="128" height="88" rx="3"/><path d="M340 8v88M276 52h128" strokeWidth=".9"/>
-              <path d="M282 96v-14l8-4v18M296 96v-24h8v24M312 96v-10l6-6 6 6v10M330 96v-18h7v18M348 96v-30h9v30M364 96v-12h8v12M380 96v-20l6-3 6 3v20" stroke="#86837a" strokeWidth=".8"/>
-              <circle cx="384" cy="26" r="6" stroke="#c2410c" strokeWidth=".9"/>
-              <path d="M10 126h400"/><path d="M14 126v4h392v-4" strokeWidth=".9"/><path d="M28 130v38M392 130v38"/>
-              <rect x="138" y="30" width="132" height="80" rx="5"/><rect x="146" y="38" width="116" height="64" rx="2" fill="#c2410c" fillOpacity=".09" stroke="none"/>
-              <path d="M158 54h46M158 62h70M158 70h34" stroke="#c2410c" strokeWidth="1" strokeOpacity=".55"/>
-              <path d="M196 110l-5 13h26l-5-13"/><path d="M186 123h36"/>
-              <rect x="150" y="117" width="78" height="7" rx="2"/><path d="M156 120.5h66" strokeWidth=".6" strokeDasharray="2 2"/>
-              <rect x="240" y="117" width="14" height="8" rx="4"/>
-              <path d="M58 126h34M75 126V88l26-26M101 62l14 8-6 11-14-8z"/><path d="M107 79l-7 18" stroke="#c2410c" strokeOpacity=".35" strokeDasharray="1.5 3"/>
-              <path d="M290 126v-16h20v16M310 114h4a4 4 0 0 1 0 8h-4"/><path d="M296 104c0-4 4-4 4-8M304 104c0-4 4-4 4-8" stroke="#86837a" strokeWidth=".8"/>
-              <rect x="22" y="104" width="40" height="22" rx="2"/><path d="M42 104v22" strokeWidth=".8"/>
-            </svg>
-            <p className="w-status"><span className="w-dot" /><span>{statusText}</span></p>
-            <h1>{identity.name}</h1>
-            <p className="w-lede">{identity.pitch}</p>
-            <p className="w-sub">{identity.now}</p>
-            {LIVE_APPS_HERO && (
-              <div className="w-live" data-testid="work-live-apps">
-                <p><b>Try my real apps.</b> Running builds, one tap.</p>
-                <div>
-                  <button type="button" onClick={(e) => tryDemo({ id: 'focuslock' }, e)}>FocusLock</button>
-                  <button type="button" onClick={(e) => tryDemo({ id: 'darksentinel' }, e)}>DarkSentinel</button>
-                  <button type="button" onClick={(e) => tryDemo({ id: 'basket' }, e)}>BasketProof</button>
+          <section className="h-hero" aria-label="Introduction">
+            <div className="h-grid">
+              <div className="h-left">
+                <h1 className="h-name">{identity.name}</h1>
+                <p className="h-head">{identity.pitch}</p>
+                <p className="h-avail">{identity.now}</p>
+                <div className="h-actions">
+                  {contact.resume && (
+                    <a className="h-btn h-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>
+                  )}
+                  <a className="h-btn h-btn--s" href={`mailto:${contact.email}`}>Email</a>
+                </div>
+                <div className="h-links">
+                  <a className="h-link" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+                  <a className="h-link" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                  <a className="h-link w-roomlink" href={roomHref(true)}>3D room</a>
                 </div>
               </div>
-            )}
-            <div className="w-cta">
-              {contact.resume && (
-                <a className="w-btn w-btn--p" href={contact.resume} target="_blank" rel="noopener noreferrer" onClick={openResume}>Résumé</a>
-              )}
-              <a className="w-btn" href={`mailto:${contact.email}`}>Email me</a>
+              <div className="h-glow" ref={askCardRef}>
+                <form className="h-ask" role="search" onSubmit={(e) => { e.preventDefault(); askFromHero(askText); }}>
+                  <label htmlFor="h-ask-q">Ask about Dhruv</label>
+                  <div className="h-row" ref={askRowRef}>
+                    <input id="h-ask-q" type="text" maxLength={300} autoComplete="off" spellCheck="false" placeholder="What did Dhruv build at Blink?"
+                      value={askText} onChange={(e) => setAskText(e.target.value)} onFocus={warmAsk} onPointerEnter={warmAsk} />
+                    <button type="submit" className="h-go" aria-label="Ask">↑</button>
+                  </div>
+                  <div className="h-chips">
+                    {ASK_CHIPS.map((q) => (
+                      <button type="button" className="h-chip" key={q} onClick={() => askFromHero(q)}>{q}</button>
+                    ))}
+                  </div>
+                </form>
+              </div>
             </div>
-            <div className="w-links">
-              <a href={contact.github} target="_blank" rel="noopener noreferrer">GitHub <span aria-hidden="true">↗</span></a>
-              <a href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn <span aria-hidden="true">↗</span></a>
-            </div>
-            <a className="w-room" href={roomHref(true)}>
-              <svg width="34" height="34" viewBox="0 0 34 34" fill="none" stroke="#17160f" strokeWidth="1.2" aria-hidden="true"><rect x="1" y="1" width="32" height="32" rx="8" stroke="#d8d2c6"/><path d="M9 23h16M12 23v-8h10v8M15 15v-3h4v3"/></svg>
-              <span><b>See my portfolio in 3D</b><small>{roomOnPhone
-                ? 'A 60-second guided tour of my desk · heavy on phones, smoothest on a laptop'
-                : 'Walk through my desk and try my projects live · 60-second guided tour'}</small></span>
-              <span className="w-ar">→</span>
-            </a>
-          </aside>
+            <ul className="h-proof" id="proof" aria-label="Proof">
+              {proofPoints.map((p) => (
+                <li key={p.text}><b>{p.value}</b><span>{p.text}</span></li>
+              ))}
+            </ul>
+          </section>
 
           <main id="work-main" ref={mainRef} tabIndex={-1}>
-            <h2 className="w-label" id="proof"><span>Proof</span></h2>
-            <div className="w-proof">
-              {proofPoints.map((p) => (
-                <div key={p.text}><span className="w-n">{p.value}</span><p>{p.text}</p></div>
-              ))}
-            </div>
-
             <h2 className="w-label"><span>Featured</span><span className="w-hint">swipe →</span></h2>
             <div className="w-feat">
               <article className="w-card">
