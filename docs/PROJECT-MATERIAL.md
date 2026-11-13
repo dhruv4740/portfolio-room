@@ -674,3 +674,27 @@ justified given this wasn't part of the original brief.
 ### Links
 GitHub: `github.com/dhruv4740/raswebsite` (VERIFIED via local git remote). No deployed URL
 confirmed this pass.
+
+## HexFence
+
+### Code survey 2026-11-13
+- What it is (local clone `C:\Users\hp\OneDrive\Desktop\hexfence`): a Safe transaction guard that reverts ETH/ERC-20 payments to an address sharing the first 4 and last 4 hex characters of an approved payee but differing from it. Also a detector that scans mainnet USDT/USDC logs for address-poisoning patterns and publishes "suspected" records to Arkiv testnet, a payment app (HexFence Pay), an explorer and a Chrome extension.
+- Git (local clone): 223 of 280 commits by Dhruv Kothari.
+- Lanes per `docs/AI_USAGE.md`: Dhruv took apps/pay, apps/explorer, demo docs and the organiser role. The Guard contract, packages/shared, packages/arkiv and the detector were a teammate's lane.
+- The repo discloses that AI agents wrote most of the code. Describe Dhruv's role as designing, directing and verifying.
+- Tests: about 325 test declarations in 53 files (counted by grep, not run).
+- Stated trade-offs: the 4+4 fingerprint misses weaker lookalikes. No owner and no upgrade path; fail-closed on delegatecall, so MultiSend is refused. Safe self-calls are exempt so a broken guard cannot block setGuard. Unsupported calldata passes through and clients show "cannot verify". The verdict separates an exact evidence match from a fingerprint match.
+- Numbers in the README: 1,126 records (651 zero-value, 475 dust); 411 parity transactions; 414 V2 parity vectors.
+- No placing or prize is stated.
+- Do not use the "100% precision" figure: 30 rows, AI-assigned labels, disclaimed by the repo.
+- Never publish: `.env`, `sentinel/secrets.yaml`, the wallet fragment in `docs/DEMO.md`, teammates' names.
+
+## DarkSentinel
+
+### Code survey 2026-11-13
+- What it is (local `C:\Users\hp\OneDrive\Documents\demo_website`, UI in `darksentinel-ui`; the remote is a teammate's GitHub account): a Random Forest scores CICFlowMeter flows for probability of Tor. Score >= 0.75 goes to the dark-web scraper; 0.55 to 0.75 goes to an LLM (to limit paid calls; cooldown default 60 s, minimum 20 s; heuristic cut 0.68 if no LLM answers); below 0.55 is logged. Alerts are routed CRITICAL/HIGH to n8n and MEDIUM/LOW to PostgreSQL via a FastAPI bridge. UI is Next.js 14.
+- Git: 28 of 30 commits by Dhruv Kothari.
+- Training report (local runtime file): 158,616 rows, 12,528 balanced training rows, 79 features, 320 trees, Tor F1 0.9745, confusion matrix [[2225,3],[11,267]] on a 2,506-row test set (about 96% recall, 99% precision). Measured on a rebalanced 8:1 subset, not the real traffic distribution.
+- No automated tests.
+- Open: site copy says 83 features, the report says 79 (owner to confirm). `darknet.py` defaults to threshold 0.7 while `cic_watcher.py` uses 0.75. Dataset source not stated.
+- Never publish: `.env`, runtime state files, model pickles, the dataset, scraped output.
