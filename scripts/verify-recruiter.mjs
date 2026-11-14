@@ -82,18 +82,18 @@ try {
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.
-  // Featured band: the Blink outreach card, then FocusLock and BasketProof.
+  // Featured band: the Blink outreach card, then FocusLock, DarkSentinel and CrisisWatch.
   const featured = page.locator('.w-feat > article');
   const featuredNames = (await featured.locator('h3').allInnerTexts()).map((s) => s.trim());
-  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'BasketProof'];
-  check('exactly three featured cards in order', featuredNames.length === 3
+  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'DarkSentinel', 'CrisisWatch'];
+  check('exactly four featured cards in order', featuredNames.length === 4
     && expectedNames.every((n, i) => featuredNames[i] === n), featuredNames.join(' | ') || 'none');
   let featuredVisible = true;
   for (let i = 0; i < await featured.count(); i++) {
     await featured.nth(i).scrollIntoViewIfNeeded();
     if (!(await featured.nth(i).isVisible())) featuredVisible = false;
   }
-  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 3);
+  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 4);
   // Section labels after the featured band, in order, each followed by its row group.
   const sectionLabels = (await page.locator('main .w-label > span:first-child').allInnerTexts()).map((s) => s.trim());
   const expectedSections = ['Featured', 'At Blink.new (internship)', 'Personal projects', 'Experience', 'Hackathon projects', 'Live from GitHub', 'Room tour', 'Contact'];
@@ -105,10 +105,10 @@ try {
     const label = page.locator('main .w-label', { hasText: heading });
     rowCounts.push(await label.locator('xpath=following-sibling::div[1]').locator('.w-row').count());
   }
-  check('row counts: Blink 4, Personal 4, Hackathon 4', rowCounts.join(', ') === '4, 4, 4', rowCounts.join(', '));
+  check('row counts: Blink 4, Personal 5, Hackathon 2', rowCounts.join(', ') === '4, 5, 2', rowCounts.join(', '));
   const personalNames = (await page.locator('main .w-label', { hasText: 'Personal projects' })
     .locator('xpath=following-sibling::div[1]').locator('.w-row b:not(.w-did b)').allInnerTexts()).map((s) => s.trim());
-  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout',
+  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout | BasketProof',
     personalNames.join(' | '));
 
   // 5. Blink metrics. textContent, not innerText: the "How I built it" bullets sit in a closed <details>.

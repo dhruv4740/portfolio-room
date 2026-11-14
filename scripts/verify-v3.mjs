@@ -155,7 +155,7 @@ try {
   // The demo is a full-screen overlay, so close it before reaching the next row.
   await page.keyboard.press('Escape');
   record('work: Escape closes the Expense demo', await page.locator('[data-testid="work-demo"]').count() === 0);
-  await page.locator('.w-row', { hasText: 'CrisisWatch' }).getByRole('button', { name: 'Try it' }).click();
+  await page.locator('.w-card', { hasText: 'CrisisWatch' }).getByRole('button', { name: 'Try it' }).click();
   const webOpen = await page.locator('[data-testid="work-demo"] iframe[src="/apps/crisiswatch/"]').waitFor({ timeout: 15_000 }).then(() => true, () => false);
   record('work: web demo opens CrisisWatch as a full-screen overlay', webOpen);
   const demoThree = requests.filter((u) => /\/three-|\/assets\/three|deps\/three/i.test(u));
