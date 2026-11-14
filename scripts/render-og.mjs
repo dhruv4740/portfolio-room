@@ -7,10 +7,9 @@ const b = await chromium.launch({ channel: 'chromium', args: ['--use-angle=d3d11
 const p = await b.newPage({ viewport: { width: 1200, height: 630 }, deviceScaleFactor: 1 });
 await p.addInitScript(() => { sessionStorage.setItem('v3:arrival-seen', '1'); });
 // The caption tracks the job title in src/v3/content/index.js (identity.role).
-const CAPTION = 'Dhruv Kothari — Software engineer';
+const CAPTION = 'Dhruv Kothari, Software engineer';
 await p.goto(`${BASE}/room/?sky=night#/`);
-// The front door covers the room until a visitor picks it; skip the arrival flight.
-await p.locator('#fd-room').click({ timeout: 30000 });
+// The front door covers the room until it is ready, then removes itself.
 await p.waitForSelector('#front-door', { state: 'detached', timeout: 60000 });
 await p.locator('[data-testid="room-overview"]').waitFor({ timeout: 60000 });
 const skip = p.getByRole('button', { name: /skip/i });
