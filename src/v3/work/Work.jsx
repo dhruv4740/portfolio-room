@@ -274,6 +274,27 @@ const css = `
   }
   .w-bar .w-btn { height: 52px; }
 
+  /* Pinned header (720px and up). Shown once the hero Résumé button has scrolled out of view. */
+  .w-pin { display: none; }
+  @media (min-width: 720px) {
+    .w-pin {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 20; height: 56px;
+      display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 max(32px, calc((100vw - 1280px) / 2 + 32px));
+      background: var(--bg); border-bottom: 1px solid var(--line);
+      transform: translateY(-100%); visibility: hidden;
+      transition: transform 160ms ease-out, visibility 0s linear 160ms;
+    }
+    .w-pin--on { transform: none; visibility: visible; transition: transform 160ms ease-out, visibility 0s; }
+    .w-bar { display: none; }
+    .w-root [id] { scroll-margin-top: 72px; }
+  }
+  .w-pin-name { font-weight: 600; font-size: 17px; letter-spacing: -0.01em; text-decoration: none; color: var(--ink); }
+  .w-pin-name:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .w-pin-r { display: flex; align-items: center; gap: 12px; }
+  .w-root .w-pin .h-btn { height: 40px; min-width: 0; padding: 0 18px; font-size: 14.5px; border-radius: 10px; }
+  .w-root .w-pin .h-link { min-height: 40px; padding: 0 4px; font-size: 14.5px; }
+  .w-pin .h-link + .h-link { margin-left: 4px; }
+
   @media (min-width: 960px) {
     .w-wrap { padding: 48px 32px 104px; }
     .w-side { position: sticky; top: 24px; align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; scrollbar-width: thin; overscroll-behavior: contain; }
@@ -621,6 +642,23 @@ export default function Work() {
     io.observe(ul);
     return () => { io.disconnect(); cancelAnimationFrame(raf); };
   }, []);
+  // Pinned header: on once the hero's Résumé button (or, where that is hidden, the hero link row) has scrolled above the viewport.
+  const [pin, setPin] = useState(false);
+  useEffect(() => {
+    let raf = 0;
+    const measure = () => {
+      raf = 0;
+      const btn = document.querySelector('.h-actions');
+      const el = btn && btn.offsetParent ? btn : document.querySelector('.h-links');
+      setPin(Boolean(el) && el.getBoundingClientRect().bottom < 0);
+    };
+    const on = () => { if (!raf) raf = requestAnimationFrame(measure); };
+    on();
+    window.addEventListener('scroll', on, { passive: true });
+    window.addEventListener('resize', on);
+    return () => { window.removeEventListener('scroll', on); window.removeEventListener('resize', on); cancelAnimationFrame(raf); };
+  }, []);
+  const toTop = (e) => { e.preventDefault(); window.scrollTo({ top: 0 }); };
   const warmAsk = () => document.getElementById('ask-pill')?.dispatchEvent(new Event('pointerenter'));
   const askFromHero = (q, tries = 0) => {
     const card = document.getElementById('ask-card');
@@ -832,6 +870,17 @@ export default function Work() {
             <p className="w-foot">{footText}</p>
           </main>
         </div>
+        <header className={`w-pin${pin ? ' w-pin--on' : ''}`} inert={!pin}>
+          <a className="w-pin-name" href="#top" onClick={toTop}>{identity.name}</a>
+          <nav className="w-pin-r" aria-label="Pinned links">
+            {contact.resume && (
+              <a className="h-btn h-btn--p" href={contact.resume} onClick={openResume}>Résumé</a>
+            )}
+            <a className="h-btn h-btn--s" href={`mailto:${contact.email}`}>Email</a>
+            <a className="h-link" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a className="h-link" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          </nav>
+        </header>
         <nav className="w-bar" aria-label="Quick actions">
           {contact.resume && (
             <a className="w-btn w-btn--p" href={contact.resume} onClick={openResume}>Résumé</a>
