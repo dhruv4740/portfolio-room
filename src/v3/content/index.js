@@ -30,7 +30,7 @@ export const proofPoints = [
 ];
 
 export const contact = {
-  email: 'dhruvkothari13062006@gmail.com',
+  email: 'hello@dhruvkothari.com',
   github: 'https://github.com/dhruv4740',
   githubLabel: 'github.com/dhruv4740',
   linkedin: 'https://linkedin.com/in/dhruv4740',

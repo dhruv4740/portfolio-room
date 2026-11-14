@@ -1,7 +1,7 @@
 # dhruvOS — Agent Handoff Document
 
 **Branch:** `feat/v3`
-**Owner:** Dhruv Kothari (`dhruvkothari13062006@gmail.com`, `github.com/dhruv4740`)  
+**Owner:** Dhruv Kothari (`hello@dhruvkothari.com`, `github.com/dhruv4740`)  
 **Last updated:** 2026-09-14 (embedded OS app cleanup)
 
 **Architecture docs:** See `public/os/docs/` — ROADMAP.md / ARCHITECTURE.md for full spec.

@@ -159,7 +159,7 @@ export function mountAsk(el) {
     a.replaceChildren();
     const meta = Object.assign(document.createElement('div'), { className: 'ask-meta' });
     if (d.failed || d.error || typeof d.answer !== 'string') {
-      a.appendChild(Object.assign(document.createElement('p'), { textContent: d.error || 'Could not reach the server. Email dhruvkothari13062006@gmail.com instead.' }));
+      a.appendChild(Object.assign(document.createElement('p'), { textContent: d.error || 'Could not reach the server. Email hello@dhruvkothari.com instead.' }));
       meta.appendChild(metaBtn('Retry', () => { qb.remove(); a.remove(); busy = false; ask(q); }));
       live.textContent = a.textContent;
     } else {
