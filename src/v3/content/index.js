@@ -187,16 +187,16 @@ export const projects = [
     tech: ['React Native', 'Kotlin', 'TypeScript', 'SQLite'],
     caseStudy: {
       problem: [
-        'It logs your spending from the SMS and notifications your phone already gets.',
-        'It has no account, no cloud and no sync.',
+        'Logging expenses by hand never lasts.',
+        'Your phone already gets a text for most payments.',
       ],
       decisions: [
-        'The native buffer exposes peek and ack, not drain.',
-        'Drain then process loses events if processing crashes mid-loop. Peek then ack marks them consumed only after they are handled.',
+        'It reads those texts and notifications on the phone.',
+        'Nothing leaves the device. No account and no cloud.',
       ],
       broke: [
-        'The parser inverted refund direction and filed bank boilerplate as real transactions.',
-        'The buffered and live copies of one message now share one timestamp read, because two clock reads can straddle a minute boundary in the dedup key.',
+        'Refunds were first counted as spending.',
+        'Bank promo texts were logged as payments.',
       ],
     },
     links: { live: '', github: 'https://github.com/dhruv4740/expense-tracker' },
