@@ -242,6 +242,7 @@ const css = `
   .w-y { font: 13px var(--mono); color: var(--mute); }
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
+  .w-row .w-meta { display: block; margin-top: 6px; }
   .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; }
   .w-tour { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #1a1713; display: block; }
   .w-cs-row { display: block; }

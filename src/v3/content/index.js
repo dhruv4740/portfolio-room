@@ -203,8 +203,6 @@ export const projects = [
     caseStudy: {
       problem: [
         'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
-      ],
-      decisions: [
         "If it can't fetch a price, it says so. It never shows a guess.",
       ],
     },
@@ -426,6 +424,5 @@ export const whatIDid = {
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
   darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project, and we were top 5 finalists in our problem statement at the IIT Madras x BITS Goa hackathon 2026.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
-  basket: 'Price comparator with 636 tests.',
   hexfence: 'Team project with Deven. I made 223 of the repo’s 280 commits.',
 };
