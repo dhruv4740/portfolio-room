@@ -368,6 +368,13 @@ const PROOF_SHORT = {
   '2×': 'hackathon wins at Innovathon 2025 and REALMS 2025',
 };
 
+// The number inside a proof value (18, 7, 5, 2) is wrapped so it can count up. Digits are tabular so they do not jitter.
+function ProofValue({ value }) {
+  const m = /^(\D*)(\d+)(.*)$/.exec(value);
+  if (!m) return value;
+  return <>{m[1]}<data value={m[2]} data-cu={m[2]} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
+}
+
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
 
 // Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
@@ -582,6 +589,28 @@ export default function Work() {
     io.observe(el);
     return () => { io.disconnect(); document.documentElement.removeAttribute('data-hero-ask'); };
   }, []);
+  // Proof numbers count up once when the row first scrolls into view. The final value is in the HTML already.
+  const proofRef = useRef(null);
+  useEffect(() => {
+    const ul = proofRef.current;
+    if (!ul || typeof IntersectionObserver === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    let raf = 0;
+    const io = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting) return;
+      io.disconnect();
+      const els = [...ul.querySelectorAll('[data-cu]')];
+      const t0 = performance.now();
+      const step = (now) => {
+        const k = Math.min(1, (now - t0) / 900);
+        const eased = 1 - (1 - k) ** 3;
+        els.forEach((el) => { el.textContent = String(Math.round(Number(el.dataset.cu) * eased)); });
+        if (k < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }, { threshold: 0.6 });
+    io.observe(ul);
+    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+  }, []);
   const warmAsk = () => document.getElementById('ask-pill')?.dispatchEvent(new Event('pointerenter'));
   const askFromHero = (q, tries = 0) => {
     const card = document.getElementById('ask-card');
@@ -718,9 +747,9 @@ export default function Work() {
                 </form>
               </div>
             </div>
-            <ul className="h-proof" id="proof" aria-label="Proof">
+            <ul className="h-proof" id="proof" aria-label="Proof" ref={proofRef}>
               {proofItems.map((p) => (
-                <li key={p.text}><b>{p.value}</b><span>{p.text}</span></li>
+                <li key={p.text}><b><ProofValue value={p.value} /></b><span>{p.text}</span></li>
               ))}
             </ul>
           </section>
