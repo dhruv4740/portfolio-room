@@ -228,6 +228,7 @@ const css = `
   .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
   .w-row--xp { grid-template-columns: 118px 1fr; }
   .w-row--gh { grid-template-columns: 104px 1fr; }
+  .w-contrib { font-size: 15px; color: var(--ink2); margin: -4px 0 14px; }
   @media (max-width: 559px) { .w-row--xp, .w-row--gh { grid-template-columns: 1fr; gap: 4px; } }
   .w-y { font: 13px var(--mono); color: var(--mute); }
   .w-row b { font-weight: 500; }
@@ -445,23 +446,21 @@ function GithubProof() {
   const [data, setData] = useState(null);
   useEffect(() => {
     let live = true;
-    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.repos?.length) setData(d); }).catch(() => {});
+    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.commits?.length) setData(d); }).catch(() => {});
     return () => { live = false; };
   }, []);
   if (!data) return null;
   return (
     <>
       <h2 className="w-label"><span>Live from GitHub</span><span>updated {ago(data.updated)}</span></h2>
+      {typeof data.contributions === 'number' && <p className="w-contrib">{data.contributions.toLocaleString('en-US')} contributions in the last year</p>}
       <div className="w-list" data-testid="gh-proof">
-        {data.repos.map((r) => (
-          <div className="w-row w-row--gh" key={r.name}>
-            <span className="w-y">{r.pushed ? ago(r.pushed) : ''}</span>
+        {data.commits.map((c) => (
+          <div className="w-row w-row--gh" key={`${c.repo}-${c.sha}`}>
+            <span className="w-y">{ago(c.date)}</span>
             <span>
-              <b><a href={r.url} target="_blank" rel="noopener noreferrer">{r.name}</a></b>
-              <p>{[r.language, r.stars ? `${r.stars} ${r.stars === 1 ? 'star' : 'stars'}` : ''].filter(Boolean).join(' · ')}</p>
-              <ul className="w-bul">
-                {r.commits.map((c) => (<li key={c.sha}><a href={c.url} target="_blank" rel="noopener noreferrer">{c.sha}</a> {c.msg}</li>))}
-              </ul>
+              <b>{c.repo}</b>
+              <p><a href={c.url} target="_blank" rel="noopener noreferrer">{c.msg}</a></p>
             </span>
           </div>
         ))}
