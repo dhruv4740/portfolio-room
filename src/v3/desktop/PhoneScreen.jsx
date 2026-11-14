@@ -750,6 +750,8 @@ const PhoneScreen = forwardRef(function PhoneScreen({
               <span className="ps-stat-icon">100%</span>
             </div>
           </div>
+          <div className="ps-bigclock" aria-hidden="true">{time}</div>
+          <div className="ps-date" aria-hidden="true">{new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
 
           <div className="ps-apps-grid">
             {/* Instagram Icon (Tested by verify-held-objects.mjs) */}
@@ -1978,13 +1980,15 @@ const css = `
 }
 .phone-screen--stage .ps-clock { font-size: clamp(17px, 5.2cqw, 21px); }
 .phone-screen--stage .ps-status-icons { font-size: clamp(12px, 3.5cqw, 15px); gap: 3cqw; }
+.phone-screen--stage .ps-bigclock { top: 22cqw; font-size: 27.8cqw; }
+.phone-screen--stage .ps-date { top: 50cqw; font-size: 5.2cqw; }
 .phone-screen--stage .ps-apps-grid {
-  inset: 0;
+  inset: 62cqw 0 8cqw 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  gap: 7cqw 5cqw;
-  padding: 28cqw 9cqw 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: 8cqw 3cqw;
+  padding: 0 7cqw;
 }
 .phone-screen--stage .ps-app,
 .phone-screen--stage .ps-app-focuslock,
@@ -2008,7 +2012,12 @@ const css = `
 }
 
 /* ── Home screen ─────────────────────────────────────────────────────────── */
-.ps-home { position: absolute; inset: 0; background: #0A0E17; }
+.ps-home {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle 420px at 75% 12%, rgba(99, 102, 241, .22), rgba(99, 102, 241, 0)), linear-gradient(172deg, #111a2c 0%, #0A0E17 55%, #14172a 100%);
+}
+.ps-bigclock { position: absolute; left: 0; right: 0; top: 130px; text-align: center; font-size: 150px; font-weight: 200; line-height: 1; color: #F8FAFC; }
+.ps-date { position: absolute; left: 0; right: 0; top: 282px; text-align: center; font-size: 28px; color: #94A3B8; }
 .ps-statusbar {
   display: flex;
   justify-content: space-between;

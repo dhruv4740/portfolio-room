@@ -15,10 +15,10 @@ export const INSTAGRAM_ICON_UV_RECT = Object.freeze({
 // surface. PhoneScreen positions its icons from this list and the room's phone
 // texture draws from it, so the two cannot drift.
 export const PHONE_HOME_APPS = Object.freeze([
-  { id: 'instagram', label: 'Instagram', left: 80, top: 470, size: 130 },
-  { id: 'focuslock', label: 'FocusLock', left: 330, top: 470, size: 130 },
-  { id: 'expense', label: 'Expense', left: 80, top: 650, size: 130 },
-  { id: 'basketproof', label: 'BasketProof', left: 330, top: 650, size: 130 },
-  { id: 'contact', label: 'Message', left: 80, top: 830, size: 130 },
-  { id: 'blackout', label: 'Blackout', left: 330, top: 830, size: 130 },
+  { id: 'instagram', label: 'Instagram', left: 50, top: 560, size: 130 },
+  { id: 'focuslock', label: 'FocusLock', left: 205, top: 560, size: 130 },
+  { id: 'expense', label: 'Expense', left: 360, top: 560, size: 130 },
+  { id: 'basketproof', label: 'BasketProof', left: 50, top: 800, size: 130 },
+  { id: 'contact', label: 'Message', left: 205, top: 800, size: 130 },
+  { id: 'blackout', label: 'Blackout', left: 360, top: 800, size: 130 },
 ].map(Object.freeze));
