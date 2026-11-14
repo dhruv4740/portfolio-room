@@ -950,7 +950,7 @@ export default function Work() {
               <div className="w-two-blink">
                 <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
                 <div className="w-list">
-                  {blinkTools.map((t) => (
+                  {blinkTools.filter((t) => t.id !== 'outreach').map((t) => (
                     <div className="w-row w-row--c" key={t.id}>
                       <div className="w-r1"><span className="w-y">2026</span><b className="w-t">{t.name}</b></div>
                       <p className="w-r2">{t.detail}</p>

@@ -105,7 +105,7 @@ try {
     const label = page.locator('main .w-label', { hasText: heading });
     rowCounts.push(await label.locator('xpath=following-sibling::div[1]').locator('.w-row').count());
   }
-  check('row counts: Blink 4, Personal 3, Hackathon 4', rowCounts.join(', ') === '4, 3, 4', rowCounts.join(', '));
+  check('row counts: Blink 3, Personal 3, Hackathon 4', rowCounts.join(', ') === '3, 3, 4', rowCounts.join(', '));
   const personalNames = (await page.locator('main .w-label', { hasText: 'Personal projects' })
     .locator('xpath=following-sibling::div[1]').locator('.w-row b:not(.w-did b)').allInnerTexts()).map((s) => s.trim());
   check('personal projects in order', personalNames.join(' | ') === 'Cellbook | Blackout | BasketProof',
