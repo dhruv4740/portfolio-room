@@ -317,17 +317,20 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     }
     const bar = document.querySelector('.w-bar'); let bottom = H - 12;
     if (bar) { const b = bar.getBoundingClientRect(); if (b.height > 0 && b.top > H / 2 && b.top < H) bottom = b.top - 12; }
-    return { left: 12, top: 12, width: W - 24, height: Math.max(240, bottom - 12) };
+    // Phones: top edge fixed, height hugs the content (min 320, max 86% of the screen or the room above the bottom bar).
+    const max = Math.max(240, Math.min(H * 0.86, bottom - 12)), h = Math.min(Math.max(hugH(), 320), max);
+    return { left: 12, top: 12, width: W - 24, height: h };
   }
   const snap = () => { const r = card.getBoundingClientRect(), cs = getComputedStyle(card); return { r: plain(r), rad: parseFloat(cs.borderTopLeftRadius) || 14, col: +getComputedStyle(col).opacity, scrim: +getComputedStyle(scrim).opacity, card: +cs.opacity }; };
 
   // Content changed (answer arrived, chips hidden): re-measure and animate the real height over 220 ms from the current rect.
   let fitRaf = 0;
   const fitHero = () => {
-    if (hero.st !== 'open' || innerWidth < 960 || reduced()) return;
+    if (hero.st !== 'open') return;
     const cur = card.getBoundingClientRect(), to = heroOpenRect(hero.from);
     if (Math.abs(to.height - cur.height) < 2) return;
     stopHero(); const rad = hero.rad;
+    if (reduced()) { setBox(to, rad); return; }
     const a = heroAnim(card, [boxCSS(plain(cur), rad), boxCSS(to, rad)], { duration: 220 });
     a.onfinish = () => { if (hero.st === 'open') { setBox(to, rad); a.cancel(); hero.anims = hero.anims.filter((x) => x !== a); } };
   };
