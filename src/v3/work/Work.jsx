@@ -224,8 +224,16 @@ const css = `
   .w-bul { font-size: 14.5px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
 
   .w-list { border-top: 1px solid var(--line); }
-  @media (min-width: 1100px) { .w-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; align-items: start; } }
-  .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
+  /* Blink + Hackathon on the left, Personal on the right, Experience across. Below 1100px it is one column in source order. */
+  @media (min-width: 1100px) {
+    .w-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto 1fr auto; column-gap: 48px; align-items: start;
+      grid-template-areas: "blink personal" "hack personal" "exp exp"; }
+    .w-two-blink { grid-area: blink; }
+    .w-two-personal { grid-area: personal; }
+    .w-two-hack { grid-area: hack; }
+    .w-two-exp { grid-area: exp; }
+  }
+  .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 0 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
   .w-row--xp { grid-template-columns: 118px 1fr; }
   .w-row--gh { grid-template-columns: 104px 1fr; }
   .w-contrib { font-size: 15px; color: var(--ink2); margin: -4px 0 14px; }
@@ -256,11 +264,11 @@ const css = `
   /* On phones the link would sit over the middle of the How I built it bar; the panel's own PDF button covers it there. */
   @media (max-width: 639px) { .w-pdfq { display: none; } }
   .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
-  .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
+  .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 2px; }
   /* 32 px tall hit area (WCAG 2.5.8 asks for 24) with the same thin underline look. */
   .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; padding: 0; min-height: 32px; display: inline-flex; align-items: center; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 5px; }
   .w-act.w-laptop { text-decoration: none; color: var(--mute); cursor: default; }
-  .w-case-in { margin-top: 6px; }
+  .w-case-in { margin-top: 2px; }
   .w-case-in > summary { list-style: none; }
   .w-case-in > summary::-webkit-details-marker { display: none; }
   .w-case-in .w-cs { margin-bottom: 4px; }
@@ -698,6 +706,7 @@ export default function Work() {
           </details>
         )}
       </span>
+      {(DEMOS[p.id] || p.links?.live || p.links?.github) && (
       <span className="w-acts">
         {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
         {p.links?.live === '/room/' && <span className="w-act w-laptop">Laptop only</span>}
@@ -709,6 +718,7 @@ export default function Work() {
           <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
         )}
       </span>
+      )}
     </div>
   );
 
@@ -828,7 +838,7 @@ export default function Work() {
             </div>
 
             <div className="w-two">
-              <div>
+              <div className="w-two-blink">
                 <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
                 <div className="w-list">
                   {blinkTools.map((t) => (
@@ -839,28 +849,30 @@ export default function Work() {
                   ))}
                 </div>
               </div>
-              <div>
+              <div className="w-two-personal">
                 <h2 className="w-label"><span>Personal projects</span><span>{personal.length}</span></h2>
                 <div className="w-list">{personal.map(renderRow)}</div>
               </div>
-            </div>
-
-            <h2 className="w-label" id="experience"><span>Experience</span></h2>
-            <div className="w-list">
-              {experience.map((job) => (
-                <div className="w-row w-row--xp" key={job.id}>
-                  <span className="w-y">{job.from} – {job.to}</span>
-                  <span><b>{job.role} · {job.org}</b><p>{job.detail}</p></span>
+              <div className="w-two-exp">
+                <h2 className="w-label" id="experience"><span>Experience</span></h2>
+                <div className="w-list">
+                  {experience.map((job) => (
+                    <div className="w-row w-row--xp" key={job.id}>
+                      <span className="w-y">{job.from} – {job.to}</span>
+                      <span><b>{job.role} · {job.org}</b><p>{job.detail}</p></span>
+                    </div>
+                  ))}
+                  <div className="w-row w-row--xp">
+                    <span className="w-y">{education.year}</span>
+                    <span><b>{education.degree}</b><p>{education.school}</p></span>
+                  </div>
                 </div>
-              ))}
-              <div className="w-row w-row--xp">
-                <span className="w-y">{education.year}</span>
-                <span><b>{education.degree}</b><p>{education.school}</p></span>
+              </div>
+              <div className="w-two-hack">
+                <h2 className="w-label" id="hackathons"><span>Hackathon projects</span><span>{hackathon.length}</span></h2>
+                <div className="w-list">{hackathon.map(renderRow)}</div>
               </div>
             </div>
-
-            <h2 className="w-label" id="hackathons"><span>Hackathon projects</span><span>{hackathon.length}</span></h2>
-            <div className="w-list">{hackathon.map(renderRow)}</div>
 
             <GithubProof />
 
