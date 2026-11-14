@@ -201,9 +201,8 @@ const css = `
   .w-n { font: 600 22px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.02em; color: var(--acc-text); }
   .w-proof p { font-size: 15.5px; color: var(--ink2); }
 
-  .w-feat { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 0 20px 4px; scrollbar-width: none; }
-  .w-feat::-webkit-scrollbar { display: none; }
-  .w-card { flex: 0 0 84%; scroll-snap-align: start; scroll-margin-left: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; }
+  .w-feat { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; }
   .w-shot { aspect-ratio: 16 / 10; border-radius: 10px; background: #ebe8e0; position: relative; overflow: hidden; }
   .w-shot img, .w-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
   .w-shot > span { position: absolute; left: 12px; bottom: 10px; font: 11.5px var(--mono); color: var(--mute); }
@@ -211,6 +210,8 @@ const css = `
   .w-meta { font: 12.5px var(--mono); color: var(--mute); }
   .w-card h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
   .w-card p { font-size: 15px; color: var(--ink2); }
+  .w-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+  .w-card-acts { margin-top: auto; padding-top: 6px; }
   .w-res { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
   .w-res b { font: 500 20px var(--mono); letter-spacing: -0.03em; }
   .w-res small { font-size: 13.5px; color: var(--mute); }
@@ -306,10 +307,9 @@ const css = `
     .w-bar { display: none; }
     .w-root h1 { font-size: 40px; }
     .w-label:first-child { margin-top: 4px; }
-    .w-feat { display: grid; grid-template-columns: 1fr 1fr; margin: 0; padding: 0; overflow: visible; }
+    .w-feat { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .w-feat .w-card:first-child { grid-column: 1 / -1; }
     .w-feat .w-card:first-child .w-shot { aspect-ratio: 3 / 1; }
-    .w-hint { display: none; }
     .w-card:hover { border-color: #cfcbc0; }
   }
 
@@ -406,7 +406,7 @@ function ProofValue({ value }) {
   return <>{m[1]}<data value={m[2]} data-cu={m[2]} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
 }
 
-const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', portfolio3d: '/og.jpg' };
+const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', crisiswatch: '/previews/crisiswatch.jpg', portfolio3d: '/og.jpg' };
 
 // Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
 function TourVideo() {
@@ -720,11 +720,8 @@ export default function Work() {
       <div className="w-ci">
         <span className="w-meta">{project.year} · {project.tech.slice(0, 3).join(', ')}</span>
         <h3>{project.name}</h3>
-        <p>{project.summary || project.tagline}</p>
-        {didLine(project.id)}
-        {project.badge && (
-          <div className="w-res"><small>{project.badge}</small></div>
-        )}
+        <p className="w-clamp">{project.summary || project.tagline}</p>
+        <div className="w-card-acts">
         {project.caseStudy && (
           <div className="w-casewrap">
             <details className="w-case">
@@ -740,6 +737,7 @@ export default function Work() {
         ) : project.links?.live && (
           <a className="w-go" href={project.links.live}>Try it<span>→</span></a>
         )}
+        </div>
       </div>
     </article>
   );
@@ -803,7 +801,7 @@ export default function Work() {
           </section>
 
           <main id="work-main" ref={mainRef} tabIndex={-1}>
-            <h2 className="w-label"><span>Featured</span><span className="w-hint">swipe →</span></h2>
+            <h2 className="w-label"><span>Featured</span></h2>
             <div className="w-feat">
               <article className="w-card">
                 <div className="w-ci">
