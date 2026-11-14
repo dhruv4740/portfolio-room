@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import '../tokens.css';
 import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid } from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
@@ -212,6 +212,15 @@ const css = `
   .w-card p { font-size: 15px; color: var(--ink2); }
   .w-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   .w-card-acts { margin-top: auto; padding-top: 6px; }
+  .w-go span { display: inline-block; transition: transform 0.15s; }
+  .w-go[aria-expanded="true"] span { transform: rotate(90deg); }
+  .w-root .w-go.w-laptop { display: none; color: var(--mute); cursor: default; }
+  @media (pointer: coarse) { .w-root .w-go.w-laptop { display: flex; } }
+  .w-root--room .w-go.w-laptop { display: none !important; }
+  .w-casepanel { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
+  .w-casehead { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
+  .w-casehead h3 { font-size: 22px; letter-spacing: -0.015em; line-height: 1.25; }
+  .w-root .w-closecase { margin-top: 0; background: transparent; cursor: pointer; }
   .w-res { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
   .w-res b { font: 500 20px var(--mono); letter-spacing: -0.03em; }
   .w-res small { font-size: 13.5px; color: var(--mute); }
@@ -321,6 +330,8 @@ const css = `
     .w-label:first-child { margin-top: 4px; }
     .w-feat { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
     .w-feat .w-card:first-child { grid-column: 1 / -1; }
+    .w-feat > .w-card:not(:first-child) { grid-row: 2; }
+    .w-feat > .w-casepanel { grid-column: 1 / -1; grid-row: 3; }
     .w-feat .w-card:first-child .w-shot { aspect-ratio: 3 / 1; }
     .w-card:hover { border-color: #cfcbc0; }
   }
@@ -547,6 +558,10 @@ export default function Work() {
   // { id, index } of the open demo; the trigger gets focus back on close.
   const [open, setOpen] = useState(null);
   const trigger = useRef(null);
+  // The featured row's shared case panel: id of the project whose case is open.
+  const [caseId, setCaseId] = useState(null);
+  const caseBtn = useRef(null);
+  const closeCase = () => { setCaseId(null); caseBtn.current?.focus({ preventScroll: true }); };
   // The résumé reader and demo panels are in-page overlays. Each pushes one history entry when it opens, so browser
   // Back (or the trackpad gesture) closes the overlay instead of leaving the site; the close button pops that same
   // entry, so no dangling entry is left behind.
@@ -724,6 +739,20 @@ export default function Work() {
     </div>
   );
 
+  const secondAction = (project) => {
+    if (DEMOS[project.id]) return <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it<span aria-hidden="true">→</span></button>;
+    const live = project.links?.live;
+    if (live === '/room/') return (
+      <>
+        <a className="w-go w-roomlink" href={roomHref(false)}>Walk through it<span aria-hidden="true">→</span></a>
+        <span className="w-go w-laptop">Laptop only</span>
+      </>
+    );
+    if (live) return <a className="w-go" href={live} target="_blank" rel="noopener noreferrer">Visit<span aria-hidden="true">→</span></a>;
+    if (project.links?.github) return <a className="w-go" href={project.links.github} target="_blank" rel="noopener noreferrer">Source<span aria-hidden="true">→</span></a>;
+    return null;
+  };
+
   const renderFeatured = (project) => (
     <article className="w-card" key={project.id} id={`p-${project.id}`}>
       {PREVIEWS[project.id] && (
@@ -736,24 +765,27 @@ export default function Work() {
         <h3>{project.name}</h3>
         <p className="w-clamp">{project.summary || project.tagline}</p>
         <div className="w-card-acts">
-        {project.caseStudy && (
-          <div className="w-casewrap">
-            <details className="w-case">
-              <summary className="w-go">How I built it<span>→</span></summary>
-              {casePdf(project.id)}
-              {caseText(project.caseStudy)}
-            </details>
-            {casePdfQuiet(project.id)}
-          </div>
-        )}
-        {DEMOS[project.id] ? (
-          <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it<span>→</span></button>
-        ) : project.links?.live && (
-          <a className="w-go" href={project.links.live}>Try it<span>→</span></a>
-        )}
+          {project.caseStudy && (
+            <button type="button" className="w-go" aria-expanded={caseId === project.id} aria-controls="feat-case"
+              onClick={(e) => { caseBtn.current = e.currentTarget; setCaseId(caseId === project.id ? null : project.id); }}>
+              How I built it<span aria-hidden="true">→</span>
+            </button>
+          )}
+          {secondAction(project)}
         </div>
       </div>
     </article>
+  );
+
+  const casePanel = (project) => (
+    <section className="w-casepanel" id="feat-case" aria-label={`${project.name}, how I built it`}>
+      <div className="w-casehead">
+        <h3>{project.name}</h3>
+        <button type="button" className="w-pdf w-closecase" onClick={closeCase}>Close</button>
+      </div>
+      {caseText(project.caseStudy)}
+      {casePdf(project.id)}
+    </section>
   );
 
   const footText = 'Built by hand. There is also a real 3D room you can walk around on a laptop.';
@@ -836,7 +868,7 @@ export default function Work() {
                   </div>
                 </div>
               </article>
-              {featured.map(renderFeatured)}
+              {featured.map((p) => (<Fragment key={p.id}>{renderFeatured(p)}{caseId === p.id && casePanel(p)}</Fragment>))}
             </div>
 
             <div className="w-two">

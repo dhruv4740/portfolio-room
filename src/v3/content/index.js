@@ -185,6 +185,20 @@ export const projects = [
     broke:
       'The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read. Dedup keys bucket by minute, and two clock reads can straddle a boundary.',
     tech: ['React Native', 'Kotlin', 'TypeScript', 'SQLite'],
+    caseStudy: {
+      problem: [
+        'It logs your spending from the SMS and notifications your phone already gets.',
+        'It has no account, no cloud and no sync.',
+      ],
+      decisions: [
+        'The native buffer exposes peek and ack, not drain.',
+        'Drain then process loses events if processing crashes mid-loop. Peek then ack marks them consumed only after they are handled.',
+      ],
+      broke: [
+        'The parser inverted refund direction and filed bank boilerplate as real transactions.',
+        'The buffered and live copies of one message now share one timestamp read, because two clock reads can straddle a minute boundary in the dedup key.',
+      ],
+    },
     links: { live: '', github: 'https://github.com/dhruv4740/expense-tracker' },
   },
   {
