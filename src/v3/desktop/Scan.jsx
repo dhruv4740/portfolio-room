@@ -53,12 +53,12 @@ function markArrivalSeen() {
 // The guided tour. `scene` is where the step puts the visitor; `hold` is how
 // long it stays once it is there.
 const TOUR = [
-  { caption: 'This is my desk in Mumbai. Everything in the room works.', hold: 5000, scene: 'room' },
-  { caption: 'The computer runs my real web projects. This is CrisisWatch, a fact-checker.', hold: 9500, scene: 'os', app: 'crisiswatch' },
-  { caption: 'Fraud detection: an XGBoost model scoring transactions.', hold: 9000, scene: 'os', app: 'fraud' },
+  { caption: 'This is my desk in Mumbai, and everything on it works.', hold: 5000, scene: 'room' },
+  { caption: 'CrisisWatch checks claims, and I built it at MumbaiHacks.', hold: 9500, scene: 'os', app: 'crisiswatch' },
+  { caption: 'F-Shield scores transactions with XGBoost and won Innovathon 2025.', hold: 9000, scene: 'os', app: 'fraud' },
   { caption: 'Back to the desk.', hold: 3000, scene: 'room' },
-  { caption: 'The phone runs my Android apps. FocusLock puts friction in front of distracting apps.', hold: 10000, scene: 'phone', app: 'focuslock' },
-  { caption: 'Expense Tracker: shared costs and Uber splits.', hold: 8500, scene: 'phone', app: 'expense' },
+  { caption: 'FocusLock puts friction before distracting apps and has over 250 automated tests.', hold: 10000, scene: 'phone', app: 'focuslock' },
+  { caption: 'Expense Tracker logs spending from SMS into local SQLite, with no cloud.', hold: 8500, scene: 'phone', app: 'expense' },
   { caption: 'That was the one-minute version.', hold: 3000, scene: 'room' },
 ];
 const TOUR_WELCOME_S = 8;
