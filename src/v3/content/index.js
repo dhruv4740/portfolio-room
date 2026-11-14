@@ -130,7 +130,7 @@ export const skills = [
   { id: 'kotlin',   label: 'Kotlin / Android',     proof: ['focuslock', 'expense'],             note: 'native modules, accessibility services' },
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
   { id: 'ml',       label: 'ML / data',            proof: ['darksentinel'],                     note: 'scikit-learn, pandas' },
-  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: DarkSentinel, Expense Tracker' },
+  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer, including DarkSentinel, Expense Tracker' },
 ];
 
 export const projects = [
@@ -143,7 +143,7 @@ export const projects = [
     description:
       'One Firestore backend enforces the same limits on two very different operating systems. An Android accessibility service detects target apps, a Windows agent enforces on the desktop, and short sync codes pair the devices.',
     decision:
-      'It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem — and bought a real tradeoff: Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.',
+      'It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem. It also bought a real tradeoff. Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.',
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
@@ -179,11 +179,11 @@ export const projects = [
     kind: 'product',
     tagline: 'Logs your spending by reading the receipts your phone already gets.',
     description:
-      'React Native app where Kotlin captures SMS and notifications into a peek/ack buffer, and a TypeScript parser logs expenses automatically into local SQLite — no account, no cloud, no sync.',
+      'React Native app where Kotlin captures SMS and notifications into a peek/ack buffer, and a TypeScript parser logs expenses automatically into local SQLite. It has no account, no cloud and no sync.',
     decision:
       'The native buffer exposes peek and ack rather than drain. Drain-then-process loses events if processing crashes mid-loop; peek-then-ack only marks them consumed after they have actually been handled. Drain stayed behind as a legacy fallback.',
     broke:
-      'The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read — dedup keys bucket by minute, and two clock reads can straddle a boundary.',
+      'The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read. Dedup keys bucket by minute, and two clock reads can straddle a boundary.',
     tech: ['React Native', 'Kotlin', 'TypeScript', 'SQLite'],
     links: { live: '', github: 'https://github.com/dhruv4740/expense-tracker' },
   },
@@ -194,11 +194,11 @@ export const projects = [
     kind: 'tool',
     tagline: 'Refuses to show you a price it cannot prove.',
     description: 
-      'A private grocery price comparison tool for one family, adding items across three delivery services separately. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
+      'A private grocery price comparison tool for one family, adding items across three delivery services separately. Built on a single rule. UNKNOWN is better than WRONG. It declines to state a total unless it has verified evidence for every line of it.',
     decision:
       'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
     broke:
-      'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
+      'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either. So a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
     tech: ['Python', 'FastAPI', 'PostgreSQL', 'Kotlin'],
     summary: 'A private grocery price comparison tool for one family. Its one rule is that unknown beats wrong.',
     caseStudy: {
@@ -226,9 +226,9 @@ export const projects = [
     kind: 'research',
     tagline: 'Darknet threat monitoring. Top 5 finalist at the IIT Madras × BITS Goa hackathon.',
     description:
-      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it was a top 5 finalist in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
+      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it was a top 5 finalist in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic. Flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
     decision:
-      'I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
+      'I wired the Claude call to fire only when the Random Forest is unsure. That means Tor scores between 0.55 and 0.75. It sits behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
     broke:
       'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
     summary: 'A team dark-web traffic monitor that classifies network traffic and shows alerts on a live dashboard.',
@@ -257,7 +257,7 @@ export const projects = [
       },
     },
     links: { live: '', github: '' },
-    note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture; I built the dashboards, the API features and the uncertain-zone Claude call.',
+    note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture. I built the dashboards, the API features and the uncertain-zone Claude call.',
   },
   {
     id: 'hexfence',
@@ -282,9 +282,9 @@ export const projects = [
     description:
       'Built at MumbaiHacks. AI-assisted claim checking with structured verdicts and a modular backend. Frontend on Vercel, backend on Render.',
     decision:
-      'Built on LangGraph so the verification flow has explicit steps and state rather than one opaque prompt — every verdict comes from a path you can trace and debug. The model was fixed by what a hackathon budget allows, which made the real problem getting reliable structured output from one constrained model rather than shopping for a better one.',
+      'Built on LangGraph so the verification flow has explicit steps and state rather than one opaque prompt. Every verdict comes from a path you can trace and debug. The model was fixed by what a hackathon budget allows, which made the real problem getting reliable structured output from one constrained model rather than shopping for a better one.',
     broke:
-      'The WhatsApp bridge took a day of passes: Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.',
+      'The WhatsApp bridge took a day of passes. Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.',
     tech: ['Next.js', 'TypeScript', 'Node.js', 'Python'],
     links: { live: '', github: 'https://github.com/dhruv4740/crisiswatch' },
   },
@@ -296,7 +296,7 @@ export const projects = [
     tagline: 'Fraud detection for small businesses.',
     badge: 'Winner, Innovathon 2025',
     description:
-      'Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Built with a team; won Innovathon 2025.',
+      'Machine-learning fraud detection for small businesses. It has CSV upload, transaction analysis and a Flask dashboard. Built with a team and won Innovathon 2025.',
     decision: '',
     broke: '',
     tech: ['Python', 'XGBoost', 'Flask', 'pandas'],
