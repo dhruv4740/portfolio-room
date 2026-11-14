@@ -307,10 +307,12 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   const setBox = (r, rad) => Object.assign(card.style, boxCSS(r, rad));
   const plain = (r) => ({ left: r.left, top: r.top, width: r.width, height: r.height });
   // Desktop: keeps the hero card's top and right edges and grows left and down. Phones: a sheet with 12px side margins above the bottom bar.
+  // Desktop height hugs the content: the chrome around the thread plus the thread's own height, so no blank gap under a short answer.
+  const hugH = () => { const t = body.querySelector('.ask-thread'); return t ? col.clientHeight - t.clientHeight + t.scrollHeight + 10 : 360; };
   function heroOpenRect(from) {
     const W = innerWidth, H = innerHeight, fr = from.getBoundingClientRect();
     if (W >= 960) {
-      const right = Math.min(fr.right, W - 24), w = Math.min(640, W * 0.92, right - 24), h = Math.min(H * 0.76, 620, H - 48);
+      const right = Math.min(fr.right, W - 24), w = Math.min(640, W * 0.92, right - 24), h = Math.min(Math.max(hugH(), 360), H * 0.76, H - 48);
       return { left: right - w, top: Math.min(Math.max(fr.top, 24), H - 24 - h), width: w, height: h };
     }
     const bar = document.querySelector('.w-bar'); let bottom = H - 12;
@@ -318,6 +320,18 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     return { left: 12, top: 12, width: W - 24, height: Math.max(240, bottom - 12) };
   }
   const snap = () => { const r = card.getBoundingClientRect(), cs = getComputedStyle(card); return { r: plain(r), rad: parseFloat(cs.borderTopLeftRadius) || 14, col: +getComputedStyle(col).opacity, scrim: +getComputedStyle(scrim).opacity, card: +cs.opacity }; };
+
+  // Content changed (answer arrived, chips hidden): re-measure and animate the real height over 220 ms from the current rect.
+  let fitRaf = 0;
+  const fitHero = () => {
+    if (hero.st !== 'open' || innerWidth < 960 || reduced()) return;
+    const cur = card.getBoundingClientRect(), to = heroOpenRect(hero.from);
+    if (Math.abs(to.height - cur.height) < 2) return;
+    stopHero(); const rad = hero.rad;
+    const a = heroAnim(card, [boxCSS(plain(cur), rad), boxCSS(to, rad)], { duration: 220 });
+    a.onfinish = () => { if (hero.st === 'open') { setBox(to, rad); a.cancel(); hero.anims = hero.anims.filter((x) => x !== a); } };
+  };
+  new MutationObserver(() => { if (!fitRaf) fitRaf = requestAnimationFrame(() => { fitRaf = 0; fitHero(); }); }).observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'hidden'] });
 
   function openHero(d) {
     const from = d.from;
@@ -347,7 +361,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
       ask(); return;
     }
     const geo = heroAnim(card, [boxCSS(startR, startRad), boxCSS(end, rad)], { duration: 420 });
-    geo.onfinish = () => { if (hero.st !== 'opening') return; setBox(end, rad); geo.cancel(); hero.anims = hero.anims.filter((a) => a !== geo); setSt('open'); };
+    geo.onfinish = () => { if (hero.st !== 'opening') return; setBox(end, rad); geo.cancel(); hero.anims = hero.anims.filter((a) => a !== geo); setSt('open'); fitHero(); };
     heroAnim(scrim, [{ opacity: s0 ? s0.scrim : 0 }, { opacity: 1 }], { duration: 420 });
     heroAnim(col, [{ opacity: s0 ? s0.col : 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: s0 ? 280 : 280, delay: s0 ? 0 : 140 });
     if (wasClosing) from.style.visibility = 'hidden';

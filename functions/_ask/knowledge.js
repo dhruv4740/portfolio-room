@@ -23,7 +23,7 @@ export function buildSections() {
   add('why-hire', 'Why hire Dhruv', `Evidence-based case: (1) Measurable results as a sole developer: four tools at Blink, 489 outreach emails, 41 of 228 contacted creators replied (18%), 676 prospect sites scored. (2) Engineering judgement shown in his write-ups: he deleted a self-hosted backend for Firestore in FocusLock, made BasketProof refuse to state a price it cannot verify, and bounded LLM cost in DarkSentinel by only calling Claude when the classifier is unsure. (3) He debugs real faults and says what broke: the Windows Ctrl+W SendInput bug, the parser refund-direction bug, the 403-versus-expired-session lockout. (4) Range across Python backends, Kotlin and Android, TypeScript and React, ML and Firebase. (5) Competitive record: 2 hackathon wins and a top 5 finalist placement. DarkSentinel was built with a team; model training and live Tor capture were a teammate's.`,
     'why hire hiring should strengths strength good fit pitch best candidate stand out unique value recommend opinion');
   add('strongest-by-area', 'Strongest project by area',
-    `Backend: BasketProof (Python, FastAPI, PostgreSQL, a strict verified-evidence rule), FocusLock (one Firestore backend with security rules enforcing limits across Android and Windows) and the DarkSentinel API (FastAPI serving dashboards, with a cost-bounded LLM call). Best single backend story: FocusLock, with 233 automated tests and CI that builds a signed APK plus Windows installer. Mobile and Android: FocusLock, Expense Tracker (React Native plus Kotlin, a peek/ack buffer so no events are lost) and Blackout. AI and ML: DarkSentinel (Random Forest plus RoBERTa plus Claude) and F-Shield (XGBoost). AI in real work: the Blink outreach pipeline (LLM drafting with human approval). Front end and 3D: this portfolio (Three.js, React 19, 30 to 60 FPS on integrated graphics) and CrisisWatch (Next.js). Most hackathon-proven: DarkSentinel (top 5) and F-Shield (winner).`,
+    `Backend: BasketProof (Python, FastAPI, PostgreSQL, a strict verified-evidence rule), FocusLock (one Firestore backend with security rules enforcing limits across Android and Windows) and the DarkSentinel API (FastAPI serving dashboards, with a cost-bounded LLM call). Best single backend story: FocusLock, with over 250 automated tests and CI that builds a signed APK plus Windows installer. Mobile and Android: FocusLock, Expense Tracker (React Native plus Kotlin, a peek/ack buffer so no events are lost) and Blackout. AI and ML: DarkSentinel (Random Forest plus RoBERTa plus Claude) and F-Shield (XGBoost). AI in real work: the Blink outreach pipeline (LLM drafting with human approval). Front end and 3D: this portfolio (Three.js, React 19, 30 to 60 FPS on integrated graphics) and CrisisWatch (Next.js). Most hackathon-proven: DarkSentinel (top 5) and F-Shield (winner).`,
     'project projects backend frontend mobile android ml ai which proudest favourite impressive area server api');
   add('hackathons', 'Hackathons', `Innovathon 2025, Data Science track: winner, with F-Shield (fraud detection, XGBoost and Flask). REALMS 2025, AR Tourism track: winner. Secure AI Systems and Software Hackathon (BITS Goa with IIT Madras) 2026: top 5 finalist in its problem statement with DarkSentinel. He also built CrisisWatch at MumbaiHacks.`,
     'hackathon hackathons competition won winner award innovathon realms mumbaihacks saiss');
@@ -85,7 +85,7 @@ const CANNED = {
     'He debugs real faults and writes down what broke, like the Windows Ctrl+W bug.',
     'He has 2 hackathon wins and a top 5 finalist placement.'],
     'The project cards on this page have the case studies.'],
-  'strongest-by-area': ['His best backend story is FocusLock, which has over 200 automated tests.', [
+  'strongest-by-area': ['His best backend story is FocusLock, which has over 250 automated tests.', [
     'For backend, see FocusLock, BasketProof and the DarkSentinel API.',
     'For mobile, see FocusLock, Expense Tracker and Blackout.',
     'For AI and ML, see DarkSentinel (Random Forest, RoBERTa, Claude) and F-Shield (XGBoost).',
@@ -135,7 +135,7 @@ const CANNED = {
     'One daily allowance is shared across an Android phone and a Windows PC.',
     'Switching browsers does not reset the limit.',
     'He replaced a self-hosted backend with Firestore and an Electron agent.',
-    'It has over 200 automated tests, and CI builds a signed APK plus Windows installer.'], demo('FocusLock')],
+    'It has over 250 automated tests, and CI builds a signed APK plus Windows installer.'], demo('FocusLock')],
   'proj-expense': ['Expense Tracker logs spending by reading the receipts your phone already gets.', [
     'It is a React Native app, with Kotlin capturing SMS and notifications.',
     'A TypeScript parser logs expenses into local SQLite.',
