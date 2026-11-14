@@ -75,16 +75,22 @@ export function buildCinematicRoomInteractions({
   const strut = box(award, [0.03, STRUT_LENGTH, 0.012], [0, 0.135, -0.06], m.wood); strut.rotation.x = -0.35;
   const awardTexture = canvasTexture((ctx, w, h) => {
     ctx.fillStyle = '#eee8d5'; ctx.fillRect(0, 0, w, h); ctx.fillStyle = '#282b29'; ctx.textAlign = 'center';
-    ctx.font = 'bold 56px serif'; ctx.fillText('HACKATHONS', w / 2, 110);
-    let y = 225;
-    for (const a of achievements) {
-      ctx.font = 'bold 36px sans-serif'; ctx.fillText(a.result.toUpperCase() + ' · ' + a.year, w / 2, y); y += 52;
-      ctx.font = '28px sans-serif'; let row = '';
-      for (const word of a.label.split(' ')) {
+    // Sizes are set for the default seated view, where the sign is about 190 px wide.
+    const sans = '"IBM Plex Sans", sans-serif';
+    ctx.font = `bold 96px ${sans}`; ctx.fillText('HACKATHONS', w / 2, 130);
+    const wrap = (text, y, lineHeight) => {
+      let row = '';
+      for (const word of text.split(' ')) {
         const next = row ? row + ' ' + word : word;
-        if (ctx.measureText(next).width > w - 100) { ctx.fillText(row, w / 2, y); y += 38; row = word; } else row = next;
+        if (ctx.measureText(next).width > w - 90) { ctx.fillText(row, w / 2, y); y += lineHeight; row = word; } else row = next;
       }
-      ctx.fillText(row, w / 2, y); y += 110;
+      ctx.fillText(row, w / 2, y); return y + lineHeight;
+    };
+    let y = 270;
+    for (const a of achievements) {
+      ctx.font = `bold 60px ${sans}`; y = wrap(a.result.toUpperCase() + ' · ' + a.year, y, 70);
+      ctx.font = `42px ${sans}`; y = wrap(a.label, y + 4, 54);
+      y += 50;
     }
   }, 1000, 1300);
   mesh(award, new THREE.PlaneGeometry(0.235, 0.305), new THREE.MeshBasicMaterial({ map: awardTexture, toneMapped: false }), [0, 0.165, 0.011]);
