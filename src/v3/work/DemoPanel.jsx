@@ -14,6 +14,7 @@ export const DEMOS = {
   ],
   expense: [{ kind: 'phone', label: 'Android app', app: 'expense' }],
   basket: [{ kind: 'phone', label: 'Android app', app: 'basketproof' }],
+  blackout: [{ kind: 'phone', label: 'Android app', app: 'blackout' }],
   darksentinel: [{ kind: 'web', label: 'Dashboard', src: '/apps/darksentinel/' }],
   crisiswatch: [{ kind: 'web', label: 'Web app', src: '/apps/crisiswatch/' }],
   fraud: [{ kind: 'web', label: 'Dashboard', src: '/apps/fraud/' }],

@@ -24,6 +24,7 @@ import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, us
 import ExpenseApp from './phone-apps/ExpenseApp.jsx';
 import BasketProofApp from './phone-apps/BasketProofApp.jsx';
 import ContactApp from './phone-apps/ContactApp.jsx';
+import BlackoutApp from './phone-apps/BlackoutApp.jsx';
 
 import { PHONE_SCREEN, PHONE_STAGE, INSTAGRAM_ICON_UV_RECT } from './phoneScreenSize.js';
 export { PHONE_SCREEN, PHONE_STAGE };
@@ -64,6 +65,11 @@ const WALKTHROUGH = {
     title: 'BasketProof',
     body: 'A private grocery comparison across Blinkit, Zepto and Swiggy Instamart, built for my family. It shows UNKNOWN rather than a total it can’t verify.',
     steps: ['Build a list, then compare the platforms.'],
+  },
+  blackout: {
+    title: 'Blackout',
+    body: 'Turns an OLED screen fully black while audio keeps playing. Black pixels are switched off, which saves battery.',
+    steps: ['Tap Black out screen, then press and hold to unlock.'],
   },
 };
 
@@ -537,13 +543,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({
   // The full-screen apps are DOM panels outside the phone's projected quad;
   // putting the phone down must close them or they stay over the room.
   useEffect(() => {
-    if (!interactive) setApp(current => (current === 'expense' || current === 'basketproof' || current === 'contact' ? 'home' : current));
+    if (!interactive) setApp(current => (current === 'expense' || current === 'basketproof' || current === 'contact' || current === 'blackout' ? 'home' : current));
   }, [interactive]);
 
   // Deep links (/#/phone/<app>) arrive once the phone is in hand.
   useEffect(() => {
     const onOpen = (event) => {
-      const open = { focuslock: handleOpenFocusLock, expense: handleOpenExpense, basketproof: handleOpenBasket, contact: handleOpenContact }[event.detail?.app];
+      const open = { focuslock: handleOpenFocusLock, expense: handleOpenExpense, basketproof: handleOpenBasket, contact: handleOpenContact, blackout: handleOpenBlackout }[event.detail?.app];
       open?.();
     };
     window.addEventListener('phone:open-app', onOpen);
@@ -562,6 +568,11 @@ const PhoneScreen = forwardRef(function PhoneScreen({
 
   function handleOpenContact() {
     setApp('contact');
+    onOpenApp?.();
+  }
+
+  function handleOpenBlackout() {
+    setApp('blackout');
     onOpenApp?.();
   }
 
@@ -722,6 +733,11 @@ const PhoneScreen = forwardRef(function PhoneScreen({
     top: 830,
     size: 130,
   };
+  const blackoutIcon = {
+    left: 330,
+    top: 830,
+    size: 130,
+  };
 
   return (
     <div
@@ -829,6 +845,20 @@ const PhoneScreen = forwardRef(function PhoneScreen({
                 <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph"><path d="M24 28 H76 V62 H46 L32 74 V62 H24 Z" /></svg>
               </span>
               <span className="ps-label">Message</span>
+            </button>
+
+            {/* Blackout: a black tile with a thin white ring */}
+            <button
+              type="button"
+              className="ps-app-basket"
+              aria-label="Open Blackout"
+              onClick={handleOpenBlackout}
+              style={{ left: blackoutIcon.left, top: blackoutIcon.top, width: blackoutIcon.size }}
+            >
+              <span className="ps-tile-basket" style={{ width: blackoutIcon.size, height: blackoutIcon.size, background: '#000' }}>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph" style={{ stroke: '#fff', strokeWidth: 3 }}><circle cx="50" cy="50" r="30" /></svg>
+              </span>
+              <span className="ps-label">Blackout</span>
             </button>
           </div>
         </div>
@@ -1737,6 +1767,18 @@ const PhoneScreen = forwardRef(function PhoneScreen({
         inert={app !== 'basketproof'}
       >
           <BasketProofApp onClose={() => goHome()} />
+          <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
+            <span className="ps-home-bar" />
+          </button>
+      </div>
+
+      {/* 8. BLACKOUT */}
+      <div
+        className={`ps-full-app${app === 'blackout' ? ' is-active' : ''}`}
+        aria-hidden={app !== 'blackout'}
+        inert={app !== 'blackout'}
+      >
+          {app === 'blackout' && <BlackoutApp />}
           <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
             <span className="ps-home-bar" />
           </button>

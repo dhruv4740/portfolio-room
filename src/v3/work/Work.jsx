@@ -315,6 +315,7 @@ const css = `
   .w-root .h-link:hover { color: var(--ink); }
   .h-link:hover, .h-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
   .h-btn:focus-visible, .h-link:focus-visible, .h-chip:focus-visible, .h-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .w-root .w-btn:focus-visible, .w-root .w-act:focus-visible, .w-root .w-go:focus-visible, .w-root .w-links a:focus-visible, .w-root .w-live a:focus-visible, .w-root .w-live button:focus-visible, .w-root .w-contact a:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 
   .h-glow { position: relative; align-self: center; }
   /* The one accent: a static soft glow hugging all four sides of the card. */
@@ -730,7 +731,7 @@ export default function Work() {
                 <div className="w-ci">
                   <span className="w-meta">Blink.new · {blink.from.slice(-4)} · Python, Gmail API, LLM</span>
                   <h3>An outreach pipeline people actually replied to</h3>
-                  <p>Sole developer on four growth tools I built and maintained: a creator outreach pipeline that sourced 650 creators, a link-building engine, SEO and AI-search mention tracking, and a Reddit growth copilot.</p>
+                  <p>I built four growth tools at Blink as the sole developer. They cover creator outreach (650 creators sourced), link building, SEO and AI-search tracking, and a Reddit copilot.</p>
                   <div className="w-res"><b>18%</b><small>of contacted creators replied · 14 positive</small></div>
                   <div className="w-casewrap">
                     <details className="w-case">

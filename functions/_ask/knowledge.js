@@ -174,7 +174,7 @@ const CANNED = {
     'It has fingerprint unlock and a Quick Settings tile.',
     'It uncovers automatically for calls and alarms.',
     'It has no internet permission.',
-    'The source is at github.com/dhruv4740/blackout.']],
+    'The source is at github.com/dhruv4740/blackout.'], demo('Blackout')],
   'proj-cellbook': ['Cellbook is a desktop spreadsheet app modelled on Excel.', [
     'It has the same ribbon, menus and formulas.',
     'The formula engine is HyperFormula.',
