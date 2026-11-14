@@ -82,10 +82,10 @@ try {
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.
-  // Featured band: the Blink outreach card, then FocusLock, DarkSentinel and CrisisWatch.
+  // Featured band: the Blink outreach card, then FocusLock, Expense Tracker and 3D Portfolio.
   const featured = page.locator('.w-feat > article');
   const featuredNames = (await featured.locator('h3').allInnerTexts()).map((s) => s.trim());
-  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'DarkSentinel', 'CrisisWatch'];
+  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'Expense Tracker', '3D Portfolio'];
   check('exactly four featured cards in order', featuredNames.length === 4
     && expectedNames.every((n, i) => featuredNames[i] === n), featuredNames.join(' | ') || 'none');
   let featuredVisible = true;
@@ -96,8 +96,8 @@ try {
   check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 4);
   // Section labels after the featured band, in order, each followed by its row group.
   const sectionLabels = (await page.locator('main .w-label > span:first-child').allInnerTexts()).map((s) => s.trim());
-  const expectedSections = ['Featured', 'At Blink.new (internship)', 'Personal projects', 'Experience', 'Hackathon projects', 'Live from GitHub', 'Room tour', 'Contact'];
-  check('sections in order: Featured, At Blink.new, Personal projects, Experience, Hackathon projects, Live from GitHub, Room tour, Contact',
+  const expectedSections = ['Featured', 'At Blink.new (internship)', 'Personal projects', 'Hackathon projects', 'Experience', 'Live from GitHub', 'Room tour', 'Contact'];
+  check('sections in order: Featured, At Blink.new, Personal projects, Hackathon projects, Experience, Live from GitHub, Room tour, Contact',
     expectedSections.every((s, i) => sectionLabels[i] === s),
     sectionLabels.join(' | ') || 'none');
   const rowCounts = [];
@@ -105,10 +105,10 @@ try {
     const label = page.locator('main .w-label', { hasText: heading });
     rowCounts.push(await label.locator('xpath=following-sibling::div[1]').locator('.w-row').count());
   }
-  check('row counts: Blink 4, Personal 5, Hackathon 2', rowCounts.join(', ') === '4, 5, 2', rowCounts.join(', '));
+  check('row counts: Blink 4, Personal 3, Hackathon 4', rowCounts.join(', ') === '4, 3, 4', rowCounts.join(', '));
   const personalNames = (await page.locator('main .w-label', { hasText: 'Personal projects' })
     .locator('xpath=following-sibling::div[1]').locator('.w-row b:not(.w-did b)').allInnerTexts()).map((s) => s.trim());
-  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout | BasketProof',
+  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | Blackout | BasketProof',
     personalNames.join(' | '));
 
   // 5. Blink metrics. textContent, not innerText: the "How I built it" bullets sit in a closed <details>.

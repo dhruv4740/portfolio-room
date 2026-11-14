@@ -233,15 +233,10 @@ const css = `
   .w-bul { font-size: 14.5px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
 
   .w-list { border-top: 1px solid var(--line); }
-  /* Blink + Hackathon on the left, Personal on the right, Experience across. Below 1100px it is one column in source order. */
-  .w-root .w-two > div > .w-label:first-child { margin-top: 48px; }
+  /* Blink and Personal side by side from 1100px. Hackathon is its own full-width block with two columns. Below 1100px everything is one column. */
+  .w-root .w-two > div > .w-label:first-child, .w-root .w-hack > .w-label:first-child, .w-root .w-exp > .w-label:first-child { margin-top: 48px; }
   @media (min-width: 1100px) {
-    .w-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto 1fr auto; column-gap: 48px; align-items: start;
-      grid-template-areas: "blink personal" "hack personal" "exp exp"; }
-    .w-two-blink { grid-area: blink; }
-    .w-two-personal { grid-area: personal; }
-    .w-two-hack { grid-area: hack; }
-    .w-two-exp { grid-area: exp; }
+    .w-two, .w-hgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; align-items: start; }
   }
   .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 0 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
   .w-row--xp { grid-template-columns: 118px 1fr; }
@@ -280,6 +275,24 @@ const css = `
   .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; padding: 0; min-height: 32px; display: inline-flex; align-items: center; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 5px; }
   .w-act.w-laptop { text-decoration: none; color: var(--mute); cursor: default; }
   .w-case-in { margin-top: 2px; }
+  /* Compact row. Line 1 is year, title, tag and links. Line 2 is one description with a reserved two-line height so every collapsed row is the same height. */
+  .w-row--c { display: block; padding: 14px 0; }
+  .w-r1 { display: flex; flex-wrap: wrap; align-items: center; column-gap: 12px; min-height: 32px; }
+  .w-r1 .w-y { flex: none; width: 52px; }
+  .w-r1 .w-t { font-weight: 500; }
+  .w-tag { font: 12.5px var(--mono); color: var(--mute); }
+  .w-r1 .w-acts { margin: 0 0 0 auto; gap: 16px; flex-wrap: wrap; }
+  .w-row .w-r2 { margin: 4px 0 0 64px; height: 45px; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .w-more { margin: 6px 0 0 64px; }
+  .w-more .w-did:first-child { margin-top: 0 !important; }
+  .w-act[aria-expanded="true"] { text-decoration-color: var(--ink); }
+  @media (min-width: 1100px) {
+    .w-r1 { flex-wrap: nowrap; }
+    .w-r1 .w-t { flex: none; }
+    .w-tag { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .w-r1 .w-acts { flex: none; flex-wrap: nowrap; white-space: nowrap; }
+  }
+  @media (max-width: 559px) { .w-row .w-r2, .w-more { margin-left: 0; } }
   .w-case-in > summary { list-style: none; }
   .w-case-in > summary::-webkit-details-marker { display: none; }
   .w-case-in .w-cs { margin-bottom: 4px; }
@@ -560,6 +573,7 @@ export default function Work() {
   const trigger = useRef(null);
   // The featured row's shared case panel: id of the project whose case is open.
   const [caseId, setCaseId] = useState(null);
+  const [moreId, setMoreId] = useState(null);
   const caseBtn = useRef(null);
   const closeCase = () => { setCaseId(null); caseBtn.current?.focus({ preventScroll: true }); };
   // The résumé reader and demo panels are in-page overlays. Each pushes one history entry when it opens, so browser
@@ -707,37 +721,45 @@ export default function Work() {
     if (id) document.getElementById(id)?.scrollIntoView({ block: 'start' });
   }, []);
 
-  const renderRow = (p) => (
-    <div className="w-row" key={p.id} id={`p-${p.id}`}>
-      <span className="w-y">{p.year}</span>
-      <span>
-        <b>{p.name}</b>
-        <p>{p.tagline || p.description}</p>
-        {didLine(p.id)}
-        {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
-        {p.caseStudy && (
-          <details className="w-case-in">
-            <summary className="w-act">How I built it</summary>
+  const TAGS = { darksentinel: 'Top 5 finalist', fraud: 'Winner, Innovathon 2025', hexfence: 'ETHGlobal Mumbai 2026', crisiswatch: 'MumbaiHacks' };
+  const renderRow = (p) => {
+    const hasMore = p.caseStudy || whatIDid[p.id] || p.badge || p.label;
+    const isOpen = moreId === p.id;
+    return (
+      <div className="w-row w-row--c" key={p.id} id={`p-${p.id}`}>
+        <div className="w-r1">
+          <span className="w-y">{p.year}</span>
+          <b className="w-t">{p.name}</b>
+          {TAGS[p.id] && <span className="w-tag">{TAGS[p.id]}</span>}
+          <span className="w-acts">
+            {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
+            {p.links?.live === '/room/' && <span className="w-act w-laptop">Laptop only</span>}
+            {p.links?.live && (
+              <a className={`w-act${p.links.live === '/room/' ? ' w-roomlink' : ''}`} href={p.links.live === '/room/' ? roomHref(false) : p.links.live}
+                {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>{p.links.live === '/room/' ? 'Walk through it' : 'Visit'}</a>
+            )}
+            {p.links?.github && (
+              <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
+            )}
+            {hasMore && (
+              <button type="button" className="w-act" aria-expanded={isOpen} aria-controls={`more-${p.id}`} onClick={() => setMoreId(isOpen ? null : p.id)}>
+                {p.caseStudy ? 'How I built it' : 'More'}
+              </button>
+            )}
+          </span>
+        </div>
+        <p className="w-r2">{p.tagline || p.description}</p>
+        {isOpen && (
+          <div className="w-more" id={`more-${p.id}`}>
+            {didLine(p.id)}
+            {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
             {casePdf(p.id)}
             {caseText(p.caseStudy)}
-          </details>
+          </div>
         )}
-      </span>
-      {(DEMOS[p.id] || p.links?.live || p.links?.github) && (
-      <span className="w-acts">
-        {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
-        {p.links?.live === '/room/' && <span className="w-act w-laptop">Laptop only</span>}
-        {p.links?.live && (
-          <a className={`w-act${p.links.live === '/room/' ? ' w-roomlink' : ''}`} href={p.links.live === '/room/' ? roomHref(false) : p.links.live}
-            {...(p.links.live.startsWith('/') ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>{p.links.live === '/room/' ? 'Walk through it' : 'Visit'}</a>
-        )}
-        {p.links?.github && (
-          <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
-        )}
-      </span>
-      )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const secondAction = (project) => {
     if (DEMOS[project.id]) return <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it<span aria-hidden="true">→</span></button>;
@@ -876,9 +898,9 @@ export default function Work() {
                 <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
                 <div className="w-list">
                   {blinkTools.map((t) => (
-                    <div className="w-row" key={t.id}>
-                      <span className="w-y">2026</span>
-                      <span><b>{t.name}</b><p>{t.detail}</p></span>
+                    <div className="w-row w-row--c" key={t.id}>
+                      <div className="w-r1"><span className="w-y">2026</span><b className="w-t">{t.name}</b></div>
+                      <p className="w-r2">{t.detail}</p>
                     </div>
                   ))}
                 </div>
@@ -887,26 +909,31 @@ export default function Work() {
                 <h2 className="w-label"><span>Personal projects</span><span>{personal.length}</span></h2>
                 <div className="w-list">{personal.map(renderRow)}</div>
               </div>
-              <div className="w-two-exp">
-                <h2 className="w-label" id="experience"><span>Experience</span></h2>
-                <div className="w-list">
-                  {experience.map((job) => (
-                    <div className="w-row w-row--xp" key={job.id}>
-                      <span className="w-y">{job.from} – {job.to}</span>
-                      <span><b>{job.role} · {job.org}</b><p>{job.detail}</p></span>
-                    </div>
-                  ))}
-                  <div className="w-row w-row--xp">
-                    <span className="w-y">{education.year}</span>
-                    <span><b>{education.degree}</b><p>{education.school}</p></span>
+            </div>
+
+            <section className="w-hack">
+              <h2 className="w-label" id="hackathons"><span>Hackathon projects</span><span>{hackathon.length}</span></h2>
+              <div className="w-hgrid">
+                <div className="w-list">{hackathon.slice(0, 2).map(renderRow)}</div>
+                <div className="w-list">{hackathon.slice(2).map(renderRow)}</div>
+              </div>
+            </section>
+
+            <section className="w-exp">
+              <h2 className="w-label" id="experience"><span>Experience</span></h2>
+              <div className="w-list">
+                {experience.map((job) => (
+                  <div className="w-row w-row--xp" key={job.id}>
+                    <span className="w-y">{job.from} – {job.to}</span>
+                    <span><b>{job.role} · {job.org}</b><p>{job.detail}</p></span>
                   </div>
+                ))}
+                <div className="w-row w-row--xp">
+                  <span className="w-y">{education.year}</span>
+                  <span><b>{education.degree}</b><p>{education.school}</p></span>
                 </div>
               </div>
-              <div className="w-two-hack">
-                <h2 className="w-label" id="hackathons"><span>Hackathon projects</span><span>{hackathon.length}</span></h2>
-                <div className="w-list">{hackathon.map(renderRow)}</div>
-              </div>
-            </div>
+            </section>
 
             <GithubProof />
 
