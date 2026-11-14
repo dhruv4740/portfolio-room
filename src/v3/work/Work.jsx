@@ -147,6 +147,7 @@ const css = `
     --mute: #6b675e;
     --line: #d8d2c6;
     --acc: #c2410c;
+    --acc-text: #b53b0a;
     --r: 14px;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
     background: var(--bg);
@@ -191,13 +192,13 @@ const css = `
   /* A phone that passed phoneCanRoom() gets the room offer back. */
   @media (pointer: coarse) { .w-root--room .w-room { display: flex !important; } .w-root--room .w-roomlink { display: inline-flex !important; } .w-root--room .w-laptop { display: none !important; } }
   .w-room small { color: var(--mute); font-size: 13.5px; }
-  .w-ar { margin-left: auto; font-family: var(--mono); color: var(--acc); }
+  .w-ar { margin-left: auto; font-family: var(--mono); color: var(--acc-text); }
 
   .w-root [id] { scroll-margin-top: 24px; }
   .w-label { font: 500 13px/1 var(--mono); letter-spacing: 0.02em; color: var(--mute); margin: 48px 0 16px; display: flex; justify-content: space-between; }
   .w-proof { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
   .w-proof > div { background: var(--paper); padding: 16px 18px; display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: baseline; }
-  .w-n { font: 600 22px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.02em; color: var(--acc); }
+  .w-n { font: 600 22px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.02em; color: var(--acc-text); }
   .w-proof p { font-size: 15.5px; color: var(--ink2); }
 
   .w-feat { display: flex; gap: 12px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -20px; padding: 0 20px 4px; scrollbar-width: none; }
