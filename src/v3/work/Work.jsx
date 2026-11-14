@@ -252,7 +252,7 @@ const css = `
   .w-pdfq { position: absolute; top: 0; right: 44px; height: 44px; display: inline-flex; align-items: center; font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; color: var(--mute); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
   .w-pdfq:hover, .w-pdfq:focus-visible { color: var(--ink); }
   .w-case[open] + .w-pdfq { display: none; }
-  /* On phones the link would sit over the middle of the Read the case bar; the panel's own PDF button covers it there. */
+  /* On phones the link would sit over the middle of the How I built it bar; the panel's own PDF button covers it there. */
   @media (max-width: 639px) { .w-pdfq { display: none; } }
   .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 8px; }
@@ -726,7 +726,7 @@ export default function Work() {
         {project.caseStudy && (
           <div className="w-casewrap">
             <details className="w-case">
-              <summary className="w-go">Read the case<span>→</span></summary>
+              <summary className="w-go">How I built it<span>→</span></summary>
               {casePdf(project.id)}
               {caseText(project.caseStudy)}
             </details>
@@ -812,7 +812,7 @@ export default function Work() {
                   <div className="w-res"><b>18%</b><small>of contacted creators replied · 14 positive</small></div>
                   <div className="w-casewrap">
                     <details className="w-case">
-                      <summary className="w-go">Read the case<span>→</span></summary>
+                      <summary className="w-go">How I built it<span>→</span></summary>
                       <ul className="w-bul">
                         {blink.caseStudy.summary.map((b) => (<li key={b}>{b}</li>))}
                       </ul>

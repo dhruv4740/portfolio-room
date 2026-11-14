@@ -111,7 +111,7 @@ try {
   check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout',
     personalNames.join(' | '));
 
-  // 5. Blink metrics. textContent, not innerText: the "Read the case" bullets sit in a closed <details>.
+  // 5. Blink metrics. textContent, not innerText: the "How I built it" bullets sit in a closed <details>.
   const blinkText = await page.locator('main').textContent().catch(() => '');
   const metrics = ['650', '489', '18%', '14'];
   const missing = metrics.filter((m) => !blinkText.includes(m));
