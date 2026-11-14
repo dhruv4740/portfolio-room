@@ -351,6 +351,16 @@ const css = `
     .h-chip { height: 40px; }
     .h-proof b { font-size: 28px; }
   }
+  /* Desktop first screen: about 8% smaller type and buttons, 28px more air above the name. */
+  @media (min-width: 1100px) {
+    .w-wrap { padding-top: 76px; }
+    @media (max-height: 900px) { .w-wrap { padding-top: 60px; } }
+    .w-root .h-name { font-size: clamp(44px, 5.1vw, 66px); }
+    .h-head { font-size: 26px; }
+    .w-root .h-avail p { font-size: 15.6px; }
+    .h-btn { height: 51px; min-width: 148px; padding: 0 26px; font-size: 15.6px; }
+    .h-link { font-size: 15.6px; }
+  }
   html[data-hero-ask] #ask-wrap { visibility: hidden; }
 
   @media (prefers-reduced-motion: reduce) {
