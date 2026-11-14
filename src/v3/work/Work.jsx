@@ -410,26 +410,28 @@ function ProofValue({ value }) {
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', crisiswatch: '/previews/crisiswatch.jpg', portfolio3d: '/og.jpg' };
 
-// Room tour: loads only when scrolled near (H.264 MP4 first for Safari, WebM as fallback), plays muted, and does not autoplay under reduced motion.
+// Room tour: the files load when scrolled near (H.264 MP4 first for Safari, WebM as fallback). It plays muted only while
+// at least 60% of it is on screen, pauses when it leaves, and stays paused (controls on) under reduced motion.
 function TourVideo() {
   const ref = useRef(null);
   useEffect(() => {
     const v = ref.current;
     if (!v || typeof IntersectionObserver === 'undefined') return undefined;
     const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const io = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) {
-        if (!v.querySelector('source')) {
-          [['/media/room-tour.mp4', 'video/mp4'], ['/media/room-tour.webm', 'video/webm']].forEach(([src, type]) => {
-            const el = document.createElement('source'); el.src = src; el.type = type; v.appendChild(el);
-          });
-          v.load();
-        }
-        if (!calm) v.play().catch(() => {});
-      } else v.pause();
+    const loader = new IntersectionObserver(([e]) => {
+      if (!e.isIntersecting || v.querySelector('source')) return;
+      [['/media/room-tour.mp4', 'video/mp4'], ['/media/room-tour.webm', 'video/webm']].forEach(([src, type]) => {
+        const el = document.createElement('source'); el.src = src; el.type = type; v.appendChild(el);
+      });
+      v.load();
+      loader.disconnect();
     }, { rootMargin: '200px' });
-    io.observe(v);
-    return () => io.disconnect();
+    const player = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting && e.intersectionRatio >= 0.6) { if (!calm) v.play().catch(() => {}); } else v.pause();
+    }, { threshold: [0, 0.6] });
+    loader.observe(v);
+    player.observe(v);
+    return () => { loader.disconnect(); player.disconnect(); };
   }, []);
   return (
     <video className="w-tour" ref={ref} muted loop playsInline controls preload="none" poster="/media/room-tour.jpg"
