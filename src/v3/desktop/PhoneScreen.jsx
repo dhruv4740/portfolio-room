@@ -26,7 +26,7 @@ import BasketProofApp from './phone-apps/BasketProofApp.jsx';
 import ContactApp from './phone-apps/ContactApp.jsx';
 import BlackoutApp from './phone-apps/BlackoutApp.jsx';
 
-import { PHONE_SCREEN, PHONE_STAGE, INSTAGRAM_ICON_UV_RECT } from './phoneScreenSize.js';
+import { PHONE_SCREEN, PHONE_STAGE, PHONE_HOME_APPS } from './phoneScreenSize.js';
 export { PHONE_SCREEN, PHONE_STAGE };
 
 const STORAGE_KEY = 'v3:focuslock';
@@ -706,38 +706,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({
     ? `Blocked for ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`
     : 'Block expired. Tap the button below to close.';
 
-  // UV coordinates from workspace:
-  const r = INSTAGRAM_ICON_UV_RECT;
-  const igIcon = {
-    left: 80,
-    top: 470,
-    size: 130,
-  };
-  const flIcon = {
-    left: 330,
-    top: 470,
-    size: 130,
-  };
-  const expenseIcon = {
-    left: 80,
-    top: 650,
-    size: 130,
-  };
-  const basketIcon = {
-    left: 330,
-    top: 650,
-    size: 130,
-  };
-  const contactIcon = {
-    left: 80,
-    top: 830,
-    size: 130,
-  };
-  const blackoutIcon = {
-    left: 330,
-    top: 830,
-    size: 130,
-  };
+  const homeIcon = (id) => PHONE_HOME_APPS.find((app) => app.id === id);
+  const igIcon = homeIcon('instagram');
+  const flIcon = homeIcon('focuslock');
+  const expenseIcon = homeIcon('expense');
+  const basketIcon = homeIcon('basketproof');
+  const contactIcon = homeIcon('contact');
+  const blackoutIcon = homeIcon('blackout');
 
   return (
     <div
