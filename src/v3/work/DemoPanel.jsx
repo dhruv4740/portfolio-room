@@ -46,7 +46,7 @@ function WebDemo({ demo, title }) {
     : undefined;
   return (
     <div ref={body} className="work-demo-stage" style={fit ? { width: fit.w, height: fit.h, overflow: 'hidden' } : { width: '100%', height: '100%' }}>
-      <iframe key={demo.src} className="work-demo-frame" src={demo.src} title={title} style={style} onLoad={() => setLoaded(true)} />
+      <iframe key={demo.src} className="work-demo-frame" src={demo.src} title={title} sandbox="allow-scripts allow-same-origin allow-forms allow-popups" style={style} onLoad={() => setLoaded(true)} />
       <p className="work-demo-wait" aria-live="polite" style={loaded ? { opacity: 0, pointerEvents: 'none' } : undefined}>{loaded ? '' : `Loading ${title}…`}</p>
     </div>
   );
