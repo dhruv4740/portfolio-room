@@ -459,7 +459,7 @@ function ProofValue({ value }) {
   return <>{m[1]}<data value={m[2]} data-cu={m[2]} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
 }
 
-const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', expense: '/previews/expense.jpg', portfolio3d: '/og.jpg' };
+const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', expense: '/previews/expense.jpg', portfolio3d: '/previews/portfolio3d.jpg' };
 
 // Room tour: the files load when scrolled near (H.264 MP4 first for Safari, WebM as fallback). It plays muted only while
 // at least 60% of it is on screen, pauses when it leaves, and stays paused (controls on) under reduced motion.
