@@ -3,6 +3,7 @@ import '../tokens.css';
 import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid } from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 import { phoneCanRoom } from '../lib/capability.js';
+import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
 
 const css = `
   /* ---- skip link --------------------------------------------------------- */
@@ -356,6 +357,8 @@ const css = `
   .h-grid { display: grid; grid-template-columns: 1fr; gap: 48px; align-items: center; }
   .h-left { display: flex; flex-direction: column; justify-content: center; min-width: 0; }
   .w-root .h-name { font-size: clamp(48px, 5.5vw, 72px); line-height: 1; letter-spacing: -0.03em; font-weight: 600; margin: 0; }
+  .h-left .w-desk { max-width: 220px; }
+  .h-left .w-status { margin: 8px 0 20px; }
   .h-head { font-size: 24px; line-height: 1.35; letter-spacing: -0.01em; color: var(--ink); margin-top: 16px; text-wrap: balance; }
   .h-avail { margin-top: 16px; }
   .w-root .h-avail p { font-size: 17px; line-height: 1.5; color: var(--mute); }
@@ -564,6 +567,12 @@ function ResumeReader({ src, onClose }) {
   );
 }
 
+// "3:28 pm" in Mumbai time.
+function formatIst(date) {
+  const { hour, minute } = istParts(date);
+  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour < 12 ? 'am' : 'pm'}`;
+}
+
 export default function Work() {
   const mainRef = useRef(null);
   const [readerOpen, setReaderOpen] = useState(false);
@@ -607,6 +616,21 @@ export default function Work() {
     return () => (window.cancelIdleCallback || clearTimeout)(id);
   }, []);
   const roomHref = (tour) => (roomOnPhone ? '/room/?room=phone&tour=1' : tour ? '/room/?tour=1' : '/room/');
+
+  const [now, setNow] = useState(() => new Date());
+  const [temperature, setTemperature] = useState(null);
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
+  useEffect(() => {
+    let alive = true;
+    fetchMumbaiWeather()
+      .then((w) => { if (alive && typeof w?.temperature === 'number') setTemperature(w.temperature); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+  const statusText = `${formatIst(now)} in Mumbai${temperature !== null ? ` · ${temperature}°C` : ''}`;
 
   // A project with no description yet renders as a bare title and a lone tech
   // chip, which reads as a broken stub rather than as work. Withhold it until
@@ -827,6 +851,21 @@ export default function Work() {
           <section className="h-hero" aria-label="Introduction">
             <div className="h-grid">
               <div className="h-left">
+                <svg className="w-desk" viewBox="0 0 420 170" fill="none" stroke="#17160f" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="276" y="8" width="128" height="88" rx="3"/><path d="M340 8v88M276 52h128" strokeWidth=".9"/>
+              <path d="M282 96v-14l8-4v18M296 96v-24h8v24M312 96v-10l6-6 6 6v10M330 96v-18h7v18M348 96v-30h9v30M364 96v-12h8v12M380 96v-20l6-3 6 3v20" stroke="#86837a" strokeWidth=".8"/>
+              <circle cx="384" cy="26" r="6" stroke="#c2410c" strokeWidth=".9"/>
+              <path d="M10 126h400"/><path d="M14 126v4h392v-4" strokeWidth=".9"/><path d="M28 130v38M392 130v38"/>
+              <rect x="138" y="30" width="132" height="80" rx="5"/><rect x="146" y="38" width="116" height="64" rx="2" fill="#c2410c" fillOpacity=".09" stroke="none"/>
+              <path d="M158 54h46M158 62h70M158 70h34" stroke="#c2410c" strokeWidth="1" strokeOpacity=".55"/>
+              <path d="M196 110l-5 13h26l-5-13"/><path d="M186 123h36"/>
+              <rect x="150" y="117" width="78" height="7" rx="2"/><path d="M156 120.5h66" strokeWidth=".6" strokeDasharray="2 2"/>
+              <rect x="240" y="117" width="14" height="8" rx="4"/>
+              <path d="M58 126h34M75 126V88l26-26M101 62l14 8-6 11-14-8z"/><path d="M107 79l-7 18" stroke="#c2410c" strokeOpacity=".35" strokeDasharray="1.5 3"/>
+              <path d="M290 126v-16h20v16M310 114h4a4 4 0 0 1 0 8h-4"/><path d="M296 104c0-4 4-4 4-8M304 104c0-4 4-4 4-8" stroke="#86837a" strokeWidth=".8"/>
+              <rect x="22" y="104" width="40" height="22" rx="2"/><path d="M42 104v22" strokeWidth=".8"/>
+            </svg>
+                <p className="w-status"><span className="w-dot" /><span>{statusText}</span></p>
                 <h1 className="h-name">{identity.name}</h1>
                 <p className="h-head">{identity.headline}</p>
                 <div className="h-avail">
