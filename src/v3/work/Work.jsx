@@ -224,6 +224,7 @@ const css = `
   .w-bul { font-size: 14.5px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
 
   .w-list { border-top: 1px solid var(--line); }
+  @media (min-width: 1100px) { .w-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 48px; align-items: start; } }
   .w-row { display: grid; grid-template-columns: 52px 1fr auto; gap: 12px; align-items: baseline; padding: 16px 0; border-bottom: 1px solid var(--line); }
   .w-row--xp { grid-template-columns: 118px 1fr; }
   .w-row--gh { grid-template-columns: 104px 1fr; }
@@ -825,18 +826,23 @@ export default function Work() {
               {featured.map(renderFeatured)}
             </div>
 
-            <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
-            <div className="w-list">
-              {blinkTools.map((t) => (
-                <div className="w-row" key={t.id}>
-                  <span className="w-y">2026</span>
-                  <span><b>{t.name}</b><p>{t.detail}</p></span>
+            <div className="w-two">
+              <div>
+                <h2 className="w-label" id="blink"><span>At Blink.new (internship)</span></h2>
+                <div className="w-list">
+                  {blinkTools.map((t) => (
+                    <div className="w-row" key={t.id}>
+                      <span className="w-y">2026</span>
+                      <span><b>{t.name}</b><p>{t.detail}</p></span>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              </div>
+              <div>
+                <h2 className="w-label"><span>Personal projects</span><span>{personal.length}</span></h2>
+                <div className="w-list">{personal.map(renderRow)}</div>
+              </div>
             </div>
-
-            <h2 className="w-label"><span>Personal projects</span><span>{personal.length}</span></h2>
-            <div className="w-list">{personal.map(renderRow)}</div>
 
             <h2 className="w-label" id="experience"><span>Experience</span></h2>
             <div className="w-list">
