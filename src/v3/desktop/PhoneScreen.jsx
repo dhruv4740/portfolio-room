@@ -39,7 +39,7 @@ const WALKTHROUGH = {
   home: {
     title: 'Android apps, running in the browser',
     body: 'Each one is rebuilt from its own source and runs here on sample data. Instagram is here as the app FocusLock guards.',
-    steps: ['Open FocusLock to see its rules.', 'Then open Instagram and meet them.', 'Expense Tracker and BasketProof open full screen.'],
+    steps: ['Open FocusLock to see its rules.', 'Then open Instagram and meet them.', 'Expense Tracker, BasketProof and Blackout open full screen.'],
   },
   focuslock: {
     title: 'FocusLock',
