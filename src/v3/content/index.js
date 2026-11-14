@@ -411,12 +411,12 @@ export const blinkTools = [
   { id: 'reddit', name: 'Reddit growth copilot', detail: 'Reddit was 29.85% of Blink social traffic (Jun 2026).' },
 ];
 
-export const personalProjectIds = ['cellbook', 'portfolio3d', 'expense', 'blackout', 'basket'];
+export const personalProjectIds = ['cellbook', 'blackout', 'basket'];
 
-export const hackathonProjectIds = ['hexfence', 'fraud'];
+export const hackathonProjectIds = ['darksentinel', 'hexfence', 'crisiswatch', 'fraud'];
 
 // The cards in the "Featured" band, after Blink (built from experience[0]).
-export const featuredProjectIds = ['focuslock', 'darksentinel', 'crisiswatch'];
+export const featuredProjectIds = ['focuslock', 'expense', 'portfolio3d'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 export const whatIDid = {
