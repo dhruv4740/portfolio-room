@@ -227,7 +227,7 @@ export const projects = [
     name: 'DarkSentinel',
     year: 2026,
     kind: 'research',
-    tagline: 'Darknet threat monitoring. Top 5 finalist at the IIT Madras × BITS Goa hackathon.',
+    tagline: 'Watches network traffic for signs of an attack. When something looks wrong, it searches dark-web sites for leaked data.',
     description:
       'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it was a top 5 finalist in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic. Flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
     decision:
@@ -251,7 +251,6 @@ export const projects = [
       result: [
         'This was a team build, and Deven did model training and live Tor capture.',
         'I built the dashboards and API features.',
-        'Top 5 finalist in our problem statement at IIT Madras x BITS Goa 2026.',
       ],
       pdf: {
         problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
@@ -436,7 +435,7 @@ export const featuredProjectIds = ['focuslock', 'expense', 'portfolio3d'];
 export const whatIDid = {
   focuslock: 'Kotlin, Android, Electron and Firebase. Backed by over 250 automated tests. CI builds a signed APK plus Windows installer.',
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
-  darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project, and we were top 5 finalists in our problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+  darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
   hexfence: 'Team project with Deven. I made 223 of the repo’s 280 commits.',
 };
