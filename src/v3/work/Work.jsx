@@ -204,7 +204,7 @@ const css = `
   .w-feat { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; }
   .w-shot { aspect-ratio: 16 / 10; border-radius: 10px; background: #ebe8e0; position: relative; overflow: hidden; }
-  .w-shot img, .w-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .w-shot img, .w-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
   .w-shot > span { position: absolute; left: 12px; bottom: 10px; font: 11.5px var(--mono); color: var(--mute); }
   .w-ci { padding: 14px 8px 8px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .w-meta { font: 12.5px var(--mono); color: var(--mute); }
