@@ -11,23 +11,26 @@ export const identity = {
   name: 'Dhruv Kothari',
   role: 'Software engineer',
   location: 'Mumbai, India',
-  pitch: "I'm a software engineer who builds tools that move growth numbers.",
+  pitch: "He is a software engineer who ships real products, from Android apps to growth tools.",
   now: 'Growth intern at Blink.new (YC) until October 2026. Open to remote software engineering and growth engineering internships from December 2026.',
-  tagline: "I'm a software engineer who builds tools that move growth numbers.",
+  tagline: "I'm a software engineer who ships real products, from Android apps to growth tools.",
+  // Home page headline and availability lines. `pitch`, `now` and `tagline` stay: the Ask knowledge base and dhruvOS read them.
+  headline: "I'm a software engineer who ships real products, from Android apps to growth tools.",
+  availability: ['Growth intern at Blink.new (YC) until October 2026.', 'Open to remote software and growth engineering internships from December 2026.'],
   // One sentence, first person, no buzzwords. This is his own phrasing.
   statement:
-    'I like building things end to end — mobile apps, backend automation, and hackathon projects under time pressure.',
+    'I like building things end to end. That means mobile apps, backend automation and hackathon projects under time pressure.',
 };
 
 export const proofPoints = [
   { value: '18%', text: 'of contacted creators replied, across 489 outreach emails from an LLM pipeline I built at Blink' },
-  { value: '4', text: 'internal growth tools shipped at Blink: outreach, link building, SEO tracking, Reddit copilot' },
+  { value: '4', text: 'internal growth tools shipped at Blink. They cover outreach, link building, SEO tracking and a Reddit copilot.' },
   { value: 'Top 5', text: "finalist at the IIT Madras × BITS Goa security hackathon, for DarkSentinel's LLM review layer" },
-  { value: '2×', text: 'hackathon wins: Innovathon 2025 and REALMS 2025' },
+  { value: '2×', text: 'hackathon wins at Innovathon 2025 and REALMS 2025' },
 ];
 
 export const contact = {
-  email: 'dhruvkothari13062006@gmail.com',
+  email: 'hello@dhruvkothari.com',
   github: 'https://github.com/dhruv4740',
   githubLabel: 'github.com/dhruv4740',
   linkedin: 'https://linkedin.com/in/dhruv4740',
@@ -52,11 +55,33 @@ export const experience = [
     from: 'Jan 2026',
     to: 'Oct 2026',
     detail:
-      'Built 4 internal growth tools: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.',
+      'Built 4 internal growth tools. They cover creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.',
     caseStudy: {
-      problem: 'Blink.new needed repeatable growth channels, and the team had no tooling for creator outreach, link building, AI-search visibility or Reddit.',
-      decisions: 'I built four internal tools as the sole developer. The outreach pipeline (Python, SQLite, YouTube Data API, Gmail API) uses an LLM to draft messages, but a human approves every send. The link-building engine is a Flask dashboard that finds and scores prospect sites and extracts contacts.',
-      result: '650 leads sourced, 489 emails sent, 41 of 228 contacted creators replied (18%), 14 positive. The link engine scored 676 prospect sites, AI-search tracking covered 18 prompts, and Reddit was 29.85% of Blink social traffic in Jun 2026.',
+      // Panel text on the work page: bullets. Every other consumer joins them into prose; `pdf` keeps the one-page case file's original prose.
+      summary: [
+        'I built an outreach pipeline that drafts emails with an LLM and needs human approval.',
+        'I built a link-building engine that scored 676 prospect sites and extracted contacts.',
+        'I tracked AI-search (AEO) citations for Blink across 18 prompts.',
+      ],
+      problem: [
+        'Blink.new needed repeatable growth channels.',
+        'The team had no tooling for creator outreach, link building, AI-search visibility or Reddit.',
+      ],
+      decisions: [
+        'I built four internal tools as the sole developer.',
+        'I made a human approve every outreach email the LLM drafts.',
+        'The link-building engine is a Flask dashboard.',
+      ],
+      result: [
+        'I sourced 650 leads and sent 489 emails.',
+        '41 of 228 contacted creators replied (18%) and 14 were positive.',
+        'Reddit was 29.85% of Blink social traffic in Jun 2026.',
+      ],
+      pdf: {
+        problem: 'Blink.new needed repeatable growth channels, and the team had no tooling for creator outreach, link building, AI-search visibility or Reddit.',
+        decisions: 'I built four internal tools as the sole developer. The outreach pipeline (Python, SQLite, YouTube Data API, Gmail API) uses an LLM to draft messages, but a human approves every send. The link-building engine is a Flask dashboard that finds and scores prospect sites and extracts contacts.',
+        result: '650 leads sourced, 489 emails sent, 41 of 228 contacted creators replied (18%), 14 positive. The link engine scored 676 prospect sites, AI-search tracking covered 18 prompts, and Reddit was 29.85% of Blink social traffic in Jun 2026.',
+      },
     },
     bullets: [
       'Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval).',
@@ -85,8 +110,8 @@ export const experience = [
 ];
 
 export const achievements = [
-  { id: 'innovathon', label: 'Innovathon 2025 — Data Science track', result: 'Winner', year: 2025 },
-  { id: 'realms',     label: 'REALMS 2025 — AR Tourism track',       result: 'Winner', year: 2025 },
+  { id: 'innovathon', label: 'Innovathon 2025, Data Science track', result: 'Winner', year: 2025 },
+  { id: 'realms',     label: 'REALMS 2025, AR Tourism track',       result: 'Winner', year: 2025 },
   {
     id: 'saiss',
     label: 'Secure AI Systems & Software Hackathon (BITS Goa x IIT Madras)',
@@ -105,7 +130,7 @@ export const skills = [
   { id: 'kotlin',   label: 'Kotlin / Android',     proof: ['focuslock', 'expense'],             note: 'native modules, accessibility services' },
   { id: 'firebase', label: 'Firebase / Firestore', proof: ['focuslock'],                        note: 'cross-device sync and security rules' },
   { id: 'ml',       label: 'ML / data',            proof: ['darksentinel'],                     note: 'scikit-learn, pandas' },
-  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer: DarkSentinel, Expense Tracker' },
+  { id: 'three',    label: 'Three.js / WebGL',     proof: [],                                   note: 'Three.js sketches on the desk computer, including DarkSentinel, Expense Tracker' },
 ];
 
 export const projects = [
@@ -118,16 +143,32 @@ export const projects = [
     description:
       'One Firestore backend enforces the same limits on two very different operating systems. An Android accessibility service detects target apps, a Windows agent enforces on the desktop, and short sync codes pair the devices.',
     decision:
-      'It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem — and bought a real tradeoff: Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.',
+      'It began as a self-hosted TypeScript backend with a device-registration API, local network traversal and a browser extension for the desktop side. I deleted all of it and moved to Firestore as shared state with a native Electron agent. That removed a server, its deployment and its firewall problem. It also bought a real tradeoff. Firestore web keys are public, so isolation between sync codes was functional but not access-controlled until I wrote proper security rules.',
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
-    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. 200+ unit tests; CI builds a signed APK plus Windows installer.',
+    detail: 'Enforces at the OS level. Switching browsers doesn\'t reset your limit, because the allowance is shared across browsers and devices. Over 250 automated tests. CI builds a signed APK plus Windows installer.',
     tech: ['Kotlin', 'Android', 'Electron', 'Firebase', 'Firestore'],
     caseStudy: {
-      problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
-      decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
-      result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. 233 automated tests; CI builds a signed APK plus Windows installer.',
+      problem: [
+        'Screen-time limits are easy to dodge.',
+        'Switching browsers or devices resets the allowance.',
+      ],
+      decisions: [
+        'I enforce limits at the OS level with one shared daily allowance.',
+        'I replaced a self-hosted backend and browser extension with Firestore and an Electron agent.',
+        'I wrote security rules so each sync code only reaches its members, capped at 10.',
+      ],
+      result: [
+        'One allowance now covers an Android phone and a Windows PC.',
+        'Ctrl+W logged as closed but the tab stayed open until I switched to SendInput.',
+        'Over 250 automated tests back it, and CI builds a signed APK plus Windows installer.',
+      ],
+      pdf: {
+        problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
+        decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
+        result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. Over 250 automated tests; CI builds a signed APK plus Windows installer.',
+      },
     },
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
   },
@@ -138,12 +179,26 @@ export const projects = [
     kind: 'product',
     tagline: 'Logs your spending by reading the receipts your phone already gets.',
     description:
-      'React Native app where Kotlin captures SMS and notifications into a peek/ack buffer, and a TypeScript parser logs expenses automatically into local SQLite — no account, no cloud, no sync.',
+      'React Native app where Kotlin captures SMS and notifications into a peek/ack buffer, and a TypeScript parser logs expenses automatically into local SQLite. It has no account, no cloud and no sync.',
     decision:
       'The native buffer exposes peek and ack rather than drain. Drain-then-process loses events if processing crashes mid-loop; peek-then-ack only marks them consumed after they have actually been handled. Drain stayed behind as a legacy fallback.',
     broke:
-      'The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read — dedup keys bucket by minute, and two clock reads can straddle a boundary.',
+      'The parser was inverting refund direction and filing bank boilerplate as real transactions. Separately, the buffered and live copies of one message now share a single timestamp read. Dedup keys bucket by minute, and two clock reads can straddle a boundary.',
     tech: ['React Native', 'Kotlin', 'TypeScript', 'SQLite'],
+    caseStudy: {
+      problem: [
+        'Logging expenses by hand never lasts.',
+        'Your phone already gets a text for most payments.',
+      ],
+      decisions: [
+        'It reads those texts and notifications on the phone.',
+        'Nothing leaves the device. No account and no cloud.',
+      ],
+      broke: [
+        'Refunds were first counted as spending.',
+        'Bank promo texts were logged as payments.',
+      ],
+    },
     links: { live: '', github: 'https://github.com/dhruv4740/expense-tracker' },
   },
   {
@@ -151,14 +206,20 @@ export const projects = [
     name: 'BasketProof',
     year: 2026,
     kind: 'tool',
-    tagline: 'Refuses to show you a price it cannot prove.',
-    description: 
-      'A private grocery price comparison tool for one family, adding items across three delivery services separately. Built on a single rule: UNKNOWN is better than WRONG — it declines to state a total unless it has verified evidence for every line of it.',
-    decision:
-      'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
-    broke:
-      'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either — so a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
+    tagline: 'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
+    description:
+      "Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees. If it can't fetch a price, it says so. It never shows a guess.",
+    decision: '',
+    broke: '',
+    badge: "In progress. I'm rebuilding the interface.",
     tech: ['Python', 'FastAPI', 'PostgreSQL', 'Kotlin'],
+    summary: 'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
+    caseStudy: {
+      problem: [
+        'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
+        "If it can't fetch a price, it says so. It never shows a guess.",
+      ],
+    },
     links: { live: '', github: '' },
   },
   {
@@ -166,24 +227,39 @@ export const projects = [
     name: 'DarkSentinel',
     year: 2026,
     kind: 'research',
-    tagline: 'Darknet threat monitoring. Top 5 finalist at the IIT Madras × BITS Goa hackathon.',
+    tagline: 'Watches network traffic for signs of an attack. When something looks wrong, it searches dark-web sites for leaked data.',
     description:
-      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it was a top 5 finalist in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic; flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
+      'Team build for the Secure AI Systems and Software Hackathon (BITS Goa, co-organised with IIT Madras), where it was a top 5 finalist in its problem statement. A Random Forest scores CICFlowMeter network flows for Tor traffic. Flagged activity triggers scraping over Tor, the scraped text is classified by RoBERTa and an LLM, and a combined risk score routes it to alerts or an analyst queue. A FastAPI backend serves Streamlit and Next.js dashboards.',
     decision:
-      'I wired the Claude call to fire only when the Random Forest is unsure — Tor scores between 0.55 and 0.75 — behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
+      'I wired the Claude call to fire only when the Random Forest is unsure. That means Tor scores between 0.55 and 0.75. It sits behind a 60-second cooldown. Clear cases never reach the paid model, so its cost is bounded by time rather than by traffic volume.',
     broke:
       'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
     summary: 'A team dark-web traffic monitor that classifies network traffic and shows alerts on a live dashboard.',
-    detail: 'I built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded.',
+    detail: 'I built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded.',
     badge: 'Top 5 finalist in problem statement, IIT Madras & BITS Goa hackathon 2026',
     tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
     caseStudy: {
-      problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
-      decisions: 'A Random Forest scores network flows for Tor traffic. Only predictions in the uncertain zone (Tor score 0.55 to 0.75) go to the Claude call, behind a 60-second cooldown, so cost is bounded by time rather than traffic. I removed a hardcoded fallback score that could show a result the model never produced.',
-      result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 finalist in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+      problem: [
+        'Darknet traffic monitoring needs a classifier.',
+        'Sending every flow to a paid LLM would be costly and slow.',
+      ],
+      decisions: [
+        'A Random Forest scores network flows for Tor traffic.',
+        'Only Tor scores between 0.55 and 0.75 reach Claude, behind a 60-second cooldown.',
+        'I removed a fallback score that could show a result the model never produced.',
+      ],
+      result: [
+        'This was a team build, and Deven did model training and live Tor capture.',
+        'I built the dashboards and API features.',
+      ],
+      pdf: {
+        problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
+        decisions: 'A Random Forest scores network flows for Tor traffic. Only predictions in the uncertain zone (Tor score 0.55 to 0.75) go to the Claude call, behind a 60-second cooldown, so cost is bounded by time rather than traffic. I removed a hardcoded fallback score that could show a result the model never produced.',
+        result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 finalist in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+      },
     },
     links: { live: '', github: '' },
-    note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture; I built the dashboards, the API features and the uncertain-zone Claude call.',
+    note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture. I built the dashboards, the API features and the uncertain-zone Claude call.',
   },
   {
     id: 'hexfence',
@@ -208,9 +284,9 @@ export const projects = [
     description:
       'Built at MumbaiHacks. AI-assisted claim checking with structured verdicts and a modular backend. Frontend on Vercel, backend on Render.',
     decision:
-      'Built on LangGraph so the verification flow has explicit steps and state rather than one opaque prompt — every verdict comes from a path you can trace and debug. The model was fixed by what a hackathon budget allows, which made the real problem getting reliable structured output from one constrained model rather than shopping for a better one.',
+      'Built on LangGraph so the verification flow has explicit steps and state rather than one opaque prompt. Every verdict comes from a path you can trace and debug. The model was fixed by what a hackathon budget allows, which made the real problem getting reliable structured output from one constrained model rather than shopping for a better one.',
     broke:
-      'The WhatsApp bridge took a day of passes: Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.',
+      'The WhatsApp bridge took a day of passes. Twilio posts form-encoded rather than JSON, a FastAPI import was missing, and content-type detection for image and audio had to be reworked. Sixteen commits, one sitting.',
     tech: ['Next.js', 'TypeScript', 'Node.js', 'Python'],
     links: { live: '', github: 'https://github.com/dhruv4740/crisiswatch' },
   },
@@ -222,7 +298,7 @@ export const projects = [
     tagline: 'Fraud detection for small businesses.',
     badge: 'Winner, Innovathon 2025',
     description:
-      'Machine-learning fraud detection for small businesses: CSV upload, transaction analysis, and a Flask dashboard. Built with a team; won Innovathon 2025.',
+      'Machine-learning fraud detection for small businesses. It has CSV upload, transaction analysis and a Flask dashboard. Built with a team and won Innovathon 2025.',
     decision: '',
     broke: '',
     tech: ['Python', 'XGBoost', 'Flask', 'pandas'],
@@ -233,7 +309,7 @@ export const projects = [
     name: '3D Portfolio',
     year: 2026,
     kind: 'product',
-    tagline: 'This site: a 3D studio room whose monitor runs live demos of other projects.',
+    tagline: 'This site is a 3D studio room whose monitor runs live demos of other projects.',
     description: '',
     decision: '',
     broke: '',
@@ -242,9 +318,23 @@ export const projects = [
       'Detects each visitor\'s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
     tech: ['Three.js', 'React 19', 'GSAP', 'GLSL', 'Playwright'],
     caseStudy: {
-      problem: 'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
-      decisions: 'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version. The studio room’s monitor runs live demos of other projects, and Playwright checks cover the interactions.',
-      result: 'Holds 30 to 60 FPS on integrated graphics; the same content is reachable on every tier, including the plain work page.',
+      problem: [
+        'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
+      ],
+      decisions: [
+        'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version.',
+        'The studio room’s monitor runs live demos of my other projects.',
+        'Playwright checks cover the interactions.',
+      ],
+      result: [
+        'It holds 30 to 60 FPS on integrated graphics.',
+        'The same content is reachable on every tier, including the plain work page.',
+      ],
+      pdf: {
+        problem: 'A 3D portfolio is slow or unusable on weak GPUs, phones and browsers without WebGL.',
+        decisions: 'The site detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version. The studio room’s monitor runs live demos of other projects, and Playwright checks cover the interactions.',
+        result: 'Holds 30 to 60 FPS on integrated graphics; the same content is reachable on every tier, including the plain work page.',
+      },
     },
     links: { live: '/room/', github: '' },
   },
@@ -263,9 +353,23 @@ export const projects = [
     tech: ['Kotlin', 'Android'],
     links: { live: '', github: 'https://github.com/dhruv4740/blackout' },
     caseStudy: {
-      problem: 'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
-      decisions: 'Blackout turns the screen fully black while audio keeps playing. Fingerprint unlock and a Quick Settings tile control it, and it uncovers by itself for calls and alarms. It requests no internet permission.',
-      result: 'A Kotlin Android app; source at https://github.com/dhruv4740/blackout.',
+      problem: [
+        'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
+      ],
+      decisions: [
+        'Blackout turns the screen fully black while audio keeps playing.',
+        'Fingerprint unlock and a Quick Settings tile control it.',
+        'It uncovers for calls and alarms and has no internet permission.',
+      ],
+      result: [
+        'It is a Kotlin Android app.',
+        'The source is at github.com/dhruv4740/blackout.',
+      ],
+      pdf: {
+        problem: 'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
+        decisions: 'Blackout turns the screen fully black while audio keeps playing. Fingerprint unlock and a Quick Settings tile control it, and it uncovers by itself for calls and alarms. It requests no internet permission.',
+        result: 'A Kotlin Android app; source at https://github.com/dhruv4740/blackout.',
+      },
     },
   },
   {
@@ -320,19 +424,18 @@ export const blinkTools = [
   { id: 'reddit', name: 'Reddit growth copilot', detail: 'Reddit was 29.85% of Blink social traffic (Jun 2026).' },
 ];
 
-export const personalProjectIds = ['cellbook', 'portfolio3d', 'expense', 'blackout'];
+export const personalProjectIds = ['cellbook', 'blackout', 'basket'];
 
 export const hackathonProjectIds = ['darksentinel', 'hexfence', 'crisiswatch', 'fraud'];
 
 // The cards in the "Featured" band, after Blink (built from experience[0]).
-export const featuredProjectIds = ['focuslock', 'basket'];
+export const featuredProjectIds = ['focuslock', 'expense', 'portfolio3d'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 export const whatIDid = {
-  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by 233 automated tests; CI builds a signed APK plus Windows installer.',
+  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by over 250 automated tests. CI builds a signed APK plus Windows installer.',
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
-  darksentinel: 'Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded. Team project; finalist at the IIT Madras x BITS Goa hackathon 2026.',
+  darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
-  basket: 'Price comparator with 636 tests.',
-  hexfence: 'Team project with Deven; I made 229 of the repo’s 286 commits.',
+  hexfence: 'Team project with Deven. I made 223 of the repo’s 280 commits.',
 };

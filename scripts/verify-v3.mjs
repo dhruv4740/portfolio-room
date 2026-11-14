@@ -149,7 +149,7 @@ try {
 
   // Live demos open beside the page, still without three (dev serves it from
   // .vite/deps, prod as a three- chunk).
-  await page.locator('.w-row', { hasText: 'Expense Tracker' }).getByRole('button', { name: 'Try it' }).click();
+  await page.locator('.w-card', { hasText: 'Expense Tracker' }).getByRole('button', { name: 'Try it' }).click();
   const phoneOpen = await page.waitForFunction(() => document.querySelector('[data-testid="work-demo"] .phone-screen')?.dataset.app === 'expense', null, { timeout: 15_000 }).then(() => true, () => false);
   record('work: phone demo opens Expense as a full-screen overlay', phoneOpen);
   // The demo is a full-screen overlay, so close it before reaching the next row.

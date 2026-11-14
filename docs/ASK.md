@@ -7,8 +7,7 @@ inline boxes any more. It answers from the résumé, project and case-study text
 
 The model prompt (`systemPrompt()` in `functions/_ask/knowledge.js`) carries a knowledge brief (summary, what he is
 looking for, why hire, strongest project by area, hackathons, experience overview) plus every project, internship and
-case study. It may summarise, compare and give grounded opinions, answers 3 to 6 sentences (about 200 words for a
-summary), and declines only clearly unrelated or private questions. The canned path (no keys) handles comparisons,
+case study. It may summarise, compare and give grounded opinions, answers as one sentence plus 3 to 5 bullets (under 90 words), and declines only clearly unrelated or private questions. The canned path (no keys) handles comparisons,
 summaries, private questions and off-topic ones the same way, tested in `scripts/test-ask.mjs`.
 
 Without any setup it already works on canned answers (keyword-matched sections, labelled "answered by quick FAQ").
@@ -48,7 +47,7 @@ Check it: open `https://dhruvkothari.pages.dev/api/ask`. `"llm":true` means mode
 - `functions/_ask/chain.js` + `providers.js`: one adapter per provider; each is skipped unless its secret exists; a
   timeout (6 s), 429, 5xx, empty answer or any error falls through to the next.
 - `functions/_ask/knowledge.js`: builds the system prompt from the content file (so new facts and case studies flow in
-  automatically) and the canned FAQ. Prompt rules: only those facts, 2 to 4 sentences, refuse off-topic, never invent
+  automatically) and the canned FAQ (the saved answers live in the `CANNED` table: a lead, 2 to 4 bullets, an optional pointer line). Prompt rules: only those facts, one sentence then 3 to 5 bullets, refuse off-topic, never invent
   numbers, end with `(Source: <section>)`.
 - UI: `public/os/shell/ask.js` is shared by the notepad tab and the `/work` box. It shows "Source · answered by
   <provider>".

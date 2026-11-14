@@ -16,6 +16,7 @@ const ENTRIES = [
   { label: 'FocusLock (Android)', hint: 'phone app', to: '/phone/focuslock' },
   { label: 'Expense Tracker', hint: 'phone app', to: '/phone/expense' },
   { label: 'BasketProof', hint: 'phone app', to: '/phone/basketproof' },
+  { label: 'Blackout', hint: 'phone app', to: '/phone/blackout' },
   { label: 'Résumé & projects', hint: 'one page, 30 seconds', to: '/work' },
   { label: 'About me', hint: 'experience and achievements', to: '/about' },
   { label: 'Contact', hint: 'email, GitHub, LinkedIn', to: '/contact' },

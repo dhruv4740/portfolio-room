@@ -68,51 +68,50 @@ try {
   await page.waitForSelector('.w-root', { timeout: 15_000 });
   const h1Visible = await page.getByRole('heading', { level: 1, name: 'Dhruv Kothari' }).isVisible().catch(() => false);
   check('h1 "Dhruv Kothari" is visible', h1Visible);
-  // Résumé and Email exist twice (sidebar .w-cta on desktop, fixed .w-bar on phone); test only the visible copies.
-  const actionAll = page.locator('.w-cta a, .w-links a, .w-bar a');
+  // Résumé and Email exist twice (hero .h-actions on desktop, fixed .w-bar on phone); test only the visible copies.
+  const actionAll = page.locator('.h-actions a, .h-links a, .w-bar a');
   const actions = [];
   for (let i = 0; i < await actionAll.count(); i++) {
     if (await actionAll.nth(i).isVisible()) actions.push(actionAll.nth(i));
   }
   // textContent, not innerText: the site uppercases these via CSS, and innerText reports the rendered case.
   const actionTexts = await Promise.all(actions.map((a) => a.textContent().then((t) => t || '')));
-  const wanted = [/Résumé/, /Email me/, /GitHub/, /LinkedIn/];
-  const actionsOk = actionTexts.length === 4 && wanted.every((re) => actionTexts.some((t) => re.test(t)));
-  check('action links: Résumé, Email me, GitHub, LinkedIn — visible', actionsOk,
+  const wanted = [/Résumé/, /Email/, /GitHub/, /LinkedIn/, /3D room/];
+  const actionsOk = actionTexts.length === 5 && wanted.every((re) => actionTexts.some((t) => re.test(t)));
+  check('action links: Résumé, Email, GitHub, LinkedIn, 3D room — visible', actionsOk,
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.
-  // Featured band: the Blink outreach card, then FocusLock and BasketProof.
+  // Featured band: the Blink outreach card, then FocusLock, Expense Tracker and 3D Portfolio.
   const featured = page.locator('.w-feat > article');
   const featuredNames = (await featured.locator('h3').allInnerTexts()).map((s) => s.trim());
-  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'BasketProof'];
-  check('exactly three featured cards in order', featuredNames.length === 3
+  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'Expense Tracker', '3D Portfolio'];
+  check('exactly four featured cards in order', featuredNames.length === 4
     && expectedNames.every((n, i) => featuredNames[i] === n), featuredNames.join(' | ') || 'none');
   let featuredVisible = true;
   for (let i = 0; i < await featured.count(); i++) {
     await featured.nth(i).scrollIntoViewIfNeeded();
     if (!(await featured.nth(i).isVisible())) featuredVisible = false;
   }
-  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 3);
+  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 4);
   // Section labels after the featured band, in order, each followed by its row group.
   const sectionLabels = (await page.locator('main .w-label > span:first-child').allInnerTexts()).map((s) => s.trim());
-  const expectedSections = ['At Blink.new (internship)', 'Personal projects', 'Hackathon projects'];
-  const sectionStart = sectionLabels.indexOf(expectedSections[0]);
-  check('sections in order: Blink internship, Personal projects, Hackathon projects',
-    sectionStart >= 0 && expectedSections.every((s, i) => sectionLabels[sectionStart + i] === s),
+  const expectedSections = ['Featured', 'At Blink.new (internship)', 'Personal projects', 'Hackathon projects', 'Experience', 'Live from GitHub', 'Room tour', 'Contact'];
+  check('sections in order: Featured, At Blink.new, Personal projects, Hackathon projects, Experience, Live from GitHub, Room tour, Contact',
+    expectedSections.every((s, i) => sectionLabels[i] === s),
     sectionLabels.join(' | ') || 'none');
   const rowCounts = [];
-  for (const heading of expectedSections) {
+  for (const heading of ['At Blink.new (internship)', 'Personal projects', 'Hackathon projects']) {
     const label = page.locator('main .w-label', { hasText: heading });
     rowCounts.push(await label.locator('xpath=following-sibling::div[1]').locator('.w-row').count());
   }
-  check('row counts: Blink 4, Personal 4, Hackathon 4', rowCounts.join(', ') === '4, 4, 4', rowCounts.join(', '));
+  check('row counts: Blink 3, Personal 3, Hackathon 4', rowCounts.join(', ') === '3, 3, 4', rowCounts.join(', '));
   const personalNames = (await page.locator('main .w-label', { hasText: 'Personal projects' })
     .locator('xpath=following-sibling::div[1]').locator('.w-row b:not(.w-did b)').allInnerTexts()).map((s) => s.trim());
-  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | 3D Portfolio | Expense Tracker | Blackout',
+  check('personal projects in order', personalNames.join(' | ') === 'Cellbook | Blackout | BasketProof',
     personalNames.join(' | '));
 
-  // 5. Blink metrics. textContent, not innerText: the "Read the case" bullets sit in a closed <details>.
+  // 5. Blink metrics. textContent, not innerText: the "How I built it" bullets sit in a closed <details>.
   const blinkText = await page.locator('main').textContent().catch(() => '');
   const metrics = ['650', '489', '18%', '14'];
   const missing = metrics.filter((m) => !blinkText.includes(m));

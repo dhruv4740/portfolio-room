@@ -26,6 +26,10 @@ const osWindow = (p, app) => p.waitForFunction((app) => {
   const ok = await p.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'expense', null, { timeout: 30000 }).then(() => true, () => false);
   record('/phone/expense opens the Expense app on the phone', ok);
   record('/phone/expense no page errors', !errors.length, errors.join('; ')); await ctx.close(); }
+{ const { p, ctx, errors } = await fresh('/phone/blackout');
+  const ok = await p.waitForFunction(() => document.querySelector('.phone-screen')?.dataset.app === 'blackout', null, { timeout: 30000 }).then(() => true, () => false);
+  record('/phone/blackout opens the Blackout app on the phone', ok);
+  record('/phone/blackout no page errors', !errors.length, errors.join('; ')); await ctx.close(); }
 { const { p, ctx, errors } = await fresh('/os/projects');
   record('/os/projects opens the projects window', await osWindow(p, 'projects'));
   await p.frameLocator('[data-testid="dhruv-os-frame"]').locator('.ql-card', { hasText: 'Expense Tracker' }).locator('.ql-demo').click();

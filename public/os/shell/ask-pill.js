@@ -51,6 +51,26 @@ html[data-overlay] #ask-pill-root{display:none}
 /* idle pill: quiet glass, a faint iridescent sheen that only wakes on hover/focus */
 #ask-wrap .halo{position:absolute;inset:2px;border-radius:99px;background:linear-gradient(100deg,#f5b9ea,#bc82f3 40%,#8d9fff 70%,#ffba71);filter:blur(14px);opacity:0;transform:scale(.92);transition:opacity .9s cubic-bezier(.2,.8,.2,1),transform .9s cubic-bezier(.2,.8,.2,1);pointer-events:none}
 #ask-wrap:hover .halo,#ask-wrap:focus-within .halo{opacity:.32;transform:scale(1)}
+/* Hero variant: opened from the hero Ask card on the work page. Light surface in the hero card's own tokens (copied onto
+   the root as --hp paper, --hi ink, --hi2 ink2, --hm mute, --hl line, --hb bg, --ha accent), the same orange glow, no blur. */
+#ask-pill-root[data-variant=hero] #ask-scrim{background:color-mix(in srgb,var(--hb) 55%,transparent);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+#ask-pill-root[data-variant=hero] #ask-card{box-sizing:border-box;contain:none;will-change:auto;clip-path:none;-webkit-backdrop-filter:none;backdrop-filter:none;color:var(--hi);background:var(--hp);border:1px solid var(--hl);box-shadow:0 0 72px 20px color-mix(in srgb,var(--ha) 45%,transparent);font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif}
+#ask-pill-root[data-variant=hero] #ask-card .col{left:0;top:0;bottom:auto;width:100%;height:100%;margin:0;padding:20px 24px 22px}
+#ask-pill-root[data-variant=hero] #ask-card header{font-family:inherit;color:var(--hi)}
+#ask-pill-root[data-variant=hero] #ask-card header button{background:color-mix(in srgb,var(--hi) 8%,transparent);color:var(--hi);font-family:inherit}
+#ask-pill-root[data-variant=hero] #ask-card input:focus-visible,#ask-pill-root[data-variant=hero] #ask-card button:focus-visible,#ask-pill-root[data-variant=hero] #ask-card a:focus-visible{outline-color:var(--hi)}
+#ask-pill-root[data-variant=hero] .ask-box{color:var(--hi);font-family:inherit}
+#ask-pill-root[data-variant=hero] .ask-intro{color:var(--hm)}
+#ask-pill-root[data-variant=hero] .ask-thread{gap:16px}
+#ask-pill-root[data-variant=hero] .ask-q{background:var(--hi);color:var(--hb)}
+#ask-pill-root[data-variant=hero] .ask-a{max-width:100%;padding:0;border:0;border-radius:0;background:none}
+#ask-pill-root[data-variant=hero] .ask-meta{color:var(--hm);margin-top:12px;padding-top:10px;border-top:1px solid var(--hl)}
+#ask-pill-root[data-variant=hero] .ask-meta a,#ask-pill-root[data-variant=hero] .ask-meta button{color:var(--hi);text-decoration-color:color-mix(in srgb,var(--hi) 40%,transparent)}
+#ask-pill-root[data-variant=hero] .ask-chips button{border-color:var(--hm);background:transparent;color:var(--hi2);font-family:inherit}
+#ask-pill-root[data-variant=hero] .ask-row input{background:var(--hb);border:1px solid var(--hm);color:var(--hi);border-radius:12px}
+#ask-pill-root[data-variant=hero] .ask-row input::placeholder{color:var(--hm)}
+#ask-pill-root[data-variant=hero] .ask-row button{background:var(--hi);color:var(--hb);border-radius:12px;font-family:inherit}
+@media (max-width:959px){#ask-pill-root[data-variant=hero] #ask-card .col{padding:16px 18px 18px}}
 </style>
 <div id="ask-wrap"><span class="halo"></span><form id="ask-pill" role="search" autocomplete="off"><input type="text" maxlength="300" placeholder="Ask about Dhruv" aria-label="Ask about Dhruv" spellcheck="false"><button type="submit" aria-label="Ask">↑</button></form></div>
 <div id="ask-scrim"></div><section id="ask-card" role="dialog" aria-modal="true" aria-label="Ask about Dhruv" tabindex="-1"><div class="col"><header><span>Ask about Dhruv</span><span class="hb"><button type="button" class="new" hidden>New chat</button><button type="button" class="x" aria-label="Close">×</button></span></header><div class="body"></div></div></section><canvas id="ask-glow" aria-hidden="true"></canvas><div id="ask-safe"></div>`;
@@ -58,6 +78,7 @@ html[data-overlay] #ask-pill-root{display:none}
   const $ = (s) => root.querySelector(s);
   const wrap = $('#ask-wrap'), pill = $('#ask-pill'), pillInput = pill.querySelector('input'), scrim = $('#ask-scrim'), card = $('#ask-card'), body = card.querySelector('.body'), col = card.querySelector('.col'), cvs = $('#ask-glow'), newBtn = card.querySelector('.new'), safe = $('#ask-safe');
   let chat = null, isOpen = false, settled = false, byKey = false;
+  const hero = { on: false, st: 'closed', from: null, input: null, anims: [], timers: [], popping: false };
 
   // Where the pill lives (decided from the URL as well as the DOM: <Scan> is lazy, so waiting for .scan-root made the pill start centred and jump right): bottom-right in the room (its HUD and object list sit bottom-left/centre), above the CTA bar on /work.
   const place = () => { root.dataset.ctx = document.querySelector('.scan-root') || location.pathname.startsWith('/room') ? 'room' : document.querySelector('.w-root') ? 'work' : 'page'; };
@@ -162,8 +183,8 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   // CSS size is pinned to innerWidth/innerHeight, the frame the shader draws in: on a phone 100vh is the height with
   // the address bar hidden, so a 100vh canvas was stretched and the glow slid off the card's edges.
   function sizeGL() { if (!gl) return; scale = Math.min(devicePixelRatio || 1, coarse() ? 1 : 1.5); cvs.width = Math.round(innerWidth * scale); cvs.height = Math.round(innerHeight * scale); cvs.style.width = innerWidth + 'px'; cvs.style.height = innerHeight + 'px'; }
-  const refit = () => { if (isOpen) { B = cardBox(); sizeCol(); if (!S.live) apply(S.x); kick(); } };
-  addEventListener('resize', () => { sizeGL(); refit(); });
+  const refit = () => { if (isOpen && !hero.on) { B = cardBox(); sizeCol(); if (!S.live) apply(S.x); kick(); } };
+  addEventListener('resize', () => { sizeGL(); refit(); if (hero.on && hero.st === 'open') setBox(heroOpenRect(hero.from), hero.rad); });
   if (vv) { vv.addEventListener('resize', () => { if (settled) refit(); }); vv.addEventListener('scroll', () => { if (settled) refit(); }); }
   // Build the chat and lay the card out once, hidden, as soon as the visitor reaches for the pill (hover, focus or touch),
   // so the first open has nothing to construct mid-morph. Nothing is built for visitors who never touch it.
@@ -176,7 +197,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     A = pillBox(); apply(1); wrap.style.opacity = ''; scrim.style.opacity = 0; card.style.opacity = '0.002'; card.classList.add('open');
     if (gl) { cvs.style.opacity = '0.002'; cvs.style.visibility = 'visible'; G.i = 0.5; draw(performance.now()); }
     let n = 0; const tick = () => {
-      if (isOpen) { card.style.opacity = cvs.style.opacity = ''; G.i = 0; return; }
+      if (isOpen || hero.on) { if (!hero.on) card.style.opacity = ''; cvs.style.opacity = ''; G.i = 0; return; }
       if (gl) draw(performance.now());
       if (++n < 4) return requestAnimationFrame(tick);
       card.classList.remove('open'); card.style.opacity = cvs.style.opacity = ''; G.i = 0;
@@ -189,7 +210,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   // Glow level eases toward a target: ignite on open, full while thinking, softer while the answer lands, a quiet rim at rest.
   const G = { i: 0, to: 0, sw: 1, sw0: 0, o: 0.75, t0: performance.now() };
   const LEVEL = { thinking: 1, typing: 0.55, idle: 0.32 };
-  root.addEventListener('ask-state', (e) => { if (isOpen) G.to = LEVEL[e.detail] ?? LEVEL.idle; newBtn.hidden = !chat?.started(); kick(); });
+  root.addEventListener('ask-state', (e) => { if (isOpen) G.to = LEVEL[e.detail] ?? LEVEL.idle; if (isOpen || hero.on) newBtn.hidden = !chat?.started(); kick(); });
   const draw = (now) => {
     if (!gl) return;
     const W = cvs.width, H = cvs.height, pad = 150;
@@ -215,14 +236,14 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     G.i += (G.to - G.i) * (1 - Math.exp(-dt / (G.to > G.i ? 0.16 : G.to ? 0.32 : 0.2)));
     if (G.sw < 1) { const t = Math.min((now - G.sw0) / 1100, 1); G.sw = 1 - (1 - t) ** 3; }
     draw(now);
-    if (!isOpen && !S.live && card.classList.contains('open')) finish();
+    if (!isOpen && !hero.on && !S.live && card.classList.contains('open')) finish();
     if (S.live || isOpen || G.i > 0.002) raf = requestAnimationFrame(frame);
     else { raf = 0; cvs.style.visibility = 'hidden'; }
   };
   function kick() { if (!raf && (gl || S.live)) { last = performance.now(); raf = requestAnimationFrame(frame); } }
 
   const open = (q) => {
-    if (isOpen) return; isOpen = true; settled = false; byKey = false;
+    if (isOpen || hero.on) return; isOpen = true; settled = false; byKey = false;
     chat ||= mountAsk(body);
     A = pillBox(); B = cardBox(); sizeCol();
     wrap.style.pointerEvents = 'none'; wrap.classList.add('morph'); pillInput.blur();
@@ -255,6 +276,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     if (byKey || !coarse()) pillInput.focus({ preventScroll: true });
   }
   const close = () => {
+    if (hero.on) return closeHero();
     if (!isOpen) return; isOpen = false; settled = false; removeEventListener('keydown', onKey, true); pill.setAttribute('aria-expanded', 'false');
     if (document.activeElement && card.contains(document.activeElement)) document.activeElement.blur();
     if (reduced()) { Object.assign(S, { x: 0, v: 0, to: 0, live: false }); return finish(); }
@@ -271,6 +293,124 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     }
     if (!card.contains(e.target)) { e.stopImmediatePropagation(); }
   }
+
+  // Hero variant: one object growing. The panel starts on the hero Ask card's exact rect and animates its real box
+  // (left/top/width/height/radius, Web Animations API, no scaling of text) to the open rect, and reverses into the card's
+  // current rect on close. The hero card keeps its layout but is hidden while the panel is out, so there is never a double card.
+  const HE = 'cubic-bezier(.2,.8,.2,1)';
+  const hrgb = (v) => { let h = String(v).trim().replace('#', ''); if (h.length === 3) h = [...h].map((c) => c + c).join(''); const n = parseInt(h, 16); return Number.isNaN(n) ? [251, 250, 247] : [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+  const setSt = (st) => { hero.st = st; card.dataset.heroState = st; };
+  const stopHero = () => { hero.anims.forEach((a) => { try { a.cancel(); } catch {} }); hero.anims = []; hero.timers.forEach(clearTimeout); hero.timers = []; };
+  const heroAnim = (el, kf, opt) => { const a = el.animate(kf, { easing: HE, fill: 'both', ...opt }); hero.anims.push(a); return a; };
+  const heroKids = () => (hero.from ? [...(hero.from.querySelector('.h-ask') || hero.from).children] : []);
+  const boxCSS = (r, rad) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', borderRadius: rad + 'px' });
+  const setBox = (r, rad) => Object.assign(card.style, boxCSS(r, rad));
+  const plain = (r) => ({ left: r.left, top: r.top, width: r.width, height: r.height });
+  // Desktop: keeps the hero card's top and right edges and grows left and down. Phones: a sheet with 12px side margins above the bottom bar.
+  // Desktop height hugs the content: the chrome around the thread plus the thread's own height, so no blank gap under a short answer.
+  const hugH = () => { const t = body.querySelector('.ask-thread'); return t ? col.clientHeight - t.clientHeight + t.scrollHeight + 10 : 360; };
+  function heroOpenRect(from) {
+    const W = innerWidth, H = innerHeight, fr = from.getBoundingClientRect();
+    if (W >= 960) {
+      const right = Math.min(fr.right, W - 24), w = Math.min(640, W * 0.92, right - 24), h = Math.min(Math.max(hugH(), 360), H * 0.76, H - 48);
+      return { left: right - w, top: Math.min(Math.max(fr.top, 24), H - 24 - h), width: w, height: h };
+    }
+    const bar = document.querySelector('.w-bar'); let bottom = H - 12;
+    if (bar) { const b = bar.getBoundingClientRect(); if (b.height > 0 && b.top > H / 2 && b.top < H) bottom = b.top - 12; }
+    // Phones: top edge fixed, height hugs the content (min 320, max 86% of the screen or the room above the bottom bar).
+    const max = Math.max(240, Math.min(H * 0.86, bottom - 12)), h = Math.min(Math.max(hugH(), 320), max);
+    return { left: 12, top: 12, width: W - 24, height: h };
+  }
+  const snap = () => { const r = card.getBoundingClientRect(), cs = getComputedStyle(card); return { r: plain(r), rad: parseFloat(cs.borderTopLeftRadius) || 14, col: +getComputedStyle(col).opacity, scrim: +getComputedStyle(scrim).opacity, card: +cs.opacity }; };
+
+  // Content changed (answer arrived, chips hidden): re-measure and animate the real height over 220 ms from the current rect.
+  let fitRaf = 0;
+  const fitHero = () => {
+    if (hero.st !== 'open') return;
+    const cur = card.getBoundingClientRect(), to = heroOpenRect(hero.from);
+    if (Math.abs(to.height - cur.height) < 2) return;
+    stopHero(); const rad = hero.rad;
+    if (reduced()) { setBox(to, rad); return; }
+    const a = heroAnim(card, [boxCSS(plain(cur), rad), boxCSS(to, rad)], { duration: 220 });
+    a.onfinish = () => { if (hero.st === 'open') { setBox(to, rad); a.cancel(); hero.anims = hero.anims.filter((x) => x !== a); } };
+  };
+  new MutationObserver(() => { if (!fitRaf) fitRaf = requestAnimationFrame(() => { fitRaf = 0; fitHero(); }); }).observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'hidden'] });
+
+  function openHero(d) {
+    const from = d.from;
+    if (!from || isOpen || hero.st === 'opening' || hero.st === 'open') return;
+    const wasClosing = hero.st === 'closing', s0 = wasClosing ? snap() : null;
+    stopHero();
+    Object.assign(hero, { from, input: d.input, on: true }); byKey = false;
+    chat ||= mountAsk(body);
+    const cs = getComputedStyle(from.closest('.w-root') || document.body), v = (n) => cs.getPropertyValue(n).trim();
+    [['--hp', '--paper'], ['--hi', '--ink'], ['--hi2', '--ink2'], ['--hm', '--mute'], ['--hl', '--line'], ['--hb', '--bg'], ['--ha', '--acc']].forEach(([a, b]) => root.style.setProperty(a, v(b)));
+    root.dataset.variant = 'hero';
+    const fr = from.getBoundingClientRect(), rad = parseFloat(getComputedStyle(from.querySelector('.h-ask') || from).borderTopLeftRadius) || 14;
+    hero.rad = rad;
+    const startR = s0 ? s0.r : plain(fr), startRad = s0 ? s0.rad : rad, end = heroOpenRect(from);
+    if (!wasClosing) { card.removeAttribute('style'); col.removeAttribute('style'); }
+    card.classList.remove('fallback'); card.classList.add('open'); scrim.classList.add('open');
+    setBox(startR, startRad); setSt('opening');
+    newBtn.hidden = !chat.started();
+    if (!history.state?.askOpen) history.pushState({ askOpen: 1 }, '');
+    addEventListener('keydown', onKey, true);
+    const [pr, pg, pb] = hrgb(v('--paper')), [ar, ag, ab] = hrgb(v('--acc'));
+    const ask = () => { if (hero.st !== 'opening' && hero.st !== 'open') return; if (d.q && d.q.length >= 3) { chat.ask(d.q); card.focus({ preventScroll: true }); } else if (coarse()) card.focus({ preventScroll: true }); else chat.input.focus({ preventScroll: true }); };
+    if (reduced()) {
+      setBox(end, rad); from.style.visibility = 'hidden';
+      heroAnim(card, [{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: 'linear' }); setSt('open');
+      heroAnim(scrim, [{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: 'linear' });
+      ask(); return;
+    }
+    const geo = heroAnim(card, [boxCSS(startR, startRad), boxCSS(end, rad)], { duration: 420 });
+    geo.onfinish = () => { if (hero.st !== 'opening') return; setBox(end, rad); geo.cancel(); hero.anims = hero.anims.filter((a) => a !== geo); setSt('open'); fitHero(); };
+    heroAnim(scrim, [{ opacity: s0 ? s0.scrim : 0 }, { opacity: 1 }], { duration: 420 });
+    heroAnim(col, [{ opacity: s0 ? s0.col : 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: s0 ? 280 : 280, delay: s0 ? 0 : 140 });
+    if (wasClosing) from.style.visibility = 'hidden';
+    else {
+      // The panel's surface and glow take over from the hero card's while the card's own content fades out.
+      heroAnim(card, [{ backgroundColor: `rgba(${pr},${pg},${pb},0)`, boxShadow: `0 0 72px 20px rgba(${ar},${ag},${ab},0)` }, { backgroundColor: `rgb(${pr},${pg},${pb})`, boxShadow: `0 0 72px 20px rgba(${ar},${ag},${ab},.45)` }], { duration: 120, easing: 'linear' });
+      heroKids().forEach((k) => heroAnim(k, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear' }));
+      hero.timers.push(setTimeout(() => { from.style.visibility = 'hidden'; }, 120));
+    }
+    hero.timers.push(setTimeout(ask, 120));
+  }
+
+  function closeHero(o = {}) {
+    if (!hero.on || hero.st === 'closing' || hero.st === 'closed') return;
+    setSt('closing'); removeEventListener('keydown', onKey, true);
+    if (document.activeElement && card.contains(document.activeElement)) document.activeElement.blur();
+    if (!o.pop && history.state?.askOpen) { hero.popping = true; history.back(); }
+    const s = snap(), from = hero.from; stopHero(); setBox(s.r, s.rad);
+    const fr = from.getBoundingClientRect(), rad = parseFloat(getComputedStyle(from.querySelector('.h-ask') || from).borderTopLeftRadius) || 14;
+    const off = fr.width === 0 || fr.bottom <= 0 || fr.top >= innerHeight;
+    const done = () => {
+      stopHero(); hero.on = false; hero.st = 'closed'; delete card.dataset.heroState;
+      card.classList.remove('open'); scrim.classList.remove('open'); card.removeAttribute('style'); col.removeAttribute('style');
+      delete root.dataset.variant; from.style.visibility = '';
+      if (byKey || !coarse()) hero.input?.focus({ preventScroll: true });
+    };
+    if (reduced()) {
+      heroAnim(card, [{ opacity: s.card }, { opacity: 0 }], { duration: 120, easing: 'linear' }).onfinish = done;
+      heroAnim(scrim, [{ opacity: s.scrim }, { opacity: 0 }], { duration: 120, easing: 'linear' });
+      return;
+    }
+    heroAnim(scrim, [{ opacity: s.scrim }, { opacity: 0 }], { duration: 320 });
+    if (off) { heroAnim(card, [{ opacity: s.card, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.96)' }], { duration: 320 }).onfinish = done; return; }
+    heroAnim(col, [{ opacity: s.col }, { opacity: 0 }], { duration: 120, easing: 'linear' });
+    heroAnim(card, [boxCSS(s.r, s.rad), boxCSS(plain(fr), rad)], { duration: 320 }).onfinish = done;
+    hero.timers.push(setTimeout(() => {
+      from.style.visibility = '';
+      heroKids().forEach((k) => heroAnim(k, [{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'linear' }));
+      heroAnim(card, [{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'linear' });
+    }, 180));
+  }
+  card.addEventListener('ask-hero', (e) => openHero(e.detail || {}));
+  addEventListener('popstate', () => {
+    if (hero.popping) { hero.popping = false; return; }
+    if (hero.on && (hero.st === 'open' || hero.st === 'opening') && !history.state?.askOpen) closeHero({ pop: true });
+  });
   pill.addEventListener('submit', (e) => { e.preventDefault(); const q = pillInput.value.trim(); pillInput.value = ''; open(q.length >= 3 ? q : ''); });
   for (const t of ['keydown', 'keyup', 'keypress']) { pill.addEventListener(t, (e) => e.stopPropagation()); card.addEventListener(t, (e) => e.stopPropagation()); }
   card.querySelector('header .x').onclick = close;

@@ -20,7 +20,8 @@ const dates = (e) => `${e.from} to ${e.to}`;
 
 function caseStudy(c) {
   if (!c) return '';
-  return `<p><b>Problem.</b> ${esc(c.problem)}</p><p><b>Decisions and trade-offs.</b> ${esc(c.decisions)}</p><p><b>Result.</b> ${esc(c.result)}</p>`;
+  const t = (v) => esc(Array.isArray(v) ? v.join(' ') : v);
+  return `<p><b>Problem.</b> ${t(c.problem)}</p><p><b>Decisions and trade-offs.</b> ${t(c.decisions)}</p>${c.broke ? `<p><b>What broke.</b> ${t(c.broke)}</p>` : ''}${c.result ? `<p><b>Result.</b> ${t(c.result)}</p>` : ''}`;
 }
 
 function projectBlock(p, c, site) {
@@ -55,7 +56,7 @@ function workHtml(c, site) {
   const group = (title, ids) => `<h2>${title}</h2>${pick(ids).map((p) => projectBlock(p, c, site)).join('')}`;
   const blink = c.experience[0];
   return `<div class="ssr-work"><style>body{background:#ece7de;margin:0}.ssr-work{max-width:44rem;margin:0 auto;padding:2rem 1.25rem 4rem;font:16px/1.55 system-ui,sans-serif;color:#17160f}.ssr-work a{color:#17160f}</style>`
-    + `<main><h1>${esc(identity.name)}</h1><p>${esc(identity.pitch)}</p><p>${esc(identity.now)}</p><p>${esc(identity.role)} · ${esc(identity.location)}</p>`
+    + `<main><h1>${esc(identity.name)}</h1><p>${esc(identity.headline)}</p><p>${esc(identity.now)}</p><p>${esc(identity.role)} · ${esc(identity.location)}</p>`
     + `<p>${[link('/resume/', 'Résumé'), link(contact.resume, 'Résumé (PDF)'), link(contact.github, contact.githubLabel), link(contact.linkedin, 'LinkedIn'), link('/room/', '3D room (laptop)')].join(' · ')}</p>`
     + `<h2>Proof</h2>${list(c.proofPoints.map((p) => `<b>${esc(p.value)}</b> ${esc(p.text)}`))}`
     + group('Featured', c.featuredProjectIds)
@@ -90,7 +91,7 @@ function llmsTxt(c, site) {
   const { identity, contact, education } = c;
   return `# ${identity.name}
 
-> ${identity.pitch} ${identity.now} Based in ${identity.location}; ${education.degree} student at ${education.school}.
+> ${identity.headline} ${identity.now} Based in ${identity.location}; ${education.degree} student at ${education.school}.
 
 ## Pages
 
