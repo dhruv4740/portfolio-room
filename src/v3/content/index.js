@@ -192,29 +192,20 @@ export const projects = [
     name: 'BasketProof',
     year: 2026,
     kind: 'tool',
-    tagline: 'Refuses to show you a price it cannot prove.',
-    description: 
-      'A private grocery price comparison tool for one family, adding items across three delivery services separately. Built on a single rule. UNKNOWN is better than WRONG. It declines to state a total unless it has verified evidence for every line of it.',
-    decision:
-      'We built cart snapshot and undo, then deleted it. For a private tool the extra state and failure modes cost more than the feature returned, so cart writes now overwrite with no recovery path. Choosing to remove working code is the part I would defend.',
-    broke:
-      'A bot-mitigation 403 was indistinguishable from an expired session, and the recovery path deleted the stored credential on either. So a temporary block became a permanent lockout loop. Fixed by classifying the two failures separately and leaving the session intact on a block.',
+    tagline: 'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
+    description:
+      "Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees. If it can't fetch a price, it says so. It never shows a guess.",
+    decision: '',
+    broke: '',
+    badge: "In progress. I'm rebuilding the interface.",
     tech: ['Python', 'FastAPI', 'PostgreSQL', 'Kotlin'],
-    summary: 'A private grocery price comparison tool for one family. Its one rule is that unknown beats wrong.',
+    summary: 'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
     caseStudy: {
       problem: [
-        'One family needed grocery prices compared across three delivery services.',
-        'A wrong total is worse than no total.',
+        'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
       ],
       decisions: [
-        'The rule is UNKNOWN is better than WRONG.',
-        'It declines to state a total unless it has verified evidence for every line.',
-        'I removed cart undo because its extra state and failures cost more than it returned.',
-      ],
-      broke: [
-        'A bot-mitigation 403 looked the same as an expired session.',
-        'My recovery path deleted the stored credential, so a temporary block became a lockout loop.',
-        'I fixed it by classifying the two failures separately and keeping the session on a block.',
+        "If it can't fetch a price, it says so. It never shows a guess.",
       ],
     },
     links: { live: '', github: '' },

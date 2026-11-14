@@ -63,7 +63,7 @@ const WALKTHROUGH = {
   },
   basketproof: {
     title: 'BasketProof',
-    body: 'A private grocery comparison across Blinkit, Zepto and Swiggy Instamart, built for my family. It shows UNKNOWN rather than a total it can’t verify.',
+    body: 'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
     steps: ['Build a list, then compare the platforms.'],
   },
   blackout: {

@@ -23,7 +23,7 @@ export function buildSections() {
   add('why-hire', 'Why hire Dhruv', `Evidence-based case: (1) Measurable results as a sole developer: four tools at Blink, 489 outreach emails, 41 of 228 contacted creators replied (18%), 676 prospect sites scored. (2) Engineering judgement shown in his write-ups: he deleted a self-hosted backend for Firestore in FocusLock, made BasketProof refuse to state a price it cannot verify, and bounded LLM cost in DarkSentinel by only calling Claude when the classifier is unsure. (3) He debugs real faults and says what broke: the Windows Ctrl+W SendInput bug, the parser refund-direction bug, the 403-versus-expired-session lockout. (4) Range across Python backends, Kotlin and Android, TypeScript and React, ML and Firebase. (5) Competitive record: 2 hackathon wins and a top 5 finalist placement. DarkSentinel was built with a team; model training and live Tor capture were a teammate's.`,
     'why hire hiring should strengths strength good fit pitch best candidate stand out unique value recommend opinion');
   add('strongest-by-area', 'Strongest project by area',
-    `Backend: BasketProof (Python, FastAPI, PostgreSQL, a strict verified-evidence rule), FocusLock (one Firestore backend with security rules enforcing limits across Android and Windows) and the DarkSentinel API (FastAPI serving dashboards, with a cost-bounded LLM call). Best single backend story: FocusLock, with over 250 automated tests and CI that builds a signed APK plus Windows installer. Mobile and Android: FocusLock, Expense Tracker (React Native plus Kotlin, a peek/ack buffer so no events are lost) and Blackout. AI and ML: DarkSentinel (Random Forest plus RoBERTa plus Claude) and F-Shield (XGBoost). AI in real work: the Blink outreach pipeline (LLM drafting with human approval). Front end and 3D: this portfolio (Three.js, React 19, 30 to 60 FPS on integrated graphics) and CrisisWatch (Next.js). Most hackathon-proven: DarkSentinel (top 5) and F-Shield (winner).`,
+    `Backend: BasketProof (Python, FastAPI, PostgreSQL), FocusLock (one Firestore backend with security rules enforcing limits across Android and Windows) and the DarkSentinel API (FastAPI serving dashboards, with a cost-bounded LLM call). Best single backend story: FocusLock, with over 250 automated tests and CI that builds a signed APK plus Windows installer. Mobile and Android: FocusLock, Expense Tracker (React Native plus Kotlin, a peek/ack buffer so no events are lost) and Blackout. AI and ML: DarkSentinel (Random Forest plus RoBERTa plus Claude) and F-Shield (XGBoost). AI in real work: the Blink outreach pipeline (LLM drafting with human approval). Front end and 3D: this portfolio (Three.js, React 19, 30 to 60 FPS on integrated graphics) and CrisisWatch (Next.js). Most hackathon-proven: DarkSentinel (top 5) and F-Shield (winner).`,
     'project projects backend frontend mobile android ml ai which proudest favourite impressive area server api');
   add('hackathons', 'Hackathons', `Innovathon 2025, Data Science track: winner, with F-Shield (fraud detection, XGBoost and Flask). REALMS 2025, AR Tourism track: winner. Secure AI Systems and Software Hackathon (BITS Goa with IIT Madras) 2026: top 5 finalist in its problem statement with DarkSentinel. He also built CrisisWatch at MumbaiHacks.`,
     'hackathon hackathons competition won winner award innovathon realms mumbaihacks saiss');
@@ -141,11 +141,9 @@ const CANNED = {
     'A TypeScript parser logs expenses into local SQLite.',
     'There is no account, no cloud and no sync.',
     'Its native buffer uses peek and ack, so a crash does not lose events.'], demo('Expense Tracker')],
-  'proj-basket': ['BasketProof is a private grocery price comparison tool for one family.', [
-    'Its one rule is that unknown beats wrong.',
-    'It declines to state a total without verified evidence for every line.',
-    'It compares prices across three delivery services.',
-    'He removed cart undo because it cost more than it returned.'], demo('BasketProof')],
+  'proj-basket': ['Families in India compare grocery prices across Zepto, Instamart and Blinkit. BasketProof works out the final cart total on each one, after fees.', [
+    "If it can't fetch a price, it says so. It never shows a guess.",
+    'It is in progress. He is rebuilding the interface.'], demo('BasketProof')],
   'proj-darksentinel': ['DarkSentinel is a team build that monitors darknet traffic.', [
     'It was a top 5 finalist in its problem statement at BITS Goa and IIT Madras.',
     'He built the dashboards, the API features and the LLM review layer.',
