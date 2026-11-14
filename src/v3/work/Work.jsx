@@ -691,7 +691,7 @@ export default function Work() {
         {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
         {p.caseStudy && (
           <details className="w-case-in">
-            <summary className="w-act">Case study</summary>
+            <summary className="w-act">How I built it</summary>
             {casePdf(p.id)}
             {caseText(p.caseStudy)}
           </details>
