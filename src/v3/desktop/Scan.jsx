@@ -559,7 +559,7 @@ export default function Scan() {
   useEffect(() => {
     const onOpenPhone = (event) => {
       const app = event.detail?.app;
-      if (!['focuslock', 'expense', 'basketproof'].includes(app)) return;
+      if (!['focuslock', 'expense', 'basketproof', 'blackout'].includes(app)) return;
       pendingPhone.current = app;
       handleLeaveScreen();
     };
