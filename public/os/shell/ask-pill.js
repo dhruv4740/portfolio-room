@@ -248,6 +248,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     A = pillBox(); B = cardBox(); sizeCol();
     wrap.style.pointerEvents = 'none'; wrap.classList.add('morph'); pillInput.blur();
     card.style.opacity = '';
+    if (!history.state?.askOpen) history.pushState({ askOpen: 1 }, ''); // Back closes the panel instead of leaving the page
     scrim.classList.add('open'); card.classList.add('open'); pill.setAttribute('aria-expanded', 'true');
     newBtn.hidden = !chat.started();
     const lit = !reduced() && initGL();
@@ -275,9 +276,12 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     // Back to the pill's field for keyboard users; on a touch screen that would just pop the keyboard back up.
     if (byKey || !coarse()) pillInput.focus({ preventScroll: true });
   }
-  const close = () => {
+  let floatPopping = false;
+  const close = (o = {}) => {
     if (hero.on) return closeHero();
-    if (!isOpen) return; isOpen = false; settled = false; removeEventListener('keydown', onKey, true); pill.setAttribute('aria-expanded', 'false');
+    if (!isOpen) return;
+    if (!o.pop && history.state?.askOpen) { floatPopping = true; history.back(); }
+    isOpen = false; settled = false; removeEventListener('keydown', onKey, true); pill.setAttribute('aria-expanded', 'false');
     if (document.activeElement && card.contains(document.activeElement)) document.activeElement.blur();
     if (reduced()) { Object.assign(S, { x: 0, v: 0, to: 0, live: false }); return finish(); }
     A = pillBox(); G.to = 0;
@@ -409,6 +413,8 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   card.addEventListener('ask-hero', (e) => openHero(e.detail || {}));
   addEventListener('popstate', () => {
     if (hero.popping) { hero.popping = false; return; }
+    if (floatPopping) { floatPopping = false; return; }
+    if (isOpen && !hero.on && !history.state?.askOpen) close({ pop: true });
     if (hero.on && (hero.st === 'open' || hero.st === 'opening') && !history.state?.askOpen) closeHero({ pop: true });
   });
   pill.addEventListener('submit', (e) => { e.preventDefault(); const q = pillInput.value.trim(); pillInput.value = ''; open(q.length >= 3 ? q : ''); });
