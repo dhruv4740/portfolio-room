@@ -394,22 +394,36 @@ const css = `
   .h-chip { height: 36px; padding: 0 16px; border: 1px solid var(--mute); border-radius: 99px; background: transparent; color: var(--ink2); font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; cursor: pointer; }
   .h-chip:hover { background: var(--paper); }
 
-  .h-proof { list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 24px 16px; margin-top: 48px; padding-top: 32px; border-top: 1px solid var(--line); }
-  .h-proof b { display: block; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -0.01em; color: var(--ink); }
-  .h-proof span { display: block; margin-top: 8px; font-size: 15px; line-height: 1.5; color: var(--mute); }
+  .h-proof { list-style: none; display: grid; grid-template-columns: minmax(0, 1fr); margin-top: 40px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+  .h-proof li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 16px; align-items: baseline; padding: 18px 20px; }
+  .h-proof li + li { border-top: 1px solid var(--line); }
+  .h-proof b { display: block; font-size: 30px; line-height: 1.1; font-weight: 600; letter-spacing: -0.02em; color: var(--acc-text); font-variant-numeric: tabular-nums; }
+  .h-proof span { display: block; font-size: 15px; line-height: 1.5; color: var(--ink2); }
+  @media (min-width: 720px) {
+    .h-proof { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .h-proof li { display: block; padding: 24px; }
+    .h-proof li + li { border-top: 0; }
+    .h-proof li:nth-child(even) { border-left: 1px solid var(--line); }
+    .h-proof li:nth-child(n+3) { border-top: 1px solid var(--line); }
+    .h-proof b { font-size: 40px; }
+    .h-proof span { margin-top: 8px; }
+  }
+  @media (min-width: 1100px) {
+    .h-proof { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .h-proof li:nth-child(n+3) { border-top: 0; }
+    .h-proof li + li { border-left: 1px solid var(--line); }
+  }
 
   @media (min-width: 641px) { .w-wrap { padding-left: 32px; padding-right: 32px; } }
   @media (min-width: 960px) {
     .h-grid { grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); gap: 64px; }
     .h-actions { display: flex; }
-    .h-proof { grid-template-columns: repeat(4, 1fr); gap: 32px; }
     .h-head { font-size: 28px; line-height: 1.3; }
     .h-ask { padding: 40px; }
     .w-root .h-ask h2 { font-size: 28px; }
     .h-field { height: 56px; }
     .h-go { width: 40px; height: 40px; }
     .h-chip { height: 40px; }
-    .h-proof b { font-size: 28px; }
   }
   /* Desktop first screen: about 8% smaller type and buttons, 28px more air above the name. */
   @media (min-width: 1100px) {
@@ -441,7 +455,7 @@ const PROOF_SHORT = {
 // The number inside a proof value (18, 7, 5, 2) is wrapped so it can count up. Digits are tabular so they do not jitter.
 function ProofValue({ value }) {
   const m = /^(\D*)(\d+)(.*)$/.exec(value);
-  if (!m) return value;
+  if (!m || m[1]) return value;
   return <>{m[1]}<data value={m[2]} data-cu={m[2]} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
 }
 
