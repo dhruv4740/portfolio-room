@@ -225,6 +225,7 @@ const css = `
 
   .w-list { border-top: 1px solid var(--line); }
   /* Blink + Hackathon on the left, Personal on the right, Experience across. Below 1100px it is one column in source order. */
+  .w-root .w-two > div > .w-label:first-child { margin-top: 48px; }
   @media (min-width: 1100px) {
     .w-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto 1fr auto; column-gap: 48px; align-items: start;
       grid-template-areas: "blink personal" "hack personal" "exp exp"; }
