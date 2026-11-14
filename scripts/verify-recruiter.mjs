@@ -39,7 +39,9 @@ const context = await browser.newContext({ viewport: { width: 390, height: 844 }
 const page = await context.newPage();
 let reqs = [];
 let resps = [];
-page.on('request', (r) => reqs.push(r.url()));
+// The /work/ page deliberately prefetches the room after 8 s idle (src/v3/work/prefetchRoom.js); those are not page loads.
+const prefetched = new Set();
+page.on('request', (r) => { if ((r.headers()['sec-purpose'] || '').includes('prefetch')) prefetched.add(r.url()); reqs.push(r.url()); });
 page.on('response', (r) => resps.push(r));
 
 try {
@@ -175,7 +177,7 @@ try {
 
   // 8 and 9. Weight: forbidden request patterns and transfer totals per load.
   for (const [label, list, responses] of [['/work/', workReqs, workResps], ['/resume/', resumeReqs, resumeResps]]) {
-    const forbidden = list.filter((u) => !FONT_HOSTS.test(u) && FORBIDDEN.test(u));
+    const forbidden = list.filter((u) => !FONT_HOSTS.test(u) && FORBIDDEN.test(u) && !prefetched.has(u));
     const fonts = list.filter((u) => FONT_HOSTS.test(u));
     const { bytes, unsized } = await transferBytes(responses);
     check(`${label} load requests no 3D, model, audio, or shader assets`, forbidden.length === 0,

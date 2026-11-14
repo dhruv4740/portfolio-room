@@ -163,7 +163,7 @@ const css = `
   .w-root h3 { font-weight: 600; }
 
   /* Bottom room for the fixed Résumé/Email bar plus the Ask pill above it. */
-  .w-wrap { max-width: 1280px; margin: auto; padding: 24px 20px calc(176px + env(safe-area-inset-bottom)); }
+  .w-wrap { max-width: 1280px; margin: auto; padding: 24px 20px calc(216px + env(safe-area-inset-bottom)); }
   .w-side { display: flex; flex-direction: column; }
   .w-desk { width: 100%; max-width: 420px; height: auto; display: block; }
   .w-status { display: flex; align-items: center; gap: 8px; font: 13px/1.4 var(--mono); color: var(--mute); margin-top: 10px; }
@@ -212,6 +212,7 @@ const css = `
   .w-card h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
   .w-card p { font-size: 15px; color: var(--ink2); }
   .w-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+  @media (max-width: 719px) { .w-clamp { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; } }
   .w-card-acts { margin-top: auto; padding-top: 6px; }
   .w-go span { display: inline-block; transition: transform 0.15s; }
   .w-go[aria-expanded="true"] span { transform: rotate(90deg); }
@@ -782,7 +783,7 @@ export default function Work() {
             )}
             {hasMore && (
               <button type="button" className="w-act" aria-expanded={isOpen} aria-controls={`more-${p.id}`} onClick={() => setMoreId(isOpen ? null : p.id)}>
-                {p.caseStudy ? 'How I built it' : 'More'}
+                How I built it
               </button>
             )}
           </span>
