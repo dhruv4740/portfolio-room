@@ -1143,6 +1143,8 @@ body[data-launchpad-open] .escape-link { display:none; }
 @media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;} .launchpad-more {top:226px;} .launchpad-actions a,.launchpad-actions button {min-height:52px;padding:8px 16px;} }
 @media(max-height:450px) { .launchpad-actions small { display:none; } .launchpad-actions a,.launchpad-actions button,.launchpad-extra summary { min-height:44px; padding-top:6px; padding-bottom:6px; } body[data-launchpad-open] .mumbai-readout { display:none; } }
 @media(pointer:coarse) and (max-height:450px) { .escape-link { display:none !important; } }
+/* On a phone the monitor fills the screen and its own BACK TO ROOM bar sits where this link floats. */
+@media(max-width:600px) { body:has([data-testid="dhruv-os-frame"]) .escape-link { display:none; } }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
 @media(max-width:640px) { .mumbai-readout { display:none; } } /* sat on top of the overview's 'More: live apps' line on phones */
 
