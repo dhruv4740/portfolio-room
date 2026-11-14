@@ -294,6 +294,7 @@ const css = `
     .w-r1 .w-acts { flex: none; flex-wrap: nowrap; white-space: nowrap; }
   }
   @media (max-width: 559px) { .w-row .w-r2, .w-more { margin-left: 0; } }
+  @media (max-width: 719px) { .w-row .w-r2 { height: auto; min-height: 0; -webkit-line-clamp: 3; max-height: 67.5px; } }
   .w-case-in > summary { list-style: none; }
   .w-case-in > summary::-webkit-details-marker { display: none; }
   .w-case-in .w-cs { margin-bottom: 4px; }
