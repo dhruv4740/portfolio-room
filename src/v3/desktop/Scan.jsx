@@ -544,6 +544,13 @@ export default function Scan() {
     handleEnterScreen('overview', event.currentTarget);
   }, [beginLaunch, handleEnterScreen]);
 
+  // On phones the monitor UI fills the screen to its bottom edge, so the floating Ask pill steps aside while it is open.
+  useEffect(() => {
+    const on = screenPhase === 'inside' && matchMedia('(max-width: 699px)').matches;
+    document.documentElement.toggleAttribute('data-overlay', on);
+    return () => document.documentElement.removeAttribute('data-overlay');
+  }, [screenPhase]);
+
   const handleLeaveScreen = useCallback(() => {
     if (screenPhase === 'room' || screenPhase === 'leaving') return;
     setScreenPhase('leaving');
@@ -1161,6 +1168,8 @@ body[data-launchpad-open] .escape-link { display:none; }
 .workspace-stage[data-action-state="drawing"] ~ .seat-exit button:not(.seat-exit-back) {
   display: none;
 }
+/* Bottom left holds the hackathon plaque from 700px up, so the bar sits bottom centre between it and the Ask pill. */
+@media (min-width: 700px) { .seat-exit { left: 50%; transform: translateX(-50%); max-width: calc(100% - 560px); } }
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
 /* The room is an interface, not a document: Ctrl+A must not paint everything blue. */
 .scan-root, .scan-root * { -webkit-user-select: none; user-select: none; }
