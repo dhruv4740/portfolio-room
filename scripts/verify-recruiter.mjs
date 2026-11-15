@@ -71,7 +71,7 @@ try {
   const h1Visible = await page.getByRole('heading', { level: 1, name: 'Dhruv Kothari' }).isVisible().catch(() => false);
   check('h1 "Dhruv Kothari" is visible', h1Visible);
   // Résumé and Email exist twice (hero .h-actions on desktop, fixed .w-bar on phone); test only the visible copies.
-  const actionAll = page.locator('.h-actions a, .h-links a, .w-bar a');
+  const actionAll = page.locator('.h-actions a, .h-row > a.h-btn, .h-links a, .w-bar a');
   const actions = [];
   for (let i = 0; i < await actionAll.count(); i++) {
     if (await actionAll.nth(i).isVisible()) actions.push(actionAll.nth(i));
@@ -84,18 +84,18 @@ try {
     actionTexts.map((t) => t.trim()).join(' | ') || 'none');
 
   // 4. Featured and more-projects sections.
-  // Featured band: the Blink outreach card, then FocusLock, Expense Tracker and 3D Portfolio.
+  // Featured band: the Blink outreach card, then FocusLock and Expense Tracker.
   const featured = page.locator('.w-feat > article');
   const featuredNames = (await featured.locator('h3').allInnerTexts()).map((s) => s.trim());
-  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'Expense Tracker', '3D Portfolio'];
-  check('exactly four featured cards in order', featuredNames.length === 4
+  const expectedNames = ['An outreach pipeline people actually replied to', 'FocusLock', 'Expense Tracker'];
+  check('exactly three featured cards in order', featuredNames.length === 3
     && expectedNames.every((n, i) => featuredNames[i] === n), featuredNames.join(' | ') || 'none');
   let featuredVisible = true;
   for (let i = 0; i < await featured.count(); i++) {
     await featured.nth(i).scrollIntoViewIfNeeded();
     if (!(await featured.nth(i).isVisible())) featuredVisible = false;
   }
-  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 4);
+  check('featured cards are visible after scrolling', featuredVisible && featuredNames.length === 3);
   // Section labels after the featured band, in order, each followed by its row group.
   const sectionLabels = (await page.locator('main .w-label > span:first-child').allInnerTexts()).map((s) => s.trim());
   const expectedSections = ['Featured', 'At Blink.new (internship)', 'Personal projects', 'Hackathon projects', 'Experience', 'Live from GitHub', 'Room tour', 'Contact'];

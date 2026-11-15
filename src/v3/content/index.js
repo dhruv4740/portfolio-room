@@ -429,7 +429,7 @@ export const personalProjectIds = ['cellbook', 'blackout', 'basket'];
 export const hackathonProjectIds = ['darksentinel', 'hexfence', 'crisiswatch', 'fraud'];
 
 // The cards in the "Featured" band, after Blink (built from experience[0]).
-export const featuredProjectIds = ['focuslock', 'expense', 'portfolio3d'];
+export const featuredProjectIds = ['focuslock', 'expense'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 export const whatIDid = {

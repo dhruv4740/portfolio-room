@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import '../tokens.css';
 import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid } from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
@@ -150,6 +150,7 @@ const css = `
     --acc: #c2410c;
     --acc-text: #b53b0a;
     --r: 14px;
+    --bh: 36px;
     --mono: "IBM Plex Mono", ui-monospace, monospace;
     background: var(--bg);
     color: var(--ink);
@@ -196,7 +197,9 @@ const css = `
   .w-ar { margin-left: auto; font-family: var(--mono); color: var(--acc-text); }
 
   .w-root [id] { scroll-margin-top: 24px; }
-  .w-label { font: 500 13px/1 var(--mono); letter-spacing: 0.02em; color: var(--mute); margin: 48px 0 16px; display: flex; justify-content: space-between; }
+  .w-label { font: 600 26px/1.2 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.015em; color: var(--ink); margin: 56px 0 18px; display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .w-label > span:not(:first-child) { font: 400 14px/1 var(--mono); letter-spacing: 0; color: var(--mute); }
+  @media (max-width: 639px) { .w-label { font-size: 22px; margin-top: 44px; } }
   .w-proof { display: grid; gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
   .w-proof > div { background: var(--paper); padding: 16px 18px; display: grid; grid-template-columns: 76px 1fr; gap: 14px; align-items: baseline; }
   .w-n { font: 600 22px/1 "IBM Plex Sans", system-ui, sans-serif; letter-spacing: -0.02em; color: var(--acc-text); }
@@ -209,16 +212,18 @@ const css = `
   .w-shot > span { position: absolute; left: 12px; bottom: 10px; font: 11.5px var(--mono); color: var(--mute); }
   .w-ci { padding: 14px 8px 8px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .w-meta { font: 12.5px var(--mono); color: var(--mute); }
+  .w-fmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font: 13px/1.3 var(--mono); color: var(--mute); }
+  .w-fmeta > span:first-child { margin-right: 6px; }
+  .w-chip { padding: 3px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); color: var(--ink2); font: 12.5px/1.3 var(--mono); }
   .w-card h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
   .w-card p { font-size: 15px; color: var(--ink2); }
   .w-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
   @media (max-width: 719px) { .w-clamp { display: block; -webkit-line-clamp: unset; line-clamp: unset; overflow: visible; } }
-  .w-card-acts { margin-top: auto; padding-top: 6px; }
-  .w-go span { display: inline-block; transition: transform 0.15s; }
-  .w-go[aria-expanded="true"] span { transform: rotate(90deg); }
-  .w-root .w-go.w-laptop { display: none; color: var(--mute); cursor: default; }
-  @media (pointer: coarse) { .w-root .w-go.w-laptop { display: flex; } }
-  .w-root--room .w-go.w-laptop { display: none !important; }
+  .w-card-acts { margin-top: auto; padding-top: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
+  @media (pointer: coarse) { .w-root { --bh: 44px; } }
+  .w-act.w-laptop, .w-go.w-laptop { display: none; border-color: transparent; background: none; color: var(--mute); cursor: default; padding: 0 4px; }
+  @media (pointer: coarse) { .w-act.w-laptop, .w-go.w-laptop { display: inline-flex; } }
+  .w-root--room .w-go.w-laptop, .w-root--room .w-act.w-laptop { display: none !important; }
   .w-casepanel { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 24px; }
   .w-casehead { display: flex; justify-content: space-between; align-items: center; gap: 16px; }
   .w-casehead h3 { font-size: 22px; letter-spacing: -0.015em; line-height: 1.25; }
@@ -226,17 +231,21 @@ const css = `
   .w-res { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
   .w-res b { font: 500 20px var(--mono); letter-spacing: -0.03em; }
   .w-res small { font-size: 13.5px; color: var(--mute); }
-  .w-go { display: flex; justify-content: space-between; align-items: center; width: 100%; height: 44px; margin-top: 6px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--bg); text-decoration: none; font: 500 14.5px "IBM Plex Sans", system-ui, sans-serif; color: var(--ink); cursor: pointer; list-style: none; }
+  /* The one action button: outlined pill, same height everywhere. .w-fill is the filled one (How I built it). */
+  .w-go, .w-act { display: inline-flex; align-items: center; justify-content: center; height: var(--bh); padding: 0 16px; border: 1px solid var(--ink); border-radius: 99px; background: transparent; color: var(--ink); font: 500 14px/1 "IBM Plex Sans", system-ui, sans-serif; text-decoration: none; white-space: nowrap; cursor: pointer; list-style: none; transition: background 0.15s; }
+  .w-go:hover, .w-act:hover { background: var(--paper); }
+  .w-root .w-fill { background: var(--ink); color: var(--paper); }
+  .w-root .w-fill:hover { background: var(--ink2); }
   .w-go::-webkit-details-marker { display: none; }
   .w-case { margin-top: 6px; }
-  .w-case > summary { margin-top: 0; }
+  .w-case > summary { margin-top: 0; width: fit-content; }
   .w-case[open] > summary { margin-bottom: 10px; }
   .w-bul a { display: inline-block; padding: 3px 0; }
   .w-bul { font-size: 14.5px; color: var(--ink2); padding: 0 6px 0 18px; display: flex; flex-direction: column; gap: 8px; }
 
   .w-list { border-top: 1px solid var(--line); }
   /* Blink and Personal side by side from 1100px. Hackathon is its own full-width block with two columns. Below 1100px everything is one column. */
-  .w-root .w-two > div > .w-label:first-child, .w-root .w-hack > .w-label:first-child, .w-root .w-exp > .w-label:first-child { margin-top: 48px; }
+  .w-root .w-two > div > .w-label:first-child, .w-root .w-hack > .w-label:first-child, .w-root .w-exp > .w-label:first-child { margin-top: 56px; }
   @media (min-width: 1100px) {
     .w-two, .w-hgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 48px; align-items: start; }
   }
@@ -266,28 +275,28 @@ const css = `
   .w-pdf { display: inline-flex; align-items: center; gap: 8px; height: 44px; margin-top: 16px; padding: 0 16px; border: 1px solid var(--ink); border-radius: 10px; color: var(--ink); font: 500 15px/1 "IBM Plex Sans", system-ui, sans-serif; text-decoration: none; }
   .w-pdf:hover, .w-pdf:focus-visible { background: var(--paper); }
   .w-pdf svg { flex: none; }
-  .w-pdfq { position: absolute; top: 0; right: 44px; height: 44px; display: inline-flex; align-items: center; font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; color: var(--mute); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
+  .w-pdfq { position: absolute; top: 0; right: 0; height: var(--bh); display: inline-flex; align-items: center; font: 400 15px/1 "IBM Plex Sans", system-ui, sans-serif; color: var(--mute); text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 4px; }
   .w-pdfq:hover, .w-pdfq:focus-visible { color: var(--ink); }
   .w-case[open] + .w-pdfq { display: none; }
   /* On phones the link would sit over the middle of the How I built it bar; the panel's own PDF button covers it there. */
   @media (max-width: 639px) { .w-pdfq { display: none; } }
   .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
-  .w-acts { grid-column: 2 / -1; display: flex; gap: 16px; margin-top: 2px; }
-  /* 32 px tall hit area (WCAG 2.5.8 asks for 24) with the same thin underline look. */
-  .w-act { font: 13px var(--mono); color: var(--ink); background: none; border: 0; padding: 0; min-height: 32px; display: inline-flex; align-items: center; cursor: pointer; text-decoration: underline; text-decoration-color: var(--line); text-decoration-thickness: 1px; text-underline-offset: 5px; }
-  .w-act.w-laptop { text-decoration: none; color: var(--mute); cursor: default; }
+  .w-acts { grid-column: 2 / -1; display: flex; gap: 8px; margin-top: 2px; }
+  .w-act { font-size: 13.5px; padding: 0 14px; }
   .w-case-in { margin-top: 2px; }
   /* Compact row. Line 1 is year, title, tag and links. Line 2 is one description with a reserved two-line height so every collapsed row is the same height. */
   .w-row--c { display: block; padding: 14px 0; }
-  .w-r1 { display: flex; flex-wrap: wrap; align-items: center; column-gap: 12px; min-height: 32px; }
+  .w-r1 { display: flex; flex-wrap: wrap; align-items: center; column-gap: 12px; row-gap: 8px; min-height: var(--bh); }
   .w-r1 .w-y { flex: none; width: 52px; }
   .w-r1 .w-t { font-weight: 500; }
   .w-tag { font: 12.5px var(--mono); color: var(--mute); }
-  .w-r1 .w-acts { margin: 0 0 0 auto; gap: 16px; flex-wrap: wrap; }
+  .w-r1 .w-acts { margin: 0 0 0 auto; gap: 8px; flex-wrap: wrap; }
+  @media (max-width: 719px) { .w-r1 .w-acts { flex-basis: 100%; margin: 0 0 0 64px; } }
+  @media (max-width: 559px) { .w-r1 .w-acts { margin-left: 0; } }
   .w-row .w-r2 { margin: 4px 0 0 64px; height: 45px; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   .w-more { margin: 6px 0 0 64px; }
   .w-more .w-did:first-child { margin-top: 0 !important; }
-  .w-act[aria-expanded="true"] { text-decoration-color: var(--ink); }
+  .w-act[aria-expanded="true"]:not(.w-fill), .w-go[aria-expanded="true"]:not(.w-fill) { background: var(--paper); }
   @media (min-width: 1100px) {
     .w-r1 { flex-wrap: nowrap; }
     .w-r1 .w-t { flex: none; }
@@ -365,7 +374,8 @@ const css = `
   .h-avail { margin-top: 16px; }
   .w-root .h-avail p { font-size: 17px; line-height: 1.5; color: var(--mute); }
   .w-root .h-avail p + p { margin-top: 8px; }
-  .h-actions { display: none; gap: 16px; margin-top: 32px; }
+  .h-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; }
+  .h-actions { display: none; gap: 16px; }
   .h-links { display: flex; flex-wrap: wrap; gap: 0 32px; margin-top: 8px; }
 
   .h-btn, .h-link { font: 500 17px/1 "IBM Plex Sans", system-ui, sans-serif; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
@@ -374,6 +384,10 @@ const css = `
   .h-btn--p:hover { background: var(--ink2); border-color: var(--ink2); }
   .w-root .h-btn--s { background: transparent; color: var(--ink); }
   .h-btn--s:hover { background: var(--paper); }
+  /* Third level: the 3D room offer. Lighter than Email so it never outshines Résumé. */
+  .w-root .h-btn--t { background: var(--paper); border-color: var(--line); color: var(--ink); margin-top: 24px; }
+  .h-btn--t:hover { border-color: var(--ink); }
+  .w-tourcta { display: flex; align-items: center; gap: 16px; margin-top: 16px; }
   .w-root .h-link { min-height: 44px; color: var(--mute); }
   .w-root .h-link:hover { color: var(--ink); }
   .h-link:hover, .h-link:focus-visible { text-decoration: underline; text-underline-offset: 4px; }
@@ -438,6 +452,7 @@ const css = `
     .h-link { font-size: 15.6px; }
   }
   html[data-hero-ask] #ask-wrap { visibility: hidden; }
+  @media (min-width: 960px) { .h-row { margin-top: 32px; } .w-root .h-btn--t { margin-top: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
     .w-root *, .w-root *::before, .w-root *::after { transition: none !important; scroll-behavior: auto !important; }
@@ -445,7 +460,7 @@ const css = `
 `;
 
 // The two strongest existing Ask questions (the same ones the pill suggests).
-const ASK_CHIPS = ['Why hire Dhruv?', 'What did he build at Blink?'];
+const ASK_CHIPS = ['Why hire Dhruv?', "What's his best project?"];
 
 // Short captions for the hero proof row only; the full text stays in the content file (Ask, résumé, llms.txt).
 const PROOF_SHORT = {
@@ -454,11 +469,12 @@ const PROOF_SHORT = {
   '2×': 'hackathon wins at Innovathon 2025 and REALMS 2025',
 };
 
-// The number inside a proof value (18, 7, 5, 2) is wrapped so it can count up. Digits are tabular so they do not jitter.
+// The number inside a proof value (18, 7, 5, 2) is wrapped so it can count up. "Top 5" counts down from 8 instead.
+// Digits are tabular so they do not jitter.
 function ProofValue({ value }) {
   const m = /^(\D*)(\d+)(.*)$/.exec(value);
-  if (!m || m[1]) return value;
-  return <>{m[1]}<data value={m[2]} data-cu={m[2]} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
+  if (!m || (m[1] && m[1] !== 'Top ')) return value;
+  return <>{m[1]}<data value={m[2]} data-cu={m[2]} data-from={m[1] ? 8 : 0} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
 }
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', expense: '/previews/expense.jpg', portfolio3d: '/previews/portfolio3d.jpg' };
@@ -633,6 +649,26 @@ export default function Work() {
   }, []);
   const roomHref = (tour) => (roomOnPhone ? '/room/?room=phone&tour=1' : tour ? '/room/?tour=1' : '/room/');
 
+  // Entrance, once on load, about 1 s: the desk strokes draw in, then the time and weather line fades up. Skipped under reduced motion.
+  const deskRef = useRef(null);
+  const statusRef = useRef(null);
+  useLayoutEffect(() => {
+    const svg = deskRef.current;
+    if (!svg || typeof svg.animate !== 'function' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
+    const anims = [];
+    const shapes = [...svg.children];
+    shapes.forEach((el, i) => {
+      const len = el.getTotalLength ? el.getTotalLength() : 0;
+      if (el.getAttribute('stroke') === 'none' || el.hasAttribute('stroke-dasharray') || !len) {
+        anims.push(el.animate({ opacity: [0, 1] }, { duration: 300, delay: 450, fill: 'backwards' }));
+      } else {
+        anims.push(el.animate({ strokeDasharray: [len, len], strokeDashoffset: [len, 0] }, { duration: 620, delay: (i * 240) / shapes.length, easing: 'ease-out', fill: 'backwards' }));
+      }
+    });
+    if (statusRef.current) anims.push(statusRef.current.animate({ opacity: [0, 1], transform: ['translateY(6px)', 'none'] }, { duration: 380, delay: 620, easing: 'ease-out', fill: 'backwards' }));
+    return () => anims.forEach((a) => a.cancel());
+  }, []);
+
   const [now, setNow] = useState(() => new Date());
   const [temperature, setTemperature] = useState(null);
   useEffect(() => {
@@ -715,7 +751,7 @@ export default function Work() {
       const step = (now) => {
         const k = Math.min(1, (now - t0) / 900);
         const eased = 1 - (1 - k) ** 3;
-        els.forEach((el) => { el.textContent = String(Math.round(Number(el.dataset.cu) * eased)); });
+        els.forEach((el) => { const from = Number(el.dataset.from), to = Number(el.dataset.cu); el.textContent = String(Math.round(from + (to - from) * eased)); });
         if (k < 1) raf = requestAnimationFrame(step);
       };
       raf = requestAnimationFrame(step);
@@ -782,7 +818,7 @@ export default function Work() {
               <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
             )}
             {hasMore && (
-              <button type="button" className="w-act" aria-expanded={isOpen} aria-controls={`more-${p.id}`} onClick={() => setMoreId(isOpen ? null : p.id)}>
+              <button type="button" className="w-act w-fill" aria-expanded={isOpen} aria-controls={`more-${p.id}`} onClick={() => setMoreId(isOpen ? null : p.id)}>
                 How I built it
               </button>
             )}
@@ -802,16 +838,16 @@ export default function Work() {
   };
 
   const secondAction = (project) => {
-    if (DEMOS[project.id]) return <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it<span aria-hidden="true">→</span></button>;
+    if (DEMOS[project.id]) return <button type="button" className="w-go" onClick={(e) => tryDemo(project, e)}>Try it</button>;
     const live = project.links?.live;
     if (live === '/room/') return (
       <>
-        <a className="w-go w-roomlink" href={roomHref(false)}>Walk through it<span aria-hidden="true">→</span></a>
+        <a className="w-go w-roomlink" href={roomHref(false)}>Walk through it</a>
         <span className="w-go w-laptop">Laptop only</span>
       </>
     );
-    if (live) return <a className="w-go" href={live} target="_blank" rel="noopener noreferrer">Visit<span aria-hidden="true">→</span></a>;
-    if (project.links?.github) return <a className="w-go" href={project.links.github} target="_blank" rel="noopener noreferrer">Source<span aria-hidden="true">→</span></a>;
+    if (live) return <a className="w-go" href={live} target="_blank" rel="noopener noreferrer">Visit</a>;
+    if (project.links?.github) return <a className="w-go" href={project.links.github} target="_blank" rel="noopener noreferrer">Source</a>;
     return null;
   };
 
@@ -823,14 +859,14 @@ export default function Work() {
         </div>
       )}
       <div className="w-ci">
-        <span className="w-meta">{project.year} · {project.tech.slice(0, 3).join(', ')}</span>
         <h3>{project.name}</h3>
+        <div className="w-fmeta"><span>{project.year}</span>{project.tech.slice(0, 3).map((t) => (<span className="w-chip" key={t}>{t}</span>))}</div>
         <p className="w-clamp">{project.summary || project.tagline}</p>
         <div className="w-card-acts">
           {project.caseStudy && (
-            <button type="button" className="w-go" aria-expanded={caseId === project.id} aria-controls="feat-case"
+            <button type="button" className="w-go w-fill" aria-expanded={caseId === project.id} aria-controls="feat-case"
               onClick={(e) => { caseBtn.current = e.currentTarget; setCaseId(caseId === project.id ? null : project.id); }}>
-              How I built it<span aria-hidden="true">→</span>
+              How I built it
             </button>
           )}
           {secondAction(project)}
@@ -867,7 +903,7 @@ export default function Work() {
           <section className="h-hero" aria-label="Introduction">
             <div className="h-grid">
               <div className="h-left">
-                <svg className="w-desk" viewBox="0 0 420 170" fill="none" stroke="#17160f" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg className="w-desk" ref={deskRef} viewBox="0 0 420 170" fill="none" stroke="#17160f" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="276" y="8" width="128" height="88" rx="3"/><path d="M340 8v88M276 52h128" strokeWidth=".9"/>
               <path d="M282 96v-14l8-4v18M296 96v-24h8v24M312 96v-10l6-6 6 6v10M330 96v-18h7v18M348 96v-30h9v30M364 96v-12h8v12M380 96v-20l6-3 6 3v20" stroke="#86837a" strokeWidth=".8"/>
               <circle cx="384" cy="26" r="6" stroke="#c2410c" strokeWidth=".9"/>
@@ -881,22 +917,24 @@ export default function Work() {
               <path d="M290 126v-16h20v16M310 114h4a4 4 0 0 1 0 8h-4"/><path d="M296 104c0-4 4-4 4-8M304 104c0-4 4-4 4-8" stroke="#86837a" strokeWidth=".8"/>
               <rect x="22" y="104" width="40" height="22" rx="2"/><path d="M42 104v22" strokeWidth=".8"/>
             </svg>
-                <p className="w-status"><span className="w-dot" /><span>{statusText}</span></p>
+                <p className="w-status" ref={statusRef}><span className="w-dot" /><span>{statusText}</span></p>
                 <h1 className="h-name">{identity.name}</h1>
                 <p className="h-head">{identity.headline}</p>
                 <div className="h-avail">
                   {identity.availability.map((line) => (<p key={line}>{line}</p>))}
                 </div>
-                <div className="h-actions">
-                  {contact.resume && (
-                    <a className="h-btn h-btn--p" href={contact.resume} onClick={openResume}>Résumé</a>
-                  )}
-                  <a className="h-btn h-btn--s" href={`mailto:${contact.email}`}>Email</a>
+                <div className="h-row">
+                  <div className="h-actions">
+                    {contact.resume && (
+                      <a className="h-btn h-btn--p" href={contact.resume} onClick={openResume}>Résumé</a>
+                    )}
+                    <a className="h-btn h-btn--s" href={`mailto:${contact.email}`}>Email</a>
+                  </div>
+                  <a className="h-btn h-btn--t w-roomlink" href={roomHref(true)}>Walk through my 3D room</a>
                 </div>
                 <div className="h-links">
                   <a className="h-link" href={contact.github} target="_blank" rel="noopener noreferrer">GitHub</a>
                   <a className="h-link" href={contact.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
-                  <a className="h-link w-roomlink" href={roomHref(true)}>3D room</a>
                 </div>
               </div>
               <div className="h-glow" ref={askCardRef}>
@@ -928,13 +966,13 @@ export default function Work() {
             <div className="w-feat">
               <article className="w-card">
                 <div className="w-ci">
-                  <span className="w-meta">Blink.new · {blink.from.slice(-4)} · Python, Gmail API, LLM</span>
                   <h3>An outreach pipeline people actually replied to</h3>
+                  <div className="w-fmeta"><span>Blink.new, {blink.from.slice(-4)}</span>{['Python', 'Gmail API', 'LLM'].map((t) => (<span className="w-chip" key={t}>{t}</span>))}</div>
                   <p>I built four growth tools at Blink as the sole developer. They cover creator outreach (650 creators sourced), link building, SEO and AI-search tracking, and a Reddit copilot.</p>
                   <div className="w-res"><b>18%</b><small>of contacted creators replied · 14 positive</small></div>
                   <div className="w-casewrap">
                     <details className="w-case">
-                      <summary className="w-go">How I built it<span>→</span></summary>
+                      <summary className="w-go w-fill">How I built it</summary>
                       <ul className="w-bul">
                         {blink.caseStudy.summary.map((b) => (<li key={b}>{b}</li>))}
                       </ul>
@@ -994,6 +1032,10 @@ export default function Work() {
 
             <h2 className="w-label"><span>Room tour</span><span>1 min, no sound</span></h2>
             <TourVideo />
+            <div className="w-tourcta">
+              <a className="h-btn h-btn--p w-roomlink" href={roomHref(false)}>Walk into the room</a>
+              <span className="w-laptop">Best on a laptop.</span>
+            </div>
 
             <h2 className="w-label" id="contact"><span>Contact</span></h2>
             <p className="w-contact">
