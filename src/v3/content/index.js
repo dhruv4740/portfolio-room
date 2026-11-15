@@ -161,13 +161,13 @@ export const projects = [
       ],
       result: [
         'One allowance now covers an Android phone and a Windows PC.',
-        'Ctrl+W logged as closed but the tab stayed open until I switched to SendInput.',
+        'The app logged a browser tab as closed while it stayed open, until I changed how it sends the close keypress.',
         'Over 250 automated tests back it, and CI builds a signed APK plus Windows installer.',
       ],
       pdf: {
         problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
         decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Firestore as shared state and a native Electron agent, which removed a server and its firewall problem. Firestore web keys are public, so I wrote security rules that restrict each sync code to its members, capped at 10.',
-        result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A Ctrl+W bug, where the agent logged a closed tab that stayed open, was fixed by switching from PostMessage to SendInput. Over 250 automated tests; CI builds a signed APK plus Windows installer.',
+        result: 'One allowance across an Android phone (Accessibility service) and a Windows PC. A bug, where the agent logged a browser tab as closed while it stayed open, was fixed by changing how the agent sends the close keypress. Over 250 automated tests; CI builds a signed APK plus Windows installer.',
       },
     },
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
@@ -266,14 +266,14 @@ export const projects = [
     name: 'HexFence',
     year: 2026,
     kind: 'product',
-    tagline: 'A Safe Guard that refuses lookalike payments, with open address-poisoning evidence on Arkiv.',
+    tagline: 'A wallet guard that refuses to pay a lookalike of an address you trust, a common crypto scam. On one day of real Ethereum transfers it flagged about 47,000 suspected lookalikes.',
     description:
       'Built at ETHGlobal Mumbai 2026. Detects address poisoning, publishes the evidence openly on Arkiv, warns you locally before you sign, and makes a protected Safe refuse to pay a lookalike of an approved supplier while new suppliers still work.',
     decision: '',
     broke: '',
     badge: 'ETHGlobal Mumbai 2026 (5 to 7 Nov)',
     tech: ['Solidity', 'Safe', 'Arkiv', 'viem', 'Hardhat', 'Vite'],
-    links: { live: 'https://deven1305.github.io/hexfence/', github: 'https://github.com/Deven1305/hexfence' },
+    links: { live: 'https://deven1305.github.io/hexfence/', github: 'https://github.com/Deven1305/hexfence', demo: 'https://ethglobal.com/showcase/hexfence-yc1go' },
   },
   {
     id: 'crisiswatch',

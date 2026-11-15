@@ -295,6 +295,8 @@ const css = `
   @media (max-width: 559px) { .w-r1 .w-acts { margin-left: 0; } }
   .w-row .w-r2 { margin: 4px 0 0 64px; height: 45px; line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
   .w-more { margin: 6px 0 0 64px; }
+  /* Hackathon rows hold longer copy: three lines, same reserved height for every row in the block. */
+  @media (min-width: 720px) { .w-row .w-hgrid .w-r2, .w-hgrid .w-row .w-r2 { height: 68px; -webkit-line-clamp: 3; } }
   .w-more .w-did:first-child { margin-top: 0 !important; }
   .w-act[aria-expanded="true"]:not(.w-fill), .w-go[aria-expanded="true"]:not(.w-fill) { background: var(--paper); }
   @media (min-width: 1100px) {
@@ -304,7 +306,7 @@ const css = `
     .w-r1 .w-acts { flex: none; flex-wrap: nowrap; white-space: nowrap; }
   }
   @media (max-width: 559px) { .w-row .w-r2, .w-more { margin-left: 0; } }
-  @media (max-width: 719px) { .w-row .w-r2 { height: auto; min-height: 0; -webkit-line-clamp: 3; max-height: 67.5px; } }
+  @media (max-width: 719px) { .w-row .w-r2 { height: auto; min-height: 0; display: block; -webkit-line-clamp: unset; max-height: none; overflow: visible; } }
   .w-case-in > summary { list-style: none; }
   .w-case-in > summary::-webkit-details-marker { display: none; }
   .w-case-in .w-cs { margin-bottom: 4px; }
@@ -353,7 +355,7 @@ const css = `
     .w-bar { display: none; }
     .w-root h1 { font-size: 40px; }
     .w-label:first-child { margin-top: 4px; }
-    .w-feat { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+    .w-feat { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     .w-feat .w-card:first-child { grid-column: 1 / -1; }
     .w-feat > .w-card:not(:first-child) { grid-row: 2; }
     .w-feat > .w-casepanel { grid-column: 1 / -1; grid-row: 3; }
@@ -797,7 +799,7 @@ export default function Work() {
     if (id) document.getElementById(id)?.scrollIntoView({ block: 'start' });
   }, []);
 
-  const TAGS = { darksentinel: 'Top 5 finalist', fraud: 'Winner, Innovathon 2025', hexfence: 'ETHGlobal Mumbai 2026', crisiswatch: 'MumbaiHacks' };
+  const TAGS = { darksentinel: 'Top 5 finalist', fraud: 'Winner, Innovathon 2025', crisiswatch: 'MumbaiHacks' };
   const renderRow = (p) => {
     const hasMore = p.caseStudy || whatIDid[p.id] || p.badge || p.label;
     const isOpen = moreId === p.id;
@@ -816,6 +818,9 @@ export default function Work() {
             )}
             {p.links?.github && (
               <a className="w-act" href={p.links.github} target="_blank" rel="noopener noreferrer">Source</a>
+            )}
+            {p.links?.demo && (
+              <a className="w-act" href={p.links.demo} target="_blank" rel="noopener noreferrer">Demo video</a>
             )}
             {hasMore && (
               <button type="button" className="w-act w-fill" aria-expanded={isOpen} aria-controls={`more-${p.id}`} onClick={() => setMoreId(isOpen ? null : p.id)}>
