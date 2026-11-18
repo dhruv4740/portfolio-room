@@ -1,0 +1,105 @@
+\documentclass{resume}
+
+\usepackage[left=0.4in,top=0.3in,right=0.4in,bottom=0.3in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{tgtermes}
+\usepackage{amssymb}
+
+% ATS: real space characters and Unicode mapping in the PDF text layer (pdfLaTeX only)
+\ifdefined\pdfgentounicode
+  \input{glyphtounicode}
+  \pdfgentounicode=1
+\fi
+
+\newcommand{\daterange}{\textbf{--}}
+\newcommand{\sep}{\,$|$\,}
+
+\name{Dhruv Kothari}
+\address{Mumbai, India \sep \href{mailto:hello@dhruvkothari.com}{hello@dhruvkothari.com}}
+\address{
+\href{https://www.linkedin.com/in/dhruv4740/}{linkedin.com/in/dhruv4740} \sep
+\href{https://github.com/dhruv4740}{github.com/dhruv4740} \sep
+\href{https://dhruvkothari.com/?from=resume}{dhruvkothari.com}
+}
+
+\begin{document}
+
+% ===================== EXPERIENCE =====================
+\begin{rSection}{Experience}
+
+\textbf{Growth Intern} \sep \textit{Blink.new (YC-backed AI app builder), Remote} \hfill {\small Jan 2026 \daterange{} Oct 2026}
+\begin{itemize}
+  \itemsep -2pt
+  \item Shipped \textbf{4 internal growth tools}: creator outreach, link building, SEO mention monitoring and a Reddit growth copilot.
+  \item Built a creator outreach pipeline (Python, SQLite, YouTube Data API, Gmail API, LLM drafting with human approval) that sourced \textbf{650 leads} and sent \textbf{489 emails}, reaching an \textbf{18\% human reply rate} and 14 positive responses.
+  \item Built a link-building engine (Flask dashboard) that found and scored \textbf{676 prospect sites} and extracted contacts.
+  \item Grew Reddit to \textbf{29.85\% of Blink's social traffic} (Jun 2026), a channel where competitors had little presence.
+\end{itemize}
+
+\vspace{1mm}
+\textbf{Web Developer Intern} \sep \textit{ARH Tubes Pvt. Ltd.} \hfill {\small Dec 2025 \daterange{} Jan 2026}
+\begin{itemize}
+  \itemsep -2pt
+  \item Built and launched the company's e-commerce storefront, \href{https://tanttu.in}{tanttu.in}, on Shopify.
+\end{itemize}
+
+\end{rSection}
+
+% ===================== PROJECTS =====================
+\begin{rSection}{Projects}
+
+\textbf{\href{https://github.com/dhruv4740/focuslock}{FocusLock}} \sep \textit{Kotlin, Android, Electron, Firebase} \hfill {\small 2026}
+\begin{itemize}
+  \itemsep -2pt
+  \item Screen-time limiter sharing one daily allowance across an Android phone and a Windows PC. Enforces at the OS level, so switching browsers can't bypass it. \textbf{Over 250 automated tests}; CI builds a signed APK plus Windows installer.
+\end{itemize}
+
+\vspace{1mm}
+\textbf{3D Portfolio} \sep \textit{Three.js, React 19, GSAP, GLSL, Playwright} \hfill {\small 2026}
+\begin{itemize}
+  \itemsep -2pt
+  \item Interactive 3D studio room whose monitor runs live demos of other projects. Detects each visitor's GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.
+\end{itemize}
+
+\vspace{1mm}
+\textbf{DarkSentinel} \sep \textit{Python, FastAPI, Next.js} \hfill {\small Top 5 finalist, IIT Madras x BITS Goa hackathon 2026}
+\begin{itemize}
+  \itemsep -2pt
+  \item Team dark-web traffic monitor that classifies network traffic and shows alerts on a live dashboard. Built the LLM review layer: only predictions the model is unsure about go to an LLM, keeping inference cost bounded.
+\end{itemize}
+
+\vspace{1mm}
+\textbf{\href{https://github.com/dhruv4740/blackout}{Blackout}} \sep \textit{Kotlin, Android} \hfill {\small 2026}
+\begin{itemize}
+  \itemsep -2pt
+  \item Keeps the screen technically on but fully black, so screen-on features like OnePlus bypass charging keep working while nobody can see the screen. Fingerprint unlock, Quick Settings tile, steps aside for calls and alarms. No internet permission.
+\end{itemize}
+
+\vspace{1mm}
+\textbf{Also built:} \href{https://github.com/dhruv4740/cellbook}{Cellbook} (Excel clone for Windows), \href{https://github.com/dhruv4740/expense-tracker}{Expense Tracker} (offline UPI/SMS parser), BasketProof (price comparator, over 1,700 tests).
+
+\end{rSection}
+
+% ===================== SKILLS =====================
+\begin{rSection}{Technical Skills}
+\begin{itemize}
+  \itemsep -2pt
+  \item \textbf{Languages:} Python, TypeScript, JavaScript, Kotlin, C++, SQL
+  \item \textbf{Web \& Backend:} React, Next.js, Three.js, Node.js, Express, Flask, FastAPI, REST APIs
+  \item \textbf{AI \& Automation:} LLM APIs (Claude, Gemini), Claude Code, MCP, scikit-learn, XGBoost, web scraping
+  \item \textbf{Data \& Infra:} PostgreSQL, SQLite, Firestore, Android, Electron, Git, GitHub Actions, GCP
+\end{itemize}
+\end{rSection}
+
+% ===================== EDUCATION & ACHIEVEMENTS =====================
+\begin{rSection}{Education \& Achievements}
+\textbf{B.Tech, Information Technology} \sep \textit{K. J. Somaiya College of Engineering, Mumbai} \hfill {\small 2024 \daterange{} 2028 (expected)}
+\begin{itemize}
+  \itemsep -2pt
+  \item \textbf{Winner}, Innovathon 2025 (F-Shield, real-time fraud detection) \sep \textbf{Winner}, REALMS 2025
+  \item \textbf{Top 5 finalist}, Secure AI Software \& Systems Hackathon 2026 (IIT Madras x BITS Goa)
+  \item \textbf{Tech Team:} Robotics \& Automation Society, KJSCE (Aug 2025 \daterange{} Present); Team Vision KJSCE (Jan \daterange{} Aug 2025)
+\end{itemize}
+\end{rSection}
+
+\end{document}

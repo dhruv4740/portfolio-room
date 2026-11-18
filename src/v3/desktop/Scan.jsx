@@ -53,12 +53,12 @@ function markArrivalSeen() {
 // The guided tour. `scene` is where the step puts the visitor; `hold` is how
 // long it stays once it is there.
 const TOUR = [
-  { caption: 'This is my desk in Mumbai. Everything in the room works.', hold: 5000, scene: 'room' },
-  { caption: 'The computer runs my real web projects. This is CrisisWatch, a fact-checker.', hold: 9500, scene: 'os', app: 'crisiswatch' },
-  { caption: 'Fraud detection: an XGBoost model scoring transactions.', hold: 9000, scene: 'os', app: 'fraud' },
+  { caption: 'This is my desk in Mumbai, and everything on it works.', hold: 5000, scene: 'room' },
+  { caption: 'CrisisWatch checks claims, and I built it at MumbaiHacks.', hold: 9500, scene: 'os', app: 'crisiswatch' },
+  { caption: 'F-Shield scores transactions with XGBoost and won Innovathon 2025.', hold: 9000, scene: 'os', app: 'fraud' },
   { caption: 'Back to the desk.', hold: 3000, scene: 'room' },
-  { caption: 'The phone runs my Android apps. FocusLock puts friction in front of distracting apps.', hold: 10000, scene: 'phone', app: 'focuslock' },
-  { caption: 'Expense Tracker: shared costs and Uber splits.', hold: 8500, scene: 'phone', app: 'expense' },
+  { caption: 'FocusLock puts friction before distracting apps and has over 250 automated tests.', hold: 10000, scene: 'phone', app: 'focuslock' },
+  { caption: 'Expense Tracker logs spending from SMS into local SQLite, with no cloud.', hold: 8500, scene: 'phone', app: 'expense' },
   { caption: 'That was the one-minute version.', hold: 3000, scene: 'room' },
 ];
 const TOUR_WELCOME_S = 8;
@@ -544,6 +544,13 @@ export default function Scan() {
     handleEnterScreen('overview', event.currentTarget);
   }, [beginLaunch, handleEnterScreen]);
 
+  // On phones the monitor UI fills the screen to its bottom edge, so the floating Ask pill steps aside while it is open.
+  useEffect(() => {
+    const on = screenPhase === 'inside' && matchMedia('(max-width: 699px)').matches;
+    document.documentElement.toggleAttribute('data-overlay', on);
+    return () => document.documentElement.removeAttribute('data-overlay');
+  }, [screenPhase]);
+
   const handleLeaveScreen = useCallback(() => {
     if (screenPhase === 'room' || screenPhase === 'leaving') return;
     setScreenPhase('leaving');
@@ -559,7 +566,7 @@ export default function Scan() {
   useEffect(() => {
     const onOpenPhone = (event) => {
       const app = event.detail?.app;
-      if (!['focuslock', 'expense', 'basketproof'].includes(app)) return;
+      if (!['focuslock', 'expense', 'basketproof', 'blackout'].includes(app)) return;
       pendingPhone.current = app;
       handleLeaveScreen();
     };
@@ -1143,6 +1150,8 @@ body[data-launchpad-open] .escape-link { display:none; }
 @media(max-height:450px) { .launchpad-kicker {display:none;} .launchpad h1 {top:20px;font-size:26px;} .launchpad-role {top:54px;} .launchpad-actions {top:84px;} .launchpad-more {top:226px;} .launchpad-actions a,.launchpad-actions button {min-height:52px;padding:8px 16px;} }
 @media(max-height:450px) { .launchpad-actions small { display:none; } .launchpad-actions a,.launchpad-actions button,.launchpad-extra summary { min-height:44px; padding-top:6px; padding-bottom:6px; } body[data-launchpad-open] .mumbai-readout { display:none; } }
 @media(pointer:coarse) and (max-height:450px) { .escape-link { display:none !important; } }
+/* On a phone the monitor fills the screen and its own BACK TO ROOM bar sits where this link floats. */
+@media(max-width:600px) { body:has([data-testid="dhruv-os-frame"]) .escape-link { display:none; } }
 @media(max-width:640px) { .arrival-cue { top:68px; right:12px; } }
 @media(max-width:640px) { .mumbai-readout { display:none; } } /* sat on top of the overview's 'More: live apps' line on phones */
 
@@ -1159,6 +1168,8 @@ body[data-launchpad-open] .escape-link { display:none; }
 .workspace-stage[data-action-state="drawing"] ~ .seat-exit button:not(.seat-exit-back) {
   display: none;
 }
+/* Bottom left holds the hackathon plaque from 700px up, so the bar sits bottom centre between it and the Ask pill. */
+@media (min-width: 700px) { .seat-exit { left: 50%; transform: translateX(-50%); max-width: calc(100% - 560px); } }
 .scan-root { position: fixed; inset: 0; overflow: hidden; }
 /* The room is an interface, not a document: Ctrl+A must not paint everything blue. */
 .scan-root, .scan-root * { -webkit-user-select: none; user-select: none; }

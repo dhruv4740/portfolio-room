@@ -698,3 +698,9 @@ confirmed this pass.
 - No automated tests.
 - Open: site copy says 83 features, the report says 79 (owner to confirm). `darknet.py` defaults to threshold 0.7 while `cic_watcher.py` uses 0.75. Dataset source not stated.
 - Never publish: `.env`, runtime state files, model pickles, the dataset, scraped output.
+
+## Measured counts (2026-11-14)
+- FocusLock: 236 JVM unit tests (`gradlew testDebugUnitTest`, JUnit XML sum, matches the 236 `@Test` annotations) plus 26 Windows-agent tests (`npm test`, `node --test`), all passing.
+- HexFence: `git rev-list --count HEAD` = 280 on `main`, 223 of them under Dhruv's two git identities.
+- BasketProof: not counted.
+- Site wording is "over 250" for FocusLock tests, so it stays true as tests are added.

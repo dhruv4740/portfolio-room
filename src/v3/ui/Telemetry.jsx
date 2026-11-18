@@ -38,11 +38,15 @@ export default function Telemetry({ frameMs, gpuMs, anchorId, compact = false })
               <span className="t-key">WORKSPACE</span>
               <span className="t-val">MODELED REALTIME</span>
             </span>
-            <span className="t-sep">&middot;</span>
-            <span className="t-item">
-              <span className="t-key">FPS</span>
-              <span className="t-val">{fmtFps(frameMs)}</span>
-            </span>
+            {isNum(frameMs) && (
+              <>
+                <span className="t-sep">&middot;</span>
+                <span className="t-item">
+                  <span className="t-key">FPS</span>
+                  <span className="t-val">{fmtFps(frameMs)}</span>
+                </span>
+              </>
+            )}
             {isNum(gpuMs) && (
               <>
                 <span className="t-sep">&middot;</span>
@@ -75,10 +79,12 @@ export default function Telemetry({ frameMs, gpuMs, anchorId, compact = false })
           <span className="t-key">WORKSPACE</span>
           <span className="t-flag">MODELED REALTIME</span>
         </div>
-        <div className="t-row">
-          <span className="t-key">FPS</span>
-          <span className="t-val">{fmtFixed(frameMs, 1)} MS &middot; {fmtFps(frameMs)}</span>
-        </div>
+        {isNum(frameMs) && (
+          <div className="t-row">
+            <span className="t-key">FPS</span>
+            <span className="t-val">{fmtFixed(frameMs, 1)} MS &middot; {fmtFps(frameMs)}</span>
+          </div>
+        )}
         {isNum(gpuMs) && (
           <div className="t-row">
             <span className="t-key">GPU</span>

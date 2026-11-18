@@ -130,7 +130,7 @@ globalThis.fetch = realFetch;
     ['Where did he study?', 'Education'], ['What is his salary expectation?', ''], ['Who won the cricket world cup?', '']];
   for (const [q, src] of cases) { const r = cannedAnswer(q); assert.equal(r.source, src, q); assert.ok(r.answer.length > 20); }
   assert.match(cannedAnswer('What is his salary expectation?').answer, /do not have that detail/);
-  assert.match(systemPrompt(), /3 to 6 sentences/);
+  assert.match(systemPrompt(), /3 to 5 bullets/); assert.match(cannedAnswer('Why should we hire Dhruv?').answer, /^[^\n]+\n\n- [^\n]+\n- /);
   assert.match(cannedAnswer('which ai model are you?').answer, /AI assistant built into/);
   // Each question still gets the sections it needs.
   const ids = (q) => relevantSections(q).map((s) => s.id);

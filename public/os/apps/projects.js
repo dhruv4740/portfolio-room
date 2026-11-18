@@ -5,7 +5,7 @@ import { mountContactStrip } from '../shell/contactStrip.js';
 // Where each project can be tried. FocusLock has a desktop half and an
 // Android half, so it appears in both groups.
 const desktopApps = new Set(['darksentinel', 'focuslock', 'crisiswatch', 'fraud']);
-const phoneApps = { focuslock: 'focuslock', expense: 'expense', basket: 'basketproof' };
+const phoneApps = { focuslock: 'focuslock', expense: 'expense', basket: 'basketproof', blackout: 'blackout' };
 const GROUPS = [
   { title: 'Try it on this computer', note: 'Each opens the real web UI in a window here, running on demo data.', has: (p) => desktopApps.has(p.id), kind: 'desktop' },
   { title: 'Try it on the phone', note: 'These are Android apps. The button leaves the computer and picks up the phone on the desk.', has: (p) => p.id in phoneApps, kind: 'phone' },

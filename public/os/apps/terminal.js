@@ -190,6 +190,7 @@ export default {
       fraud(ctx) { ctx?.openApp?.('fraud'); },
       basketproof(_, print) { print('  → BasketProof is on the phone. Zoom into the phone on the desk.'); },
       expense(_, print) { print('  → Expense Tracker is on the phone. Zoom into the phone on the desk.'); },
+      blackout(_, print) { print('  → Blackout is on the phone. Zoom into the phone on the desk.'); },
       music(ctx) { ctx?.openApp?.('music'); },
       about(ctx, print) {
         print(

@@ -29,9 +29,8 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
   Email Routing is on: rule `ccdb93142c4140a2a6f4d4241a8c7d7d` forwards
   `hello@dhruvkothari.com` to the owner's Gmail (destination already verified). Redirect rule
   `d80f01b6d9e4451794f17768c16bbfd6` (ruleset `36dedbfa85fa499999f798fa8cba2504`) 301s `www` to
-  the apex keeping path and query. `dhruvkothari.pages.dev` stays a second live host: it is not
-  in the zone, so no zone rule (Redirect or Bulk) can match it, and a Pages middleware redirect
-  was decided against; canonical tags cover it. Preview hosts are unaffected. The Turnstile widget
+  the apex keeping path and query. pages.dev redirects to dhruvkothari.com (301, path and query
+  kept) since 2026-11-15; preview host unaffected. The Turnstile widget
   "dhruvkothari.pages.dev Ask" lists all three hosts. Zone Bot settings are all off (AI bot
   protection, managed robots.txt, Bot Fight Mode); Security Level is `medium`.
 - **Pages variables** (all stored as `secret_text`, production): `GROQ_API_KEY`,

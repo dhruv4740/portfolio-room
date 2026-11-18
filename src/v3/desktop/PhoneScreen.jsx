@@ -24,8 +24,9 @@ import { forwardRef, useEffect, useImperativeHandle, useLayoutEffect, useRef, us
 import ExpenseApp from './phone-apps/ExpenseApp.jsx';
 import BasketProofApp from './phone-apps/BasketProofApp.jsx';
 import ContactApp from './phone-apps/ContactApp.jsx';
+import BlackoutApp from './phone-apps/BlackoutApp.jsx';
 
-import { PHONE_SCREEN, PHONE_STAGE, INSTAGRAM_ICON_UV_RECT } from './phoneScreenSize.js';
+import { PHONE_SCREEN, PHONE_STAGE, PHONE_HOME_APPS } from './phoneScreenSize.js';
 export { PHONE_SCREEN, PHONE_STAGE };
 
 const STORAGE_KEY = 'v3:focuslock';
@@ -38,7 +39,7 @@ const WALKTHROUGH = {
   home: {
     title: 'Android apps, running in the browser',
     body: 'Each one is rebuilt from its own source and runs here on sample data. Instagram is here as the app FocusLock guards.',
-    steps: ['Open FocusLock to see its rules.', 'Then open Instagram and meet them.', 'Expense Tracker and BasketProof open full screen.'],
+    steps: ['Open FocusLock to see its rules.', 'Then open Instagram and meet them.', 'Expense Tracker, BasketProof and Blackout open full screen.'],
   },
   focuslock: {
     title: 'FocusLock',
@@ -62,8 +63,13 @@ const WALKTHROUGH = {
   },
   basketproof: {
     title: 'BasketProof',
-    body: 'A private grocery comparison across Blinkit, Zepto and Swiggy Instamart, built for my family. It shows UNKNOWN rather than a total it can’t verify.',
+    body: 'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
     steps: ['Build a list, then compare the platforms.'],
+  },
+  blackout: {
+    title: 'Blackout',
+    body: 'Turns an OLED screen fully black while audio keeps playing. Black pixels are switched off, which saves battery.',
+    steps: ['Tap Black out screen, then press and hold to unlock.'],
   },
 };
 
@@ -537,13 +543,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({
   // The full-screen apps are DOM panels outside the phone's projected quad;
   // putting the phone down must close them or they stay over the room.
   useEffect(() => {
-    if (!interactive) setApp(current => (current === 'expense' || current === 'basketproof' || current === 'contact' ? 'home' : current));
+    if (!interactive) setApp(current => (current === 'expense' || current === 'basketproof' || current === 'contact' || current === 'blackout' ? 'home' : current));
   }, [interactive]);
 
   // Deep links (/#/phone/<app>) arrive once the phone is in hand.
   useEffect(() => {
     const onOpen = (event) => {
-      const open = { focuslock: handleOpenFocusLock, expense: handleOpenExpense, basketproof: handleOpenBasket, contact: handleOpenContact }[event.detail?.app];
+      const open = { focuslock: handleOpenFocusLock, expense: handleOpenExpense, basketproof: handleOpenBasket, contact: handleOpenContact, blackout: handleOpenBlackout }[event.detail?.app];
       open?.();
     };
     window.addEventListener('phone:open-app', onOpen);
@@ -562,6 +568,11 @@ const PhoneScreen = forwardRef(function PhoneScreen({
 
   function handleOpenContact() {
     setApp('contact');
+    onOpenApp?.();
+  }
+
+  function handleOpenBlackout() {
+    setApp('blackout');
     onOpenApp?.();
   }
 
@@ -695,33 +706,13 @@ const PhoneScreen = forwardRef(function PhoneScreen({
     ? `Blocked for ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}`
     : 'Block expired. Tap the button below to close.';
 
-  // UV coordinates from workspace:
-  const r = INSTAGRAM_ICON_UV_RECT;
-  const igIcon = {
-    left: 80,
-    top: 470,
-    size: 130,
-  };
-  const flIcon = {
-    left: 330,
-    top: 470,
-    size: 130,
-  };
-  const expenseIcon = {
-    left: 80,
-    top: 650,
-    size: 130,
-  };
-  const basketIcon = {
-    left: 330,
-    top: 650,
-    size: 130,
-  };
-  const contactIcon = {
-    left: 80,
-    top: 830,
-    size: 130,
-  };
+  const homeIcon = (id) => PHONE_HOME_APPS.find((app) => app.id === id);
+  const igIcon = homeIcon('instagram');
+  const flIcon = homeIcon('focuslock');
+  const expenseIcon = homeIcon('expense');
+  const basketIcon = homeIcon('basketproof');
+  const contactIcon = homeIcon('contact');
+  const blackoutIcon = homeIcon('blackout');
 
   return (
     <div
@@ -759,6 +750,8 @@ const PhoneScreen = forwardRef(function PhoneScreen({
               <span className="ps-stat-icon">100%</span>
             </div>
           </div>
+          <div className="ps-bigclock" aria-hidden="true">{time}</div>
+          <div className="ps-date" aria-hidden="true">{new Date().toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</div>
 
           <div className="ps-apps-grid">
             {/* Instagram Icon (Tested by verify-held-objects.mjs) */}
@@ -829,6 +822,20 @@ const PhoneScreen = forwardRef(function PhoneScreen({
                 <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph"><path d="M24 28 H76 V62 H46 L32 74 V62 H24 Z" /></svg>
               </span>
               <span className="ps-label">Message</span>
+            </button>
+
+            {/* Blackout: a black tile with a thin white ring */}
+            <button
+              type="button"
+              className="ps-app-basket"
+              aria-label="Open Blackout"
+              onClick={handleOpenBlackout}
+              style={{ left: blackoutIcon.left, top: blackoutIcon.top, width: blackoutIcon.size }}
+            >
+              <span className="ps-tile-basket" style={{ width: blackoutIcon.size, height: blackoutIcon.size, background: '#000' }}>
+                <svg viewBox="0 0 100 100" aria-hidden="true" className="ps-glyph" style={{ stroke: '#fff', strokeWidth: 3 }}><circle cx="50" cy="50" r="30" /></svg>
+              </span>
+              <span className="ps-label">Blackout</span>
             </button>
           </div>
         </div>
@@ -1742,6 +1749,18 @@ const PhoneScreen = forwardRef(function PhoneScreen({
           </button>
       </div>
 
+      {/* 8. BLACKOUT */}
+      <div
+        className={`ps-full-app${app === 'blackout' ? ' is-active' : ''}`}
+        aria-hidden={app !== 'blackout'}
+        inert={app !== 'blackout'}
+      >
+          {app === 'blackout' && <BlackoutApp />}
+          <button type="button" className="ps-home-bar-btn" aria-label="Go home" onClick={() => goHome()}>
+            <span className="ps-home-bar" />
+          </button>
+      </div>
+
       {/* 7. MESSAGE DHRUV (contact) */}
       <div
         className={`ps-full-app${app === 'contact' ? ' is-active' : ''}`}
@@ -1961,13 +1980,15 @@ const css = `
 }
 .phone-screen--stage .ps-clock { font-size: clamp(17px, 5.2cqw, 21px); }
 .phone-screen--stage .ps-status-icons { font-size: clamp(12px, 3.5cqw, 15px); gap: 3cqw; }
+.phone-screen--stage .ps-bigclock { top: 22cqw; font-size: 27.8cqw; }
+.phone-screen--stage .ps-date { top: 50cqw; font-size: 5.2cqw; }
 .phone-screen--stage .ps-apps-grid {
-  inset: 0;
+  inset: 62cqw 0 8cqw 0;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  gap: 7cqw 5cqw;
-  padding: 28cqw 9cqw 0;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-content: center;
+  gap: 8cqw 3cqw;
+  padding: 0 7cqw;
 }
 .phone-screen--stage .ps-app,
 .phone-screen--stage .ps-app-focuslock,
@@ -1991,7 +2012,12 @@ const css = `
 }
 
 /* ── Home screen ─────────────────────────────────────────────────────────── */
-.ps-home { position: absolute; inset: 0; background: #0A0E17; }
+.ps-home {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle 420px at 75% 12%, rgba(99, 102, 241, .22), rgba(99, 102, 241, 0)), linear-gradient(172deg, #111a2c 0%, #0A0E17 55%, #14172a 100%);
+}
+.ps-bigclock { position: absolute; left: 0; right: 0; top: 130px; text-align: center; font-size: 150px; font-weight: 200; line-height: 1; color: #F8FAFC; }
+.ps-date { position: absolute; left: 0; right: 0; top: 282px; text-align: center; font-size: 28px; color: #94A3B8; }
 .ps-statusbar {
   display: flex;
   justify-content: space-between;

@@ -10,3 +10,15 @@ export const INSTAGRAM_ICON_UV_RECT = Object.freeze({
   uMin: 205 / 540, uMax: 335 / 540,
   vMin: 1 - 610 / 1200, vMax: 1 - 480 / 1200,
 });
+
+// The home-screen apps PhoneScreen opens, in grid order, on the 540 x 1200
+// surface. PhoneScreen positions its icons from this list and the room's phone
+// texture draws from it, so the two cannot drift.
+export const PHONE_HOME_APPS = Object.freeze([
+  { id: 'instagram', label: 'Instagram', left: 50, top: 560, size: 130 },
+  { id: 'focuslock', label: 'FocusLock', left: 205, top: 560, size: 130 },
+  { id: 'expense', label: 'Expense', left: 360, top: 560, size: 130 },
+  { id: 'basketproof', label: 'BasketProof', left: 50, top: 800, size: 130 },
+  { id: 'contact', label: 'Message', left: 205, top: 800, size: 130 },
+  { id: 'blackout', label: 'Blackout', left: 360, top: 800, size: 130 },
+].map(Object.freeze));
