@@ -1,7 +1,7 @@
 # Handoff
 
 The single status document. Commands, invariants and traps: [AGENTS.md](../AGENTS.md).
-Last updated 2026-11-11. The previous version, with the history behind older items, is
+Last updated 2026-11-18. The previous version, with the history behind older items, is
 [archive/HANDOFF-2026-11-01.md](archive/HANDOFF-2026-11-01.md).
 
 ## Where things are
@@ -12,8 +12,13 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
   changed and what to look for.
 - **Branch names:** `feat/`, `fix/`, `chore/` or `docs/` only. The owner does not want
   `claude/...` branches; rename any session-generated branch before pushing or opening a PR.
-- **`main` is live**: `88a6c89` (PR #10), deployed to production 2026-11-11 =
-  https://dhruvkothari.com (canonical). Repo `dhruv4740/portfolio-room` (public). Never commit to
+- **`main` is live**: `530f3a9` (PR #17 merge, the home redesign, built from `1ec04d7`), deployed to
+  production 2026-11-18 (Pages deployment `453ac4c3`) = https://dhruvkothari.com (canonical).
+  Previous production was `bf79f5b` (PR #18, pages.dev redirect). The redesign had sat on preview
+  for about a week; production and preview now serve the same build. Verified after deploy: no
+  failed requests, no page errors, new title and "Walk through my 3D room" button present. No
+  automated test suite or CI exists, so that was a build plus page-load check, not a full
+  regression run. Repo `dhruv4740/portfolio-room` (public). Never commit to
   `main`; branch, then merge after the owner's yes.
 - **Hosting:** Cloudflare Pages project `dhruvkothari`, direct upload (no Git
   integration, so deployments cannot be retried; every change needs a fresh deploy).
