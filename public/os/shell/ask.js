@@ -139,7 +139,7 @@ export function mountAsk(el) {
 
   async function ask(q) {
     q = String(q ?? input.value).trim();
-    if (busy || q.length < 3) return;
+    if (busy || q.length < 2) return;
     busy = true; go.disabled = true; input.value = ''; chips.style.display = 'none'; asked.add(q.toLowerCase());
     const mine = seq;
     if (thread.firstChild?.classList?.contains('ask-intro')) thread.replaceChildren();
