@@ -25,6 +25,7 @@ Last updated 2026-11-18. The previous version, with the history behind older ite
   - Preview: `npx wrangler pages deploy dist --project-name dhruvkothari --branch preview --commit-dirty=true`
     → https://preview.dhruvkothari.pages.dev
   - Production: same with `--branch main`, **only after a fresh explicit yes from the owner**.
+  - **After every production deploy, purge the zone cache** (Cloudflare API `POST /zones/e42ac34366ff8e326ea6b2da2c474bf0/purge_cache`, `{"purge_everything":true}`, or dashboard Caching > Purge Everything). Unhashed files under `/os/` (e.g. `os/shell/ask-pill.js`) are edge-cached for 4 hours (`max-age=14400`) and `dhruvkothari.com` kept serving an old copy of them after the 2026-11-18 deploy, so the new hero Ask card did nothing (preview and pages.dev were fine). Check with a browser `fetch` of the file against the repo copy, not curl; curl got the right file.
   - Build production from a clean worktree at `origin/main` with its own `npm ci`. Never
     junction `node_modules` into a worktree: `git worktree remove --force` deletes the target.
 - **Domain (shipped 2026-11-11):** `dhruvkothari.com` (Cloudflare Registrar, zone
