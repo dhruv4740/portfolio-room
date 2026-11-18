@@ -360,7 +360,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     if (!history.state?.askOpen) history.pushState({ askOpen: 1 }, '');
     addEventListener('keydown', onKey, true);
     const [pr, pg, pb] = hrgb(v('--paper')), [ar, ag, ab] = hrgb(v('--acc'));
-    const ask = () => { if (hero.st !== 'opening' && hero.st !== 'open') return; if (d.q && d.q.length >= 3) { chat.ask(d.q); card.focus({ preventScroll: true }); } else if (coarse()) card.focus({ preventScroll: true }); else chat.input.focus({ preventScroll: true }); };
+    const ask = () => { if (hero.st !== 'opening' && hero.st !== 'open') return; if (d.q && d.q.length >= 2) { chat.ask(d.q); card.focus({ preventScroll: true }); } else if (coarse()) card.focus({ preventScroll: true }); else chat.input.focus({ preventScroll: true }); };
     if (reduced()) {
       setBox(end, rad); from.style.visibility = 'hidden';
       heroAnim(card, [{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: 'linear' }); setSt('open');
@@ -417,7 +417,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     if (isOpen && !hero.on && !history.state?.askOpen) close({ pop: true });
     if (hero.on && (hero.st === 'open' || hero.st === 'opening') && !history.state?.askOpen) closeHero({ pop: true });
   });
-  pill.addEventListener('submit', (e) => { e.preventDefault(); const q = pillInput.value.trim(); pillInput.value = ''; open(q.length >= 3 ? q : ''); });
+  pill.addEventListener('submit', (e) => { e.preventDefault(); const q = pillInput.value.trim(); pillInput.value = ''; open(q.length >= 2 ? q : ''); });
   for (const t of ['keydown', 'keyup', 'keypress']) { pill.addEventListener(t, (e) => e.stopPropagation()); card.addEventListener(t, (e) => e.stopPropagation()); }
   card.querySelector('header .x').onclick = close;
   newBtn.onclick = () => { chat.reset(); newBtn.hidden = true; if (coarse()) card.focus({ preventScroll: true }); else chat.input.focus(); };

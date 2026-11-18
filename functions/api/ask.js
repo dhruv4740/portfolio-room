@@ -47,7 +47,7 @@ export async function onRequestPost({ request, env }) {
   let b;
   try { b = JSON.parse(await request.text()); } catch { return reply({ error: 'bad request' }, 400); }
   const q = normalise(b?.q);
-  if (q.length < 3 || q.length > 300) return reply({ error: 'Ask a question between 3 and 300 characters.' }, 400);
+  if (q.length < 2 || q.length > 300) return reply({ error: 'Ask a question between 2 and 300 characters.' }, 400);
   const origin = request.headers.get('origin');
   if (origin && new URL(origin).host !== new URL(request.url).host) return reply({ error: 'forbidden' }, 403);
 

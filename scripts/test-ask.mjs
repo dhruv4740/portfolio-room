@@ -87,7 +87,7 @@ await t('openrouter only tries :free models', async () => {
 await t('canned FAQ: on-topic, off-topic, input limits', async () => {
   assert.match(cannedAnswer('how can I contact him?').answer, /@/);
   assert.match(cannedAnswer('what is the capital of France').answer, /only answer questions about Dhruv/);
-  assert.equal((await onRequestPost({ env: env(), request: new Request('https://x.test/api/ask', { method: 'POST', body: JSON.stringify({ q: 'hi' }) }) })).status, 400);
+  assert.equal((await onRequestPost({ env: env(), request: new Request('https://x.test/api/ask', { method: 'POST', body: JSON.stringify({ q: 'h' }) }) })).status, 400);
   const sp = systemPrompt(); assert.match(sp, /FACTS START/); assert.ok(!/GROQ|sk-/.test(sp));
 });
 await t('failed answers do not use up the visitor cap', async () => {
