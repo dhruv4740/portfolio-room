@@ -78,7 +78,7 @@ html[data-overlay] #ask-pill-root{display:none}
   const $ = (s) => root.querySelector(s);
   const wrap = $('#ask-wrap'), pill = $('#ask-pill'), pillInput = pill.querySelector('input'), scrim = $('#ask-scrim'), card = $('#ask-card'), body = card.querySelector('.body'), col = card.querySelector('.col'), cvs = $('#ask-glow'), newBtn = card.querySelector('.new'), safe = $('#ask-safe');
   let chat = null, isOpen = false, settled = false, byKey = false;
-  const hero = { on: false, st: 'closed', from: null, input: null, anims: [], timers: [], popping: false };
+  const hero = { on: false, st: 'closed', from: null, input: null, anims: [], timers: [], popping: false, raf: 0, m: null };
 
   // Where the pill lives (decided from the URL as well as the DOM: <Scan> is lazy, so waiting for .scan-root made the pill start centred and jump right): bottom-right in the room (its HUD and object list sit bottom-left/centre), above the CTA bar on /work.
   const place = () => { root.dataset.ctx = document.querySelector('.scan-root') || location.pathname.startsWith('/room') ? 'room' : document.querySelector('.w-root') ? 'work' : 'page'; };
@@ -304,7 +304,14 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   const HE = 'cubic-bezier(.2,.8,.2,1)';
   const hrgb = (v) => { let h = String(v).trim().replace('#', ''); if (h.length === 3) h = [...h].map((c) => c + c).join(''); const n = parseInt(h, 16); return Number.isNaN(n) ? [251, 250, 247] : [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
   const setSt = (st) => { hero.st = st; card.dataset.heroState = st; };
-  const stopHero = () => { hero.anims.forEach((a) => { try { a.cancel(); } catch {} }); hero.anims = []; hero.timers.forEach(clearTimeout); hero.timers = []; };
+  const stopHero = () => { hero.anims.forEach((a) => { try { a.cancel(); } catch {} }); hero.anims = []; hero.timers.forEach(clearTimeout); hero.timers = []; cancelAnimationFrame(hero.raf); hero.raf = 0; };
+  // The panel's own box is driven by one rAF loop (heroLoop) instead of restartable animations, so the content can retarget it freely.
+  const bez = (x1, y1, x2, y2) => (x) => {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let t = x; for (let i = 0; i < 8; i++) { const u = 1 - t, cx = 3 * x1 * t * u * u + 3 * x2 * t * t * u + t ** 3 - x, d = 3 * x1 * u * u + 6 * (x2 - x1) * t * u + 3 * (1 - x2) * t * t; if (Math.abs(cx) < 1e-5 || !d) break; t = Math.min(Math.max(t - cx / d, 0), 1); }
+    const u = 1 - t; return 3 * y1 * t * u * u + 3 * y2 * t * t * u + t ** 3;
+  };
+  const heroEase = bez(0.2, 0.8, 0.2, 1);
   const heroAnim = (el, kf, opt) => { const a = el.animate(kf, { easing: HE, fill: 'both', ...opt }); hero.anims.push(a); return a; };
   const heroKids = () => (hero.from ? [...(hero.from.querySelector('.h-ask') || hero.from).children] : []);
   const boxCSS = (r, rad) => ({ left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px', borderRadius: rad + 'px' });
@@ -312,32 +319,59 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   const plain = (r) => ({ left: r.left, top: r.top, width: r.width, height: r.height });
   // Desktop: keeps the hero card's top and right edges and grows left and down. Phones: a sheet with 12px side margins above the bottom bar.
   // Desktop height hugs the content: the chrome around the thread plus the thread's own height, so no blank gap under a short answer.
-  const hugH = () => { const t = body.querySelector('.ask-thread'); return t ? col.clientHeight - t.clientHeight + t.scrollHeight + 10 : 360; };
-  function heroOpenRect(from) {
+  // The thread's natural height comes from its last child's layout position (offsetTop ignores transforms mid-animation), not scrollHeight:
+  // scrollHeight equals the stretched box when the content is shorter, so it would grow the panel by 10 px every time it is read.
+  const hugH = () => { const t = body.querySelector('.ask-thread'), k = t?.lastElementChild; return k ? col.clientHeight - t.clientHeight + k.offsetTop + k.offsetHeight + 6 + 10 : 360; };
+  function heroOpenRect(from, hh) {
     const W = innerWidth, H = innerHeight, fr = from.getBoundingClientRect();
     if (W >= 960) {
-      const right = Math.min(fr.right, W - 24), w = Math.min(640, W * 0.92, right - 24), h = Math.min(Math.max(hugH(), 360), H * 0.76, H - 48);
+      const right = Math.min(fr.right, W - 24), w = Math.min(640, W * 0.92, right - 24), h = hh ?? Math.min(Math.max(hugH(), 400), H * 0.76, H - 48);
       return { left: right - w, top: Math.min(Math.max(fr.top, 24), H - 24 - h), width: w, height: h };
     }
     const bar = document.querySelector('.w-bar'); let bottom = H - 12;
     if (bar) { const b = bar.getBoundingClientRect(); if (b.height > 0 && b.top > H / 2 && b.top < H) bottom = b.top - 12; }
-    // Phones: top edge fixed, height hugs the content (min 320, max 86% of the screen or the room above the bottom bar).
-    const max = Math.max(240, Math.min(H * 0.86, bottom - 12)), h = Math.min(Math.max(hugH(), 320), max);
+    // Phones: top edge fixed, height hugs the content (min 360, max 86% of the screen or the room above the bottom bar).
+    const max = Math.max(240, Math.min(H * 0.86, bottom - 12)), h = hh ?? Math.min(Math.max(hugH(), 360), max);
     return { left: 12, top: 12, width: W - 24, height: h };
   }
   const snap = () => { const r = card.getBoundingClientRect(), cs = getComputedStyle(card); return { r: plain(r), rad: parseFloat(cs.borderTopLeftRadius) || 14, col: +getComputedStyle(col).opacity, scrim: +getComputedStyle(scrim).opacity, card: +cs.opacity }; };
 
-  // Content changed (answer arrived, chips hidden): re-measure and animate the real height over 220 ms from the current rect.
-  let fitRaf = 0;
-  const fitHero = () => {
-    if (hero.st !== 'open') return;
-    const cur = card.getBoundingClientRect(), to = heroOpenRect(hero.from);
-    if (Math.abs(to.height - cur.height) < 2) return;
-    stopHero(); const rad = hero.rad;
-    if (reduced()) { setBox(to, rad); return; }
-    const a = heroAnim(card, [boxCSS(plain(cur), rad), boxCSS(to, rad)], { duration: 220 });
-    a.onfinish = () => { if (hero.st === 'open') { setBox(to, rad); a.cancel(); hero.anims = hero.anims.filter((x) => x !== a); } };
+  // One loop owns the panel's box while it opens and while its content changes. Opening: left, top, width and height ease to the
+  // open rect over 480 ms, the height aiming at the thinking-state height (T0, never below the 400/360 px minimum). Whatever
+  // the content adds on top of that (the answer arriving) is followed by a critically damped spring on the leftover, so an answer
+  // landing mid-open just bends the same motion. After the open the spring follows the content's height. Mutations only
+  // change the target the loop re-reads every frame: nothing is cancelled or restarted.
+  const follow = (x, v, T, dt) => {
+    const w = (2 * Math.PI) / 0.4, n = 4, hh = dt / n;
+    for (let i = 0; i < n; i++) { v += (-w * w * (x - T) - 2 * w * v) * hh; x += v * hh; }
+    return [x, v];
   };
+  const heroLoop = (now) => {
+    hero.raf = 0; const m = hero.m;
+    if (!m || (hero.st !== 'opening' && hero.st !== 'open')) return;
+    const dt = Math.max(0, Math.min((now - m.last) / 1000, 1 / 20)); m.last = now;
+    const T = heroOpenRect(hero.from).height; let r, done = false;
+    if (m.phase === 'open') {
+      const e = heroEase(Math.min((now - m.t0) / 480, 1));
+      [m.extra, m.v] = follow(m.extra, m.v, T - m.T0, dt);
+      const h = lerp(m.s.height, m.T0, e) + m.extra, end = heroOpenRect(hero.from, h);
+      r = { left: lerp(m.s.left, end.left, e), top: lerp(m.s.top, end.top, e), width: lerp(m.s.width, end.width, e), height: h };
+      if (now - m.t0 >= 480) { m.phase = 'follow'; m.h = h; setSt('open'); col.style.left = col.style.right = col.style.width = ''; }
+    } else {
+      [m.h, m.v] = follow(m.h, m.v, T, dt);
+      done = Math.abs(T - m.h) < 0.5 && Math.abs(m.v) < 8;
+      r = heroOpenRect(hero.from, done ? T : m.h);
+    }
+    setBox(r, hero.rad);
+    if (!done) hero.raf = requestAnimationFrame(heroLoop);
+  };
+  const fitHero = () => {
+    if (hero.st !== 'open' || hero.raf) return; // while opening, or already following, the loop re-reads the target every frame
+    if (reduced()) { setBox(heroOpenRect(hero.from), hero.rad); return; }
+    const m = hero.m; if (!m) return;
+    m.phase = 'follow'; m.h = card.getBoundingClientRect().height; m.v = 0; m.last = performance.now(); hero.raf = requestAnimationFrame(heroLoop);
+  };
+  let fitRaf = 0;
   new MutationObserver(() => { if (!fitRaf) fitRaf = requestAnimationFrame(() => { fitRaf = 0; fitHero(); }); }).observe(body, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'hidden'] });
 
   function openHero(d) {
@@ -352,7 +386,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     root.dataset.variant = 'hero';
     const fr = from.getBoundingClientRect(), rad = parseFloat(getComputedStyle(from.querySelector('.h-ask') || from).borderTopLeftRadius) || 14;
     hero.rad = rad;
-    const startR = s0 ? s0.r : plain(fr), startRad = s0 ? s0.rad : rad, end = heroOpenRect(from);
+    const startR = s0 ? s0.r : plain(fr), startRad = s0 ? s0.rad : rad;
     if (!wasClosing) { card.removeAttribute('style'); col.removeAttribute('style'); }
     card.classList.remove('fallback'); card.classList.add('open'); scrim.classList.add('open');
     setBox(startR, startRad); setSt('opening');
@@ -362,13 +396,19 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     const [pr, pg, pb] = hrgb(v('--paper')), [ar, ag, ab] = hrgb(v('--acc'));
     const ask = () => { if (hero.st !== 'opening' && hero.st !== 'open') return; if (d.q && d.q.length >= 2) { chat.ask(d.q); card.focus({ preventScroll: true }); } else if (coarse()) card.focus({ preventScroll: true }); else chat.input.focus({ preventScroll: true }); };
     if (reduced()) {
-      setBox(end, rad); from.style.visibility = 'hidden';
+      const end = heroOpenRect(from); setBox(end, rad); from.style.visibility = 'hidden';
       heroAnim(card, [{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: 'linear' }); setSt('open');
       heroAnim(scrim, [{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: 'linear' });
       ask(); return;
     }
-    const geo = heroAnim(card, [boxCSS(startR, startRad), boxCSS(end, rad)], { duration: 420 });
-    geo.onfinish = () => { if (hero.st !== 'opening') return; setBox(end, rad); geo.cancel(); hero.anims = hero.anims.filter((a) => a !== geo); setSt('open'); fitHero(); };
+    // The request starts on the click, so a saved answer is already in by the time the box has finished growing and the height
+    // continues into it in the same motion. The column keeps its final width (anchored right, clipped by the card) so the text
+    // never re-wraps while the box widens.
+    if (d.q && d.q.length >= 2) ask(); else hero.timers.push(setTimeout(ask, 120));
+    const end = heroOpenRect(from), t0 = performance.now();
+    Object.assign(col.style, { left: 'auto', right: '0px', width: end.width - 2 + 'px' });
+    hero.m = { phase: 'open', t0, last: t0, s: startR, T0: end.height, extra: 0, v: 0, h: 0 };
+    hero.raf = requestAnimationFrame(heroLoop);
     heroAnim(scrim, [{ opacity: s0 ? s0.scrim : 0 }, { opacity: 1 }], { duration: 420 });
     heroAnim(col, [{ opacity: s0 ? s0.col : 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: s0 ? 280 : 280, delay: s0 ? 0 : 140 });
     if (wasClosing) from.style.visibility = 'hidden';
@@ -378,7 +418,6 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
       heroKids().forEach((k) => heroAnim(k, [{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: 'linear' }));
       hero.timers.push(setTimeout(() => { from.style.visibility = 'hidden'; }, 120));
     }
-    hero.timers.push(setTimeout(ask, 120));
   }
 
   function closeHero(o = {}) {
@@ -387,6 +426,8 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     if (document.activeElement && card.contains(document.activeElement)) document.activeElement.blur();
     if (!o.pop && history.state?.askOpen) { hero.popping = true; history.back(); }
     const s = snap(), from = hero.from; stopHero(); setBox(s.r, s.rad);
+    // The text keeps its width while the box shrinks, so it never re-wraps as it fades.
+    Object.assign(col.style, { left: 'auto', right: '0px', width: col.offsetWidth + 'px' });
     const fr = from.getBoundingClientRect(), rad = parseFloat(getComputedStyle(from.querySelector('.h-ask') || from).borderTopLeftRadius) || 14;
     const off = fr.width === 0 || fr.bottom <= 0 || fr.top >= innerHeight;
     const done = () => {
@@ -402,13 +443,13 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     }
     heroAnim(scrim, [{ opacity: s.scrim }, { opacity: 0 }], { duration: 320 });
     if (off) { heroAnim(card, [{ opacity: s.card, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.96)' }], { duration: 320 }).onfinish = done; return; }
-    heroAnim(col, [{ opacity: s.col }, { opacity: 0 }], { duration: 120, easing: 'linear' });
+    // Cross-fade, never a blank card: the panel's text and surface fade out over 200 ms while the hero card's own text fades in
+    // over the first 100 ms underneath, all while the shape is still landing on the hero card's rect.
+    from.style.visibility = '';
+    heroAnim(col, [{ opacity: s.col }, { opacity: 0 }], { duration: 200, easing: 'linear' });
+    heroKids().forEach((k) => heroAnim(k, [{ opacity: 0 }, { opacity: 1 }], { duration: 100, easing: 'linear' }));
+    heroAnim(card, [{ opacity: s.card }, { opacity: 0 }], { duration: 200, easing: 'linear' });
     heroAnim(card, [boxCSS(s.r, s.rad), boxCSS(plain(fr), rad)], { duration: 320 }).onfinish = done;
-    hero.timers.push(setTimeout(() => {
-      from.style.visibility = '';
-      heroKids().forEach((k) => heroAnim(k, [{ opacity: 0 }, { opacity: 1 }], { duration: 140, easing: 'linear' }));
-      heroAnim(card, [{ opacity: 1 }, { opacity: 0 }], { duration: 140, easing: 'linear' });
-    }, 180));
   }
   card.addEventListener('ask-hero', (e) => openHero(e.detail || {}));
   addEventListener('popstate', () => {

@@ -144,7 +144,7 @@ export function mountAsk(el) {
     const mine = seq;
     if (thread.firstChild?.classList?.contains('ask-intro')) thread.replaceChildren();
     const qb = add('ask-q'); qb.textContent = q; appear(qb);
-    // Opened from the hero card (data-variant="hero" on the panel root): three pulsing dots, held for at least 350 ms so a saved answer still reads as deliberate.
+    // Opened from the hero card (data-variant="hero" on the panel root): three pulsing dots, held for at least 250 ms (inside the panel's 480 ms open, so the answer bends the same motion) so a saved answer still reads as deliberate.
     const isHero = !!el.closest('[data-variant="hero"]'), t0 = performance.now();
     const a = add('ask-a'); a.innerHTML = isHero ? '<span class="ask-dots" role="status" aria-label="Thinking"><i></i><i></i><i></i></span>' : '<span class="ask-shim">Thinking</span>'; appear(a, 60);
     readerMoved = false; scrollTo(qb.offsetTop - 4);
@@ -154,7 +154,7 @@ export function mountAsk(el) {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q, token: await token() }) });
       d = await r.json();
     } catch { d = { failed: true }; }
-    if (isHero && !reduced()) { const wait = 350 - (performance.now() - t0); if (wait > 0) await new Promise((r) => setTimeout(r, wait)); }
+    if (isHero && !reduced()) { const wait = 250 - (performance.now() - t0); if (wait > 0) await new Promise((r) => setTimeout(r, wait)); }
     if (mine !== seq) return; // the chat was reset while this was in flight
     a.replaceChildren();
     const meta = Object.assign(document.createElement('div'), { className: 'ask-meta' });
@@ -169,7 +169,7 @@ export function mountAsk(el) {
       // Hero panel: the lead line, then each bullet 40 ms apart (180 ms each, 6 px rise). Other surfaces keep the block stagger.
       const units = isHero ? parts.flatMap((n) => (n.tagName === 'UL' || n.tagName === 'OL' ? [...n.children] : [n])) : parts;
       units.forEach((n, i) => { if (!isHero) appear(n, i * 60); else if (!reduced()) n.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 180, delay: i * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); });
-      meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' ? 'Saved answer' : 'Live AI answer' }));
+      meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' || d.provider === 'gate' ? 'Saved answer' : 'Live AI answer' }));
       if (d.source) meta.appendChild(d.href ? sourceLink(`Source: ${d.source}`, d.href) : Object.assign(document.createElement('span'), { textContent: `Source: ${d.source}` }));
       if (d.note) meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.note }));
       if (navigator.clipboard) meta.appendChild(metaBtn('Copy', (b) => navigator.clipboard.writeText(d.answer + (d.source ? `\n(Source: ${d.source})` : '')).then(() => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); }, () => {})));
