@@ -60,7 +60,7 @@ html[data-overlay] #ask-pill-root{display:none}
 #ask-pill-root[data-variant=hero] #ask-card header button{background:color-mix(in srgb,var(--hi) 8%,transparent);color:var(--hi);font-family:inherit}
 #ask-pill-root[data-variant=hero] #ask-card input:focus-visible,#ask-pill-root[data-variant=hero] #ask-card button:focus-visible,#ask-pill-root[data-variant=hero] #ask-card a:focus-visible{outline-color:var(--hi)}
 #ask-pill-root[data-variant=hero] .ask-box{color:var(--hi);font-family:inherit}
-#ask-pill-root[data-variant=hero] .ask-intro{color:var(--hm)}
+#ask-pill-root[data-variant=hero] .ask-intro,#ask-pill-root[data-variant=hero] .ask-note{color:var(--hm)}
 #ask-pill-root[data-variant=hero] .ask-thread{gap:16px}
 #ask-pill-root[data-variant=hero] .ask-q{background:var(--hi);color:var(--hb)}
 #ask-pill-root[data-variant=hero] .ask-a{max-width:100%;padding:0;border:0;border-radius:0;background:none}
@@ -78,7 +78,7 @@ html[data-overlay] #ask-pill-root{display:none}
   const $ = (s) => root.querySelector(s);
   const wrap = $('#ask-wrap'), pill = $('#ask-pill'), pillInput = pill.querySelector('input'), scrim = $('#ask-scrim'), card = $('#ask-card'), body = card.querySelector('.body'), col = card.querySelector('.col'), cvs = $('#ask-glow'), newBtn = card.querySelector('.new'), safe = $('#ask-safe');
   let chat = null, isOpen = false, settled = false, byKey = false;
-  const hero = { on: false, st: 'closed', from: null, input: null, anims: [], timers: [], popping: false, raf: 0, m: null };
+  const hero = { on: false, st: 'closed', from: null, input: null, anims: [], timers: [], popping: false, raf: 0, m: null, answered: false };
 
   // Where the pill lives (decided from the URL as well as the DOM: <Scan> is lazy, so waiting for .scan-root made the pill start centred and jump right): bottom-right in the room (its HUD and object list sit bottom-left/centre), above the CTA bar on /work.
   const place = () => { root.dataset.ctx = document.querySelector('.scan-root') || location.pathname.startsWith('/room') ? 'room' : document.querySelector('.w-root') ? 'work' : 'page'; };
@@ -210,6 +210,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   // Glow level eases toward a target: ignite on open, full while thinking, softer while the answer lands, a quiet rim at rest.
   const G = { i: 0, to: 0, sw: 1, sw0: 0, o: 0.75, t0: performance.now() };
   const LEVEL = { thinking: 1, typing: 0.55, idle: 0.32 };
+  root.addEventListener('ask-state', (e) => { if (e.detail === 'typing') hero.answered = true; });
   root.addEventListener('ask-state', (e) => { if (isOpen) G.to = LEVEL[e.detail] ?? LEVEL.idle; if (isOpen || hero.on) newBtn.hidden = !chat?.started(); kick(); });
   const draw = (now) => {
     if (!gl) return;
@@ -325,13 +326,13 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
   function heroOpenRect(from, hh) {
     const W = innerWidth, H = innerHeight, fr = from.getBoundingClientRect();
     if (W >= 960) {
-      const right = Math.min(fr.right, W - 24), w = Math.min(640, W * 0.92, right - 24), h = hh ?? Math.min(Math.max(hugH(), 400), H * 0.76, H - 48);
+      const right = Math.min(fr.right, W - 24), w = Math.min(640, W * 0.92, right - 24), h = hh ?? Math.min(Math.max(hugH(), hero.answered ? 360 : 400), H * 0.76, H - 48);
       return { left: right - w, top: Math.min(Math.max(fr.top, 24), H - 24 - h), width: w, height: h };
     }
     const bar = document.querySelector('.w-bar'); let bottom = H - 12;
     if (bar) { const b = bar.getBoundingClientRect(); if (b.height > 0 && b.top > H / 2 && b.top < H) bottom = b.top - 12; }
     // Phones: top edge fixed, height hugs the content (min 360, max 86% of the screen or the room above the bottom bar).
-    const max = Math.max(240, Math.min(H * 0.86, bottom - 12)), h = hh ?? Math.min(Math.max(hugH(), 360), max);
+    const max = Math.max(240, Math.min(H * 0.86, bottom - 12)), h = hh ?? Math.min(Math.max(hugH(), hero.answered ? 320 : 360), max);
     return { left: 12, top: 12, width: W - 24, height: h };
   }
   const snap = () => { const r = card.getBoundingClientRect(), cs = getComputedStyle(card); return { r: plain(r), rad: parseFloat(cs.borderTopLeftRadius) || 14, col: +getComputedStyle(col).opacity, scrim: +getComputedStyle(scrim).opacity, card: +cs.opacity }; };
@@ -356,7 +357,10 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
       [m.extra, m.v] = follow(m.extra, m.v, T - m.T0, dt);
       const h = lerp(m.s.height, m.T0, e) + m.extra, end = heroOpenRect(hero.from, h);
       r = { left: lerp(m.s.left, end.left, e), top: lerp(m.s.top, end.top, e), width: lerp(m.s.width, end.width, e), height: h };
-      if (now - m.t0 >= 480) { m.phase = 'follow'; m.h = h; setSt('open'); col.style.left = col.style.right = col.style.width = ''; }
+      // The column keeps its final width, so text would read clipped at the moving edge: it stays invisible until the box is
+      // at least 92% of its final width, then fades in (never faster than 160 ms from the click).
+      col.style.opacity = (Math.min(1, Math.max(0, (r.width - (end.width - 24)) / 24)) * Math.min(1, (now - m.t0) / 160)).toFixed(3);
+      if (now - m.t0 >= 480) { m.phase = 'follow'; m.h = h; setSt('open'); col.style.left = col.style.right = col.style.width = col.style.opacity = ''; }
     } else {
       [m.h, m.v] = follow(m.h, m.v, T, dt);
       done = Math.abs(T - m.h) < 0.5 && Math.abs(m.v) < 8;
@@ -379,7 +383,7 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     if (!from || isOpen || hero.st === 'opening' || hero.st === 'open') return;
     const wasClosing = hero.st === 'closing', s0 = wasClosing ? snap() : null;
     stopHero();
-    Object.assign(hero, { from, input: d.input, on: true }); byKey = false;
+    Object.assign(hero, { from, input: d.input, on: true, answered: false }); byKey = false;
     chat ||= mountAsk(body);
     const cs = getComputedStyle(from.closest('.w-root') || document.body), v = (n) => cs.getPropertyValue(n).trim();
     [['--hp', '--paper'], ['--hi', '--ink'], ['--hi2', '--ink2'], ['--hm', '--mute'], ['--hl', '--line'], ['--hb', '--bg'], ['--ha', '--acc']].forEach(([a, b]) => root.style.setProperty(a, v(b)));
@@ -406,11 +410,10 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
     // never re-wraps while the box widens.
     if (d.q && d.q.length >= 2) ask(); else hero.timers.push(setTimeout(ask, 120));
     const end = heroOpenRect(from), t0 = performance.now();
-    Object.assign(col.style, { left: 'auto', right: '0px', width: end.width - 2 + 'px' });
+    Object.assign(col.style, { left: 'auto', right: '0px', width: end.width - 2 + 'px', opacity: '0' });
     hero.m = { phase: 'open', t0, last: t0, s: startR, T0: end.height, extra: 0, v: 0, h: 0 };
     hero.raf = requestAnimationFrame(heroLoop);
     heroAnim(scrim, [{ opacity: s0 ? s0.scrim : 0 }, { opacity: 1 }], { duration: 420 });
-    heroAnim(col, [{ opacity: s0 ? s0.col : 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: s0 ? 280 : 280, delay: s0 ? 0 : 140 });
     if (wasClosing) from.style.visibility = 'hidden';
     else {
       // The panel's surface and glow take over from the hero card's while the card's own content fades out.
@@ -441,15 +444,17 @@ gl_FragColor=vec4(mix(c,vec3(1.),.45*core)*al,al);}`;
       heroAnim(scrim, [{ opacity: s.scrim }, { opacity: 0 }], { duration: 120, easing: 'linear' });
       return;
     }
-    heroAnim(scrim, [{ opacity: s.scrim }, { opacity: 0 }], { duration: 320 });
+    heroAnim(scrim, [{ opacity: s.scrim }, { opacity: 0 }], { duration: 280 });
     if (off) { heroAnim(card, [{ opacity: s.card, transform: 'scale(1)' }, { opacity: 0, transform: 'scale(.96)' }], { duration: 320 }).onfinish = done; return; }
-    // Cross-fade, never a blank card: the panel's text and surface fade out over 200 ms while the hero card's own text fades in
-    // over the first 100 ms underneath, all while the shape is still landing on the hero card's rect.
-    from.style.visibility = '';
-    heroAnim(col, [{ opacity: s.col }, { opacity: 0 }], { duration: 200, easing: 'linear' });
-    heroKids().forEach((k) => heroAnim(k, [{ opacity: 0 }, { opacity: 1 }], { duration: 100, easing: 'linear' }));
-    heroAnim(card, [{ opacity: s.card }, { opacity: 0 }], { duration: 200, easing: 'linear' });
-    heroAnim(card, [boxCSS(s.r, s.rad), boxCSS(plain(fr), rad)], { duration: 320 }).onfinish = done;
+    // One surface at a time: the hero card stays hidden while the panel shrinks (its text gone in the first 90 ms, an empty
+    // surface morphing is fine). When the box has landed on the hero card's rect the panel hands over in the same frame and
+    // the hero card's own text fades in over 120 ms.
+    from.style.visibility = 'hidden';
+    heroAnim(col, [{ opacity: s.col }, { opacity: 0 }], { duration: 90, easing: 'linear' });
+    heroAnim(card, [boxCSS(s.r, s.rad), boxCSS(plain(fr), rad)], { duration: 280 }).onfinish = () => {
+      done();
+      heroKids().forEach((k) => k.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 120, easing: 'linear' }));
+    };
   }
   card.addEventListener('ask-hero', (e) => openHero(e.detail || {}));
   addEventListener('popstate', () => {

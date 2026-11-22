@@ -23,6 +23,7 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const CSS = `.ask-box{font:400 15px/1.55 system-ui,-apple-system,sans-serif;color:${INK};display:flex;flex-direction:column;gap:12px;height:100%;min-height:0}
 .ask-thread{position:relative;flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px 2px 6px;scrollbar-width:thin;overscroll-behavior:contain}
+.ask-note{margin:0;color:${MUTE};font-size:12px}.ask-note[hidden]{display:none}
 .ask-intro{margin:0;color:${MUTE};font-size:14px}
 .ask-q{align-self:flex-end;max-width:88%;padding:9px 14px;border-radius:18px 18px 4px 18px;background:rgba(246,244,238,.92);color:#26251f}
 .ask-a{align-self:flex-start;max-width:96%;line-height:1.5;padding:10px 14px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
@@ -82,7 +83,9 @@ export function mountAsk(el) {
   const go = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Ask' });
   row.append(input, go);
   const ts = document.createElement('div');
-  box.append(thread, chips, row, ts, live); el.appendChild(box);
+  // Shown only when Turnstile turns interactive (a checkbox appears): the question and the thinking dots are already in the thread by then.
+  const note = Object.assign(document.createElement('p'), { className: 'ask-note', textContent: 'Cloudflare wants a quick check first.', hidden: true });
+  box.append(thread, chips, row, note, ts, live); el.appendChild(box);
 
   const asked = new Set();
   let shown = 0;
@@ -104,7 +107,7 @@ export function mountAsk(el) {
   getConfig().then(async (c) => {
     if (!c.turnstileSiteKey) return;
     const t = await loadTurnstile(); if (!t) return;
-    widget = t.render(ts, { sitekey: c.turnstileSiteKey, appearance: 'interaction-only', theme: 'dark' });
+    widget = t.render(ts, { sitekey: c.turnstileSiteKey, appearance: 'interaction-only', theme: 'dark', 'before-interactive-callback': () => { note.hidden = false; }, 'after-interactive-callback': () => { note.hidden = true; }, callback: () => { note.hidden = true; } });
   });
   const token = async () => {
     if (widget == null) return '';
