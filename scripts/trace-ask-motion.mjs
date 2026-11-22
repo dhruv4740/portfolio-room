@@ -6,6 +6,7 @@
 //
 // Usage: BASE=http://localhost:8811 node scripts/trace-ask-motion.mjs [WxH ...]    (default 1024x768 390x844)
 //   DELAY=2000  simulates a slow model answer (POST /api/ask held that long)
+//   REDUCED=1   runs with prefers-reduced-motion: reduce (open and close must be quick and instant, Back still works)
 //   SHOTS=1     also saves r23-*.png (mid-open, open with answer, mid-close) in .claude/shots/
 // Row format: [ms, left, top, width, height, cardOpacity, colOpacity, heroTextOpacity, state]
 // ============================================================================
@@ -14,7 +15,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 
 const BASE = process.env.BASE || 'http://localhost:8811';
 const DELAY = +process.env.DELAY || 0;
-const SHOTS = !!process.env.SHOTS;
+const SHOTS = !!process.env.SHOTS, REDUCED = !!process.env.REDUCED;
+const pageErrors = [];
 const sizes = process.argv.slice(2).filter((a) => /^\d+x\d+$/.test(a));
 if (!sizes.length) sizes.push('1024x768', '390x844');
 const OUT = new URL('../.claude/trace/', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
@@ -47,8 +49,9 @@ const INIT = () => {
 const chipOf = (page) => page.locator('button.h-chip', { hasText: 'Why hire Dhruv?' });
 async function loadPage(browser, w, h) {
   const phone = w < 700;
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(phone ? { hasTouch: true, isMobile: true, deviceScaleFactor: 2 } : {}) });
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(REDUCED ? { reducedMotion: 'reduce' } : {}), ...(phone ? { hasTouch: true, isMobile: true, deviceScaleFactor: 2 } : {}) });
   const page = await ctx.newPage();
+  page.on('pageerror', (e) => pageErrors.push(e.message));
   await page.addInitScript(INIT);
   if (DELAY) await page.route('**/api/ask', async (route) => { if (route.request().method() === 'POST') await new Promise((r) => setTimeout(r, DELAY)); await route.continue(); });
   await page.goto(BASE + '/', { waitUntil: 'load' });
@@ -72,6 +75,19 @@ function plateau(rows, t0, t1, answerAt) {
   return { ...best, waitingOnAnswer: answerAt != null && best.ms > 0 && answerAt >= best.from - 50 && answerAt <= best.to + 150 };
 }
 
+// prefers-reduced-motion keeps the instant behaviour: the box is at its open rect within a couple of frames, the close is a 120 ms fade.
+async function reducedChecks(page, ctx, openRows, finalH) {
+  const flat = openRows.filter((r) => r[3] > 0), tOpen = flat.find((r) => Math.abs(r[4] - finalH) < 1 && r[8] === 'open')?.[0];
+  console.log(`  reduced: open rect reached at ${tOpen} ms, final height ${finalH}`);
+  verdict('rule 5: reduced motion opens instantly (<= 100 ms)', tOpen != null && tOpen <= 100, `${tOpen} ms`);
+  await page.evaluate(() => { window.__rows.length = 0; window.__t0 = performance.now(); });
+  await page.keyboard.press('Escape'); await page.waitForTimeout(800);
+  const rows = await page.evaluate(() => window.__rows.slice()), gone = rows.find((r) => r[8] === 'gone')?.[0];
+  console.log(`  reduced: close finished at ${gone} ms`);
+  verdict('rule 5: reduced motion closes in about 120 ms (<= 220 ms)', gone != null && gone <= 220, `${gone} ms`);
+  await ctx.close();
+}
+
 async function trace(browser, w, h) {
   console.log(`\n== ${w}x${h}${DELAY ? ` (answer delayed ${DELAY} ms)` : ''}`);
   const { ctx, page, phone } = await loadPage(browser, w, h);
@@ -85,6 +101,7 @@ async function trace(browser, w, h) {
   const open = await page.evaluate(() => ({ rows: window.__rows.slice(), an: { ...window.__an } }));
   const openRows = open.rows;
   const finalH = openRows.at(-1)?.[4];
+  if (REDUCED) return reducedChecks(page, ctx, openRows, finalH);
   const pl = plateau(openRows, 0, 2000 + DELAY, DELAY ? DELAY + 120 : null);
   const flat = openRows.filter((r) => r[3] > 0);
   const t = (pred) => flat.find(pred)?.[0];
@@ -121,8 +138,9 @@ async function backTest(browser, w, h) {
   console.log(`\n== Back at ${w}x${h}`);
   let bad = 0;
   for (const how of ['back', 'back', 'back', 'escape', 'scrim']) {
-    const phone = w < 700, ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(phone ? { hasTouch: true, isMobile: true } : {}) });
+    const phone = w < 700, ctx = await browser.newContext({ viewport: { width: w, height: h }, ...(REDUCED ? { reducedMotion: 'reduce' } : {}), ...(phone ? { hasTouch: true, isMobile: true } : {}) });
     const page = await ctx.newPage();
+    page.on('pageerror', (e) => pageErrors.push(e.message));
     await page.goto('about:blank'); await page.goto(BASE + '/', { waitUntil: 'load' }); await chipOf(page).waitFor({ timeout: 30000 }); await page.waitForTimeout(2000);
     await (phone ? chipOf(page).tap() : chipOf(page).click()); await page.waitForTimeout(1500);
     const st = () => page.evaluate(() => ({ url: location.href, state: document.getElementById('ask-card').dataset.heroState || 'closed', ask: !!history.state?.askOpen }));
@@ -147,5 +165,6 @@ const browser = await chromium.launch();
 try {
   for (const s of sizes) { const [w, h] = s.split('x').map(Number); await trace(browser, w, h); if (!DELAY && !SHOTS) await backTest(browser, w, h); }
 } finally { await browser.close(); }
+verdict('no page errors', pageErrors.length === 0, pageErrors.slice(0, 2).join(' | '));
 console.log(fails ? `\n${fails} FAILED` : '\nall passed');
 process.exit(fails ? 1 : 0);
