@@ -3,7 +3,7 @@
 // canned FAQ answers, so the endpoint never errors. Secrets stay in env; question text is never logged.
 import { runChain } from '../_ask/chain.js';
 import { PROVIDERS } from '../_ask/providers.js';
-import { systemPrompt, cannedAnswer, splitSource, sourceHref, LEAK_MARKER } from '../_ask/knowledge.js';
+import { systemPrompt, cannedAnswer, gateAnswer, splitSource, sourceHref, LEAK_MARKER } from '../_ask/knowledge.js';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 const day = () => new Date().toISOString().slice(0, 10);
@@ -50,6 +50,13 @@ export async function onRequestPost({ request, env }) {
   if (q.length < 2 || q.length > 300) return reply({ error: 'Ask a question between 2 and 300 characters.' }, 400);
   const origin = request.headers.get('origin');
   if (origin && new URL(origin).host !== new URL(request.url).host) return reply({ error: 'forbidden' }, 403);
+
+  // Greetings and clearly unrelated questions are answered here: no Turnstile, no KV, no model.
+  const gated = gateAnswer(q);
+  if (gated) {
+    console.log(JSON.stringify({ ask: 1, provider: 'gate', ms: Date.now() - t0, kind: gated.kind }));
+    return reply({ answer: gated.answer, source: '', href: '', provider: 'gate', ms: Date.now() - t0 });
+  }
 
   const canned = (note, tried = []) => {
     const c = cannedAnswer(q);

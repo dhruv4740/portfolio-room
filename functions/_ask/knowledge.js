@@ -261,14 +261,36 @@ const onTopic = (q) => /\b(dhruv|kothari|he|his|him|candidate|hire|hiring|intern
 const GREETING = /^\s*(hi+|hello+|hey+|hiya|yo|sup|howdy|namaste|good (morning|afternoon|evening)|thanks?|thank you|ok(ay)?|cool|great)\b[\s!.,?]*(there|team|assistant|bot)?[\s!.,?]*$/i;
 const BROAD = /\b(what (can|does|do) (he|dhruv|you)( do| know| build)?|tell me (more )?about (him|dhruv|himself|you)|who (is|'s) (he|dhruv)|about (him|dhruv)|introduce|overview|background|capabilit|can he|does he)\b|^\s*(his |dhruv'?s )?(skills?|strengths?|work|profile|about)\??\s*$/i;
 
+const GREETING_ANSWER = ans(`Hi, I am the assistant on ${identity.name}'s portfolio.`, ['I can tell you about his projects and internships.', 'I can cover his skills and hackathons.', 'I can say what he is looking for.']);
+const OFFTOPIC_ANSWER = ans('I can only answer questions about Dhruv.', ['Ask about his projects, internships or skills.', 'Ask about his hackathons or what he is looking for.'], `Try "Why hire Dhruv?" or email ${contact.email}.`);
+
+// The gate runs before Turnstile, the KV caps and the model, so greetings and clearly unrelated questions cost nothing.
+// A question is gated as off-topic only when every test says so: no keyword from onTopic, no second-person word (recruiters
+// talk to the assistant as if it were Dhruv), no recruiter-topic word, and none of its words (3+ letters, minus filler) is in
+// the knowledge text. Anything else, including anything unsure, goes to the model.
+const SECOND_PERSON = /\b(you|your|yours|yourself|u|ur)\b/i;
+// Recruiter vocabulary that is not in the knowledge text (it states no salary or visa), so asking about it must still reach the model.
+const RECRUITER = /\b(notice|period|salary|ctc|stipend|compensation|relocat\w*|visa|sponsor\w*|authori[sz]\w*|gpa|cgpa|grades?|marks|availab\w*|joining|join|start|full.?time|part.?time|contract|interview|references?|timezone|hybrid|onsite|references?|linkedin|resume|cv|dhr?u+v\w*|kothari|kotari)\b/i;
+const FILLER = new Set('the and for are was were can could would should will what whats who whom whose how why when where which did does doing has have had his her him she not but any all with about from into that this there here they them then than tell give show write make won win wins let get got its our out one new more very just also like need want please'.split(' '));
+const words = (s) => (String(s).toLowerCase().match(/[a-z0-9+#]+/g) || []).filter((w) => w.length >= 3 && !FILLER.has(w));
+const VOCAB = new Set(SECTIONS.flatMap((s) => words(`${s.title} ${s.text} ${s.keys}`)).concat(projects.flatMap((p) => words(`${p.name} ${(p.tech || []).join(' ')}`)), skills.flatMap((x) => words(x.label))));
+const NOT_LATIN = /[^\p{Script=Latin}\p{N}\p{P}\p{S}\p{Z}\p{M}]/u;
+// null = let the model answer; otherwise { kind, answer, source } for the gate to send as-is.
+export function gateAnswer(question) {
+  const q = clean(question);
+  if (GREETING.test(q)) return { kind: 'greeting', answer: GREETING_ANSWER, source: '' };
+  if (NOT_LATIN.test(q) || onTopic(q) || SECOND_PERSON.test(q) || RECRUITER.test(q) || words(q).some((w) => VOCAB.has(w))) return null;
+  return { kind: 'offtopic', answer: OFFTOPIC_ANSWER, source: '' };
+}
+
 const IDENTITY = /\b(which|what) (ai|model|llm|bot)\b|\bwhat are you\b|\bare you (an? )?(ai|bot|human|gpt|chatgpt|claude|gemini)\b/i;
 
 export function cannedAnswer(question) {
   if (IDENTITY.test(question)) return { answer: ans(`I am an AI assistant built into ${identity.name}'s portfolio.`, ['I answer only from his résumé and case studies.', 'Ask me about his projects, internships, skills or what he is looking for.']), source: '' };
-  if (GREETING.test(question)) return { answer: ans(`Hi, I am the assistant on ${identity.name}'s portfolio.`, ['I can tell you about his projects and internships.', 'I can cover his skills and hackathons.', 'I can say what he is looking for.']), source: '' };
+  if (GREETING.test(question)) return { answer: GREETING_ANSWER, source: '' };
   if (BROAD.test(question) && !PRIVATE.test(question)) { const sm = SECTIONS.find((x) => x.id === 'summary'); if (sm) return { answer: render('summary') || paras(sm.text), source: sm.title }; }
   if (PRIVATE.test(question) && onTopic(question)) return { answer: `I do not have that detail, and I do not share private information.\n\nFor anything like it, email ${contact.email}.`, source: '' };
-  if (!onTopic(question)) return { answer: ans('I can only answer questions about Dhruv.', ['Ask about his projects, internships or skills.', 'Ask about his hackathons or what he is looking for.'], `Try "Why hire Dhruv?" or email ${contact.email}.`), source: '' };
+  if (!onTopic(question)) return { answer: OFFTOPIC_ANSWER, source: '' };
   const cmp = compareAnswer(question);
   if (cmp) return cmp;
   const { section, score } = bestSection(question);
