@@ -1,6 +1,6 @@
 # Round 6 — Gemini: shared music player, project apps, shake hint
 
-Repo: `C:\Users\hp\OneDrive\Desktop\random sites\portfolio`, branch `feat/v3`.
+Repo: `C:\dev\projects\portfolio-room`, branch `feat/v3`.
 You work in parallel with the orchestrator (Claude), who is editing the 3D room
 at the same time. Stay inside the files listed under "You own". If a job needs a
 change in a file you do not own, stop and write the exact change you need in

@@ -10,7 +10,7 @@ tests and look at your screenshots. Execute exactly what is written. Where this
 prompt makes a decision, follow it; do not substitute your own. If something is
 impossible as written, stop that step, do the rest, and explain in your report.
 
-**Repo:** `C:\Users\hp\OneDrive\Desktop\random sites\portfolio`, branch `feat/v3`.
+**Repo:** `C:\dev\projects\portfolio-room`, branch `feat/v3`.
 Start from HEAD (`git log -1` should be the commit that added this file or later).
 
 ## Parallel work — read this first

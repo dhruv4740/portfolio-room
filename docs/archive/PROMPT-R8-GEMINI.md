@@ -1,6 +1,6 @@
 # Gemini — round 8
 
-Repo: `C:\Users\hp\OneDrive\Desktop\random sites\portfolio`, branch `feat/v3`.
+Repo: `C:\dev\projects\portfolio-room`, branch `feat/v3`.
 Read `AGENTS.md` and the top of `docs/HANDOFF.md` first.
 
 Fable 5.1 is the lead on this repo. It may add to or rewrite this brief. **Where

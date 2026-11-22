@@ -10,7 +10,7 @@ tests and look at every screenshot. Execute exactly what is written. Where this
 prompt makes a decision, follow it. If a step is impossible as written, skip
 only that step, finish the rest, and explain it under "Deviations".
 
-**Repo:** `C:\Users\hp\OneDrive\Desktop\random sites\portfolio`, branch `feat/v3`.
+**Repo:** `C:\dev\projects\portfolio-room`, branch `feat/v3`.
 Vanilla three.js room (no r3f), React 19, GSAP, Playwright.
 
 ## Parallel work — read first

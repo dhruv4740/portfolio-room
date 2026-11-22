@@ -43,11 +43,11 @@ d5e8121 — chore: drop port sources after sketch ports
 ## Commands run
 - `node scripts/shoot-port-originals.mjs`
 ```
-[shoot-orig] loading fluid from file:///C:/Users/hp/OneDrive/Desktop/random sites/portfolio/docs/port-source/fluid.html
+[shoot-orig] loading fluid from file:///C:/dev/projects/portfolio-room/docs/port-source/fluid.html
 [shoot-orig] saved scripts/shots/orig-fluid.png
-[shoot-orig] loading kinetic from file:///C:/Users/hp/OneDrive/Desktop/random sites/portfolio/docs/port-source/kinetic.html
+[shoot-orig] loading kinetic from file:///C:/dev/projects/portfolio-room/docs/port-source/kinetic.html
 [shoot-orig] saved scripts/shots/orig-kinetic.png
-[shoot-orig] loading tear from file:///C:/Users/hp/OneDrive/Desktop/random sites/portfolio/docs/port-source/tear.html
+[shoot-orig] loading tear from file:///C:/dev/projects/portfolio-room/docs/port-source/tear.html
 [shoot-orig] saved scripts/shots/orig-tear.png
 [shoot-orig] done
 ```
