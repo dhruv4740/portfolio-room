@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B · Case files</title>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#161615;--card:#20201e;--ink:#f1efe9;--mute:#9a978f;--accent:#e8c547}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.55 Inter,system-ui,sans-serif;padding:28px 0 96px}
+a{color:var(--ink)}
+.pad{padding:0 22px}
+h1{font:700 40px/1.02 "Bricolage Grotesque";letter-spacing:-.02em}
+.lede{color:var(--mute);margin-top:12px;font-size:16px}
+.lede em{color:var(--ink);font-style:normal}
+.hint{margin:32px 22px 10px;color:var(--mute);font-size:13px;display:flex;justify-content:space-between}
+.deck{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 22px 8px;scrollbar-width:none}
+.card{flex:0 0 86%;scroll-snap-align:center;background:var(--card);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:12px;min-height:470px}
+.shot{height:170px;border-radius:10px;background:#2b2b28;display:grid;place-items:center;color:var(--mute);font-size:12px}
+.k{font-size:12px;color:var(--mute)}
+.card h3{font:500 24px/1.1 "Bricolage Grotesque"}
+.res{font:700 30px "Bricolage Grotesque";color:var(--accent)}
+.card .go{margin-top:auto;display:block;text-align:center;padding:12px;border-radius:10px;background:var(--ink);color:var(--bg);text-decoration:none;font-weight:500}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);display:flex;gap:10px;padding:12px 22px calc(12px + env(safe-area-inset-bottom))}
+.bar a{flex:1;text-align:center;padding:13px;border-radius:10px;text-decoration:none;font-weight:500;border:1px solid #3a3935}
+.bar a:first-child{background:var(--accent);color:#1a1606;border:0}
+</style></head><body>
+<div class="pad">
+<h1>Dhruv<br>Kothari</h1>
+<p class="lede">AI and growth engineer. <em>Built four growth tools at Blink.new (YC)</em>, now looking for a remote internship.</p>
+</div>
+<div class="hint"><span>Case files</span><span>1 / 5 →</span></div>
+<div class="deck">
+<article class="card"><div class="shot">pipeline screenshot</div><span class="k">Blink.new · 2026 · growth</span><h3>LLM outreach that people answered</h3><p>Sourced 650 creators, drafted with an LLM, a human approved every send.</p><div><div class="res">18% replies</div><span class="k">489 emails, 14 positive</span></div><a class="go" href="#">Read the case</a></article>
+<article class="card"><div class="shot">app screenshot</div><span class="k">2026 · Android + Windows</span><h3>FocusLock</h3><p>One screen-time budget across phone and PC, enforced at OS level.</p><div><div class="res">200+ tests</div><span class="k">signed APK and installer from CI</span></div><a class="go" href="#">Try it</a></article>
+<article class="card"><div class="shot">dashboard screenshot</div><span class="k">2026 · AI · team</span><h3>DarkSentinel</h3><p>Only uncertain predictions reach the LLM, so inference cost stays bounded.</p><div><div class="res">Top 5</div><span class="k">IIT Madras × BITS Goa hackathon</span></div><a class="go" href="#">Open dashboard</a></article>
+</div>
+<nav class="bar"><a href="#">Résumé</a><a href="#">Email me</a></nav>
+</body></html>

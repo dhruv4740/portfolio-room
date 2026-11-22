@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>D · Desk</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f3f2ee;--ink:#161616;--mute:#6d6b66;--line:#dcdad3;--accent:#c2410c}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;padding:20px 22px 96px;max-width:640px;margin:auto}
+a{color:var(--ink);text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.desk{width:100%;height:auto;display:block;margin-bottom:6px}
+.status{font:13px "IBM Plex Mono",monospace;color:var(--mute)}
+.status i{display:inline-block;width:7px;height:7px;border-radius:50%;background:#facc15;margin-right:6px}
+h1{font-size:30px;font-weight:600;margin-top:22px}
+.lede{font-size:19px;margin-top:8px}
+h2{font-size:13px;font-weight:500;color:var(--mute);margin:36px 0 10px}
+li{list-style:none;padding:14px 0;border-top:1px solid var(--line)}
+li b{font-weight:600}li span{display:block;color:#3b3a37}
+.n{font-family:"IBM Plex Mono",monospace;color:var(--accent)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);display:flex;gap:10px;padding:12px 22px calc(12px + env(safe-area-inset-bottom))}
+.bar a{flex:1;text-align:center;padding:13px;border-radius:8px;font-weight:500;text-decoration:none;border:1px solid var(--line)}
+.bar a:first-child{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+</style></head><body>
+<svg class="desk" viewBox="0 0 340 120" fill="none" stroke="#161616" stroke-width="1.4" stroke-linecap="round">
+<rect x="226" y="10" width="92" height="62" rx="2"/><path d="M226 41h92M272 10v62" stroke-width=".8"/>
+<path d="M14 92h312M30 92v26M310 92v26"/>
+<rect x="112" y="30" width="86" height="54" rx="3"/><rect x="118" y="36" width="74" height="42" fill="#c2410c" stroke="none" opacity=".12"/><path d="M155 84v8M140 92h30"/>
+<rect x="104" y="86" width="56" height="5" rx="1"/><circle cx="176" cy="88" r="3"/>
+<path d="M44 92l10-40h22l-6 40M55 52l-8-14h16"/><path d="M220 92h18v-10h-18z"/>
+</svg>
+<p class="status"><i></i>9:42 pm in Mumbai · 29°C, clear · lamp on</p>
+<h1>Dhruv Kothari</h1>
+<p class="lede">I build AI tools that move growth numbers.</p>
+<p style="color:var(--mute);margin-top:12px;font-size:15px">Ex-growth intern at Blink.new (YC). Open to remote internships in AI or growth engineering.</p>
+<h2>What I've shipped</h2>
+<ul style="padding:0">
+<li><b>Blink outreach pipeline</b><span>LLM drafting with human approval: <span class="n" style="display:inline">18%</span> reply rate on 489 emails.</span></li>
+<li><b>FocusLock</b><span>Screen-time budget shared across Android and Windows. <a href="#">Try it</a></span></li>
+<li><b>DarkSentinel</b><span>LLM review layer, top 5 at IIT Madras × BITS Goa. <a href="#">Dashboard</a></span></li>
+<li><b>F-Shield</b><span>Fraud detection, won Innovathon 2025. <a href="#">Dashboard</a></span></li>
+</ul>
+<p style="margin-top:14px"><a href="#">All projects</a> · <a href="#">GitHub</a> · <a href="#">LinkedIn</a></p>
+<nav class="bar"><a href="#">Résumé</a><a href="#">Email me</a></nav>
+</body></html>
