@@ -46,13 +46,14 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
   solved; too few to judge. Off switch: delete `TURNSTILE_SECRET` and redeploy.
 - **D1** `dhruvkothari-analytics` (binding `DB`): `hits` and `hit_rate` (the `/api/hit`
   limiter, `migrations/0002_hit_rate.sql`, applied to remote 2026-11-08).
-- **Checkouts:** the Desktop checkout `...\random sites\portfolio` is current with
-  `origin/main` and is the lead's checkout; its untracked owner files (art candidates, an old
+- **Checkouts:** the main checkout `C:\dev\projects\portfolio-room` (was
+  `...\random sites\portfolio` on the Desktop before the repo moved) is the lead's checkout; its untracked owner files (art candidates, an old
   `resume/resume.tex` draft) must not be cleaned. That `resume.tex` is an old untracked draft,
   not the source of `public/resume.pdf` (that is `resume_linkedin.tex`, see work queue 2).
   The worker uses its own worktree under `.claude/worktrees/`. `pf-docs` and `pf-roomspeed`
   were removed 2026-11-10; `pf-release` is pending removal by the owner; `pf-truescale` is
   detached and still holds owner files (mockups/redesign, HANDOFF-PROMPT, PNGs): don't clean it.
+  Worktrees live in `C:\dev\projects\portfolio-room-worktrees\`.
 - **Routes:** `/` work page (root `index.html`, `src/v3/work/entry.jsx`, no three.js);
   `/room/` 3D room (`room/index.html`, HashRouter `src/v3/App.jsx`); `/resume/`;
   `/work*` 301 → `/`; old room links (`/?tour=1`, `/#/...`) forwarded to `/room/` by the
@@ -79,7 +80,7 @@ Last updated 2026-11-11. The previous version, with the history behind older ite
      the Resend account address differs from `CONTACT_TO`); owner to check. A real sender
      needs a verified domain.
 2. **Résumé PDF.** Rebuilt without the citation-comparison clause or a phone number from
-   `resume_linkedin.tex` (the source of the public PDF) in `C:\Users\hp\pf-resume-build\`.
+   `resume_linkedin.tex` (the source of the public PDF) in `C:\dev\scratch\pf-resume-build\`.
    Font is TeX Gyre Termes: Times New Roman breaks `;` text extraction. Awaiting the owner's
    approval before it replaces `public/resume.pdf`. Tectonic:
    `C:\Users\hp\AppData\Local\Programs\tectonic\tectonic.exe`.
@@ -130,7 +131,7 @@ was: button placement, inconsistent button styles and sizes, hierarchy.
 **Before 18 Nov (exams 18 Nov to 3 Dec), owner:** update the LinkedIn headline and profile link
 to `https://dhruvkothari.com/?from=linkedin` and the GitHub link to `?from=github`; ETHGlobal
 post; message the Blink manager about the show list; approve the résumé draft
-(`C:\Users\hp\pf-resume-build\resume-draft.tex`; HexFence does not fit on one page).
+(`C:\dev\scratch\pf-resume-build\resume-draft.tex`; HexFence does not fit on one page).
 
 **During exams:** rebuild home in the approved direction; case-study pages (FocusLock, Blink
 pipeline, BasketProof, DarkSentinel, HexFence) drafted from `PROJECT-MATERIAL` for owner

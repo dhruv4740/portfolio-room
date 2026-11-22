@@ -34,10 +34,10 @@ you delegate. You can rewrite its brief, add to it, or review its output.
    |---|---|---|---|
    | DarkSentinel | `C:\Users\hp\OneDrive\Documents\demo_website\darksentinel-ui` | Next.js, framer-motion, recharts | monitor |
    | CrisisWatch | `C:\Users\hp\AppData\Local\Temp\resume-audit\crisiswatch-web` | Next.js with API routes, GSAP, framer-motion | monitor |
-   | Fraud Detection | `C:\Users\hp\kharghar-hacks\kharghar` | React/Vite, Firebase, recharts, tsparticles | monitor |
-   | FocusLock desktop | `C:\Users\hp\OneDrive\Desktop\new-focuslock\windows-agent` | Electron renderer, Firebase | monitor |
-   | Expense Tracker | `C:\Users\hp\expense-tracker` | React Native | phone |
-   | BasketProof | `C:\Users\hp\OneDrive\Desktop\comparison` | Kotlin, Jetpack Compose | phone |
+   | Fraud Detection | `C:\dev\collab\kharghar-hacks\kharghar` | React/Vite, Firebase, recharts, tsparticles | monitor |
+   | FocusLock desktop | `C:\dev\projects\focuslock\windows-agent` | Electron renderer, Firebase | monitor |
+   | Expense Tracker | `C:\dev\projects\expense-tracker` | React Native | phone |
+   | BasketProof | `C:\dev\projects\basketprice` | Kotlin, Jetpack Compose | phone |
    | FocusLock Android | `new-focuslock` | Android | phone (already built, round 5) |
 
    The owner chose: build the real frontends, replace backends, API routes and

@@ -45,3 +45,4 @@ public/os/shell/content.js
 # Local tooling and scratch
 .wrangler/
 tmp-measure/
+.claude/handoffs/

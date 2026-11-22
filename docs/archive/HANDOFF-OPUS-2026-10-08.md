@@ -4,7 +4,7 @@ Written 2026-10-08. Paste the prompt below into Opus, started inside the worktre
 
 ## Prompt to paste
 
-You are taking over a three.js first-person portfolio for Dhruv Kothari, who has just finished a Blink.new growth internship and wants a remote internship in AI engineering or growth engineering. Work only in the worktree `C:\Users\hp\pf-truescale` on branch `feat/recruiter-path`. The checkout at `...\random sites\portfolio` is on a stale branch; do not touch it. The shell cwd resets, so start every command with `cd /c/Users/hp/pf-truescale`. Read `AGENTS.md` and `~/.claude/CLAUDE.md` first; their rules apply (never commit to main or master, Conventional Commits, stage only files you changed, no unrequested refactors).
+You are taking over a three.js first-person portfolio for Dhruv Kothari, who has just finished a Blink.new growth internship and wants a remote internship in AI engineering or growth engineering. Work only in the worktree `C:\dev\projects\portfolio-room-worktrees\pf-truescale` on branch `feat/recruiter-path`. The checkout at `...\random sites\portfolio` is on a stale branch; do not touch it. The shell cwd resets, so start every command with `cd /c/Users/hp/pf-truescale`. Read `AGENTS.md` and `~/.claude/CLAUDE.md` first; their rules apply (never commit to main or master, Conventional Commits, stage only files you changed, no unrequested refactors).
 
 Your job, in order:
 

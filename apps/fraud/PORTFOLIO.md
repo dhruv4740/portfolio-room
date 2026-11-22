@@ -1,6 +1,6 @@
 # Fraud Detection — portfolio build
 
-Source: `C:\Users\hp\kharghar-hacks\kharghar` at commit `31c0cd4`.
+Source: `C:\dev\collab\kharghar-hacks\kharghar` at commit `31c0cd4`.
 
 Only the frontend is copied. Root notebooks, trained Python model files and
 CSV datasets are omitted; the browser uses the documented demo API seam.

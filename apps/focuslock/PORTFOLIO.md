@@ -1,6 +1,6 @@
 # FocusLock desktop — portfolio build
 
-Source: `C:\Users\hp\OneDrive\Desktop\new-focuslock\windows-agent` at commit
+Source: `C:\dev\projects\focuslock\windows-agent` at commit
 `9a13ab4`. The copy includes only the Electron renderer (`src/index.html`,
 `src/index.css`, `src/renderer.js`) and its icon; the main process, preload,
 Firebase configuration, credentials and Electron build output are omitted.
