@@ -55,6 +55,9 @@ export default defineConfig({
         main: resolve(import.meta.dirname, 'index.html'),
         room: resolve(import.meta.dirname, 'room/index.html'),
         resume: resolve(import.meta.dirname, 'resume/index.html'),
+        mockA: resolve(import.meta.dirname, 'mock/a/index.html'),
+        mockB: resolve(import.meta.dirname, 'mock/b/index.html'),
+        mockFocuslock: resolve(import.meta.dirname, 'mock/focuslock/index.html'),
       },
       output: {
         manualChunks(id) {
