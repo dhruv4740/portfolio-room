@@ -97,5 +97,16 @@ for (const f of generated) {
   ok(!s.includes('—'), `${f} has no em dash`);
   ok(!/gmail\.com/i.test(s), `${f} has no gmail address`);
 }
+
+// Icons: every page links the set and every icon URL answers 200.
+const ICONS = ['/favicon.ico', '/favicon.svg', '/favicon-32.png', '/apple-touch-icon.png', '/site.webmanifest'];
+for (const path of ['/', '/resume/', '/room/', ...pages]) {
+  const h = (await get(path)).text;
+  for (const i of ICONS) ok(h.includes(`href="${i}"`), `${path} links ${i}`);
+}
+const manifest = JSON.parse((await get('/site.webmanifest')).text);
+for (const u of [...ICONS, '/favicon-16.png', '/favicon-48.png', ...manifest.icons.map((i) => i.src)]) {
+  const r = await fetch(BASE + u); ok(r.status === 200, `${u} -> ${r.status}`); await r.arrayBuffer();
+}
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

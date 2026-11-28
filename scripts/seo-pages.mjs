@@ -138,8 +138,11 @@ ${links.length ? `<h2>Links</h2><ul class="links">${links.map(([h, t]) => `<li><
 <title>${esc(e.title)}</title>
 <meta name="description" content="${esc(e.desc)}">
 <link rel="canonical" href="${esc(url)}">
+<link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="alternate" type="text/markdown" href="/llms.txt">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="${esc(c.identity.name)}">

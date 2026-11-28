@@ -6,9 +6,11 @@
     <!-- Links from before the room moved to /room/ (/?tour=1, /?room=phone, /#/project/x) still open the room; /#/work stays here. -->
     <script>(function(){var h=location.hash;if(/^#\/work(\/|\?|$)/.test(h)){history.replaceState(null,'','/'+location.search);return}if(/[?&](room|tour)(=|&|$)/.test(location.search)||/^#\/./.test(h))location.replace('/room/'+location.search+h)})();</script>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/site.webmanifest">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#ece7de" />
     <title>Dhruv Kothari, software engineer. Projects and résumé</title>
