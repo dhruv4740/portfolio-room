@@ -73,6 +73,10 @@ const PAGE_CSS = `${FONT_CSS}
 body{margin:0;color:var(--ink);font:17px/1.6 'IBM Plex Sans',system-ui,sans-serif;-webkit-text-size-adjust:100%}
 a{color:var(--ink);text-underline-offset:3px}a:hover{color:var(--acc)}a:focus-visible{outline:2px solid var(--ink);outline-offset:3px;border-radius:2px}
 .wrap{max-width:46rem;margin:0 auto;padding:28px 20px 64px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 16px;margin:0 0 28px;font-size:14px}
+.top .crumbs{margin:0}
+.top nav{display:flex;gap:16px}
+.top nav a{color:var(--ink);font-weight:500}
 .crumbs{font-size:14px;color:var(--mute);margin:0 0 28px}
 .crumbs a{color:inherit}
 h1{font-size:clamp(32px,6vw,46px);line-height:1.1;letter-spacing:-.025em;font-weight:600;margin:0 0 12px}
@@ -112,7 +116,7 @@ export function projectPage(e, all, c, site) {
   const jsonld = { '@context': 'https://schema.org', '@graph': [crumbs, thing] };
   const others = all.filter((x) => x.id !== e.id);
   const body = `<main class="wrap">
-<p class="crumbs"><a href="/">Home</a> / <a href="/#work-main">Projects</a> / ${esc(e.name)}</p>
+<div class="top"><p class="crumbs"><a href="/">Home</a> / <a href="/#work-main">Projects</a> / ${esc(e.name)}</p><nav aria-label="Contact"><a href="${esc(c.contact.resume)}">Résumé</a><a href="mailto:${esc(c.contact.email)}">Email</a></nav></div>
 <h1>${esc(e.name)}</h1>
 <p class="lead">${esc(e.lead)}</p>
 ${e.meta ? `<p class="meta">${esc(e.meta)}</p>` : ''}
