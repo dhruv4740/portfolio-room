@@ -143,7 +143,7 @@ export const projects = [
     description:
       'One Firestore backend enforces the same limits on two very different operating systems. An Android accessibility service detects target apps, a Windows agent enforces on the desktop, and short sync codes pair the devices.',
     decision:
-      'It began as a self-hosted TypeScript backend with a way to register devices, a way to reach them through home networks, and a browser extension for the desktop side. I deleted all of it and moved to Google's Firestore database as the shared store, with a small native Windows program. That removed a server, its deployment and its firewall problem. It also bought a real tradeoff. Firestore's access keys are public, so separate sync codes were kept apart by the app but not locked by the database until I wrote proper access rules.',
+      'It began as a self-hosted TypeScript backend with a way to register devices, a way to reach them through home networks, and a browser extension for the desktop side. I deleted all of it and moved to Google’s Firestore database as the shared store, with a small native Windows program. That removed a server, its deployment and its firewall problem. It also bought a real tradeoff. Firestore’s access keys are public, so separate sync codes were kept apart by the app but not locked by the database until I wrote proper access rules.',
     broke:
       'The Windows agent logged that it had closed a tab, and the tab stayed open. PostMessage of WM_KEYDOWN for Ctrl never updates global key state, so Chromium read the synthetic W as a plain keypress with Ctrl not held. Fixed by re-asserting the foreground window and switching to SendInput, which injects input the OS actually accounts for.',
     summary: 'A screen-time limiter that shares one daily allowance across an Android phone and a Windows PC.',
@@ -166,8 +166,8 @@ export const projects = [
       ],
       pdf: {
         problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
-        decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Google's Firestore database as the shared store and a small native Windows program, which removed a server and its firewall problem. Firestore's access keys are public, so I wrote access rules that restrict each sync code to its members, capped at 10.',
-        result: 'One allowance across an Android phone (using Android's accessibility feature) and a Windows PC. A bug, where the agent logged a browser tab as closed while it stayed open, was fixed by changing how the agent sends the close keypress. Over 250 automated tests. Every change builds a signed Android install file and a Windows installer automatically.',
+        decisions: 'Enforce at the OS level, with one shared daily allowance. The first design was a self-hosted TypeScript backend plus a browser extension; I deleted it for Google’s Firestore database as the shared store and a small native Windows program, which removed a server and its firewall problem. Firestore’s access keys are public, so I wrote access rules that restrict each sync code to its members, capped at 10.',
+        result: 'One allowance across an Android phone (using Android’s accessibility feature) and a Windows PC. A bug, where the agent logged a browser tab as closed while it stayed open, was fixed by changing how the agent sends the close keypress. Over 250 automated tests. Every change builds a signed Android install file and a Windows installer automatically.',
       },
     },
     links: { live: '', github: 'https://github.com/dhruv4740/focuslock' },
