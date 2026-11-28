@@ -4,7 +4,7 @@
 // Suggestions rotate through a pool and skip what was already asked.
 export const PROMPTS = ['Why should we hire Dhruv?', 'Strongest project for backend work?', 'Summarise his experience', 'Compare FocusLock and Blackout',
   'What did he build at Blink?', 'Has he won any hackathons?', 'What is he looking for next?', 'How was this website built?', 'Which project shows his AI work best?', 'What are his strongest skills?'];
-const INK = '#f6f4ee', MUTE = 'rgba(246,244,238,.66)', LINE = 'rgba(255,255,255,.22)';
+const INK = '#f6f4ee', MUTE = 'rgba(246,244,238,.82)', LINE = 'rgba(255,255,255,.22)';
 let config = null, tsLoad = null;
 
 function getConfig() {
@@ -37,7 +37,7 @@ const CSS = `.ask-box{font:400 15px/1.55 system-ui,-apple-system,sans-serif;colo
 .ask-chips button{padding:7px 13px;border:1px solid ${LINE};border-radius:99px;background:rgba(255,255,255,.08);color:${INK};font:13px system-ui,sans-serif;cursor:pointer}
 .ask-row{display:flex;gap:8px}
 .ask-row input{flex:1;min-width:0;padding:12px 16px;border:1px solid ${LINE};background:rgba(255,255,255,.12);color:${INK};font:inherit;border-radius:99px;outline-offset:2px}
-.ask-row input::placeholder{color:rgba(246,244,238,.55)}
+.ask-row input::placeholder{color:rgba(246,244,238,.85)}
 .ask-row button{padding:0 20px;border:0;border-radius:99px;background:rgba(246,244,238,.92);color:#26251f;font:600 14px system-ui,sans-serif;cursor:pointer;min-height:44px}
 @media (pointer:coarse){.ask-row input{font-size:16px}}
 .ask-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
