@@ -116,8 +116,8 @@ export function projectPage(e, all, c, site) {
 <h1>${esc(e.name)}</h1>
 <p class="lead">${esc(e.lead)}</p>
 ${e.meta ? `<p class="meta">${esc(e.meta)}</p>` : ''}
-${e.did ? `<h2>What I did</h2><p>${esc(e.did)}</p>` : ''}
 ${e.overview ? `<h2>Overview</h2><p>${esc(e.overview)}</p>` : ''}
+${e.did ? `<h2>What I did</h2><p>${esc(e.did)}</p>` : ''}
 ${e.sections.map(([h, items]) => `<h2>${esc(h)}</h2>${items.length === 1 ? `<p>${esc(items[0])}</p>` : `<ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`}`).join('\n')}
 ${e.tech.length ? `<h2>Built with</h2><ul class="tech">${e.tech.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>` : ''}
 ${e.image ? `<img class="shot" src="${esc(e.image)}" width="1600" height="1000" alt="${esc(`${e.name} screenshots`)}" loading="lazy">` : ''}

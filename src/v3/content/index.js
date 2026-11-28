@@ -432,8 +432,8 @@ export const featuredProjectIds = ['focuslock', 'expense'];
 
 // Facts only, taken from public/resume.pdf. Projects with no résumé line get none.
 export const whatIDid = {
-  focuslock: 'Kotlin, Android, Electron and Firebase. Backed by over 250 automated tests. CI builds a signed APK plus Windows installer.',
-  portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
+  focuslock: 'An Android app and a Windows app, kept in sync. Over 250 automated tests check it. Every change builds a signed Android install file and a Windows installer by itself.',
+  portfolio3d: 'The site checks each visitor’s device and serves a full 3D room, a lighter phone version, or a plain page if 3D is not supported. It holds 30 to 60 frames per second on a laptop without a dedicated graphics card.',
   darksentinel: 'Team project. I built the dashboards and the step that sends only unclear cases to an AI model, which keeps the cost low.',
   blackout: 'It unlocks with a fingerprint, has a one-tap button in the quick settings menu, and steps aside for calls and alarms. It never uses the internet.',
   hexfence: 'Team project. I built the guard that stops a wallet paying a lookalike address, the payment check that runs inside the Safe wallet app, and the warning screen in the browser extension.',
