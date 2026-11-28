@@ -514,11 +514,17 @@ const ago = (iso) => {
   const d = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 86400e3));
   return d === 0 ? 'today' : d === 1 ? 'yesterday' : d < 60 ? `${d} days ago` : `${Math.round(d / 30)} months ago`;
 };
+// Commit subjects are shown as plain sentences: no "type(scope): " prefix, first letter capital, no merge commits.
+const plainCommit = (msg) => {
+  const t = String(msg || '').replace(/^\s*\w+(\([^)]*\))?!?:\s*/, '').trim();
+  return t ? t[0].toUpperCase() + t.slice(1) : '';
+};
+const isMerge = (msg) => /^\s*Merge/i.test(String(msg || ''));
 function GithubProof() {
   const [data, setData] = useState(null);
   useEffect(() => {
     let live = true;
-    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.commits?.length) setData(d); }).catch(() => {});
+    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.commits?.length) setData({ ...d, commits: d.commits.filter((c) => !isMerge(c.msg) && plainCommit(c.msg)) }); }).catch(() => {});
     return () => { live = false; };
   }, []);
   if (!data) return null;
@@ -532,7 +538,7 @@ function GithubProof() {
             <span className="w-y">{ago(c.date)}</span>
             <span>
               <b>{c.repo}</b>
-              <p><a href={c.url} target="_blank" rel="noopener noreferrer">{c.msg}</a></p>
+              <p><a href={c.url} target="_blank" rel="noopener noreferrer">{plainCommit(c.msg)}</a></p>
             </span>
           </div>
         ))}
