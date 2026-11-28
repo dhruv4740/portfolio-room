@@ -462,6 +462,7 @@ const css = `
     .h-link { font-size: 15.6px; }
   }
   html[data-hero-ask] #ask-wrap { visibility: hidden; }
+  @media (min-width: 720px) { .h-row { margin-top: 24px; } .w-root .h-btn--t { margin-top: 0; } }
   @media (min-width: 960px) { .h-row { margin-top: 32px; } .w-root .h-btn--t { margin-top: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
