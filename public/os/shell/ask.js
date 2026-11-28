@@ -147,10 +147,23 @@ export function mountAsk(el) {
   const copyBtn = (text) => {
     const b = Object.assign(document.createElement('button'), { type: 'button', className: 'ask-ico', title: 'Copy', innerHTML: ICON_COPY });
     b.setAttribute('aria-label', 'Copy answer');
-    b.onclick = () => navigator.clipboard.writeText(text).then(() => {
+    const done = () => {
       b.innerHTML = ICON_OK; b.setAttribute('aria-label', 'Copied'); b.title = 'Copied';
       clearTimeout(b.t); b.t = setTimeout(() => { b.innerHTML = ICON_COPY; b.setAttribute('aria-label', 'Copy answer'); b.title = 'Copy'; }, 1500);
-    }, () => {});
+    };
+    // Older or locked-down browsers: a hidden textarea and execCommand. The check shows only if one of the two worked.
+    const legacy = () => {
+      const t = Object.assign(document.createElement('textarea'), { value: text });
+      t.setAttribute('readonly', ''); t.setAttribute('aria-hidden', 'true');
+      t.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
+      document.body.appendChild(t); t.select(); t.setSelectionRange(0, text.length);
+      let ok = false; try { ok = document.execCommand('copy'); } catch { ok = false; }
+      t.remove(); b.focus({ preventScroll: true });
+      if (ok) done();
+    };
+    b.onclick = () => {
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, legacy); else legacy();
+    };
     return b;
   };
 
@@ -189,7 +202,7 @@ export function mountAsk(el) {
       meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' || d.provider === 'gate' ? 'Saved answer' : 'Live AI answer' }));
       if (d.source && d.href) meta.appendChild(sourceLink(d.source, d.href));
       if (d.note) meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.note }));
-      if (navigator.clipboard) meta.appendChild(copyBtn(d.answer));
+      meta.appendChild(copyBtn(d.answer));
       live.textContent = d.answer;
       if (isHero) { if (!reduced()) meta.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, delay: units.length * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); }
       else appear(meta, parts.length * 60);
