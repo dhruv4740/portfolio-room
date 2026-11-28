@@ -173,7 +173,7 @@ export function mountAsk(el) {
       const units = isHero ? parts.flatMap((n) => (n.tagName === 'UL' || n.tagName === 'OL' ? [...n.children] : [n])) : parts;
       units.forEach((n, i) => { if (!isHero) appear(n, i * 60); else if (!reduced()) n.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 180, delay: i * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); });
       meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' || d.provider === 'gate' ? 'Saved answer' : 'Live AI answer' }));
-      if (d.source) meta.appendChild(d.href ? sourceLink(`Source: ${d.source}`, d.href) : Object.assign(document.createElement('span'), { textContent: `Source: ${d.source}` }));
+      if (d.source && d.href) meta.appendChild(sourceLink(d.source, d.href));
       if (d.note) meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.note }));
       if (navigator.clipboard) meta.appendChild(metaBtn('Copy', (b) => navigator.clipboard.writeText(d.answer + (d.source ? `\n(Source: ${d.source})` : '')).then(() => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); }, () => {})));
       live.textContent = d.answer;

@@ -328,3 +328,16 @@ export function sourceHref(source) {
   const id = s.id.startsWith('proj-') ? `p-${s.id.slice(5)}` : HOME[s.id] || (s.id.startsWith('exp-') ? 'experience' : '');
   return id ? `/#${id}` : '';
 }
+
+// What the visitor sees as the link text. Internal section titles never leave the server; '' when there is nowhere to link.
+export function sourceLabel(source) {
+  if (!sourceHref(source)) return '';
+  const t = String(source ?? '').trim(), s = SECTIONS.find((x) => x.title === t) || SECTIONS.find((x) => x.title === t.split(', ')[0]);
+  const id = s.id;
+  if (id.startsWith('proj-')) return `See ${s.title.replace(/^Project:\s*/, '')}`;
+  if (id === 'exp-blink' || id === 'blink-tools') return 'See Blink.new work';
+  if (id === 'contact' || id === 'looking-for') return 'See Contact';
+  if (id === 'hackathons' || id === 'achievements') return 'See Hackathons';
+  if (id === 'proof') return 'See Highlights';
+  return 'See Experience';
+}
