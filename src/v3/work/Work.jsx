@@ -1,9 +1,12 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import '../tokens.css';
-import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid } from '../content/index.js';
+import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid, projectSlugs } from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 import { phoneCanRoom } from '../lib/capability.js';
 import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
+
+// A project's title is a plain link to its static page when it has one (the page text is also in the crawler HTML).
+const titleLink = (id, name) => (projectSlugs[id] ? <a href={`/projects/${projectSlugs[id]}/`}>{name}</a> : name);
 
 const css = `
   /* ---- skip link --------------------------------------------------------- */
@@ -215,6 +218,8 @@ const css = `
   .w-fmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font: 13px/1.3 var(--mono); color: var(--mute); }
   .w-fmeta > span:first-child { margin-right: 6px; }
   .w-chip { padding: 3px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); color: var(--ink2); font: 12.5px/1.3 var(--mono); }
+  .w-t a, .w-card h3 a { color: inherit; text-decoration: none; }
+  .w-t a:hover, .w-t a:focus-visible, .w-card h3 a:hover, .w-card h3 a:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
   .w-card h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
   .w-card p { font-size: 15px; color: var(--ink2); }
   .w-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
@@ -313,6 +318,8 @@ const css = `
   .w-contact { font-size: 15.5px; color: var(--ink2); max-width: 46ch; }
   .w-contact a { color: var(--ink); border-bottom: 1px solid var(--line); text-decoration: none; }
   .w-foot { margin-top: 40px; font-size: 14px; color: var(--mute); }
+  .w-foot + .w-foot { margin-top: 6px; }
+  .w-foot a { color: inherit; text-underline-offset: 3px; }
 
   .w-bar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
@@ -797,7 +804,7 @@ export default function Work() {
       <div className="w-row w-row--c" key={p.id} id={`p-${p.id}`}>
         <div className="w-r1">
           <span className="w-y">{p.year}</span>
-          <b className="w-t">{p.name}</b>
+          <b className="w-t">{titleLink(p.id, p.name)}</b>
           {TAGS[p.id] && <span className="w-tag">{TAGS[p.id]}</span>}
           <span className="w-acts">
             {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
@@ -854,7 +861,7 @@ export default function Work() {
         </div>
       )}
       <div className="w-ci">
-        <h3>{project.name}</h3>
+        <h3>{titleLink(project.id, project.name)}</h3>
         <div className="w-fmeta"><span>{project.year}</span>{project.tech.slice(0, 3).map((t) => (<span className="w-chip" key={t}>{t}</span>))}</div>
         <p className="w-clamp">{project.summary || project.tagline}</p>
         <div className="w-card-acts">
@@ -961,7 +968,7 @@ export default function Work() {
             <div className="w-feat">
               <article className="w-card">
                 <div className="w-ci">
-                  <h3>An outreach pipeline people actually replied to</h3>
+                  <h3><a href={`/projects/${projectSlugs.blink}/`}>An outreach pipeline people actually replied to</a></h3>
                   <div className="w-fmeta"><span>Blink.new, {blink.from.slice(-4)}</span>{['Python', 'Gmail API', 'LLM'].map((t) => (<span className="w-chip" key={t}>{t}</span>))}</div>
                   <p>I built four growth tools at Blink as the sole developer. They cover creator outreach (650 creators sourced), link building, SEO and AI-search tracking, and a Reddit copilot.</p>
                   <div className="w-res"><b>18%</b><small>of contacted creators replied · 14 positive</small></div>
@@ -1038,6 +1045,7 @@ export default function Work() {
               <a href={`mailto:${contact.email}`}>{contact.email}</a>.
             </p>
             <p className="w-foot">{footText}</p>
+            <p className="w-foot"><a href={contact.github} target="_blank" rel="noopener noreferrer">dhruv4740 on GitHub</a></p>
           </main>
         </div>
         <header className={`w-pin${pin ? ' w-pin--on' : ''}`} inert={!pin}>
