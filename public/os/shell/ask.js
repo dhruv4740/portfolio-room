@@ -32,6 +32,7 @@ const CSS = `.ask-box{font:400 15px/1.55 system-ui,-apple-system,sans-serif;colo
 .ask-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;color:${MUTE};font-size:12px}
 .ask-meta a{color:${INK};text-decoration:underline;text-decoration-color:rgba(246,244,238,.4);text-underline-offset:3px}
 .ask-meta button{border:0;background:none;color:${INK};font:inherit;text-decoration:underline;text-decoration-color:rgba(246,244,238,.4);text-underline-offset:3px;padding:4px 0;cursor:pointer}
+.ask-meta .ask-ico{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-4px 0;border-radius:8px;text-decoration:none}.ask-meta .ask-ico:hover{background:rgba(255,255,255,.1)}.ask-meta button:focus-visible,.ask-meta a:focus-visible{outline:2px solid ${INK};outline-offset:2px}
 .ask-chips{display:flex;flex-wrap:wrap;gap:8px}
 .ask-chips button{padding:7px 13px;border:1px solid ${LINE};border-radius:99px;background:rgba(255,255,255,.08);color:${INK};font:13px system-ui,sans-serif;cursor:pointer}
 .ask-row{display:flex;gap:8px}
@@ -140,6 +141,19 @@ export function mountAsk(el) {
   };
   const metaBtn = (label, fn) => { const b = Object.assign(document.createElement('button'), { type: 'button', textContent: label }); b.onclick = () => fn(b); return b; };
 
+  const ICON_COPY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+  const ICON_OK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  // Copies the answer text only, never the source line.
+  const copyBtn = (text) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'ask-ico', title: 'Copy', innerHTML: ICON_COPY });
+    b.setAttribute('aria-label', 'Copy answer');
+    b.onclick = () => navigator.clipboard.writeText(text).then(() => {
+      b.innerHTML = ICON_OK; b.setAttribute('aria-label', 'Copied'); b.title = 'Copied';
+      clearTimeout(b.t); b.t = setTimeout(() => { b.innerHTML = ICON_COPY; b.setAttribute('aria-label', 'Copy answer'); b.title = 'Copy'; }, 1500);
+    }, () => {});
+    return b;
+  };
+
   async function ask(q) {
     q = String(q ?? input.value).trim();
     if (busy || q.length < 2) return;
@@ -175,7 +189,7 @@ export function mountAsk(el) {
       meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' || d.provider === 'gate' ? 'Saved answer' : 'Live AI answer' }));
       if (d.source && d.href) meta.appendChild(sourceLink(d.source, d.href));
       if (d.note) meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.note }));
-      if (navigator.clipboard) meta.appendChild(metaBtn('Copy', (b) => navigator.clipboard.writeText(d.answer + (d.source ? `\n(Source: ${d.source})` : '')).then(() => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); }, () => {})));
+      if (navigator.clipboard) meta.appendChild(copyBtn(d.answer));
       live.textContent = d.answer;
       if (isHero) { if (!reduced()) meta.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, delay: units.length * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); }
       else appear(meta, parts.length * 60);
