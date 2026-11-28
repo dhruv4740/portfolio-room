@@ -40,7 +40,7 @@ footer{margin-top:20pt;padding-top:8pt;border-top:1pt solid #d8d2c6;font-size:9.
 </style>
 <p class="k">Case file</p><h1>${esc(e.name)}</h1><p class="line">${esc(e.line)}</p>
 ${sec('Problem', e.cs.problem)}${sec('Decisions', e.cs.decisions)}${sec('Result', e.cs.result)}${sec('What broke', e.broke)}
-${shot ? `<img src="${shot}" alt="">` : ''}
+${shot ? `<img src="${shot}" alt=""${id === 'focuslock' ? ' style="height:70mm;object-fit:contain;background:#ece7de"' : ''}>` : ''}
 ${e.facts.length ? `<ul class="facts">${e.facts.map((f) => `<li>${esc(f)}</li>`).join('')}</ul>` : ''}
 <p class="chips">${esc(e.tech.join(' · '))}</p>
 <footer>${esc(contact.email)} · ${esc(contact.githubLabel || contact.github)}${e.links.length ? ` · ${esc(e.links.join(' · '))}` : ''} · dhruvkothari.com</footer>`;
