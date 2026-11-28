@@ -439,6 +439,7 @@ const css = `
     .h-proof li + li { border-left: 1px solid var(--line); }
   }
 
+  @media (min-width: 720px) { .h-actions { display: flex; } }
   @media (min-width: 641px) { .w-wrap { padding-left: 32px; padding-right: 32px; } }
   @media (min-width: 960px) {
     .h-grid { grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); gap: 64px; }
