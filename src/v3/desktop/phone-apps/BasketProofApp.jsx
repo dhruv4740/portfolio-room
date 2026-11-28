@@ -89,20 +89,7 @@ export default function BasketProofApp({ onClose }) {
           <div>
             <div style={{ fontSize: '15px', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
               BasketProof
-              <span
-                style={{
-                  fontSize: '9px',
-                  fontWeight: '800',
-                  padding: '2px 5px',
-                  borderRadius: '4px',
-                  background: 'rgba(255, 82, 82, 0.15)',
-                  color: THEME.error,
-                  border: '1px solid rgba(255, 82, 82, 0.3)',
-                  letterSpacing: '0.05em',
-                }}
-              >
-                DEMO DATA
-              </span>
+              <span style={{ fontSize: '10px', fontWeight: '500', color: THEME.textMuted }}>Sample data</span>
             </div>
             <div style={{ fontSize: '10px', color: THEME.textMuted }}>Kotlin Compose · Evidence Engine</div>
           </div>
