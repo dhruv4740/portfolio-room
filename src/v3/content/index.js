@@ -249,17 +249,17 @@ export const projects = [
         'I removed a fallback score that could show a result the model never produced.',
       ],
       result: [
-        'This was a team build, and Deven did model training and live Tor capture.',
+        'This was a team build. A teammate did the model training and live Tor capture.',
         'I built the dashboards and API features.',
       ],
       pdf: {
         problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
         decisions: 'A Random Forest scores network flows for Tor traffic. Only predictions in the uncertain zone (Tor score 0.55 to 0.75) go to the Claude call, behind a 60-second cooldown, so cost is bounded by time rather than traffic. I removed a hardcoded fallback score that could show a result the model never produced.',
-        result: 'A team build (model training and live Tor capture were Deven’s) with dashboards and an API; top 5 finalist in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
+        result: 'A team build (a teammate did the model training and live Tor capture) with dashboards and an API; top 5 finalist in its problem statement at the IIT Madras x BITS Goa hackathon 2026.',
       },
     },
     links: { live: '', github: '' },
-    note: 'Team project in a private repository. Deven owned model training, the LLM work and live Tor capture. I built the dashboards, the API features and the uncertain-zone Claude call.',
+    note: 'Team project in a private repository. A teammate owned model training, the LLM work and live Tor capture. I built the dashboards, the API features and the uncertain-zone Claude call.',
   },
   {
     id: 'hexfence',
@@ -437,5 +437,5 @@ export const whatIDid = {
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
   darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project.',
   blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
-  hexfence: 'Team project with Deven. I made 223 of the repo’s 280 commits.',
+  hexfence: 'Team project. I built the guard that stops a wallet paying a lookalike address, the payment check that runs inside the Safe wallet app, and the warning screen in the browser extension.',
 };
