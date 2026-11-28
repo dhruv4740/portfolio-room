@@ -18,12 +18,12 @@ portfolio3d, darksentinel, blackout; used only by the mobile deck,
 
 | id | Source (`apps/`) / original | Built output | /work | dhruvOS window | Phone |
 |---|---|---|---|---|---|
-| focuslock | `apps/focuslock/` (Electron renderer copy, `build.mjs`); original `C:\Users\hp\OneDrive\Desktop\new-focuslock\windows-agent` @9a13ab4, GitHub dhruv4740/focuslock | `public/apps/focuslock/` | Try-it: web "Windows app" + phone app | `public/os/apps/focuslock.js` (iframeApp, banner → `ctx.openPhone`) | yes, `/phone/focuslock` |
-| expense | none; phone reconstruction `src/v3/desktop/phone-apps/ExpenseApp.jsx` from `C:\Users\hp\expense-tracker` | n/a | Try-it: phone | none | yes, `/phone/expense` |
-| basket (BasketProof) | none; `phone-apps/BasketProofApp.jsx` from `C:\Users\hp\OneDrive\Desktop\comparison` | n/a | Try-it: phone | none | yes, `/phone/basketproof` (content id is `basket`) |
-| darksentinel | `apps/darksentinel/` (Next); original `C:\Users\hp\OneDrive\Documents\demo_website\darksentinel-ui` @d5821bf (team project, private) | `public/apps/darksentinel/` | Try-it: web | `public/os/apps/darksentinel.js` | none |
+| focuslock | `apps/focuslock/` (Electron renderer copy, `build.mjs`); original `C:\dev\projects\focuslock\windows-agent` @9a13ab4, GitHub dhruv4740/focuslock | `public/apps/focuslock/` | Try-it: web "Windows app" + phone app | `public/os/apps/focuslock.js` (iframeApp, banner → `ctx.openPhone`) | yes, `/phone/focuslock` |
+| expense | none; phone reconstruction `src/v3/desktop/phone-apps/ExpenseApp.jsx` from `C:\dev\projects\expense-tracker` | n/a | Try-it: phone | none | yes, `/phone/expense` |
+| basket (BasketProof) | none; `phone-apps/BasketProofApp.jsx` from `C:\dev\projects\basketprice` | n/a | Try-it: phone | none | yes, `/phone/basketproof` (content id is `basket`) |
+| darksentinel | `apps/darksentinel/` (Next); original `C:\dev\collab\DarkSentinel\darksentinel-ui` @d5821bf (team project, private) | `public/apps/darksentinel/` | Try-it: web | `public/os/apps/darksentinel.js` | none |
 | crisiswatch | `apps/crisiswatch/` (Next static export); original `...\Temp\resume-audit\crisiswatch-web` @330509f, GitHub dhruv4740/crisiswatch | `public/apps/crisiswatch/` | Try-it: web | `public/os/apps/crisiswatch.js` (zoom 1.25) | none |
-| fraud (F-Shield) | `apps/fraud/` (Vite); original `C:\Users\hp\kharghar-hacks\kharghar` @31c0cd4 | `public/apps/fraud/` | Try-it: web | `public/os/apps/fraud.js` | none |
+| fraud (F-Shield) | `apps/fraud/` (Vite); original `C:\dev\collab\kharghar-hacks\kharghar` @31c0cd4 | `public/apps/fraud/` | Try-it: web | `public/os/apps/fraud.js` | none |
 | blackout | none; GitHub dhruv4740/blackout (content) | none | link only | none | none |
 | cellbook | none, no URL | none | card only | none | none |
 | portfolio3d | this site | none | link to `/` | none | none |

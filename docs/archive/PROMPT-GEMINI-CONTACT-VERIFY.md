@@ -1,6 +1,6 @@
 # Gemini Flash — bounded contact/exterior verification
 
-Work in C:/Users/hp/OneDrive/Desktop/random sites/portfolio on feat/v3.
+Work in C:/dev/projects/portfolio-room on feat/v3.
 Read AGENTS.md, docs/TEAM-COORDINATION.md, the latest two checkpoints in
 docs/AFTER-HOURS-HANDOFF.md, and docs/DESK-CONTACT-PASS.md.
 This is a NEW assignment, not a rerun of the old workhorse batch.

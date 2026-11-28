@@ -1,6 +1,6 @@
 # DarkSentinel UI — portfolio build
 
-Source: `C:\Users\hp\OneDrive\Documents\demo_website\darksentinel-ui` at commit
+Source: `C:\dev\collab\DarkSentinel\darksentinel-ui` at commit
 `d5821bf`, copied without `node_modules`, `.next`, `.git` and `.env*`.
 
 Changed for the portfolio (everything else is the original UI):

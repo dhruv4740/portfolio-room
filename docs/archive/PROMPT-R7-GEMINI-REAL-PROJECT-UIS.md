@@ -1,6 +1,6 @@
 # Round 7 — Gemini: every project runs as its real UI
 
-Repo: `C:\Users\hp\OneDrive\Desktop\random sites\portfolio`, branch `feat/v3`.
+Repo: `C:\dev\projects\portfolio-room`, branch `feat/v3`.
 The orchestrator (Claude) is editing the 3D room at the same time. Stay inside
 "You own". If you need a change elsewhere, write the exact diff in your report
 instead of making it.
@@ -64,13 +64,13 @@ if there is no accessible source, say so and skip that project):
 | Project | Likely source | Expected surface |
 |---|---|---|
 | FocusLock (Android) | already on the phone | phone (done) |
-| FocusLock (Windows agent / Electron) | `C:\Users\hp\OneDrive\Desktop\new-focuslock` | monitor, if the repo has a desktop UI |
-| Expense Tracker | `C:\Users\hp\expense-tracker` | phone (React Native) |
-| BasketProof | `C:\Users\hp\OneDrive\Desktop\comparison` (and `comparison-blinkit-reliability`) | check: Kotlin client → phone; any web UI → monitor |
+| FocusLock (Windows agent / Electron) | `C:\dev\projects\focuslock` | monitor, if the repo has a desktop UI |
+| Expense Tracker | `C:\dev\projects\expense-tracker` | phone (React Native) |
+| BasketProof | `C:\dev\projects\basketprice` (and `comparison-blinkit-reliability`) | check: Kotlin client → phone; any web UI → monitor |
 | DarkSentinel | `C:\Users\hp\OneDrive\Documents\demo_website\darksentinel-ui` | monitor (Next.js / Streamlit dashboards) |
 | CrisisWatch | `C:\Users\hp\AppData\Local\Temp\resume-audit\crisiswatch-web` (+ `crisiswatch`), or `github.com/dhruv4740/crisiswatch` | monitor; its WhatsApp bridge could be a phone chat screen if the code supports it |
 | Reddit Growth Copilot | `C:\Users\hp\OneDrive\Documents\reddit-growth-copilot` | monitor |
-| Fraud Detection Dashboard | `C:\Users\hp\kharghar-hacks\Fraud` | monitor (Flask upload + dashboard) |
+| Fraud Detection Dashboard | `C:\dev\collab\kharghar-hacks\Fraud` | monitor (Flask upload + dashboard) |
 | Eco Water System | ESP32 firmware, no UI expected | skip unless a UI exists; say so |
 
 For each: repo path, commit hash you read, the screens you will rebuild (with

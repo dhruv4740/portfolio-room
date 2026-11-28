@@ -226,7 +226,7 @@ team contract and new prompts for current ownership.
 
 ## Environment and commands
 
-- Repo: C:/Users/hp/OneDrive/Desktop/random sites/portfolio
+- Repo: C:/dev/projects/portfolio-room
 - Blender: C:/Program Files/Blender Foundation/Blender 5.2/blender.exe
 - Build: npm run build (writes tracked vendor/content outputs; review diff).
 - Preview: node node_modules/vite/bin/vite.js preview --host localhost --port 4173 --strictPort
