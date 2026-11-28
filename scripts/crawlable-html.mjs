@@ -11,6 +11,7 @@
 //   Person JSON-LD knowsAbout comes from the skills list.
 import { pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
+import { projectEntries, projectPage, homeJsonLd, sitemap, robots, llmsTxt, llmsFull } from './seo-pages.mjs';
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const link = (href, label) => `<a href="${esc(href)}">${esc(label)}</a>`;
@@ -28,7 +29,8 @@ function projectBlock(p, c, site) {
   const links = [];
   if (p.links?.live) links.push(link(p.links.live.startsWith('/') ? site + p.links.live : p.links.live, 'Live'));
   if (p.links?.github) links.push(link(p.links.github, 'Source'));
-  return `<article id="p-${esc(p.id)}"><h3>${esc(p.name)} (${esc(p.year)})</h3>`
+  const slug = c.projectSlugs[p.id];
+  return `<article id="p-${esc(p.id)}"><h3>${slug ? `<a href="/projects/${slug}/">${esc(p.name)}</a>` : esc(p.name)} (${esc(p.year)})</h3>`
     + para(p.tagline)
     + (p.summary || p.description ? para(p.summary || p.description) : '')
     + (c.whatIDid[p.id] ? `<p><b>What I did.</b> ${esc(c.whatIDid[p.id])}</p>` : '')
@@ -49,7 +51,7 @@ function experienceBlock(c) {
     + '</article>').join('');
 }
 
-function workHtml(c, site) {
+function workHtml(c, site, root) {
   const { identity, contact, education } = c;
   const listed = c.projects.filter((p) => p.description || p.tagline);
   const pick = (ids) => ids.map((id) => listed.find((p) => p.id === id)).filter(Boolean);
@@ -60,7 +62,7 @@ function workHtml(c, site) {
     + `<p>${[link('/resume/', 'Résumé'), link(contact.resume, 'Résumé (PDF)'), link(contact.github, contact.githubLabel), link(contact.linkedin, 'LinkedIn'), link('/room/', '3D room (laptop)')].join(' · ')}</p>`
     + `<h2>Proof</h2>${list(c.proofPoints.map((p) => `<b>${esc(p.value)}</b> ${esc(p.text)}`))}`
     + group('Featured', c.featuredProjectIds)
-    + `<h2>At ${esc(blink.org)} (internship)</h2>${para(blink.detail)}${list(c.blinkTools.map((t) => `<b>${esc(t.name)}.</b> ${esc(t.detail)}`))}`
+    + `<h2>At ${esc(blink.org)} (internship)</h2>${para(blink.detail)}<p>${link('/projects/' + c.projectSlugs.blink + '/', 'Blink.new growth tools, full write-up')}</p>${list(c.blinkTools.map((t) => `<b>${esc(t.name)}.</b> ${esc(t.detail)}`))}`
     + list((blink.metrics || []).map((m) => `<b>${esc(m.value)}</b> ${esc(m.label)}`))
     + group('Personal projects', c.personalProjectIds)
     + group('Hackathon projects', c.hackathonProjectIds)
@@ -68,6 +70,7 @@ function workHtml(c, site) {
     + `<h2>Experience</h2>${experienceBlock(c)}`
     + `<h2>Education</h2><p>${esc(education.degree)}, ${esc(education.school)} (${esc(education.year)})</p>`
     + `<h2>Skills</h2>${list(c.skills.map((s) => esc(s.label + (s.note ? ` (${s.note})` : ''))))}`
+    + `<h2>Project write-ups</h2>${list(projectEntries(c, root).map((e) => link('/projects/' + e.slug + '/', e.name)))}`
     + `<h2>Contact</h2><p>${esc(identity.now)} Email ${link('mailto:' + contact.email, contact.email)}. ${link(contact.github, contact.githubLabel)} · ${link(contact.linkedin, 'LinkedIn')}</p>`
     + `</main></div>`;
 }
@@ -87,29 +90,10 @@ function resumeHtml(c, site) {
     + `<p>${link('mailto:' + contact.email, contact.email)} · ${link(contact.github, contact.githubLabel)} · ${link(contact.linkedin, 'LinkedIn')}</p></section>`;
 }
 
-function llmsTxt(c, site) {
-  const { identity, contact, education } = c;
-  return `# ${identity.name}
-
-> ${identity.headline} ${identity.now} Based in ${identity.location}; ${education.degree} student at ${education.school}.
-
-## Pages
-
-- [Work](${site}/): projects, Blink.new growth tools with results, experience, education, contact.
-- [Résumé](${site}/resume/): the résumé as a page, with the PDF at ${site}/resume.pdf.
-- [3D room](${site}/room/): an interactive 3D desk with live project demos (laptop recommended).
-
-## Contact
-
-- Email: ${contact.email}
-- GitHub: ${contact.github}
-- LinkedIn: ${contact.linkedin}
-`;
-}
-
 export default function crawlableHtml() {
   let site = 'https://dhruvkothari.com';
   let content;
+  const root = resolve(import.meta.dirname, '..');
   const load = async () => (content ??= await import(pathToFileURL(resolve(import.meta.dirname, '../src/v3/content/index.js')).href));
   return {
     name: 'crawlable-html',
@@ -117,17 +101,21 @@ export default function crawlableHtml() {
     async transformIndexHtml(html, ctx) {
       const c = await load();
       const skills = JSON.stringify(c.skills.map((s) => s.label));
-      let out = html
-        .replace(/"knowsAbout":\[[^\]]*\]/, `"knowsAbout":${skills}`)
-        .replace(/"sameAs":\[[^\]]*\]/, `"sameAs":${JSON.stringify([c.contact.linkedin, c.contact.github])}`)
-        .replace(/("alumniOf":\{[^}]*\})/, `$1,"affiliation":{"@type":"CollegeOrUniversity","name":${JSON.stringify(c.education.school)}}`);
+      let out = html.replace('<!--HOME_JSONLD-->', () => `<script type="application/ld+json">${homeJsonLd(c, site, projectEntries(c, root))}</script>`);
       const path = ctx.path || '';
-      if (path === '/index.html' || path === '/') out = out.replace('<div id="root"></div>', () => `<div id="root">${workHtml(c, site)}</div>`);
+      if (path === '/index.html' || path === '/') out = out.replace('<div id="root"></div>', () => `<div id="root">${workHtml(c, site, root)}</div>`);
       else if (path === '/resume/index.html') out = out.replace('<!--RESUME_TEXT-->', () => resumeHtml(c, site));
       return out;
     },
     async generateBundle() {
-      this.emitFile({ type: 'asset', fileName: 'llms.txt', source: llmsTxt(await load(), site) });
+      const c = await load();
+      const entries = projectEntries(c, root);
+      const emit = (fileName, source) => this.emitFile({ type: 'asset', fileName, source });
+      entries.forEach((e) => emit(`projects/${e.slug}/index.html`, projectPage(e, entries, c, site)));
+      emit('sitemap.xml', sitemap(c, site, entries, new Date().toISOString().slice(0, 10)));
+      emit('robots.txt', robots(site));
+      emit('llms.txt', llmsTxt(c, site, entries));
+      emit('llms-full.txt', llmsFull(c, site, entries));
     },
   };
 }

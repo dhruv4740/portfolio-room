@@ -438,3 +438,16 @@ export const whatIDid = {
   blackout: 'It unlocks with a fingerprint, has a one-tap button in the quick settings menu, and steps aside for calls and alarms. It never uses the internet.',
   hexfence: 'Team project. I built the guard that stops a wallet paying a lookalike address, the payment check that runs inside the Safe wallet app, and the warning screen in the browser extension.',
 };
+
+// Project pages at /projects/<slug>/ (built by scripts/seo-pages.mjs). Only projects with case-study or what-I-did text get one.
+// `blink` is the Blink.new internship (experience[0]), the rest are project ids.
+export const projectSlugs = {
+  blink: 'blink-growth-tools',
+  focuslock: 'focuslock',
+  expense: 'expense-tracker',
+  basket: 'basketproof',
+  darksentinel: 'darksentinel',
+  hexfence: 'hexfence',
+  portfolio3d: '3d-portfolio',
+  blackout: 'blackout',
+};
