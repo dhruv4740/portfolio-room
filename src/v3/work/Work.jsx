@@ -471,14 +471,6 @@ const PROOF_SHORT = {
   '2×': 'hackathon wins at Innovathon 2025 and REALMS 2025',
 };
 
-// The number inside a proof value (18, 7, 5, 2) is wrapped so it can count up. "Top 5" counts down from 8 instead.
-// Digits are tabular so they do not jitter.
-function ProofValue({ value }) {
-  const m = /^(\D*)(\d+)(.*)$/.exec(value);
-  if (!m || (m[1] && m[1] !== 'Top ')) return value;
-  return <>{m[1]}<data value={m[2]} data-cu={m[2]} data-from={m[1] ? 8 : 0} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
-}
-
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', expense: '/previews/expense.jpg', portfolio3d: '/previews/portfolio3d.jpg' };
 
 // Room tour: the files load when scrolled near (H.264 MP4 first for Safari, WebM as fallback). It plays muted only while
@@ -739,27 +731,23 @@ export default function Work() {
     io.observe(el);
     return () => { io.disconnect(); document.documentElement.removeAttribute('data-hero-ask'); };
   }, []);
-  // Proof numbers count up once when the row first scrolls into view. The final value is in the HTML already.
+  // The proof row shows its final values from the start; on first view each item fades in with a 6px rise, 60 ms apart.
   const proofRef = useRef(null);
   useEffect(() => {
     const ul = proofRef.current;
     if (!ul || typeof IntersectionObserver === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    let raf = 0;
+    const items = [...ul.children];
+    items.forEach((li) => { li.style.opacity = '0'; });
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return;
       io.disconnect();
-      const els = [...ul.querySelectorAll('[data-cu]')];
-      const t0 = performance.now();
-      const step = (now) => {
-        const k = Math.min(1, (now - t0) / 900);
-        const eased = 1 - (1 - k) ** 3;
-        els.forEach((el) => { const from = Number(el.dataset.from), to = Number(el.dataset.cu); el.textContent = String(Math.round(from + (to - from) * eased)); });
-        if (k < 1) raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    }, { threshold: 0.6 });
+      items.forEach((li, i) => {
+        li.style.opacity = '';
+        li.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 360, delay: i * 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+      });
+    }, { threshold: 0.3 });
     io.observe(ul);
-    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+    return () => { io.disconnect(); items.forEach((li) => { li.style.opacity = ''; }); };
   }, []);
   // Pinned header: on once the hero's Résumé button (or, where that is hidden, the hero link row) has scrolled above the viewport.
   const [pin, setPin] = useState(false);
@@ -801,7 +789,9 @@ export default function Work() {
 
   const TAGS = { darksentinel: 'Top 5 finalist', fraud: 'Winner, Innovathon 2025', crisiswatch: 'MumbaiHacks' };
   const renderRow = (p) => {
-    const hasMore = p.caseStudy || whatIDid[p.id] || p.badge || p.label;
+    const rowMeta = p.badge || p.label;
+    const showMeta = rowMeta && rowMeta !== TAGS[p.id];
+    const hasMore = p.caseStudy || whatIDid[p.id] || showMeta;
     const isOpen = moreId === p.id;
     return (
       <div className="w-row w-row--c" key={p.id} id={`p-${p.id}`}>
@@ -833,7 +823,7 @@ export default function Work() {
         {isOpen && (
           <div className="w-more" id={`more-${p.id}`}>
             {didLine(p.id)}
-            {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
+            {showMeta && <span className="w-meta">{rowMeta}</span>}
             {casePdf(p.id)}
             {caseText(p.caseStudy)}
           </div>
@@ -868,13 +858,13 @@ export default function Work() {
         <div className="w-fmeta"><span>{project.year}</span>{project.tech.slice(0, 3).map((t) => (<span className="w-chip" key={t}>{t}</span>))}</div>
         <p className="w-clamp">{project.summary || project.tagline}</p>
         <div className="w-card-acts">
+          {secondAction(project)}
           {project.caseStudy && (
             <button type="button" className="w-go w-fill" aria-expanded={caseId === project.id} aria-controls="feat-case"
               onClick={(e) => { caseBtn.current = e.currentTarget; setCaseId(caseId === project.id ? null : project.id); }}>
               How I built it
             </button>
           )}
-          {secondAction(project)}
         </div>
       </div>
     </article>
@@ -891,7 +881,7 @@ export default function Work() {
     </section>
   );
 
-  const footText = 'Built by hand. There is also a real 3D room you can walk around on a laptop.';
+  const footText = 'Built by hand. There is also a real 3D room you can walk around.';
 
   return (
     <>
@@ -961,7 +951,7 @@ export default function Work() {
             </div>
             <ul className="h-proof" id="proof" aria-label="Proof" ref={proofRef}>
               {proofItems.map((p) => (
-                <li key={p.text}><b><ProofValue value={p.value} /></b><span>{p.text}</span></li>
+                <li key={p.text}><b>{p.value}</b><span>{p.text}</span></li>
               ))}
             </ul>
           </section>
