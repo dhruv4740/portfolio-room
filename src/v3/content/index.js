@@ -155,14 +155,14 @@ export const projects = [
         'Switching browsers or devices resets the allowance.',
       ],
       decisions: [
-        'I enforce limits at the OS level with one shared daily allowance.',
-        'I replaced a self-hosted backend and browser extension with Firestore and an Electron agent.',
-        'I wrote security rules so each sync code only reaches its members, capped at 10.',
+        'The limit is enforced by the operating system, with one daily allowance shared across devices.',
+        "I replaced a server I ran myself with Google's Firestore database and a small Windows program.",
+        'Access rules keep each shared group private, with up to 10 members.',
       ],
       result: [
         'One allowance now covers an Android phone and a Windows PC.',
-        'The app logged a browser tab as closed while it stayed open, until I changed how it sends the close keypress.',
-        'Over 250 automated tests back it, and CI builds a signed APK plus Windows installer.',
+        'The app once marked a browser tab as closed while it stayed open. I fixed how it closes tabs.',
+        'Over 250 automated tests check it. Every update is built into an Android app and a Windows installer automatically.',
       ],
       pdf: {
         problem: 'Screen-time limits are easy to dodge: switch browsers or use another device and the allowance resets.',
@@ -216,7 +216,7 @@ export const projects = [
     summary: 'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
     caseStudy: {
       problem: [
-        'Families in India compare grocery prices across Zepto, Instamart and Blinkit. This app works out the final cart total on each one, after fees.',
+        'The price on the shelf is not what you pay. Fees change the total on each app.',
         "If it can't fetch a price, it says so. It never shows a guess.",
       ],
     },
@@ -236,21 +236,21 @@ export const projects = [
       'A hardcoded fallback T-score could put an anomaly score on the dashboard that the model never produced, which made a missing prediction look like a working one. I removed the fallback from the analysis path.',
     summary: 'A team dark-web traffic monitor that classifies network traffic and shows alerts on a live dashboard.',
     detail: 'I built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded.',
-    badge: 'Top 5 finalist in problem statement, IIT Madras & BITS Goa hackathon 2026',
+    badge: 'Top 5 finalist at the IIT Madras and BITS Goa security hackathon, 2026',
     tech: ['Python', 'FastAPI', 'Next.js', 'Random Forest', 'RoBERTa', 'Claude API', 'Tor', 'Streamlit'],
     caseStudy: {
       problem: [
-        'Darknet traffic monitoring needs a classifier.',
-        'Sending every flow to a paid LLM would be costly and slow.',
+        'Spotting attacks in network traffic needs an automatic check.',
+        'Sending every connection to a paid AI model would be slow and costly.',
       ],
       decisions: [
-        'A Random Forest scores network flows for Tor traffic.',
-        'Only Tor scores between 0.55 and 0.75 reach Claude, behind a 60-second cooldown.',
+        'A trained model scores each connection for signs of hidden dark-web traffic.',
+        'Only the unclear cases go to an AI model, at most once a minute.',
         'I removed a fallback score that could show a result the model never produced.',
       ],
       result: [
-        'This was a team build. A teammate did the model training and live Tor capture.',
-        'I built the dashboards and API features.',
+        'It was a team build. A teammate trained the model and captured live traffic.',
+        'I built the dashboards and the server features.',
       ],
       pdf: {
         problem: 'Monitoring darknet traffic needs a classifier, but sending every flow to a paid LLM would be costly and slow.',
@@ -362,8 +362,7 @@ export const projects = [
         'It uncovers for calls and alarms and has no internet permission.',
       ],
       result: [
-        'It is a Kotlin Android app.',
-        'The source is at github.com/dhruv4740/blackout.',
+        'The code is open on GitHub.',
       ],
       pdf: {
         problem: 'On an OLED phone, listening to audio keeps the screen lit and drains battery.',
@@ -419,9 +418,9 @@ export const anchors = [
 // /work sections after the featured cards, in display order.
 export const blinkTools = [
   { id: 'outreach', name: 'Creator outreach pipeline', detail: 'Python, SQLite, YouTube Data API and Gmail API, with LLM drafting and human approval before every send.' },
-  { id: 'links', name: 'Link-building engine', detail: 'Flask dashboard that found and scored 676 prospect sites and extracted contacts.' },
-  { id: 'seo', name: 'SEO and AI-search mention tracking', detail: 'Tracked AI-search citations across 18 prompts.' },
-  { id: 'reddit', name: 'Reddit growth copilot', detail: 'Reddit was 29.85% of Blink social traffic (Jun 2026).' },
+  { id: 'links', name: 'Link-building engine', detail: 'Found and ranked 676 websites that might link to Blink, and pulled their contact details.' },
+  { id: 'seo', name: 'SEO and AI-search mention tracking', detail: 'Checked how often Blink shows up in Google and in AI chat answers, across 18 common questions.' },
+  { id: 'reddit', name: 'Reddit growth copilot', detail: 'A Chrome extension that drafts replies to Reddit threads with AI. Reddit was 29.85% of Blink social traffic in Jun 2026.' },
 ];
 
 export const personalProjectIds = ['cellbook', 'blackout', 'basket'];
@@ -435,7 +434,7 @@ export const featuredProjectIds = ['focuslock', 'expense'];
 export const whatIDid = {
   focuslock: 'Kotlin, Android, Electron and Firebase. Backed by over 250 automated tests. CI builds a signed APK plus Windows installer.',
   portfolio3d: 'Three.js, React 19, GSAP, GLSL, Playwright. Detects each visitor’s GPU and serves a 3D, mobile or no-WebGL version, holding 30 to 60 FPS on integrated graphics.',
-  darksentinel: 'Built the LLM review layer. Only predictions the model is unsure about go to an LLM, which keeps inference cost bounded. It was a team project.',
-  blackout: 'Kotlin, Android. Fingerprint unlock, a Quick Settings tile, and it steps aside for calls and alarms. No internet permission.',
+  darksentinel: 'Team project. I built the dashboards and the step that sends only unclear cases to an AI model, which keeps the cost low.',
+  blackout: 'It unlocks with a fingerprint, has a one-tap button in the quick settings menu, and steps aside for calls and alarms. It never uses the internet.',
   hexfence: 'Team project. I built the guard that stops a wallet paying a lookalike address, the payment check that runs inside the Safe wallet app, and the warning screen in the browser extension.',
 };
