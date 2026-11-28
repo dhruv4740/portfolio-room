@@ -258,7 +258,7 @@ const css = `
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
   .w-row .w-meta { display: block; margin-top: 6px; }
-  .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; }
+  .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; margin-bottom: 12px !important; }
   .w-tour { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #1a1713; display: block; }
   .w-cs-row { display: block; }
   .w-cs-row summary { cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
@@ -280,7 +280,7 @@ const css = `
   .w-case[open] + .w-pdfq { display: none; }
   /* On phones the link would sit over the middle of the How I built it bar; the panel's own PDF button covers it there. */
   @media (max-width: 639px) { .w-pdfq { display: none; } }
-  .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
+  .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin: 0 0 4px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 8px; margin-top: 2px; }
   .w-act { font-size: 13.5px; padding: 0 14px; }
   .w-case-in { margin-top: 2px; }
@@ -565,7 +565,7 @@ const casePdf = (id) => hasPdf(id) && (
 );
 const casePdfQuiet = (id) => hasPdf(id) && <a className="w-pdfq" href={`/casefiles/${id}.pdf`} aria-label={caseLabel(id)}>Case file (PDF)</a>;
 
-const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b> {whatIDid[id]}</p>;
+const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b>{whatIDid[id]}</p>;
 
 // Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
 // Android shows nothing), so there the button opens the file in its own tab.
