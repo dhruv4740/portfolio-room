@@ -1,9 +1,12 @@
 import { Fragment, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import '../tokens.css';
-import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid } from '../content/index.js';
+import { identity, contact, education, experience, projects, proofPoints, blinkTools, personalProjectIds, hackathonProjectIds, featuredProjectIds, whatIDid, projectSlugs } from '../content/index.js';
 import DemoPanel, { DEMOS } from './DemoPanel.jsx';
 import { phoneCanRoom } from '../lib/capability.js';
 import { fetchMumbaiWeather, istParts } from '../lib/mumbai.js';
+
+// A project's title is a plain link to its static page when it has one (the page text is also in the crawler HTML).
+const titleLink = (id, name) => (projectSlugs[id] ? <a href={`/projects/${projectSlugs[id]}/`}>{name}</a> : name);
 
 const css = `
   /* ---- skip link --------------------------------------------------------- */
@@ -208,13 +211,15 @@ const css = `
   .w-feat { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .w-card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px; padding: 10px; display: flex; flex-direction: column; }
   .w-shot { aspect-ratio: 16 / 10; border-radius: 10px; background: #ebe8e0; position: relative; overflow: hidden; }
-  .w-shot img, .w-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+  .w-shot img, .w-shot svg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; }
   .w-shot > span { position: absolute; left: 12px; bottom: 10px; font: 11.5px var(--mono); color: var(--mute); }
   .w-ci { padding: 14px 8px 8px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
   .w-meta { font: 12.5px var(--mono); color: var(--mute); }
   .w-fmeta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font: 13px/1.3 var(--mono); color: var(--mute); }
   .w-fmeta > span:first-child { margin-right: 6px; }
   .w-chip { padding: 3px 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--bg); color: var(--ink2); font: 12.5px/1.3 var(--mono); }
+  .w-t a, .w-card h3 a { color: inherit; text-decoration: none; }
+  .w-t a:hover, .w-t a:focus-visible, .w-card h3 a:hover, .w-card h3 a:focus-visible { text-decoration: underline; text-underline-offset: 3px; }
   .w-card h3 { font-size: 19px; letter-spacing: -0.015em; line-height: 1.25; }
   .w-card p { font-size: 15px; color: var(--ink2); }
   .w-clamp { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
@@ -258,7 +263,7 @@ const css = `
   .w-row b { font-weight: 500; }
   .w-row p { font-size: 15px; color: var(--ink2); margin-top: 2px; }
   .w-row .w-meta { display: block; margin-top: 6px; }
-  .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; }
+  .w-did { font-size: 14px !important; color: var(--mute) !important; margin-top: 6px !important; margin-bottom: 12px !important; }
   .w-tour { width: 100%; aspect-ratio: 16 / 9; border-radius: 14px; background: #1a1713; display: block; }
   .w-cs-row { display: block; }
   .w-cs-row summary { cursor: pointer; display: flex; flex-direction: column; gap: 8px; }
@@ -280,7 +285,7 @@ const css = `
   .w-case[open] + .w-pdfq { display: none; }
   /* On phones the link would sit over the middle of the How I built it bar; the panel's own PDF button covers it there. */
   @media (max-width: 639px) { .w-pdfq { display: none; } }
-  .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; margin-right: 6px; color: var(--ink2); }
+  .w-did b { font: 500 11px var(--mono); letter-spacing: 0.08em; text-transform: uppercase; display: block; margin: 0 0 4px; color: var(--ink2); }
   .w-acts { grid-column: 2 / -1; display: flex; gap: 8px; margin-top: 2px; }
   .w-act { font-size: 13.5px; padding: 0 14px; }
   .w-case-in { margin-top: 2px; }
@@ -313,6 +318,8 @@ const css = `
   .w-contact { font-size: 15.5px; color: var(--ink2); max-width: 46ch; }
   .w-contact a { color: var(--ink); border-bottom: 1px solid var(--line); text-decoration: none; }
   .w-foot { margin-top: 40px; font-size: 14px; color: var(--mute); }
+  .w-foot + .w-foot { margin-top: 6px; }
+  .w-foot a { color: inherit; text-underline-offset: 3px; }
 
   .w-bar {
     position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
@@ -432,6 +439,7 @@ const css = `
     .h-proof li + li { border-left: 1px solid var(--line); }
   }
 
+  @media (min-width: 720px) { .h-actions { display: flex; } }
   @media (min-width: 641px) { .w-wrap { padding-left: 32px; padding-right: 32px; } }
   @media (min-width: 960px) {
     .h-grid { grid-template-columns: minmax(0, 58fr) minmax(0, 42fr); gap: 64px; }
@@ -454,6 +462,7 @@ const css = `
     .h-link { font-size: 15.6px; }
   }
   html[data-hero-ask] #ask-wrap { visibility: hidden; }
+  @media (min-width: 720px) { .h-row { margin-top: 24px; } .w-root .h-btn--t { margin-top: 0; } }
   @media (min-width: 960px) { .h-row { margin-top: 32px; } .w-root .h-btn--t { margin-top: 0; } }
 
   @media (prefers-reduced-motion: reduce) {
@@ -470,14 +479,6 @@ const PROOF_SHORT = {
   'Top 5': 'finalist, IIT Madras × BITS Goa security hackathon',
   '2×': 'hackathon wins at Innovathon 2025 and REALMS 2025',
 };
-
-// The number inside a proof value (18, 7, 5, 2) is wrapped so it can count up. "Top 5" counts down from 8 instead.
-// Digits are tabular so they do not jitter.
-function ProofValue({ value }) {
-  const m = /^(\D*)(\d+)(.*)$/.exec(value);
-  if (!m || (m[1] && m[1] !== 'Top ')) return value;
-  return <>{m[1]}<data value={m[2]} data-cu={m[2]} data-from={m[1] ? 8 : 0} style={{ display: 'inline-block', minWidth: `${m[2].length}ch`, fontVariantNumeric: 'tabular-nums' }}>{m[2]}</data>{m[3]}</>;
-}
 
 const PREVIEWS = { focuslock: '/previews/focuslock.jpg', darksentinel: '/previews/darksentinel.jpg', expense: '/previews/expense.jpg', portfolio3d: '/previews/portfolio3d.jpg' };
 
@@ -515,11 +516,17 @@ const ago = (iso) => {
   const d = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 86400e3));
   return d === 0 ? 'today' : d === 1 ? 'yesterday' : d < 60 ? `${d} days ago` : `${Math.round(d / 30)} months ago`;
 };
+// Commit subjects are shown as plain sentences: no "type(scope): " prefix, first letter capital, no merge commits.
+const plainCommit = (msg) => {
+  const t = String(msg || '').replace(/^\s*\w+(\([^)]*\))?!?:\s*/, '').trim();
+  return t ? t[0].toUpperCase() + t.slice(1) : '';
+};
+const isMerge = (msg) => /^\s*Merge/i.test(String(msg || ''));
 function GithubProof() {
   const [data, setData] = useState(null);
   useEffect(() => {
     let live = true;
-    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.commits?.length) setData(d); }).catch(() => {});
+    fetch('/api/proof').then((r) => r.json()).then((d) => { if (live && d?.commits?.length) setData({ ...d, commits: d.commits.filter((c) => !isMerge(c.msg) && plainCommit(c.msg)) }); }).catch(() => {});
     return () => { live = false; };
   }, []);
   if (!data) return null;
@@ -533,7 +540,7 @@ function GithubProof() {
             <span className="w-y">{ago(c.date)}</span>
             <span>
               <b>{c.repo}</b>
-              <p><a href={c.url} target="_blank" rel="noopener noreferrer">{c.msg}</a></p>
+              <p><a href={c.url} target="_blank" rel="noopener noreferrer">{plainCommit(c.msg)}</a></p>
             </span>
           </div>
         ))}
@@ -565,7 +572,7 @@ const casePdf = (id) => hasPdf(id) && (
 );
 const casePdfQuiet = (id) => hasPdf(id) && <a className="w-pdfq" href={`/casefiles/${id}.pdf`} aria-label={caseLabel(id)}>Case file (PDF)</a>;
 
-const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b> {whatIDid[id]}</p>;
+const didLine = (id) => whatIDid[id] && <p className="w-did"><b>What I did</b>{whatIDid[id]}</p>;
 
 // Full-screen résumé reader. Phones cannot show a PDF inline (iOS shows page 1,
 // Android shows nothing), so there the button opens the file in its own tab.
@@ -739,27 +746,23 @@ export default function Work() {
     io.observe(el);
     return () => { io.disconnect(); document.documentElement.removeAttribute('data-hero-ask'); };
   }, []);
-  // Proof numbers count up once when the row first scrolls into view. The final value is in the HTML already.
+  // The proof row shows its final values from the start; on first view each item fades in with a 6px rise, 60 ms apart.
   const proofRef = useRef(null);
   useEffect(() => {
     const ul = proofRef.current;
     if (!ul || typeof IntersectionObserver === 'undefined' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-    let raf = 0;
+    const items = [...ul.children];
+    items.forEach((li) => { li.style.opacity = '0'; });
     const io = new IntersectionObserver(([e]) => {
       if (!e.isIntersecting) return;
       io.disconnect();
-      const els = [...ul.querySelectorAll('[data-cu]')];
-      const t0 = performance.now();
-      const step = (now) => {
-        const k = Math.min(1, (now - t0) / 900);
-        const eased = 1 - (1 - k) ** 3;
-        els.forEach((el) => { const from = Number(el.dataset.from), to = Number(el.dataset.cu); el.textContent = String(Math.round(from + (to - from) * eased)); });
-        if (k < 1) raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-    }, { threshold: 0.6 });
+      items.forEach((li, i) => {
+        li.style.opacity = '';
+        li.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 360, delay: i * 60, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' });
+      });
+    }, { threshold: 0.3 });
     io.observe(ul);
-    return () => { io.disconnect(); cancelAnimationFrame(raf); };
+    return () => { io.disconnect(); items.forEach((li) => { li.style.opacity = ''; }); };
   }, []);
   // Pinned header: on once the hero's Résumé button (or, where that is hidden, the hero link row) has scrolled above the viewport.
   const [pin, setPin] = useState(false);
@@ -801,13 +804,15 @@ export default function Work() {
 
   const TAGS = { darksentinel: 'Top 5 finalist', fraud: 'Winner, Innovathon 2025', crisiswatch: 'MumbaiHacks' };
   const renderRow = (p) => {
-    const hasMore = p.caseStudy || whatIDid[p.id] || p.badge || p.label;
+    const rowMeta = p.badge || p.label;
+    const showMeta = rowMeta && rowMeta !== TAGS[p.id];
+    const hasMore = p.caseStudy || whatIDid[p.id] || showMeta;
     const isOpen = moreId === p.id;
     return (
       <div className="w-row w-row--c" key={p.id} id={`p-${p.id}`}>
         <div className="w-r1">
           <span className="w-y">{p.year}</span>
-          <b className="w-t">{p.name}</b>
+          <b className="w-t">{titleLink(p.id, p.name)}</b>
           {TAGS[p.id] && <span className="w-tag">{TAGS[p.id]}</span>}
           <span className="w-acts">
             {DEMOS[p.id] && <button type="button" className="w-act" onClick={(e) => tryDemo(p, e)}>Try it</button>}
@@ -833,7 +838,7 @@ export default function Work() {
         {isOpen && (
           <div className="w-more" id={`more-${p.id}`}>
             {didLine(p.id)}
-            {(p.badge || p.label) && <span className="w-meta">{p.badge || p.label}</span>}
+            {showMeta && <span className="w-meta">{rowMeta}</span>}
             {casePdf(p.id)}
             {caseText(p.caseStudy)}
           </div>
@@ -864,17 +869,17 @@ export default function Work() {
         </div>
       )}
       <div className="w-ci">
-        <h3>{project.name}</h3>
+        <h3>{titleLink(project.id, project.name)}</h3>
         <div className="w-fmeta"><span>{project.year}</span>{project.tech.slice(0, 3).map((t) => (<span className="w-chip" key={t}>{t}</span>))}</div>
         <p className="w-clamp">{project.summary || project.tagline}</p>
         <div className="w-card-acts">
+          {secondAction(project)}
           {project.caseStudy && (
             <button type="button" className="w-go w-fill" aria-expanded={caseId === project.id} aria-controls="feat-case"
               onClick={(e) => { caseBtn.current = e.currentTarget; setCaseId(caseId === project.id ? null : project.id); }}>
               How I built it
             </button>
           )}
-          {secondAction(project)}
         </div>
       </div>
     </article>
@@ -891,7 +896,7 @@ export default function Work() {
     </section>
   );
 
-  const footText = 'Built by hand. There is also a real 3D room you can walk around on a laptop.';
+  const footText = 'Built by hand. There is also a real 3D room you can walk around.';
 
   return (
     <>
@@ -961,7 +966,7 @@ export default function Work() {
             </div>
             <ul className="h-proof" id="proof" aria-label="Proof" ref={proofRef}>
               {proofItems.map((p) => (
-                <li key={p.text}><b><ProofValue value={p.value} /></b><span>{p.text}</span></li>
+                <li key={p.text}><b>{p.value}</b><span>{p.text}</span></li>
               ))}
             </ul>
           </section>
@@ -971,7 +976,7 @@ export default function Work() {
             <div className="w-feat">
               <article className="w-card">
                 <div className="w-ci">
-                  <h3>An outreach pipeline people actually replied to</h3>
+                  <h3><a href={`/projects/${projectSlugs.blink}/`}>An outreach pipeline people actually replied to</a></h3>
                   <div className="w-fmeta"><span>Blink.new, {blink.from.slice(-4)}</span>{['Python', 'Gmail API', 'LLM'].map((t) => (<span className="w-chip" key={t}>{t}</span>))}</div>
                   <p>I built four growth tools at Blink as the sole developer. They cover creator outreach (650 creators sourced), link building, SEO and AI-search tracking, and a Reddit copilot.</p>
                   <div className="w-res"><b>18%</b><small>of contacted creators replied · 14 positive</small></div>
@@ -1048,6 +1053,7 @@ export default function Work() {
               <a href={`mailto:${contact.email}`}>{contact.email}</a>.
             </p>
             <p className="w-foot">{footText}</p>
+            <p className="w-foot"><a href={contact.github} target="_blank" rel="noopener noreferrer">dhruv4740 on GitHub</a></p>
           </main>
         </div>
         <header className={`w-pin${pin ? ' w-pin--on' : ''}`} inert={!pin}>

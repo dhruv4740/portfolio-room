@@ -20,10 +20,10 @@ export function buildSections() {
     'experience experiences internship internships work history jobs roles career employment summarise summarize');
   add('looking-for', 'What he is looking for', `${identity.now} His Blink internship ends in October 2026. Interests: AI and growth engineering, backend and automation work, Android and cross-platform apps, building things end to end. Contact: ${contact.email}.`,
     'looking seeking want available availability open internship role hire remote join start when next');
-  add('why-hire', 'Why hire Dhruv', `Evidence-based case: (1) Measurable results as a sole developer: four tools at Blink, 489 outreach emails, 41 of 228 contacted creators replied (18%), 676 prospect sites scored. (2) Engineering judgement shown in his write-ups: he deleted a self-hosted backend for Firestore in FocusLock, made BasketProof refuse to state a price it cannot verify, and bounded LLM cost in DarkSentinel by only calling Claude when the classifier is unsure. (3) He debugs real faults and says what broke: the Windows Ctrl+W SendInput bug, the parser refund-direction bug, the 403-versus-expired-session lockout. (4) Range across Python backends, Kotlin and Android, TypeScript and React, ML and Firebase. (5) Competitive record: 2 hackathon wins and a top 5 finalist placement. DarkSentinel was built with a team; model training and live Tor capture were a teammate's.`,
+  add('why-hire', 'Why hire Dhruv', `Evidence-based case: (1) Measurable results as a sole developer: four tools at Blink, 489 outreach emails, 41 of 228 contacted creators replied (18%), 676 prospect sites scored. (2) Engineering judgement shown in his write-ups: he deleted a self-hosted backend for Firestore in FocusLock, made BasketProof refuse to state a price it cannot verify, and kept AI model cost low in DarkSentinel by only calling Claude when the classifier is unsure. (3) He debugs real faults and says what broke: the Windows Ctrl+W SendInput bug, the parser refund-direction bug, the 403-versus-expired-session lockout. (4) Range across Python backends, Kotlin and Android, TypeScript and React, ML and Firebase. (5) Competitive record: 2 hackathon wins and a top 5 finalist placement. DarkSentinel was built with a team; model training and live Tor capture were a teammate's.`,
     'why hire hiring should strengths strength good fit pitch best candidate stand out unique value recommend opinion');
   add('strongest-by-area', 'Strongest project by area',
-    `Backend: BasketProof (Python, FastAPI, PostgreSQL), FocusLock (one Firestore backend with security rules enforcing limits across Android and Windows) and the DarkSentinel API (FastAPI serving dashboards, with a cost-bounded LLM call). Best single backend story: FocusLock, with over 250 automated tests and CI that builds a signed APK plus Windows installer. Mobile and Android: FocusLock, Expense Tracker (React Native plus Kotlin, a peek/ack buffer so no events are lost) and Blackout. AI and ML: DarkSentinel (Random Forest plus RoBERTa plus Claude) and F-Shield (XGBoost). AI in real work: the Blink outreach pipeline (LLM drafting with human approval). Front end and 3D: this portfolio (Three.js, React 19, 30 to 60 FPS on integrated graphics) and CrisisWatch (Next.js). Most hackathon-proven: DarkSentinel (top 5) and F-Shield (winner).`,
+    `Backend: BasketProof (Python, FastAPI, PostgreSQL), FocusLock (one shared Firestore database with access rules, enforcing limits across Android and Windows) and the DarkSentinel server (Python FastAPI serving dashboards, with a cost-bounded AI model call). Best single backend story: FocusLock, with over 250 automated tests and every change builds a signed Android install file and a Windows installer automatically. Mobile and Android: FocusLock, Expense Tracker (a phone app that reads payment texts, with a queue that marks each message done only after it is handled so none are lost) and Blackout. AI and ML: DarkSentinel (Random Forest plus RoBERTa plus Claude) and F-Shield (XGBoost). AI in real work: the Blink outreach tool (AI-drafted messages with human approval). Front end and 3D: this portfolio (Three.js, React 19, 30 to 60 frames per second on integrated graphics) and CrisisWatch (Next.js). Most hackathon-proven: DarkSentinel (top 5) and F-Shield (winner).`,
     'project projects backend frontend mobile android ml ai which proudest favourite impressive area server api');
   add('hackathons', 'Hackathons', `Innovathon 2025, Data Science track: winner, with F-Shield (fraud detection, XGBoost and Flask). REALMS 2025, AR Tourism track: winner. Secure AI Systems and Software Hackathon (BITS Goa with IIT Madras) 2026: top 5 finalist in its problem statement with DarkSentinel. He also built CrisisWatch at MumbaiHacks.`,
     'hackathon hackathons competition won winner award innovathon realms mumbaihacks saiss');
@@ -258,17 +258,47 @@ const NAMES = projects.flatMap((p) => [p.name.toLowerCase(), p.id]).concat(exper
 // Does the question concern Dhruv at all? Pronoun, name, a project or employer, or a work-topic word.
 const onTopic = (q) => /\b(dhruv|kothari|he|his|him|candidate|hire|hiring|intern|internship|resume|cv|skills?|projects?|experience|hackathons?|education)\b/i.test(q) || NAMES.some((n) => q.toLowerCase().includes(n));
 
-const GREETING = /^\s*(hi+|hello+|hey+|hiya|yo|sup|howdy|namaste|good (morning|afternoon|evening)|thanks?|thank you|ok(ay)?|cool|great)\b[\s!.,?]*(there|team|assistant|bot)?[\s!.,?]*$/i;
+// Greeting or small talk: strip greeting words, a name and filler; if nothing meaningful is left it is a greeting.
+const GREET_CORE = /\b(h+i+|he+l+o+|he+y+|hiya|yo+|sup|wass?up|howdy|namaste|good (morning|afternoon|evening|night)|thank you|thanks?|thx|ok(ay)?|cool|great|bye|goodbye|see you|see ya|how are you|how are u|how r u|how'?s it going|how do you do|what'?s up|whats up)\b/gi;
+const GREET_FILL = /\b(dhruv|there|team|bot|assistant|everyone|again|so much|very much|a lot|much|so|and)\b/gi;
+const isGreeting = (q) => {
+  const t = String(q).toLowerCase().replace(/[’]/g, "'").replace(/[^a-z'\s]/g, ' ');
+  const u = t.replace(GREET_CORE, ' ');
+  if (u === t) return false;
+  return u.replace(GREET_FILL, ' ').replace(/[\s']+/g, '') === '';
+};
 const BROAD = /\b(what (can|does|do) (he|dhruv|you)( do| know| build)?|tell me (more )?about (him|dhruv|himself|you)|who (is|'s) (he|dhruv)|about (him|dhruv)|introduce|overview|background|capabilit|can he|does he)\b|^\s*(his |dhruv'?s )?(skills?|strengths?|work|profile|about)\??\s*$/i;
+
+const GREETING_ANSWER = ans(`Hi, I am the assistant on ${identity.name}'s portfolio.`, ['I can tell you about his projects and internships.', 'I can cover his skills and hackathons.', 'I can say what he is looking for.']);
+const OFFTOPIC_ANSWER = ans('I can only answer questions about Dhruv.', ['Ask about his projects, internships or skills.', 'Ask about his hackathons or what he is looking for.'], `Try "Why hire Dhruv?" or email ${contact.email}.`);
+
+// The gate runs before Turnstile, the KV caps and the model, so greetings and clearly unrelated questions cost nothing.
+// A question is gated as off-topic only when every test says so: no keyword from onTopic, no second-person word (recruiters
+// talk to the assistant as if it were Dhruv), no recruiter-topic word, and none of its words (3+ letters, minus filler) is in
+// the knowledge text. Anything else, including anything unsure, goes to the model.
+const SECOND_PERSON = /\b(you|your|yours|yourself|u|ur)\b/i;
+// Recruiter vocabulary that is not in the knowledge text (it states no salary or visa), so asking about it must still reach the model.
+const RECRUITER = /\b(notice|period|salary|ctc|stipend|compensation|relocat\w*|visa|sponsor\w*|authori[sz]\w*|gpa|cgpa|grades?|marks|availab\w*|joining|join|start|full.?time|part.?time|contract|interview|references?|timezone|hybrid|onsite|references?|linkedin|resume|cv|dhr?u+v\w*|kothari|kotari)\b/i;
+const FILLER = new Set('the and for are was were can could would should will what whats who whom whose how why when where which did does doing has have had his her him she not but any all with about from into that this there here they them then than tell give show write make won win wins let get got its our out one new more very just also like need want please'.split(' '));
+const words = (s) => (String(s).toLowerCase().match(/[a-z0-9+#]+/g) || []).filter((w) => w.length >= 3 && !FILLER.has(w));
+const VOCAB = new Set(SECTIONS.flatMap((s) => words(`${s.title} ${s.text} ${s.keys}`)).concat(projects.flatMap((p) => words(`${p.name} ${(p.tech || []).join(' ')}`)), skills.flatMap((x) => words(x.label))));
+const NOT_LATIN = /[^\p{Script=Latin}\p{N}\p{P}\p{S}\p{Z}\p{M}]/u;
+// null = let the model answer; otherwise { kind, answer, source } for the gate to send as-is.
+export function gateAnswer(question) {
+  const q = clean(question);
+  if (isGreeting(q)) return { kind: 'greeting', answer: GREETING_ANSWER, source: '' };
+  if (NOT_LATIN.test(q) || onTopic(q) || SECOND_PERSON.test(q) || RECRUITER.test(q) || words(q).some((w) => VOCAB.has(w))) return null;
+  return { kind: 'offtopic', answer: OFFTOPIC_ANSWER, source: '' };
+}
 
 const IDENTITY = /\b(which|what) (ai|model|llm|bot)\b|\bwhat are you\b|\bare you (an? )?(ai|bot|human|gpt|chatgpt|claude|gemini)\b/i;
 
 export function cannedAnswer(question) {
   if (IDENTITY.test(question)) return { answer: ans(`I am an AI assistant built into ${identity.name}'s portfolio.`, ['I answer only from his résumé and case studies.', 'Ask me about his projects, internships, skills or what he is looking for.']), source: '' };
-  if (GREETING.test(question)) return { answer: ans(`Hi, I am the assistant on ${identity.name}'s portfolio.`, ['I can tell you about his projects and internships.', 'I can cover his skills and hackathons.', 'I can say what he is looking for.']), source: '' };
+  if (isGreeting(question)) return { answer: GREETING_ANSWER, source: '' };
   if (BROAD.test(question) && !PRIVATE.test(question)) { const sm = SECTIONS.find((x) => x.id === 'summary'); if (sm) return { answer: render('summary') || paras(sm.text), source: sm.title }; }
   if (PRIVATE.test(question) && onTopic(question)) return { answer: `I do not have that detail, and I do not share private information.\n\nFor anything like it, email ${contact.email}.`, source: '' };
-  if (!onTopic(question)) return { answer: ans('I can only answer questions about Dhruv.', ['Ask about his projects, internships or skills.', 'Ask about his hackathons or what he is looking for.'], `Try "Why hire Dhruv?" or email ${contact.email}.`), source: '' };
+  if (!onTopic(question)) return { answer: OFFTOPIC_ANSWER, source: '' };
   const cmp = compareAnswer(question);
   if (cmp) return cmp;
   const { section, score } = bestSection(question);
@@ -297,4 +327,17 @@ export function sourceHref(source) {
   if (!s) return '';
   const id = s.id.startsWith('proj-') ? `p-${s.id.slice(5)}` : HOME[s.id] || (s.id.startsWith('exp-') ? 'experience' : '');
   return id ? `/#${id}` : '';
+}
+
+// What the visitor sees as the link text. Internal section titles never leave the server; '' when there is nowhere to link.
+export function sourceLabel(source) {
+  if (!sourceHref(source)) return '';
+  const t = String(source ?? '').trim(), s = SECTIONS.find((x) => x.title === t) || SECTIONS.find((x) => x.title === t.split(', ')[0]);
+  const id = s.id;
+  if (id.startsWith('proj-')) return `See ${s.title.replace(/^Project:\s*/, '')}`;
+  if (id === 'exp-blink' || id === 'blink-tools') return 'See Blink.new work';
+  if (id === 'contact' || id === 'looking-for') return 'See Contact';
+  if (id === 'hackathons' || id === 'achievements') return 'See Hackathons';
+  if (id === 'proof') return 'See Highlights';
+  return 'See Experience';
 }

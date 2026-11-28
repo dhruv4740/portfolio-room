@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { onRequestPost, onRequestGet } from '../functions/api/ask.js';
 import { runChain } from '../functions/_ask/chain.js';
 import { PROVIDERS } from '../functions/_ask/providers.js';
-import { cannedAnswer, systemPrompt, relevantSections, splitSource, sourceHref } from '../functions/_ask/knowledge.js';
+import { cannedAnswer, systemPrompt, relevantSections, splitSource, sourceHref, sourceLabel } from '../functions/_ask/knowledge.js';
 
 const kvStore = new Map();
 const KV = { get: async (k) => kvStore.get(k) ?? null, put: async (k, v) => { kvStore.set(k, v); } };
@@ -28,7 +28,7 @@ const t = async (name, fn) => { kvStore.clear(); calls = []; handlers = {}; awai
 await t('groq answers first, with source parsed', async () => {
   handlers.groq = async () => ok('He built four growth tools. (Source: Experience: Blink.new)');
   const r = await ask(env());
-  assert.equal(r.provider, 'groq'); assert.equal(r.source, 'Experience: Blink.new'); assert.deepEqual(calls, ['groq']);
+  assert.equal(r.provider, 'groq'); assert.equal(r.source, 'See Blink.new work'); assert.deepEqual(calls, ['groq']);
 });
 await t('groq timeout -> gemini 429 -> openrouter answers', async () => {
   handlers.groq = hang; handlers.gemini = status(429); handlers.openrouter = async () => ok('Four tools. (Source: Blink growth tools)');
@@ -115,10 +115,11 @@ await t('answers that leak the rules are replaced; long answers are clipped', as
 await t('list answers keep their line breaks; the source gets a /work link', async () => {
   handlers.groq = async () => ok('He built four tools:\n- Outreach   pipeline\n- **Link** engine\n\n\n(Source: Experience: Blink.new)');
   const r = await ask(env());
-  assert.equal(r.answer, 'He built four tools:\n- Outreach pipeline\n- **Link** engine'); assert.equal(r.source, 'Experience: Blink.new'); assert.equal(r.href, '/#blink');
+  assert.equal(r.answer, 'He built four tools:\n- Outreach pipeline\n- **Link** engine'); assert.equal(r.source, 'See Blink.new work'); assert.equal(r.href, '/#blink');
   assert.equal(splitSource('One line. (Source: Project: FocusLock)').source, 'Project: FocusLock');
   assert.equal(sourceHref('Project: FocusLock'), '/#p-focuslock'); assert.equal(sourceHref('Project: FocusLock, Project: Blackout'), '/#p-focuslock');
   assert.equal(sourceHref('Experience: ARH Tubes Pvt. Ltd.'), '/#experience'); assert.equal(sourceHref('Why hire Dhruv'), ''); assert.equal(sourceHref(''), '');
+  assert.equal(sourceLabel('Project: FocusLock'), 'See FocusLock'); assert.equal(sourceLabel('Experience overview'), 'See Experience'); assert.equal(sourceLabel('Experience: ARH Tubes Pvt. Ltd.'), 'See Experience'); assert.equal(sourceLabel('Contact'), 'See Contact'); assert.equal(sourceLabel('Hackathons'), 'See Hackathons'); assert.equal(sourceLabel('Highlights'), 'See Highlights'); assert.equal(sourceLabel('About Dhruv'), ''); assert.equal(sourceLabel(''), '');
 });
 globalThis.fetch = realFetch;
 

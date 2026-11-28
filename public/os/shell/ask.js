@@ -4,7 +4,7 @@
 // Suggestions rotate through a pool and skip what was already asked.
 export const PROMPTS = ['Why should we hire Dhruv?', 'Strongest project for backend work?', 'Summarise his experience', 'Compare FocusLock and Blackout',
   'What did he build at Blink?', 'Has he won any hackathons?', 'What is he looking for next?', 'How was this website built?', 'Which project shows his AI work best?', 'What are his strongest skills?'];
-const INK = '#f6f4ee', MUTE = 'rgba(246,244,238,.66)', LINE = 'rgba(255,255,255,.22)';
+const INK = '#f6f4ee', MUTE = 'rgba(246,244,238,.82)', LINE = 'rgba(255,255,255,.22)';
 let config = null, tsLoad = null;
 
 function getConfig() {
@@ -23,6 +23,7 @@ const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const CSS = `.ask-box{font:400 15px/1.55 system-ui,-apple-system,sans-serif;color:${INK};display:flex;flex-direction:column;gap:12px;height:100%;min-height:0}
 .ask-thread{position:relative;flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:2px 2px 6px;scrollbar-width:thin;overscroll-behavior:contain}
+.ask-note{margin:0;color:${MUTE};font-size:12px}.ask-note[hidden]{display:none}
 .ask-intro{margin:0;color:${MUTE};font-size:14px}
 .ask-q{align-self:flex-end;max-width:88%;padding:9px 14px;border-radius:18px 18px 4px 18px;background:rgba(246,244,238,.92);color:#26251f}
 .ask-a{align-self:flex-start;max-width:96%;line-height:1.5;padding:10px 14px;border-radius:18px 18px 18px 4px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16)}
@@ -31,11 +32,12 @@ const CSS = `.ask-box{font:400 15px/1.55 system-ui,-apple-system,sans-serif;colo
 .ask-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-top:8px;color:${MUTE};font-size:12px}
 .ask-meta a{color:${INK};text-decoration:underline;text-decoration-color:rgba(246,244,238,.4);text-underline-offset:3px}
 .ask-meta button{border:0;background:none;color:${INK};font:inherit;text-decoration:underline;text-decoration-color:rgba(246,244,238,.4);text-underline-offset:3px;padding:4px 0;cursor:pointer}
+.ask-meta .ask-ico{display:inline-flex;align-items:center;justify-content:center;min-width:32px;min-height:32px;padding:0;margin:-4px 0;border-radius:8px;text-decoration:none}.ask-meta .ask-ico:hover{background:rgba(255,255,255,.1)}.ask-meta button:focus-visible,.ask-meta a:focus-visible{outline:2px solid ${INK};outline-offset:2px}
 .ask-chips{display:flex;flex-wrap:wrap;gap:8px}
 .ask-chips button{padding:7px 13px;border:1px solid ${LINE};border-radius:99px;background:rgba(255,255,255,.08);color:${INK};font:13px system-ui,sans-serif;cursor:pointer}
 .ask-row{display:flex;gap:8px}
 .ask-row input{flex:1;min-width:0;padding:12px 16px;border:1px solid ${LINE};background:rgba(255,255,255,.12);color:${INK};font:inherit;border-radius:99px;outline-offset:2px}
-.ask-row input::placeholder{color:rgba(246,244,238,.55)}
+.ask-row input::placeholder{color:rgba(246,244,238,.85)}
 .ask-row button{padding:0 20px;border:0;border-radius:99px;background:rgba(246,244,238,.92);color:#26251f;font:600 14px system-ui,sans-serif;cursor:pointer;min-height:44px}
 @media (pointer:coarse){.ask-row input{font-size:16px}}
 .ask-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
@@ -82,7 +84,9 @@ export function mountAsk(el) {
   const go = Object.assign(document.createElement('button'), { type: 'button', textContent: 'Ask' });
   row.append(input, go);
   const ts = document.createElement('div');
-  box.append(thread, chips, row, ts, live); el.appendChild(box);
+  // Shown only when Turnstile turns interactive (a checkbox appears): the question and the thinking dots are already in the thread by then.
+  const note = Object.assign(document.createElement('p'), { className: 'ask-note', textContent: 'Cloudflare wants a quick check first.', hidden: true });
+  box.append(thread, chips, row, note, ts, live); el.appendChild(box);
 
   const asked = new Set();
   let shown = 0;
@@ -104,7 +108,7 @@ export function mountAsk(el) {
   getConfig().then(async (c) => {
     if (!c.turnstileSiteKey) return;
     const t = await loadTurnstile(); if (!t) return;
-    widget = t.render(ts, { sitekey: c.turnstileSiteKey, appearance: 'interaction-only', theme: 'dark' });
+    widget = t.render(ts, { sitekey: c.turnstileSiteKey, appearance: 'interaction-only', theme: 'dark', 'before-interactive-callback': () => { note.hidden = false; }, 'after-interactive-callback': () => { note.hidden = true; }, callback: () => { note.hidden = true; } });
   });
   const token = async () => {
     if (widget == null) return '';
@@ -137,6 +141,32 @@ export function mountAsk(el) {
   };
   const metaBtn = (label, fn) => { const b = Object.assign(document.createElement('button'), { type: 'button', textContent: label }); b.onclick = () => fn(b); return b; };
 
+  const ICON_COPY = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+  const ICON_OK = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+  // Copies the answer text only, never the source line.
+  const copyBtn = (text) => {
+    const b = Object.assign(document.createElement('button'), { type: 'button', className: 'ask-ico', title: 'Copy', innerHTML: ICON_COPY });
+    b.setAttribute('aria-label', 'Copy answer');
+    const done = () => {
+      b.innerHTML = ICON_OK; b.setAttribute('aria-label', 'Copied'); b.title = 'Copied';
+      clearTimeout(b.t); b.t = setTimeout(() => { b.innerHTML = ICON_COPY; b.setAttribute('aria-label', 'Copy answer'); b.title = 'Copy'; }, 1500);
+    };
+    // Older or locked-down browsers: a hidden textarea and execCommand. The check shows only if one of the two worked.
+    const legacy = () => {
+      const t = Object.assign(document.createElement('textarea'), { value: text });
+      t.setAttribute('readonly', ''); t.setAttribute('aria-hidden', 'true');
+      t.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;pointer-events:none';
+      document.body.appendChild(t); t.select(); t.setSelectionRange(0, text.length);
+      let ok = false; try { ok = document.execCommand('copy'); } catch { ok = false; }
+      t.remove(); b.focus({ preventScroll: true });
+      if (ok) done();
+    };
+    b.onclick = () => {
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, legacy); else legacy();
+    };
+    return b;
+  };
+
   async function ask(q) {
     q = String(q ?? input.value).trim();
     if (busy || q.length < 2) return;
@@ -144,7 +174,7 @@ export function mountAsk(el) {
     const mine = seq;
     if (thread.firstChild?.classList?.contains('ask-intro')) thread.replaceChildren();
     const qb = add('ask-q'); qb.textContent = q; appear(qb);
-    // Opened from the hero card (data-variant="hero" on the panel root): three pulsing dots, held for at least 350 ms so a saved answer still reads as deliberate.
+    // Opened from the hero card (data-variant="hero" on the panel root): three pulsing dots, held for at least 250 ms (inside the panel's 480 ms open, so the answer bends the same motion) so a saved answer still reads as deliberate.
     const isHero = !!el.closest('[data-variant="hero"]'), t0 = performance.now();
     const a = add('ask-a'); a.innerHTML = isHero ? '<span class="ask-dots" role="status" aria-label="Thinking"><i></i><i></i><i></i></span>' : '<span class="ask-shim">Thinking</span>'; appear(a, 60);
     readerMoved = false; scrollTo(qb.offsetTop - 4);
@@ -154,7 +184,7 @@ export function mountAsk(el) {
       const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q, token: await token() }) });
       d = await r.json();
     } catch { d = { failed: true }; }
-    if (isHero && !reduced()) { const wait = 350 - (performance.now() - t0); if (wait > 0) await new Promise((r) => setTimeout(r, wait)); }
+    if (isHero && !reduced()) { const wait = 250 - (performance.now() - t0); if (wait > 0) await new Promise((r) => setTimeout(r, wait)); }
     if (mine !== seq) return; // the chat was reset while this was in flight
     a.replaceChildren();
     const meta = Object.assign(document.createElement('div'), { className: 'ask-meta' });
@@ -169,10 +199,10 @@ export function mountAsk(el) {
       // Hero panel: the lead line, then each bullet 40 ms apart (180 ms each, 6 px rise). Other surfaces keep the block stagger.
       const units = isHero ? parts.flatMap((n) => (n.tagName === 'UL' || n.tagName === 'OL' ? [...n.children] : [n])) : parts;
       units.forEach((n, i) => { if (!isHero) appear(n, i * 60); else if (!reduced()) n.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 180, delay: i * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); });
-      meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' ? 'Saved answer' : 'Live AI answer' }));
-      if (d.source) meta.appendChild(d.href ? sourceLink(`Source: ${d.source}`, d.href) : Object.assign(document.createElement('span'), { textContent: `Source: ${d.source}` }));
+      meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.provider === 'canned' || d.provider === 'gate' ? 'Saved answer' : 'Live AI answer' }));
+      if (d.source && d.href) meta.appendChild(sourceLink(d.source, d.href));
       if (d.note) meta.appendChild(Object.assign(document.createElement('span'), { textContent: d.note }));
-      if (navigator.clipboard) meta.appendChild(metaBtn('Copy', (b) => navigator.clipboard.writeText(d.answer + (d.source ? `\n(Source: ${d.source})` : '')).then(() => { b.textContent = 'Copied'; setTimeout(() => { b.textContent = 'Copy'; }, 1500); }, () => {})));
+      meta.appendChild(copyBtn(d.answer));
       live.textContent = d.answer;
       if (isHero) { if (!reduced()) meta.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 180, delay: units.length * 40, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }); }
       else appear(meta, parts.length * 60);

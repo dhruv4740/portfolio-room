@@ -3,7 +3,7 @@
 // canned FAQ answers, so the endpoint never errors. Secrets stay in env; question text is never logged.
 import { runChain } from '../_ask/chain.js';
 import { PROVIDERS } from '../_ask/providers.js';
-import { systemPrompt, cannedAnswer, splitSource, sourceHref, LEAK_MARKER } from '../_ask/knowledge.js';
+import { systemPrompt, cannedAnswer, gateAnswer, splitSource, sourceHref, sourceLabel, LEAK_MARKER } from '../_ask/knowledge.js';
 
 const reply = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 const day = () => new Date().toISOString().slice(0, 10);
@@ -51,10 +51,17 @@ export async function onRequestPost({ request, env }) {
   const origin = request.headers.get('origin');
   if (origin && new URL(origin).host !== new URL(request.url).host) return reply({ error: 'forbidden' }, 403);
 
+  // Greetings and clearly unrelated questions are answered here: no Turnstile, no KV, no model.
+  const gated = gateAnswer(q);
+  if (gated) {
+    console.log(JSON.stringify({ ask: 1, provider: 'gate', ms: Date.now() - t0, kind: gated.kind }));
+    return reply({ answer: gated.answer, source: '', href: '', provider: 'gate', ms: Date.now() - t0 });
+  }
+
   const canned = (note, tried = []) => {
     const c = cannedAnswer(q);
     console.log(JSON.stringify({ ask: 1, provider: 'canned', ms: Date.now() - t0, tried, note }));
-    return reply({ ...c, href: sourceHref(c.source), provider: 'canned', ms: Date.now() - t0, note });
+    return reply({ ...c, source: sourceLabel(c.source), href: sourceHref(c.source), provider: 'canned', ms: Date.now() - t0, note });
   };
 
   if (!llmReady(env)) return canned('');
@@ -77,5 +84,5 @@ export async function onRequestPost({ request, env }) {
   const ms = Date.now() - t0;
   console.log(JSON.stringify({ ask: 1, provider: r.provider, ms, tried: r.tried }));
   bump(kv, `p:${day()}:${r.provider}`).catch(() => {});
-  return reply({ answer, source, href: sourceHref(source), provider: r.provider, ms, left: Math.max(0, vCap - used) });
+  return reply({ answer, source: sourceLabel(source), href: sourceHref(source), provider: r.provider, ms, left: Math.max(0, vCap - used) });
 }
