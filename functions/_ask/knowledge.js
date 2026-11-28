@@ -258,7 +258,15 @@ const NAMES = projects.flatMap((p) => [p.name.toLowerCase(), p.id]).concat(exper
 // Does the question concern Dhruv at all? Pronoun, name, a project or employer, or a work-topic word.
 const onTopic = (q) => /\b(dhruv|kothari|he|his|him|candidate|hire|hiring|intern|internship|resume|cv|skills?|projects?|experience|hackathons?|education)\b/i.test(q) || NAMES.some((n) => q.toLowerCase().includes(n));
 
-const GREETING = /^\s*(hi+|hello+|hey+|hiya|yo|sup|howdy|namaste|good (morning|afternoon|evening)|thanks?|thank you|ok(ay)?|cool|great)\b[\s!.,?]*(there|team|assistant|bot)?[\s!.,?]*$/i;
+// Greeting or small talk: strip greeting words, a name and filler; if nothing meaningful is left it is a greeting.
+const GREET_CORE = /\b(h+i+|he+l+o+|he+y+|hiya|yo+|sup|wass?up|howdy|namaste|good (morning|afternoon|evening|night)|thank you|thanks?|thx|ok(ay)?|cool|great|bye|goodbye|see you|see ya|how are you|how are u|how r u|how'?s it going|how do you do|what'?s up|whats up)\b/gi;
+const GREET_FILL = /\b(dhruv|there|team|bot|assistant|everyone|again|so much|very much|a lot|much|so|and)\b/gi;
+const isGreeting = (q) => {
+  const t = String(q).toLowerCase().replace(/[’]/g, "'").replace(/[^a-z'\s]/g, ' ');
+  const u = t.replace(GREET_CORE, ' ');
+  if (u === t) return false;
+  return u.replace(GREET_FILL, ' ').replace(/[\s']+/g, '') === '';
+};
 const BROAD = /\b(what (can|does|do) (he|dhruv|you)( do| know| build)?|tell me (more )?about (him|dhruv|himself|you)|who (is|'s) (he|dhruv)|about (him|dhruv)|introduce|overview|background|capabilit|can he|does he)\b|^\s*(his |dhruv'?s )?(skills?|strengths?|work|profile|about)\??\s*$/i;
 
 const GREETING_ANSWER = ans(`Hi, I am the assistant on ${identity.name}'s portfolio.`, ['I can tell you about his projects and internships.', 'I can cover his skills and hackathons.', 'I can say what he is looking for.']);
@@ -278,7 +286,7 @@ const NOT_LATIN = /[^\p{Script=Latin}\p{N}\p{P}\p{S}\p{Z}\p{M}]/u;
 // null = let the model answer; otherwise { kind, answer, source } for the gate to send as-is.
 export function gateAnswer(question) {
   const q = clean(question);
-  if (GREETING.test(q)) return { kind: 'greeting', answer: GREETING_ANSWER, source: '' };
+  if (isGreeting(q)) return { kind: 'greeting', answer: GREETING_ANSWER, source: '' };
   if (NOT_LATIN.test(q) || onTopic(q) || SECOND_PERSON.test(q) || RECRUITER.test(q) || words(q).some((w) => VOCAB.has(w))) return null;
   return { kind: 'offtopic', answer: OFFTOPIC_ANSWER, source: '' };
 }
@@ -287,7 +295,7 @@ const IDENTITY = /\b(which|what) (ai|model|llm|bot)\b|\bwhat are you\b|\bare you
 
 export function cannedAnswer(question) {
   if (IDENTITY.test(question)) return { answer: ans(`I am an AI assistant built into ${identity.name}'s portfolio.`, ['I answer only from his résumé and case studies.', 'Ask me about his projects, internships, skills or what he is looking for.']), source: '' };
-  if (GREETING.test(question)) return { answer: GREETING_ANSWER, source: '' };
+  if (isGreeting(question)) return { answer: GREETING_ANSWER, source: '' };
   if (BROAD.test(question) && !PRIVATE.test(question)) { const sm = SECTIONS.find((x) => x.id === 'summary'); if (sm) return { answer: render('summary') || paras(sm.text), source: sm.title }; }
   if (PRIVATE.test(question) && onTopic(question)) return { answer: `I do not have that detail, and I do not share private information.\n\nFor anything like it, email ${contact.email}.`, source: '' };
   if (!onTopic(question)) return { answer: OFFTOPIC_ANSWER, source: '' };

@@ -5,8 +5,10 @@ import { onRequestPost } from '../functions/api/ask.js';
 
 const REACH = ['can you code in rust?', "what's your salary expectation?", 'are you available in January?', 'do you know kubernetes?', 'why should we hire you?', 'what tech stack do you use?',
   'tell me about FocusLock', 'what did you do at Blink?', 'is he good at React?', 'where is he based?', "what's his GPA?", 'React or Vue?', 'how many tests does focuslock have', 'github?', 'email?',
-  "what's the hardest bug you fixed", 'do you have work authorization', 'notice period?', 'remote ok?', 'strengths and weaknesses'];
-const GATE = ['hi', 'hello there', 'thanks', 'what is the capital of France', 'write me a poem about cats', 'what is 2+2', 'who won the world cup', 'translate bonjour'];
+  "what's the hardest bug you fixed", 'do you have work authorization', 'notice period?', 'remote ok?', 'strengths and weaknesses',
+  'hi, what did he build at Blink?', 'hey what is focuslock', 'hello can you tell me about his internship', 'why hire dhruv'];
+const GATE = ['hi', 'hello there', 'thanks', 'what is the capital of France', 'write me a poem about cats', 'what is 2+2', 'who won the world cup', 'translate bonjour',
+  'hi', 'hi dhruv', 'hey there!', 'hii', 'hiii', 'helloo', 'heyy', 'hey how are you', 'how are you?', 'hello?', 'good morning dhruv', 'hi 👋', "yo what's up", 'whats up', 'sup', 'thanks dhruv', 'thank you so much', 'ok thanks', 'bye', 'hello hello'];
 
 let bad = 0;
 const row = (q, want) => {
